@@ -1,0 +1,93 @@
+[
+  {
+    "label": "Overview",
+    "slug": "reference/ts"
+  },
+  {
+    "label": "Core SDK",
+    "items": [
+      {
+        "label": "Overview",
+        "slug": "reference/ts/dnsid"
+      },
+      {
+        "label": "Classes",
+        "slug": "reference/ts/dnsid-classes"
+      },
+      {
+        "label": "Interfaces",
+        "slug": "reference/ts/dnsid-interfaces"
+      }
+    ]
+  },
+  {
+    "label": "Node runtime",
+    "slug": "reference/ts/dnsid-node"
+  },
+  {
+    "label": "Protocol core",
+    "items": [
+      {
+        "label": "Overview",
+        "slug": "reference/ts/dnsid-protocol"
+      },
+      {
+        "label": "Classes",
+        "slug": "reference/ts/dnsid-protocol-classes"
+      },
+      {
+        "label": "Interfaces",
+        "slug": "reference/ts/dnsid-protocol-interfaces"
+      }
+    ]
+  },
+  {
+    "label": "Transport",
+    "slug": "reference/ts/dnsid-transport"
+  },
+  {
+    "label": "Profile: JOSE",
+    "slug": "reference/ts/dnsid-jose"
+  },
+  {
+    "label": "Profile: HTTP signatures",
+    "slug": "reference/ts/dnsid-http-signatures"
+  },
+  {
+    "label": "Profile: Web Bot Auth",
+    "slug": "reference/ts/dnsid-web-bot-auth"
+  },
+  {
+    "label": "Profile: OIDC",
+    "slug": "reference/ts/dnsid-oidc"
+  },
+  {
+    "label": "Key providers: AWS KMS",
+    "slug": "reference/ts/dnsid-key-aws"
+  },
+  {
+    "label": "Registry",
+    "slug": "reference/ts/dnsid-registry"
+  },
+  {
+    "label": "Transparency log",
+    "items": [
+      {
+        "label": "Overview",
+        "slug": "reference/ts/dnsid-log-c2sp-tlog"
+      },
+      {
+        "label": "Classes",
+        "slug": "reference/ts/dnsid-log-c2sp-tlog-classes"
+      },
+      {
+        "label": "Interfaces",
+        "slug": "reference/ts/dnsid-log-c2sp-tlog-interfaces"
+      },
+      {
+        "label": "Functions",
+        "slug": "reference/ts/dnsid-log-c2sp-tlog-functions"
+      }
+    ]
+  }
+]

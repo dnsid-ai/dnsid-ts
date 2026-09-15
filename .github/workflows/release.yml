@@ -1,0 +1,168 @@
+name: Release
+
+# Triggered when the "release/next" PR is merged into main, or manually.
+#
+# Required permissions (already granted via the `permissions` block below):
+#   contents: write  — to create the git tag and GitHub Release
+#   packages: write  — to publish the public @identity-digital/* workspace packages
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'release/next' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'autorelease'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          [ -n "$VERSION" ] || { echo "ERROR: could not read version from package.json"; exit 1; }
+          echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${VERSION#v}"
+          awk -v version="$VERSION" '
+            BEGIN { header = "## [" version "]" }
+            index($0, header) == 1 { in_section = 1 }
+            in_section && /^## \[/ && index($0, header) != 1 { exit }
+            in_section { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          [ -s /tmp/release-notes.md ] || { echo "ERROR: could not extract release notes for v${VERSION}"; exit 1; }
+          echo "--- release notes ---"
+          cat /tmp/release-notes.md
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@identity-digital'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate synchronized versions
+        run: npm run sync:versions:check
+
+      - name: Run typechecks
+        run: npm run typecheck && npm run typecheck:packages
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check generated documentation
+        run: |
+          npm run docs:md
+          git diff --exit-code docs/reference/
+          test -z "$(git ls-files --others --exclude-standard docs/reference/)"
+
+      - name: Test packed packages
+        run: npm run smoke:pack
+
+      - name: Build and pack public workspaces
+        run: |
+          npm run build
+          mkdir -p tarballs
+          for manifest in packages/*/package.json; do
+            NAME=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).name' "$manifest")
+            PRIVATE=$(node -p 'Boolean(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).private)' "$manifest")
+            if [ "$PRIVATE" = "true" ]; then
+              echo "Skipping private workspace ${NAME}"
+              continue
+            fi
+            npm pack --workspace "$NAME" --pack-destination tarballs --json
+          done
+          ls -lh tarballs/*.tgz
+
+      - name: Tag release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.version.outputs.version }} already exists, skipping"
+          else
+            git tag -a "${{ steps.version.outputs.version }}" -m "Release ${{ steps.version.outputs.version }}"
+            git push origin "${{ steps.version.outputs.version }}"
+          fi
+
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists; refreshing assets"
+            gh release upload "$TAG" tarballs/*.tgz --clobber
+          else
+            gh release create "$TAG" \
+              tarballs/*.tgz \
+              --title "Release ${TAG}" \
+              --notes-file /tmp/release-notes.md
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish public workspaces to GitHub Packages
+        run: |
+          for manifest in packages/*/package.json; do
+            NAME=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).name' "$manifest")
+            PRIVATE=$(node -p 'Boolean(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).private)' "$manifest")
+            if [ "$PRIVATE" = "true" ]; then
+              echo "Skipping private workspace ${NAME}"
+              continue
+            fi
+            VERSION=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).version' "$manifest")
+            if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+              echo "${NAME}@${VERSION} already published, skipping"
+            else
+              npm publish --workspace "$NAME"
+            fi
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publishes the TypeDoc HTML reference (npm run docs:html) to GitHub Pages on
+  # each release. Disabled until GitHub Pages is enabled for this repository
+  # (Settings → Pages → Source: GitHub Actions); uncomment the job and add
+  # `pages: write` + `id-token: write` to the workflow permissions to activate.
+  #
+  # docs-pages:
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     pages: write
+  #     id-token: write
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   steps:
+  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  #     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+  #       with:
+  #         node-version: 22.x
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npm run docs:html
+  #     - uses: actions/upload-pages-artifact@v4
+  #       with:
+  #         path: docs/api
+  #     - id: deployment
+  #       uses: actions/deploy-pages@v4

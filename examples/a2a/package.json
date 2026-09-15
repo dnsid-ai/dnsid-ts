@@ -1,0 +1,26 @@
+{
+  "name": "@identity-digital/dnsid-example-a2a",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "bob": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run bob --port 3002 -- node --import tsx examples/a2a/src/index.ts",
+    "alice": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts bob.dev.dnsid.test",
+    "dashboard": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@a2a-js/sdk": "^1.0.1",
+    "@identity-digital/dnsid": "^0.19.1",
+    "@identity-digital/dnsid-log-c2sp-tlog": "^0.19.1",
+    "@identity-digital/dnsid-transport": "^0.19.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.7.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.5",
+    "typescript": "^6.0.0"
+  }
+}

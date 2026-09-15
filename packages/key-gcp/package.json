@@ -1,0 +1,44 @@
+{
+  "name": "@identity-digital/dnsid-key-gcp",
+  "version": "0.19.1",
+  "private": true,
+  "description": "Private placeholder for future DNSid Google Cloud KMS key provider integration.",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnsid-ai/dnsid-ts.git",
+    "directory": "packages/key-gcp"
+  },
+  "bugs": {
+    "url": "https://github.com/dnsid-ai/dnsid-ts/issues"
+  },
+  "homepage": "https://github.com/dnsid-ai/dnsid-ts#readme",
+  "keywords": [
+    "dnsid",
+    "gcp",
+    "cloud-kms",
+    "keys"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@identity-digital/dnsid-protocol": "^0.19.1"
+  },
+  "license": "Apache-2.0"
+}

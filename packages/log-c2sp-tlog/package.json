@@ -1,0 +1,51 @@
+{
+  "name": "@identity-digital/dnsid-log-c2sp-tlog",
+  "version": "0.19.1",
+  "description": "DNSid C2SP tiled transparency log binding.",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./writer": {
+      "types": "./dist/writer.d.ts",
+      "import": "./dist/writer.js",
+      "require": "./dist/writer.cjs"
+    },
+    "./version": {
+      "types": "./dist/version.d.ts",
+      "import": "./dist/version.js",
+      "require": "./dist/version.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/writer.ts src/version.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@identity-digital/dnsid-protocol": "^0.19.1",
+    "@identity-digital/dnsid-transport": "^0.19.1"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnsid-ai/dnsid-ts.git",
+    "directory": "packages/log-c2sp-tlog"
+  },
+  "bugs": {
+    "url": "https://github.com/dnsid-ai/dnsid-ts/issues"
+  },
+  "homepage": "https://github.com/dnsid-ai/dnsid-ts#readme",
+  "keywords": [
+    "dnsid",
+    "transparency-log",
+    "c2sp",
+    "identity"
+  ]
+}

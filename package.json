@@ -1,0 +1,46 @@
+{
+  "name": "@identity-digital/dnsid-monorepo",
+  "version": "0.19.1",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "vitest run",
+    "test:aws-kms:localstack": "DNSID_AWS_KMS_LOCALSTACK=1 vitest run test/aws-kms-localstack-smoke.test.ts",
+    "smoke:pack": "node test/packed-package-smoke.mjs",
+    "docs:html": "typedoc",
+    "docs:md": "typedoc --options typedoc.markdown.json && node scripts/build-docs-reference.mjs",
+    "sync:versions": "node scripts/sync-package-versions.mjs",
+    "sync:versions:check": "node scripts/sync-package-versions.mjs --check",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "typecheck:packages": "for p in packages/*; do npx tsc -p \"$p/tsconfig.json\" --noEmit || exit 1; done"
+  },
+  "dependencies": {
+    "undici": "^8.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "jose": "^6.2.10",
+    "tsup": "^8.3.5",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.12.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnsid-ai/dnsid-ts.git"
+  }
+}

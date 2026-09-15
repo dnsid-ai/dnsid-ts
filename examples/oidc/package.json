@@ -1,0 +1,19 @@
+{
+  "name": "@identity-digital/dnsid-example-oidc",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --import tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@identity-digital/dnsid": "^0.19.1",
+    "@identity-digital/dnsid-oidc": "^0.19.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.5",
+    "typescript": "^6.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+  "extends": "./typedoc.json",
+  "plugin": [
+    "typedoc-plugin-markdown"
+  ],
+  "out": ".typedoc-md",
+  "readme": "none",
+  "outputFileStrategy": "modules",
+  "flattenOutputFiles": false,
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "useCodeBlocks": true,
+  "useHTMLAnchors": true
+}

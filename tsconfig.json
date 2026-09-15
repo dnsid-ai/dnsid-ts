@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@identity-digital/dnsid-protocol": ["packages/core/src/index.ts"],
+      "@identity-digital/dnsid-http-signatures": ["packages/http-signatures/src/index.ts"],
+      "@identity-digital/dnsid-jose": ["packages/jose/src/index.ts"],
+      "@identity-digital/dnsid-oidc": ["packages/oidc/src/index.ts"],
+      "@identity-digital/dnsid-transport": ["packages/transport/src/index.ts"],
+      "@identity-digital/dnsid-registry": ["packages/registry/src/index.ts"],
+      "@identity-digital/dnsid-web-bot-auth": ["packages/web-bot-auth/src/index.ts"],
+      "@identity-digital/dnsid-log-c2sp-tlog": ["packages/log-c2sp-tlog/src/index.ts"],
+      "@identity-digital/dnsid-log-c2sp-tlog/writer": ["packages/log-c2sp-tlog/src/writer.ts"],
+      "@identity-digital/dnsid-log-c2sp-tlog/version": ["packages/log-c2sp-tlog/src/version.ts"],
+      "@identity-digital/dnsid": ["packages/sdk/src/index.ts"],
+      "@identity-digital/dnsid/node": ["packages/sdk/src/node.ts"],
+      "@identity-digital/dnsid-key-aws": ["packages/key-aws/src/index.ts"],
+      "@identity-digital/dnsid-key-gcp": ["packages/key-gcp/src/index.ts"]
+    },
+    "types":["node"],
+    "lib": ["ES2022", "dom"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["packages/**/*", "test/**/*", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,79 @@
+name: Compile Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript compile checks
+        run: npm run typecheck && npm run typecheck:packages
+
+      - name: Run tests
+        run: npm test
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test packed packages
+        run: npm run smoke:pack
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Fails on TypeDoc warnings (treatWarningsAsErrors), e.g. undocumented exports.
+      - name: Build docs
+        run: npm run docs:md
+
+      # Advisory only: the regen-docs workflow pushes regenerated reference
+      # docs to same-repo PR branches automatically. The warning matters for
+      # fork PRs, where the bot cannot push.
+      - name: Check docs/reference/ freshness
+        run: |
+          git diff --exit-code docs/reference/ && test -z "$(git ls-files --others --exclude-standard docs/reference/)" || {
+            echo "::warning::docs/reference/ is stale — the auto-regen workflow pushes the fix to same-repo PRs; fork authors run npm run docs:md and commit the result"
+            exit 0
+          }

@@ -1,0 +1,66 @@
+name: Update Release PR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-release-pr:
+    if: "!startsWith(github.event.head_commit.message, 'chore: update changelog and version') && !startsWith(github.event.head_commit.message, 'Release v')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        with:
+          tool: git-cliff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Compute next version and changelog
+        id: prep
+        run: |
+          NEXT=$(git cliff --bumped-version | head -1)
+          [ -n "$NEXT" ] || { echo "ERROR: git-cliff --bumped-version returned an empty version"; exit 1; }
+
+          # If git-cliff finds nothing to bump it returns the current tag
+          # unchanged.  Skip rather than opening a duplicate release PR.
+          CURRENT="v$(node -p 'require("./package.json").version')"
+          if [ "$NEXT" = "$CURRENT" ]; then
+            echo "No releasable commits found (computed: ${NEXT}, current: ${CURRENT}). Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+            git cliff --unreleased --tag "$NEXT" --prepend CHANGELOG.md
+            git cliff --unreleased --tag "$NEXT" > /tmp/release-notes.md
+          fi
+
+      - name: Synchronize workspace versions
+        if: steps.prep.outputs.skip != 'true'
+        run: |
+          # Strip leading 'v' for npm package versions, e.g. v0.2.0 -> 0.2.0.
+          VERSION="${{ steps.prep.outputs.version }}"
+          node scripts/sync-package-versions.mjs "${VERSION#v}"
+          npm install --package-lock-only
+
+      - name: Open or update release PR
+        if: steps.prep.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: release/next
+          title: "Release ${{ steps.prep.outputs.version }}"
+          body-path: /tmp/release-notes.md
+          commit-message: "chore: update changelog and version"
+          labels: autorelease

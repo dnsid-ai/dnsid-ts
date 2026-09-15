@@ -1,0 +1,11 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/index.ts"
+  ],
+  "intentionallyNotExported": [
+    "src/log-registry.ts:LogReaderFactory",
+    "src/errors.ts:VerificationErrorInit"
+  ],
+  "gitRevision": "main"
+}

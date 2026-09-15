@@ -1,0 +1,41 @@
+{
+  "name": "@identity-digital/dnsid-http-signatures",
+  "version": "0.19.1",
+  "description": "DNSid HTTP Message Signatures profile helpers.",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnsid-ai/dnsid-ts.git",
+    "directory": "packages/http-signatures"
+  },
+  "bugs": {
+    "url": "https://github.com/dnsid-ai/dnsid-ts/issues"
+  },
+  "homepage": "https://github.com/dnsid-ai/dnsid-ts#readme",
+  "keywords": [
+    "dnsid",
+    "http-signatures",
+    "rfc9421",
+    "identity"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@identity-digital/dnsid-protocol": "^0.19.1",
+    "structured-headers": "^2.0.3"
+  },
+  "license": "Apache-2.0"
+}

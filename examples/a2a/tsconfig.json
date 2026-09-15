@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "dom"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "../..",
+    "paths": {
+      "@identity-digital/dnsid-protocol": ["packages/core/src/index.ts"],
+      "@identity-digital/dnsid-http-signatures": ["packages/http-signatures/src/index.ts"],
+      "@identity-digital/dnsid-jose": ["packages/jose/src/index.ts"],
+      "@identity-digital/dnsid-log-c2sp-tlog": ["packages/log-c2sp-tlog/src/index.ts"],
+      "@identity-digital/dnsid-registry": ["packages/registry/src/index.ts"],
+      "@identity-digital/dnsid-transport": ["packages/transport/src/index.ts"],
+      "@identity-digital/dnsid-web-bot-auth": ["packages/web-bot-auth/src/index.ts"],
+      "@identity-digital/dnsid": ["packages/sdk/src/index.ts"],
+      "@identity-digital/dnsid/node": ["packages/sdk/src/node.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../shared/**/*.ts", "../../packages/**/*.ts"],
+  "exclude": ["node_modules"]
+}

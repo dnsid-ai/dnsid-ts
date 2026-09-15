@@ -1,0 +1,27 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "DNSid TypeScript SDK",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/sdk",
+    "packages/core",
+    "packages/transport",
+    "packages/jose",
+    "packages/http-signatures",
+    "packages/web-bot-auth",
+    "packages/oidc",
+    "packages/registry",
+    "packages/log-c2sp-tlog",
+    "packages/key-aws"
+  ],
+  "out": "docs/api",
+  "readme": "README.md",
+  "gitRevision": "main",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "treatWarningsAsErrors": true,
+  "validation": {
+    "notDocumented": true
+  }
+}
