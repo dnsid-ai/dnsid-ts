@@ -23,7 +23,7 @@
     "typecheck:packages": "for p in packages/*; do npx tsc -p \"$p/tsconfig.json\" --noEmit || exit 1; done"
   },
   "dependencies": {
-    "undici": "^8.9.0"
+    "undici": "^8.10.2"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",
