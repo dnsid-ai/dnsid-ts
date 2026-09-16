@@ -1,31 +1,31 @@
-# @identity-digital/dnsid
+# @dnsid-ai/sdk
 
 Ergonomic aggregate package for DNSid TypeScript consumers.
 
-The root `@identity-digital/dnsid` entrypoint is runtime-neutral: callers inject DNS resolution, JSON fetching, key-provider, cache, and log implementations. Node.js defaults live behind the `@identity-digital/dnsid/node` subpath and optional `@identity-digital/dnsid-transport` peer.
+The root `@dnsid-ai/sdk` entrypoint is runtime-neutral: callers inject DNS resolution, JSON fetching, key-provider, cache, and log implementations. Node.js defaults live behind the `@dnsid-ai/sdk/node` subpath and optional `@dnsid-ai/transport` peer.
 
 ## Package layout
 
-- **Root export (`@identity-digital/dnsid`)** — runtime-neutral. No Node built-ins, `Buffer`, filesystem, or `undici` imports; you inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes. Its managed C2SP workflows use the portable writer-only binding entrypoint.
-- **`@identity-digital/dnsid/node` subpath** — Node conveniences: `LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`. Loads the optional `@identity-digital/dnsid-transport` peer when HTTPS defaults are needed.
-- **OIDC lives in `@identity-digital/dnsid-oidc`** — deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs server-side. Import it directly.
+- **Root export (`@dnsid-ai/sdk`)** — runtime-neutral. No Node built-ins, `Buffer`, filesystem, or `undici` imports; you inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes. Its managed C2SP workflows use the portable writer-only binding entrypoint.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
+- **OIDC lives in `@dnsid-ai/oidc`** — deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs server-side. Import it directly.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid
+npm install @dnsid-ai/sdk
 ```
 
 For Node defaults:
 
 ```sh
-npm install @identity-digital/dnsid @identity-digital/dnsid-transport
+npm install @dnsid-ai/sdk @dnsid-ai/transport
 ```
 
 ## Runtime-neutral usage
 
 ```ts
-import { createIdentityManager } from '@identity-digital/dnsid';
+import { createIdentityManager } from '@dnsid-ai/sdk';
 
 const idm = createIdentityManager({ identity, verification }, {
   keyProvider,       // operational ku key
@@ -38,7 +38,7 @@ const idm = createIdentityManager({ identity, verification }, {
 For verification-only use, no local identity configuration or key provider is needed:
 
 ```ts
-import { createIdentityVerifier } from '@identity-digital/dnsid';
+import { createIdentityVerifier } from '@dnsid-ai/sdk';
 
 const verifier = createIdentityVerifier(
   { verification: { trustedEntities: [{ governanceId: 'acme.example' }] } },
@@ -71,7 +71,7 @@ rotation state; already-completed activation or supersession is not repeated.
 ## Node.js convenience usage
 
 ```ts
-import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@identity-digital/dnsid/node';
+import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 const { config, keyStorePath } = configFromEnvironment();
 const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
@@ -100,7 +100,7 @@ The Node helper uses the system or configured DNS resolver by default. It report
 If the registry CLI has already written `~/.dnsid/config.json` and `~/.dnsid/<fqdn>/private.jwk`:
 
 ```ts
-import { createNodeIdentityManagerFromDnsid } from '@identity-digital/dnsid/node';
+import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
 
 const idm = await createNodeIdentityManagerFromDnsid();
 ```
@@ -109,13 +109,13 @@ DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, 
 
 ## Included surfaces
 
-`@identity-digital/dnsid` re-exports the common core and profile surfaces and namespaces:
+`@dnsid-ai/sdk` re-exports the common core and profile surfaces and namespaces:
 
-- `@identity-digital/dnsid-protocol`
-- `@identity-digital/dnsid-jose`
-- `@identity-digital/dnsid-http-signatures`
-- `@identity-digital/dnsid-registry`
+- `@dnsid-ai/protocol`
+- `@dnsid-ai/jose`
+- `@dnsid-ai/http-signatures`
+- `@dnsid-ai/registry`
 
-Use DNSid OIDC token minting and verification through `@identity-digital/dnsid-oidc`. It is intentionally not re-exported here because its default transport is Node-bound; private-key token minting belongs in server-side code, not browser/client code.
+Use DNSid OIDC token minting and verification through `@dnsid-ai/oidc`. It is intentionally not re-exported here because its default transport is Node-bound; private-key token minting belongs in server-side code, not browser/client code.
 
 Use lower-level packages directly when you need narrower dependencies or custom composition.

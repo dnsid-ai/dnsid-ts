@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-monorepo",
+  "name": "@dnsid-ai/monorepo",
   "version": "0.19.1",
   "type": "module",
   "workspaces": [

@@ -1,6 +1,6 @@
 # Web Bot Auth Example
 
-Demonstrates the [`@identity-digital/dnsid-web-bot-auth`](../../packages/web-bot-auth/README.md) package: signing outbound bot requests per Web Bot Auth (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag) and serving the signed key directory that verifiers use to fetch the agent's public keys.
+Demonstrates the [`@dnsid-ai/web-bot-auth`](../../packages/web-bot-auth/README.md) package: signing outbound bot requests per Web Bot Auth (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag) and serving the signed key directory that verifiers use to fetch the agent's public keys.
 
 The example runs fully offline (no network calls). It:
 
@@ -17,7 +17,7 @@ From the root directory:
 
 ```sh
 npm install
-npm run start -w @identity-digital/dnsid-example-webbotauth
+npm run start -w @dnsid-ai/example-webbotauth
 ```
 
 Note: The key store is written to `examples/webbotauth/keys.json` on first run and reused afterwards. Delete that file to reset the example with a fresh key.

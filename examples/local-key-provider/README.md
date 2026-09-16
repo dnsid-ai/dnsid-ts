@@ -15,7 +15,7 @@ From the root directory:
 
 ```sh
 npm install
-npm run start -w @identity-digital/dnsid-example-local-key-provider
+npm run start -w @dnsid-ai/example-local-key-provider
 ```
 
 Note: The key file is written to `./keys.json`. Delete that file to reset the example.

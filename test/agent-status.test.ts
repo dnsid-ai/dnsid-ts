@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateAgentStatus, ValidationError } from '@identity-digital/dnsid-protocol';
+import { validateAgentStatus, ValidationError } from '@dnsid-ai/protocol';
 
 describe('validateAgentStatus', () => {
   it('rejects registry workflow status payloads', () => {

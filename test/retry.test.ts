@@ -3,7 +3,7 @@ import {
   retryTransientVerification,
   VerificationCode,
   VerificationError,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 describe('retryTransientVerification()', () => {
   it('retries transient VerificationError failures with backoff', async () => {

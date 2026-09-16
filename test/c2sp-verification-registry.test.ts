@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ArgumentError } from '@identity-digital/dnsid-protocol';
+import { ArgumentError } from '@dnsid-ai/protocol';
 import {
   C2spTlogReader,
   DEFAULT_C2SP_MAX_ENTRY_BUNDLE_BYTES,
@@ -12,7 +12,7 @@ import {
   parseSignedNoteVerifierKey,
   requiredC2spResourceFetchGuarantees,
   type C2spBoundedResourceFetcher,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const policyDocument = new TextEncoder().encode(`log testnet.dnsid.example/log+63868553+Ae1JKMYo0cLG6ukDOJBZlWEpWSc6XGP5NjbBRhSshzfR
 quorum none

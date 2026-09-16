@@ -6,8 +6,8 @@ import {
   LogRegistry,
   toArrayBuffer,
   toBase64Url,
-} from '@identity-digital/dnsid-protocol';
-import type { DNSResolver, DnsIdJWK, JsonFetcher, LoggedStateEvidence, LogReader, TXTRecord } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
+import type { DNSResolver, DnsIdJWK, JsonFetcher, LoggedStateEvidence, LogReader, TXTRecord } from '@dnsid-ai/protocol';
 
 export async function currentProfileFixture(
   domain: string,

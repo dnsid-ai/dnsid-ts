@@ -17,7 +17,7 @@
  *
  * @packageDocumentation
  */
-import type { LogRegistry } from '@identity-digital/dnsid-protocol';
+import type { LogRegistry } from '@dnsid-ai/protocol';
 import { C2spTlogReader, type C2spTlogReaderOptions } from './reader.ts';
 
 /** Registers the `c2sp-tlog` log method on a protocol {@link LogRegistry}, constructing a {@link C2spTlogReader} per lr. */

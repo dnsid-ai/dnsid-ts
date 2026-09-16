@@ -11,7 +11,7 @@ import {
   type C2spIssuanceEvent,
   type DnsIdJWK,
   type KeyProvider,
-} from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk';
 import {
   checkpointPath,
   createC2spTlogVerificationRegistry,
@@ -24,7 +24,7 @@ import {
   signPreparedC2spTlogEvent,
   type C2spBoundedResourceFetcher,
   type PreparedC2spVerificationContext,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 async function es256Key(kid: string): Promise<{ publicJwk: DnsIdJWK; privateKey: CryptoKey }> {
   const pair = await generateKeyPair('ES256', { extractable: true });

@@ -1,4 +1,4 @@
-import { sha256Bytes, normalizeFQDN, jwkThumbprint, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@identity-digital/dnsid-protocol';
+import { sha256Bytes, normalizeFQDN, jwkThumbprint, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@dnsid-ai/protocol';
 import { canonicalBytes, canonicalJson, parseJsonNoDuplicateMembers, assertCanonicalJsonBytes } from './canonical.ts';
 import { C2spTlogParseError } from './errors.ts';
 

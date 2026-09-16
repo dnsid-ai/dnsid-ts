@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-registry",
+  "name": "@dnsid-ai/registry",
   "version": "0.19.1",
   "description": "DNSid registry client and TXT publishing helpers.",
   "type": "module",
@@ -33,7 +33,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid-protocol": "^0.19.1"
+    "@dnsid-ai/protocol": "^0.19.1"
   },
   "license": "Apache-2.0"
 }

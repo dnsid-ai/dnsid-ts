@@ -11,8 +11,8 @@
  * Token minting is server-side only — it uses the agent's private operational
  * key. Never run this in browser/client code.
  */
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { createOIDCTokenMinter, decodeOIDCClaims } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { createOIDCTokenMinter, decodeOIDCClaims } from '@dnsid-ai/oidc';
 
 const domain = 'agent.example.com';
 const issuer = process.env.DNSID_OIDC_ISSUER ?? 'https://issuer.example.com';

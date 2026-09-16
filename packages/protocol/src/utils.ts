@@ -87,8 +87,8 @@ export function isDomainName(value: string): boolean {
 /**
  * Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
  *
- * This is an SDK/profile convention used by packages such as @identity-digital/dnsid-jose and
- * @identity-digital/dnsid-http-signatures to bind a profile-level key reference to a DNSid agent
+ * This is an SDK/profile convention used by packages such as @dnsid-ai/jose and
+ * @dnsid-ai/http-signatures to bind a profile-level key reference to a DNSid agent
  * FQDN plus a JWKS "kid". It is not a DNSid protocol wire-format requirement;
  * the protocol itself only requires JWKS keys to carry "kid" values.
  *

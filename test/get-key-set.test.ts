@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { IdentityManager, JWKS, ValidationError, jwkSignatureAlg } from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+import { IdentityManager, JWKS, ValidationError, jwkSignatureAlg } from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
 // ---- fixtures ----
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { correctedBundle } from './helpers/corrected-c2sp-bundle.ts';
 
-import { jwkThumbprint, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@identity-digital/dnsid-protocol';
+import { jwkThumbprint, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@dnsid-ai/protocol';
 import {
   C2SP_TLOG_PROFILE_VERSION,
   C2SP_TLOG_SPECIFICATIONS,
@@ -28,7 +28,7 @@ import {
   requiredC2spResourceFetchGuarantees,
   signedC2spEventBytes,
   verifyC2spStreamBundle,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const BUNDLE_EXTRA_ENTRY = new TextEncoder().encode('bundle tree non-lifecycle entry');
 const HISTORICAL_ISSUANCE_ENTRY = '{"ek":{"alg":"EdDSA","crv":"Ed25519","kid":"ae-test-1","kty":"OKP","x":"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"},"fqdn":"agent.example","gi":"example.com","kind":"dnsid.lifecycle","ku":{"alg":"EdDSA","crv":"Ed25519","kid":"op-test-1","kty":"OKP","x":"gTl3Dqh9F19Wo1Rmw0x-zMuNipG07jeiXfYPW4_Js5Q"},"sigs":{"ae":{"kid":"ae-test-1","sig":"Qp_IOg6S-ksElLBrMTwUqQ6slrt-W-wbXtadHY6nXOPbUXs1013_kNdrMWYEWjVZcvXptqxwshbKu-wtz4h6CQ"},"op":{"kid":"op-test-1","sig":"jWSZhq4Cm5FeHipM1MX5LVdej9cpStNAaoCFZSG3G_w-0w4rhYss2Vvi0lz7DcvVFO8K2nde0VfX2c5Ga5bvAg"}},"ts":1782172800,"type":"ISSUANCE","v":1}';

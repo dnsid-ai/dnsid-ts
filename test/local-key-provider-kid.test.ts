@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { jwkThumbprint } from '@identity-digital/dnsid';
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
+import { jwkThumbprint } from '@dnsid-ai/sdk';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 describe('LocalKeyProvider generated kids', () => {
   it('names generated keys by their RFC 7638 thumbprint, as the registry requires', async () => {

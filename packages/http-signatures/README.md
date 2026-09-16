@@ -1,19 +1,19 @@
-# @identity-digital/dnsid-http-signatures
+# @dnsid-ai/http-signatures
 
 DNSid RFC 9421 HTTP Message Signatures profile helpers.
 
-This package provides signing, verification, canonicalization, digest, nonce, and algorithm-mapping helpers built on `@identity-digital/dnsid-protocol` contracts. It does not include DNS or HTTPS transport defaults.
+This package provides signing, verification, canonicalization, digest, nonce, and algorithm-mapping helpers built on `@dnsid-ai/protocol` contracts. It does not include DNS or HTTPS transport defaults.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-http-signatures @identity-digital/dnsid-protocol
+npm install @dnsid-ai/http-signatures @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { createHttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
+import { createHttpSignaturesProfile } from '@dnsid-ai/http-signatures';
 
 const httpSignatures = createHttpSignaturesProfile({
   domain: 'agent.example',
@@ -31,4 +31,4 @@ bodies over 1 MiB; bodies are bounded while reading without changing their bytes
 Injected identity resolvers must honor cancellation and enforce bounded I/O.
 `fl=logchk` remains caller-owned operation policy.
 
-`@identity-digital/dnsid` also re-exports this package as `httpSignatures` and exports `HttpSignaturesProfile` / `createHttpSignaturesProfile` directly.
+`@dnsid-ai/sdk` also re-exports this package as `httpSignatures` and exports `HttpSignaturesProfile` / `createHttpSignaturesProfile` directly.

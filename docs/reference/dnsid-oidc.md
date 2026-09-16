@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-oidc"
+title: "TypeScript: @dnsid-ai/oidc"
 description: "OIDC federation profile: token minting and verification (server-side)."
 ---
 
@@ -10,13 +10,13 @@ DNSid OIDC federation helpers for server-side token minting and verification.
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-oidc
+npm install @dnsid-ai/oidc
 ```
 
 For Node.js local key loading, also install the aggregate SDK:
 
 ```sh
-npm install @identity-digital/dnsid @identity-digital/dnsid-oidc
+npm install @dnsid-ai/sdk @dnsid-ai/oidc
 ```
 
 ## Mint an OIDC access token from server code
@@ -24,8 +24,8 @@ npm install @identity-digital/dnsid @identity-digital/dnsid-oidc
 Use `mintOIDCToken()` when an agent service needs to call another service, gateway, or tool with a DNSid OIDC bearer token.
 
 ```ts
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const agentDomain = process.env.DNSID_DOMAIN!;
 const audience = process.env.AGENTCORE_GATEWAY_AUDIENCE!;
@@ -68,7 +68,7 @@ Configure either:
 Applications with private JWK material can use `privateJwk` directly:
 
 ```ts
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const token = await mintOIDCToken({
   domain: 'agent.example.com',
@@ -103,9 +103,9 @@ identity (JWT bearer client assertions signed with the agent's operational
 key) and verifying OIDC tokens back to DNSid identity records.
 
 This package is deliberately NOT re-exported by the runtime-neutral root
-`@identity-digital/dnsid` export because its default transport is Node-bound
+`@dnsid-ai/sdk` export because its default transport is Node-bound
 (SSRF-safe fetch backed by `node:dns` lookups). Import it directly from
-`@identity-digital/dnsid-oidc`.
+`@dnsid-ai/oidc`.
 
 Security notes:
 - Never mint OIDC tokens in browser/client code — private keys stay
@@ -2122,7 +2122,7 @@ Defined in: [packages/oidc/src/index.ts:215](https://github.com/dnsid-ai/dnsid-t
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/core/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/verification-budget.ts#L6)
+Defined in: [packages/protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L6)
 
 ###### Inherited from
 
@@ -2136,7 +2136,7 @@ Defined in: [packages/core/src/verification-budget.ts:6](https://github.com/dnsi
 optional timeoutMs?: number;
 ```
 
-Defined in: [packages/core/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/verification-budget.ts#L5)
+Defined in: [packages/protocol/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L5)
 
 Overall invocation budget, including all discovery and evidence. Default: 30 seconds.
 
@@ -2236,8 +2236,8 @@ ArgumentError if domain is not a valid agent FQDN.
 #### Example
 
 ```ts
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { createOIDCProfile } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { createOIDCProfile } from '@dnsid-ai/oidc';
 
 const profile = createOIDCProfile({
   domain: 'agent.example.com',
@@ -2342,8 +2342,8 @@ browser/client code. See `OIDCTokenMinter.mintToken()` for thrown errors.
 #### Example
 
 ```ts
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
 const token = await mintOIDCToken({

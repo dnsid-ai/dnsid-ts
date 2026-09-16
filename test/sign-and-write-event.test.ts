@@ -9,7 +9,7 @@ import {
   LogRegistry,
   NoopLogReader,
   VerifiedDomain,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import type {
   IdentityConfig,
   DnsIdJWK,
@@ -21,7 +21,7 @@ import type {
   LogReader,
   LogRef,
   LogSignerRole,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 // ---- fixtures ----
 

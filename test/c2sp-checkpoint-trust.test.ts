@@ -9,7 +9,7 @@ import {
   verifyC2spConsistencyProof,
   type TrustedC2spCheckpoint,
   type TrustedC2spCheckpointStore,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const reference = parseC2spTlogLr('c2sp-tlog:testnet:https://log.example/dnsid#agent.example');
 const witnessTime = new Date('2026-07-24T12:00:00Z');

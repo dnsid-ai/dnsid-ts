@@ -4,7 +4,7 @@
   "entryPointStrategy": "packages",
   "entryPoints": [
     "packages/sdk",
-    "packages/core",
+    "packages/protocol",
     "packages/transport",
     "packages/jose",
     "packages/http-signatures",

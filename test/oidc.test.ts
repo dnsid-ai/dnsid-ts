@@ -12,9 +12,9 @@ import {
   decodeOIDCClaims,
   mintOIDCToken,
   validateExactOIDCIssuer,
-} from '@identity-digital/dnsid-oidc';
-import { ArgumentError, VerificationError, fromBase64Url, jwkThumbprint, toArrayBuffer, toBase64Url } from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK, KeyProvider, VerifiedDomain } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/oidc';
+import { ArgumentError, VerificationError, fromBase64Url, jwkThumbprint, toArrayBuffer, toBase64Url } from '@dnsid-ai/protocol';
+import type { DnsIdJWK, KeyProvider, VerifiedDomain } from '@dnsid-ai/protocol';
 
 let privateKey: CryptoKey;
 let publicJwk: DnsIdJWK;

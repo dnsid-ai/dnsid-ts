@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-example-a2a",
+  "name": "@dnsid-ai/example-a2a",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@a2a-js/sdk": "^1.1.0",
-    "@identity-digital/dnsid": "^0.19.1",
-    "@identity-digital/dnsid-log-c2sp-tlog": "^0.19.1",
-    "@identity-digital/dnsid-transport": "^0.19.1",
+    "@dnsid-ai/sdk": "^0.19.1",
+    "@dnsid-ai/log-c2sp-tlog": "^0.19.1",
+    "@dnsid-ai/transport": "^0.19.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.7.0"
   },

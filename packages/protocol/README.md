@@ -1,4 +1,4 @@
-# @identity-digital/dnsid-protocol
+# @dnsid-ai/protocol
 
 Protocol core for DNSid TypeScript packages.
 
@@ -18,13 +18,13 @@ This package intentionally does not include Node DNS/HTTPS transport, local file
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-protocol
+npm install @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { IdentityManager } from '@identity-digital/dnsid-protocol';
+import { IdentityManager } from '@dnsid-ai/protocol';
 
 // config is data only; runtime objects are injected as dependencies.
 const idm = new IdentityManager(
@@ -44,9 +44,9 @@ denial raises `VerificationError` with code `CounterpartyNotAccepted` carrying o
 observed `verifiedGovernanceId`/`verifiedEntityKeyThumbprint`.
 
 The core has no default DNS or HTTPS implementation, so `config.transport` settings are
-rejected here; use `@identity-digital/dnsid/node`, which consumes them for its defaults.
+rejected here; use `@dnsid-ai/sdk/node`, which consumes them for its defaults.
 
-For ergonomic Node.js defaults, use `@identity-digital/dnsid/node` with `@identity-digital/dnsid-transport`.
+For ergonomic Node.js defaults, use `@dnsid-ai/sdk/node` with `@dnsid-ai/transport`.
 
 ## Verification context and limits
 

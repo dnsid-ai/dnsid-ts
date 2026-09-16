@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { IdentityManager, LogRegistry } from '@identity-digital/dnsid-protocol';
-import { LocalKeyProvider, createNodeIdentityVerifier } from '@identity-digital/dnsid/node';
-import { HttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
-import { JoseProfile } from '@identity-digital/dnsid-jose';
+import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import { LocalKeyProvider, createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
+import { HttpSignaturesProfile } from '@dnsid-ai/http-signatures';
+import { JoseProfile } from '@dnsid-ai/jose';
 import {
   OIDCProfile,
   OIDCTokenMinter,
   createOIDCKeyProviderFromJWK,
   createOIDCTokenMinter,
   mintOIDCToken,
-} from '@identity-digital/dnsid-oidc';
-import { createDnsidFetch } from '@identity-digital/dnsid-transport';
+} from '@dnsid-ai/oidc';
+import { createDnsidFetch } from '@dnsid-ai/transport';
 import {
   ManagedIssuanceActivationError,
   ManagedIssuanceSubmissionError,
@@ -24,18 +24,18 @@ import {
   resumeManagedIssuance,
   resumeManagedOperationalKeyRotation,
   rotateManagedOperationalKey,
-} from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk';
 import {
   RegistryClient,
   awaitRegistryManagedPublication,
   publishClientControlledRecord,
   PreparedEventSubmissionError,
   publishToRegistry,
-} from '@identity-digital/dnsid-registry';
-import { WebBotAuthProfile } from '@identity-digital/dnsid-web-bot-auth';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@identity-digital/dnsid-key-aws';
-import { GcpCloudKmsKeyProvider } from '@identity-digital/dnsid-key-gcp';
-import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/registry';
+import { WebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
+import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } from '@dnsid-ai/log-c2sp-tlog';
 
 describe('modular package entrypoints', () => {
   it('export the expected public package surfaces', () => {

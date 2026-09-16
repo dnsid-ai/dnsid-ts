@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateNonce, parseContentDigest } from '@identity-digital/dnsid-http-signatures';
+import { generateNonce, parseContentDigest } from '@dnsid-ai/http-signatures';
 import {
   ArgumentError,
   fromBase64Url,
@@ -7,7 +7,7 @@ import {
   parseKeyId,
   toBase64Url,
   ValidationError,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 // ---- parseKeyId ----
 

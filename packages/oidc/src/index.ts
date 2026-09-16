@@ -4,9 +4,9 @@
  * key) and verifying OIDC tokens back to DNSid identity records.
  *
  * This package is deliberately NOT re-exported by the runtime-neutral root
- * `@identity-digital/dnsid` export because its default transport is Node-bound
+ * `@dnsid-ai/sdk` export because its default transport is Node-bound
  * (SSRF-safe fetch backed by `node:dns` lookups). Import it directly from
- * `@identity-digital/dnsid-oidc`.
+ * `@dnsid-ai/oidc`.
  *
  * Security notes:
  * - Never mint OIDC tokens in browser/client code — private keys stay
@@ -19,12 +19,12 @@
 import * as dnsPromises from 'node:dns/promises';
 import * as net from 'node:net';
 
-import { createSsrfSafeFetch, isUnsafeIp } from '@identity-digital/dnsid-transport';
+import { createSsrfSafeFetch, isUnsafeIp } from '@dnsid-ai/transport';
 import { decodeJwt, decodeProtectedHeader, importJWK, compactVerify } from 'jose';
 import type { JWK, JWTPayload } from 'jose';
 
-import type { DnsIdJWK, IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@identity-digital/dnsid-protocol';
-import { requireLocalDomain } from '@identity-digital/dnsid-protocol';
+import type { DnsIdJWK, IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@dnsid-ai/protocol';
+import { requireLocalDomain } from '@dnsid-ai/protocol';
 import {
   ArgumentError,
   VerificationCode,
@@ -43,7 +43,7 @@ import {
   type VerificationOptions,
   withVerificationBudget,
   waitForVerification,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 /** Tunable OIDC policy for an {@link OIDCProfile}. All members are optional; defaults noted per member. */
 export interface OIDCProfileConfig {
@@ -400,8 +400,8 @@ export async function createOIDCTokenMinter(opts: CreateOIDCTokenMinterOptions):
  *
  * @example
  * ```ts
- * import { LocalKeyProvider } from '@identity-digital/dnsid/node';
- * import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+ * import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+ * import { mintOIDCToken } from '@dnsid-ai/oidc';
  *
  * const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
  * const token = await mintOIDCToken({
@@ -652,8 +652,8 @@ export class OIDCProfile {
  * @throws ArgumentError if domain is not a valid agent FQDN.
  * @example
  * ```ts
- * import { LocalKeyProvider } from '@identity-digital/dnsid/node';
- * import { createOIDCProfile } from '@identity-digital/dnsid-oidc';
+ * import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+ * import { createOIDCProfile } from '@dnsid-ai/oidc';
  *
  * const profile = createOIDCProfile({
  *   domain: 'agent.example.com',

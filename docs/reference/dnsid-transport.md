@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-transport"
+title: "TypeScript: @dnsid-ai/transport"
 description: "Node-only DNS/HTTPS transport built on Node built-ins and undici."
 ---
 
@@ -7,7 +7,7 @@ description: "Node-only DNS/HTTPS transport built on Node built-ins and undici."
 
 Node.js transport implementation for DNSid TypeScript packages.
 
-Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@identity-digital/dnsid-protocol` or `@identity-digital/dnsid/node`.
+Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@dnsid-ai/protocol` or `@dnsid-ai/sdk/node`.
 
 ## Responsibilities
 
@@ -19,18 +19,18 @@ Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@ide
 - custom CA bundle support
 - custom DNS server support
 
-This package is Node-only and intentionally separate from `@identity-digital/dnsid-protocol`.
+This package is Node-only and intentionally separate from `@dnsid-ai/protocol`.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-transport
+npm install @dnsid-ai/transport
 ```
 
 ## Example
 
 ```ts
-import { createDefaultDnsResolver, createSsrfSafeFetch, fetchJson } from '@identity-digital/dnsid-transport';
+import { createDefaultDnsResolver, createSsrfSafeFetch, fetchJson } from '@dnsid-ai/transport';
 
 const dnsResolver = createDefaultDnsResolver({ dnsServer: process.env.DNSID_DNS_SERVER });
 const result = await fetchJson('https://agent.example/.well-known/dnsid-status.json', {
@@ -42,7 +42,7 @@ const result = await fetchJson('https://agent.example/.well-known/dnsid-status.j
 const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER });
 ```
 
-Most Node applications should use this through `@identity-digital/dnsid/node` or profile defaults.
+Most Node applications should use this through `@dnsid-ai/sdk/node` or profile defaults.
 
 Node's TXT lookup API exposes neither remaining TTLs nor DNSSEC validation state. Both system and configured-server resolvers therefore return TTL `0` and `DNSSECState.UNKNOWN`: fresh verification works in `auto` mode, but SDK identity caching is disabled and `validated`/`required` modes reject the unknown DNSSEC state. To enable caching, inject a `DNSResolver` that supplies real remaining TTLs; the published zone TTL is not a safe substitute for a recursive resolver's remaining TTL.
 
@@ -50,7 +50,7 @@ Node's TXT lookup API exposes neither remaining TTLs nor DNSSEC validation state
 
 Node.js DNS and HTTPS transport for the DNSid protocol.
 
-Provides the concrete network layer consumed by `@identity-digital/dnsid-core`:
+Provides the concrete network layer consumed by `@dnsid-ai/core`:
 DNS TXT resolvers for fetching identity records, SSRF-safe HTTPS JSON fetching
 that captures the peer TLS certificate, and `fetch` factories that route
 requests through a custom DNS server and/or CA bundle. Built on Node
@@ -226,7 +226,7 @@ URL hostname normalization; public defaults use no exceptions.
 
 ### TransportConfig
 
-Defined in: [core/src/types.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/types.ts#L105)
+Defined in: [protocol/src/types.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L105)
 
 SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never alters protocol semantics.
 
@@ -240,7 +240,7 @@ SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never a
 optional caBundlePath?: string;
 ```
 
-Defined in: [core/src/types.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/types.ts#L109)
+Defined in: [protocol/src/types.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L109)
 
 Path to a PEM CA bundle appended to the system root certificates for TLS verification.
 
@@ -252,7 +252,7 @@ Path to a PEM CA bundle appended to the system root certificates for TLS verific
 optional dnsServer?: string;
 ```
 
-Defined in: [core/src/types.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/types.ts#L107)
+Defined in: [protocol/src/types.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L107)
 
 Custom DNS server (`host`, `host:port`, or `[ipv6]:port`). Omit to use the system resolver.
 
@@ -350,7 +350,7 @@ A [FetchLike](#fetchlike) suitable for passing to core verification APIs.
 #### Example
 
 ```ts
-import { createDnsidFetch, createDefaultDnsResolver } from '@identity-digital/dnsid-transport';
+import { createDnsidFetch, createDefaultDnsResolver } from '@dnsid-ai/transport';
 
 const config = { dnsServer: '1.1.1.1' };
 const fetchImpl = createDnsidFetch(config);

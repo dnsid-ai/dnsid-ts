@@ -14,8 +14,8 @@ import {
   retryTransientVerification,
   toArrayBuffer,
   toBase64Url,
-} from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 const selectors = [DNSID_DRAFT01_VERSION, DNSID_VERSION] as const;

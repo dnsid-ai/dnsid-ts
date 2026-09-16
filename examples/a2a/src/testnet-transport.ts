@@ -7,8 +7,8 @@ import {
   type FetchResult,
   type JsonFetcher,
   type TLSCertificate,
-} from '@identity-digital/dnsid';
-import { createLookup } from '@identity-digital/dnsid-transport';
+} from '@dnsid-ai/sdk';
+import { createLookup } from '@dnsid-ai/transport';
 
 interface TestnetJsonFetcherOptions {
   dnsServer: string;

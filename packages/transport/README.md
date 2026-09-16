@@ -1,8 +1,8 @@
-# @identity-digital/dnsid-transport
+# @dnsid-ai/transport
 
 Node.js transport implementation for DNSid TypeScript packages.
 
-Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@identity-digital/dnsid-protocol` or `@identity-digital/dnsid/node`.
+Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@dnsid-ai/protocol` or `@dnsid-ai/sdk/node`.
 
 ## Responsibilities
 
@@ -14,18 +14,18 @@ Use this package when you want default Node DNS and HTTPS/TLS plumbing for `@ide
 - custom CA bundle support
 - custom DNS server support
 
-This package is Node-only and intentionally separate from `@identity-digital/dnsid-protocol`.
+This package is Node-only and intentionally separate from `@dnsid-ai/protocol`.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-transport
+npm install @dnsid-ai/transport
 ```
 
 ## Example
 
 ```ts
-import { createDefaultDnsResolver, createSsrfSafeFetch, fetchJson } from '@identity-digital/dnsid-transport';
+import { createDefaultDnsResolver, createSsrfSafeFetch, fetchJson } from '@dnsid-ai/transport';
 
 const dnsResolver = createDefaultDnsResolver({ dnsServer: process.env.DNSID_DNS_SERVER });
 const result = await fetchJson('https://agent.example/.well-known/dnsid-status.json', {
@@ -37,7 +37,7 @@ const result = await fetchJson('https://agent.example/.well-known/dnsid-status.j
 const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER });
 ```
 
-Most Node applications should use this through `@identity-digital/dnsid/node` or profile defaults.
+Most Node applications should use this through `@dnsid-ai/sdk/node` or profile defaults.
 
 Node's TXT lookup API exposes neither remaining TTLs nor DNSSEC validation state. Both system and configured-server resolvers therefore return TTL `0` and `DNSSECState.UNKNOWN`: fresh verification works in `auto` mode, but SDK identity caching is disabled and `validated`/`required` modes reject the unknown DNSSEC state. To enable caching, inject a `DNSResolver` that supplies real remaining TTLs; the published zone TTL is not a safe substitute for a recursive resolver's remaining TTL.
 

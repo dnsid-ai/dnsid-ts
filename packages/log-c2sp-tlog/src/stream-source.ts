@@ -1,5 +1,5 @@
-import { VerificationError, withVerificationBudget, waitForVerification } from '@identity-digital/dnsid-protocol';
-import { createSsrfSafeFetch, type FetchLike } from '@identity-digital/dnsid-transport';
+import { VerificationError, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
+import { createSsrfSafeFetch, type FetchLike } from '@dnsid-ai/transport';
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import { C2spTlogError, C2spTlogVerificationError } from './errors.ts';
 import { checkpointPath, entryBundlePath, parseEntryBundle } from './tiles.ts';

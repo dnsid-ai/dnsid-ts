@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-registry"
+title: "TypeScript: @dnsid-ai/registry"
 description: "Registry client and TXT publishing helpers."
 ---
 
@@ -7,18 +7,18 @@ description: "Registry client and TXT publishing helpers."
 
 Registry control-plane client and TXT publishing helpers for DNSid TypeScript packages.
 
-This package owns the current DNSid registry API surface and registry-shaped lifecycle/status behavior. It intentionally keeps registry-specific states separate from protocol-strict `@identity-digital/dnsid-protocol` agent status types.
+This package owns the current DNSid registry API surface and registry-shaped lifecycle/status behavior. It intentionally keeps registry-specific states separate from protocol-strict `@dnsid-ai/protocol` agent status types.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-registry @identity-digital/dnsid-protocol
+npm install @dnsid-ai/registry @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { RegistryClient, publishClientControlledRecord } from '@identity-digital/dnsid-registry';
+import { RegistryClient, publishClientControlledRecord } from '@dnsid-ai/registry';
 
 // Uses https://api.dnsid.ai by default; override with baseUrl if needed.
 const registryClient = new RegistryClient({
@@ -81,14 +81,14 @@ retry the same idempotency key and exact entry bytes when
 
 Registry control-plane client and TXT publishing helpers for DNSid.
 
-`@identity-digital/dnsid-registry` owns the DNSid registry API surface:
+`@dnsid-ai/registry` owns the DNSid registry API surface:
 `RegistryClient` (agent registration, verification, lifecycle, prepared C2SP
 transparency-log events, record signing) plus publication workflows —
 `publishClientControlledRecord` for client-controlled identity records signed with
 the entity key, and `awaitRegistryManagedPublication` for registry-managed
 publication verified against observed DNS. Registry workflow status is kept
 separate from the protocol-strict agent status types in
-`@identity-digital/dnsid-protocol`.
+`@dnsid-ai/protocol`.
 
 ## Classes
 
@@ -2678,9 +2678,7 @@ Defined in: [packages/registry/src/index.ts:686](https://github.com/dnsid-ai/dns
 ##### effectiveMaxKeyAge?
 
 ```ts
-optional effectiveMaxKeyAge?: 
-  | MaxKeyAge
-  | null;
+optional effectiveMaxKeyAge?: MaxKeyAge | null;
 ```
 
 Defined in: [packages/registry/src/index.ts:690](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L690)

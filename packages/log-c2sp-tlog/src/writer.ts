@@ -8,7 +8,7 @@ import {
   type LogEvent,
   type LogRef,
   normalizeFQDN,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import {
   canonicalizeUnknownC2spEnvelope,
   c2spEventId,

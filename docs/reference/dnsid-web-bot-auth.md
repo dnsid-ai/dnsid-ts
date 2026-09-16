@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-web-bot-auth"
+title: "TypeScript: @dnsid-ai/web-bot-auth"
 description: "Web Bot Auth profile: signed bot requests and the key-directory endpoint."
 ---
 
@@ -9,12 +9,12 @@ DNSid Web Bot Auth profile helpers.
 
 This package signs outbound HTTP requests per the Web Bot Auth draft (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag) and serves the `/.well-known/http-message-signatures-directory` document so origins can discover and verify an agent's keys.
 
-It builds on `@identity-digital/dnsid-http-signatures` and `@identity-digital/dnsid-protocol` contracts and performs no DNS or HTTPS transport itself. Signing requires an Ed25519 operational key; the profile throws `ArgumentError` for other key types.
+It builds on `@dnsid-ai/http-signatures` and `@dnsid-ai/protocol` contracts and performs no DNS or HTTPS transport itself. Signing requires an Ed25519 operational key; the profile throws `ArgumentError` for other key types.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-web-bot-auth @identity-digital/dnsid-protocol
+npm install @dnsid-ai/web-bot-auth @dnsid-ai/protocol
 ```
 
 ## Example
@@ -22,7 +22,7 @@ npm install @identity-digital/dnsid-web-bot-auth @identity-digital/dnsid-protoco
 Sign an outbound request:
 
 ```ts
-import { createWebBotAuthProfile } from '@identity-digital/dnsid-web-bot-auth';
+import { createWebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
 
 const profile = createWebBotAuthProfile({
   domain: 'agent.example.com',

@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DNSSECMode } from '@identity-digital/dnsid';
+import { DNSSECMode } from '@dnsid-ai/sdk';
 import {
   configFromEnvironment,
   dnsidEnvironmentVariables,
   keyStorePathFromEnvironment,
-} from '@identity-digital/dnsid/node';
-import { DEFAULT_REGISTRY_URL } from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk/node';
+import { DEFAULT_REGISTRY_URL } from '@dnsid-ai/sdk';
 
 afterEach(() => {
   vi.unstubAllEnvs();

@@ -15,7 +15,7 @@ the product.
 
 Snapshot date: August 5, 2026
 Scope note: covers dependencies shared across the published
-@identity-digital/dnsid-* packages, plus the package-specific
+@dnsid-ai/* packages, plus the package-specific
 dependency used only by the key-aws package (for users who
 choose AWS KMS-based key storage). Development tooling and the
 examples/ sample applications are not included, as they are not

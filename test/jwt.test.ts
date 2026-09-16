@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { generateKeyPair, exportJWK } from 'jose';
-import { JoseProfile } from '@identity-digital/dnsid-jose';
+import { JoseProfile } from '@dnsid-ai/jose';
 import {
   ArgumentError,
   fromBase64Url,
@@ -9,8 +9,8 @@ import {
   toBase64Url,
   VerificationCode,
   VerificationError,
-} from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 const mockFetchJson = vi.hoisted(() => vi.fn());

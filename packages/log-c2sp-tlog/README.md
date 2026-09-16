@@ -1,4 +1,4 @@
-# @identity-digital/dnsid-log-c2sp-tlog
+# @dnsid-ai/log-c2sp-tlog
 
 DNSid binding for C2SP tiled logs, including verified reads and split-signature
 prepared writes.
@@ -26,11 +26,11 @@ Historical cross-SDK matrix results are not corrected-contract release evidence.
 The package root contains the Node.js checkpoint, Merkle, and signed-note
 verification implementation. Browser-safe consumers that only prepare, inspect,
 sign, or serialize registry-provided events can import the portable
-`@identity-digital/dnsid-log-c2sp-tlog/writer` subpath. Immutable binding-version
-metadata is available from `@identity-digital/dnsid-log-c2sp-tlog/version`.
+`@dnsid-ai/log-c2sp-tlog/writer` subpath. Immutable binding-version
+metadata is available from `@dnsid-ai/log-c2sp-tlog/version`.
 
 ```ts
-import { createC2spTlogVerificationRegistry } from '@identity-digital/dnsid-log-c2sp-tlog';
+import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 
 const registry = await createC2spTlogVerificationRegistry({
   // This URL is explicit, independently trusted application configuration.
@@ -46,7 +46,7 @@ The factory fetches the policy with SSRF-safe destination checks, rejects redire
 For an explicit application decision to trust Identity Digital-managed DNSid logs, use the separately named managed factory:
 
 ```ts
-import { createDnsidManagedVerificationRegistry } from '@identity-digital/dnsid-log-c2sp-tlog';
+import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 
 const registry = await createDnsidManagedVerificationRegistry();
 ```

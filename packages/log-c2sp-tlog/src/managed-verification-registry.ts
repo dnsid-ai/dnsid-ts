@@ -1,4 +1,4 @@
-import { ArgumentError, LogRegistry } from '@identity-digital/dnsid-protocol';
+import { ArgumentError, LogRegistry } from '@dnsid-ai/protocol';
 import { InMemoryTrustedC2spCheckpointStore, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 import { C2spTlogParseError } from './errors.ts';
 import { parseC2spTlogLr } from './lr.ts';

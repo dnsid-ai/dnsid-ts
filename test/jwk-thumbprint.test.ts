@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { jwkThumbprint, keySetsShareKeyMaterial, JWKS, ValidationError } from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK } from '@identity-digital/dnsid-protocol';
+import { jwkThumbprint, keySetsShareKeyMaterial, JWKS, ValidationError } from '@dnsid-ai/protocol';
+import type { DnsIdJWK } from '@dnsid-ai/protocol';
 
 // ---- Test vectors ----
 

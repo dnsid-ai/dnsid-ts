@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-example-local-key-provider",
+  "name": "@dnsid-ai/example-local-key-provider",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -8,7 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid": "^0.19.1"
+    "@dnsid-ai/sdk": "^0.19.1"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",

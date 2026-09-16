@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseJsonNoDuplicateMembers } from '@identity-digital/dnsid-protocol';
+import { parseJsonNoDuplicateMembers } from '@dnsid-ai/protocol';
 
 const parse = (text: string) => parseJsonNoDuplicateMembers(new TextEncoder().encode(text));
 

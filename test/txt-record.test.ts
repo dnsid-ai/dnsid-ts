@@ -8,7 +8,7 @@ import {
   SUPPORTED_PUBLISH_PROFILES,
   SUPPORTED_VALIDATION_PROFILES,
   ValidationError,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 const selectors = [DNSID_DRAFT01_VERSION, DNSID_VERSION] as const;
 

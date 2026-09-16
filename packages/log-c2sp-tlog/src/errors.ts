@@ -2,7 +2,7 @@ import {
   VerificationCode,
   VerificationError,
   type LifecycleErrorCategory,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 /** Base error for all c2sp-tlog failures. */
 export class C2spTlogError extends VerificationError {

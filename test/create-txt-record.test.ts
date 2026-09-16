@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { DnsIdTxtRecord, fromBase64Url, IdentityManager, toBase64Url } from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+import { DnsIdTxtRecord, fromBase64Url, IdentityManager, toBase64Url } from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
 // ---- fixtures ----
 

@@ -5,17 +5,17 @@ import {
   jwkThumbprint,
   type DnsIdJWK,
   type KeyProvider,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import type {
   KeyRotationPreparationRequest,
   PreparedRegistryEvent,
   SubmissionResult,
-} from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/registry';
 import {
   c2spTlogEntryBytes,
   parsePreparedC2spTlogEvent,
   signPreparedC2spTlogEvent,
-} from '@identity-digital/dnsid-log-c2sp-tlog/writer';
+} from '@dnsid-ai/log-c2sp-tlog/writer';
 
 export interface ManagedKeyRotationRegistry {
   prepareKeyRotation(

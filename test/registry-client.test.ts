@@ -6,9 +6,9 @@ import {
   awaitRegistryManagedPublication,
   publishClientControlledRecord,
   publishToRegistry,
-} from '@identity-digital/dnsid-registry';
-import { ArgumentError, jwkThumbprint, toBase64Url } from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/registry';
+import { ArgumentError, jwkThumbprint, toBase64Url } from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { DRAFT01_UNSIGNED_CANONICAL } from './fixtures/draft01-record-vectors.ts';
 
 const VALID_CANONICAL = DRAFT01_UNSIGNED_CANONICAL;

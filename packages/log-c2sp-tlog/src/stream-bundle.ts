@@ -1,6 +1,6 @@
 import { createPublicKey, verify as verifySignature } from 'node:crypto';
 
-import { withVerificationBudget, type VerificationOptions, normalizeFQDN, type DnsIdJWK, type LogEvent, type LogRef } from '@identity-digital/dnsid-protocol';
+import { withVerificationBudget, type VerificationOptions, normalizeFQDN, type DnsIdJWK, type LogEvent, type LogRef } from '@dnsid-ai/protocol';
 
 import { b64url } from './base64.ts';
 import { assertCanonicalJsonBytes, canonicalBytes, parseJsonNoDuplicateMembers } from './canonical.ts';

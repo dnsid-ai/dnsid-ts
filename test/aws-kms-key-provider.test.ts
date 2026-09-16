@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { verifyWithKey } from '@identity-digital/dnsid-protocol';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@identity-digital/dnsid-key-aws';
+import { verifyWithKey } from '@dnsid-ai/protocol';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 import type {
   AwsKmsCreateSigningKeyInput,
   AwsKmsFacade,
@@ -9,7 +9,7 @@ import type {
   AwsKmsKeyState,
   AwsKmsSignInput,
   AwsSdkKmsClient,
-} from '@identity-digital/dnsid-key-aws';
+} from '@dnsid-ai/key-aws';
 
 class FakeAwsKms implements AwsKmsFacade {
   readonly createInputs: AwsKmsCreateSigningKeyInput[] = [];

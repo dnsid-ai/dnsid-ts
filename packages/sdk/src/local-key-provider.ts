@@ -3,8 +3,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { createPrivateKey } from 'node:crypto';
 
-import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN, verifyWithKey } from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN, verifyWithKey } from '@dnsid-ai/protocol';
+import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
 import { readJson } from './node-fs.ts';
 
@@ -37,7 +37,7 @@ export interface LocalKeyProviderEnvironmentOptions {
 /**
  * File-backed KeyProvider that stores Ed25519 or ECDSA P-256 keys as a JSON file.
  *
- * This concrete key-storage implementation is provided by `@identity-digital/dnsid` as the default developer/runtime key provider.
+ * This concrete key-storage implementation is provided by `@dnsid-ai/sdk` as the default developer/runtime key provider.
  * Use only one provider instance/process per file. Mutations within an instance are serialized.
  * Writes require filesystem support for atomic rename, hard links, and directory fsync.
  * Existing symlinks are resolved at load time; `<resolvedPath>.bak` holds the private previous generation.

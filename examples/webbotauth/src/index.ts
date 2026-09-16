@@ -1,11 +1,11 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import {
   HTTP_MESSAGE_SIGNATURES_DIRECTORY_PATH,
   createWebBotAuthProfile,
-} from '@identity-digital/dnsid-web-bot-auth';
+} from '@dnsid-ai/web-bot-auth';
 
 // The agent domain the profile signs for. Purely illustrative: everything in
 // this example runs offline, so the domain never has to resolve.

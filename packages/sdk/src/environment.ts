@@ -1,5 +1,5 @@
-import { DNSSECMode, type DnsidConfig, type IdentityConfig } from '@identity-digital/dnsid-protocol';
-import { DEFAULT_REGISTRY_URL } from '@identity-digital/dnsid-registry';
+import { DNSSECMode, type DnsidConfig, type IdentityConfig } from '@dnsid-ai/protocol';
+import { DEFAULT_REGISTRY_URL } from '@dnsid-ai/registry';
 
 export const dnsidEnvironmentVariables = {
   domain: 'DNSID_DOMAIN',

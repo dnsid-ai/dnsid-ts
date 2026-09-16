@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import * as http from 'node:http';
 import { getGlobalDispatcher } from 'undici';
-import { createDnsidFetch } from '@identity-digital/dnsid-transport';
-import type { TransportConfig } from '@identity-digital/dnsid-transport';
+import { createDnsidFetch } from '@dnsid-ai/transport';
+import type { TransportConfig } from '@dnsid-ai/transport';
 
 const CONFIG: TransportConfig = {};
 

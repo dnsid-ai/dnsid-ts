@@ -5,7 +5,7 @@ import {
   createC2spTlogVerificationRegistry,
   parseC2spTlogTrustProfile,
   parseSignedNoteVerifierKey,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const POLICY = 'log log.example+3db4ee08+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\n'
   + 'witness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\n'

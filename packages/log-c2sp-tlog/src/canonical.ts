@@ -1,5 +1,5 @@
 import { C2spTlogParseError } from './errors.ts';
-import { parseJsonNoDuplicateMembers as parseStrictJson } from '@identity-digital/dnsid-protocol';
+import { parseJsonNoDuplicateMembers as parseStrictJson } from '@dnsid-ai/protocol';
 
 const textDecoder = new TextDecoder('utf-8', { fatal: true });
 

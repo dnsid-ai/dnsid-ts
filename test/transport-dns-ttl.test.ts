@@ -1,8 +1,8 @@
 import * as dns from 'node:dns/promises';
 import { generateKeyPairSync } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@identity-digital/dnsid-protocol';
-import { createDefaultDnsResolver } from '@identity-digital/dnsid-transport';
+import { DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
+import { createDefaultDnsResolver } from '@dnsid-ai/transport';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 vi.mock('node:dns/promises', async importOriginal => ({

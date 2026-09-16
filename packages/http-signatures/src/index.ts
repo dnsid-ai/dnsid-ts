@@ -10,7 +10,7 @@
  * component identifiers, structured-field parsing/serialization, signature-base
  * construction ({@link buildSignatureInput}), {@link signHttpMessage}, and
  * Content-Digest (RFC 9530) helpers — for reuse by other profiles such as
- * `@identity-digital/dnsid-web-bot-auth`.
+ * `@dnsid-ai/web-bot-auth`.
  *
  * @packageDocumentation
  */
@@ -23,8 +23,8 @@ import {
 } from 'structured-headers';
 import type { BareItem, Dictionary, InnerList, Item, Parameters } from 'structured-headers';
 
-import type { IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@identity-digital/dnsid-protocol';
-import { requireLocalDomain } from '@identity-digital/dnsid-protocol';
+import type { IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@dnsid-ai/protocol';
+import { requireLocalDomain } from '@dnsid-ai/protocol';
 import {
   ArgumentError,
   ValidationError,
@@ -39,7 +39,7 @@ import {
   type VerificationOptions,
   withVerificationBudget,
   waitForVerification,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 /**
  * An RFC 9421 covered-component identifier: either a plain component name
  * (a derived component like `"@method"` or a lowercase HTTP field name like
@@ -133,7 +133,7 @@ export const JOSE_TO_HTTP_SIG_ALG: Readonly<Record<string, string>> = {
   ES256: 'ecdsa-p256-sha256',
 };
 
-export { parseKeyId } from '@identity-digital/dnsid-protocol';
+export { parseKeyId } from '@dnsid-ai/protocol';
 
 /**
  * Maps a JWK/JOSE algorithm name to the corresponding RFC 9421 HTTP Message Signature algorithm identifier.
