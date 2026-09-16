@@ -6,13 +6,13 @@ import {
   normalizeFQDN,
   type DnsIdJWK,
   type KeyProvider,
-} from '@identity-digital/dnsid-protocol';
-import type { PreparedRegistryEvent, SubmissionResult } from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/protocol';
+import type { PreparedRegistryEvent, SubmissionResult } from '@dnsid-ai/registry';
 import {
   c2spTlogEntryBytes,
   parsePreparedC2spTlogEvent,
   signPreparedC2spTlogEvent,
-} from '@identity-digital/dnsid-log-c2sp-tlog/writer';
+} from '@dnsid-ai/log-c2sp-tlog/writer';
 
 export interface ManagedIssuanceRegistry {
   prepareIssuance(domain: string, idempotencyKey: string): Promise<PreparedRegistryEvent>;

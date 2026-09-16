@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packages = ['core', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws'];
-const browserCapablePackages = ['core', 'http-signatures', 'jose', 'registry', 'web-bot-auth', 'log-c2sp-tlog', 'sdk'];
+const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws'];
+const browserCapablePackages = ['protocol', 'http-signatures', 'jose', 'registry', 'web-bot-auth', 'log-c2sp-tlog', 'sdk'];
 
 for (const name of browserCapablePackages) {
   const manifest = JSON.parse(await readFile(path.join(root, 'packages', name, 'package.json'), 'utf8'));
@@ -58,16 +58,16 @@ await writeFile(path.join(consumerDir, 'package.json'), JSON.stringify({ type: '
 run('npm', ['install', '--ignore-scripts', '--no-audit', '--package-lock=false', ...tarballs], { cwd: consumerDir });
 
 await writeFile(path.join(consumerDir, 'esm.mjs'), `
-import { IdentityManager, LogRegistry } from '@identity-digital/dnsid-protocol';
-import { HttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
-import { JoseProfile } from '@identity-digital/dnsid-jose';
-import { OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken } from '@identity-digital/dnsid-oidc';
-import { RegistryClient, publishToRegistry } from '@identity-digital/dnsid-registry';
-import { createDnsidFetch } from '@identity-digital/dnsid-transport';
-import { WebBotAuthProfile } from '@identity-digital/dnsid-web-bot-auth';
-import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } from '@identity-digital/dnsid-log-c2sp-tlog';
-import { parsePreparedC2spTlogEvent } from '@identity-digital/dnsid-log-c2sp-tlog/writer';
-import { C2SP_TLOG_PROFILE_VERSION } from '@identity-digital/dnsid-log-c2sp-tlog/version';
+import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import { HttpSignaturesProfile } from '@dnsid-ai/http-signatures';
+import { JoseProfile } from '@dnsid-ai/jose';
+import { OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken } from '@dnsid-ai/oidc';
+import { RegistryClient, publishToRegistry } from '@dnsid-ai/registry';
+import { createDnsidFetch } from '@dnsid-ai/transport';
+import { WebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
+import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } from '@dnsid-ai/log-c2sp-tlog';
+import { parsePreparedC2spTlogEvent } from '@dnsid-ai/log-c2sp-tlog/writer';
+import { C2SP_TLOG_PROFILE_VERSION } from '@dnsid-ai/log-c2sp-tlog/version';
 import {
   DNSSECState,
   DnsIdTxtRecord as RootDnsIdTxtRecord,
@@ -76,9 +76,9 @@ import {
   LogRegistry as RootLogRegistry,
   STATUS_MAX_RESPONSE_BYTES,
   createIdentityManager,
-} from '@identity-digital/dnsid';
-import { LocalKeyProvider, createNodeIdentityManager } from '@identity-digital/dnsid/node';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@identity-digital/dnsid-key-aws';
+} from '@dnsid-ai/sdk';
+import { LocalKeyProvider, createNodeIdentityManager } from '@dnsid-ai/sdk/node';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 
 for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade]) {
   if (typeof value !== 'function') throw new Error('expected ESM function export');
@@ -90,19 +90,19 @@ if (C2SP_TLOG_PROFILE_VERSION !== 1) throw new Error('expected portable C2SP ver
 `);
 
 await writeFile(path.join(consumerDir, 'cjs.cjs'), `
-const core = require('@identity-digital/dnsid-protocol');
-const http = require('@identity-digital/dnsid-http-signatures');
-const jose = require('@identity-digital/dnsid-jose');
-const oidc = require('@identity-digital/dnsid-oidc');
-const registry = require('@identity-digital/dnsid-registry');
-const transport = require('@identity-digital/dnsid-transport');
-const webBotAuth = require('@identity-digital/dnsid-web-bot-auth');
-const c2spTlog = require('@identity-digital/dnsid-log-c2sp-tlog');
-const c2spTlogWriter = require('@identity-digital/dnsid-log-c2sp-tlog/writer');
-const c2spTlogVersion = require('@identity-digital/dnsid-log-c2sp-tlog/version');
-const sdk = require('@identity-digital/dnsid');
-const sdkNode = require('@identity-digital/dnsid/node');
-const keyAws = require('@identity-digital/dnsid-key-aws');
+const core = require('@dnsid-ai/protocol');
+const http = require('@dnsid-ai/http-signatures');
+const jose = require('@dnsid-ai/jose');
+const oidc = require('@dnsid-ai/oidc');
+const registry = require('@dnsid-ai/registry');
+const transport = require('@dnsid-ai/transport');
+const webBotAuth = require('@dnsid-ai/web-bot-auth');
+const c2spTlog = require('@dnsid-ai/log-c2sp-tlog');
+const c2spTlogWriter = require('@dnsid-ai/log-c2sp-tlog/writer');
+const c2spTlogVersion = require('@dnsid-ai/log-c2sp-tlog/version');
+const sdk = require('@dnsid-ai/sdk');
+const sdkNode = require('@dnsid-ai/sdk/node');
+const keyAws = require('@dnsid-ai/key-aws');
 
 for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade]) {
   if (typeof value !== 'function') throw new Error('expected CJS function export');
@@ -120,7 +120,7 @@ import {
   createIdentityManager,
   issueManagedIdentity,
   rotateManagedOperationalKey,
-} from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk';
 
 globalThis.__dnsidBrowserExports = [
   DomainLog,

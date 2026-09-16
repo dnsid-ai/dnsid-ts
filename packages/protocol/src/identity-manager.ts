@@ -291,7 +291,7 @@ export class IdentityManager implements IdentityResolver {
    * @param config - Data-only configuration; omit `identity` for a verification-only manager.
    * @param deps - Injected runtime objects. The protocol core has no default DNS/HTTPS
    *   implementations, so `config.transport` settings have no consumer here and are rejected;
-   *   runtime factories (for example `@identity-digital/dnsid/node`) consume them before delegating.
+   *   runtime factories (for example `@dnsid-ai/sdk/node`) consume them before delegating.
    */
   constructor(config: DnsidConfig = {}, deps: IdentityManagerDependencies = {}) {
     this.config = validateDnsidConfig(config) as typeof this.config;

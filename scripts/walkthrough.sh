@@ -2,7 +2,7 @@
 # =============================================================================
 # scripts/walkthrough.sh — DNSid TypeScript SDK walkthrough
 #
-# Walks through the end-to-end happy path of the @identity-digital/dnsid
+# Walks through the end-to-end happy path of the @dnsid-ai/sdk
 # TypeScript SDK: key generation, DNS record resolution, JWT signing, and
 # JWT verification — all against an in-memory mock to demonstrate the API
 # without requiring a live DNS infrastructure.
@@ -170,8 +170,8 @@ cleanup_ts_demo() {
 trap cleanup_ts_demo EXIT
 
 cat > "$TS_DEMO_FILE" <<'TS'
-import { DnsIdTxtRecord, DNSID_VERSION, IdentityManager, DNSSECState, InMemoryIdentityCache, toBase64Url, fromBase64Url } from '@identity-digital/dnsid-protocol';
-import { JoseProfile } from '@identity-digital/dnsid-jose';
+import { DnsIdTxtRecord, DNSID_VERSION, IdentityManager, DNSSECState, InMemoryIdentityCache, toBase64Url, fromBase64Url } from '@dnsid-ai/protocol';
+import { JoseProfile } from '@dnsid-ai/jose';
 import { v4 as uuidv4 } from 'uuid';
 
 const DOMAIN = process.env.DNSID_DOMAIN;

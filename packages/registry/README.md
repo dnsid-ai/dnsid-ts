@@ -1,19 +1,19 @@
-# @identity-digital/dnsid-registry
+# @dnsid-ai/registry
 
 Registry control-plane client and TXT publishing helpers for DNSid TypeScript packages.
 
-This package owns the current DNSid registry API surface and registry-shaped lifecycle/status behavior. It intentionally keeps registry-specific states separate from protocol-strict `@identity-digital/dnsid-protocol` agent status types.
+This package owns the current DNSid registry API surface and registry-shaped lifecycle/status behavior. It intentionally keeps registry-specific states separate from protocol-strict `@dnsid-ai/protocol` agent status types.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-registry @identity-digital/dnsid-protocol
+npm install @dnsid-ai/registry @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { RegistryClient, publishClientControlledRecord } from '@identity-digital/dnsid-registry';
+import { RegistryClient, publishClientControlledRecord } from '@dnsid-ai/registry';
 
 // Uses https://api.dnsid.ai by default; override with baseUrl if needed.
 const registryClient = new RegistryClient({

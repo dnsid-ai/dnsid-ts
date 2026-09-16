@@ -1,14 +1,14 @@
 /**
  * Registry control-plane client and TXT publishing helpers for DNSid.
  *
- * `@identity-digital/dnsid-registry` owns the DNSid registry API surface:
+ * `@dnsid-ai/registry` owns the DNSid registry API surface:
  * `RegistryClient` (agent registration, verification, lifecycle, prepared C2SP
  * transparency-log events, record signing) plus publication workflows —
  * `publishClientControlledRecord` for client-controlled identity records signed with
  * the entity key, and `awaitRegistryManagedPublication` for registry-managed
  * publication verified against observed DNS. Registry workflow status is kept
  * separate from the protocol-strict agent status types in
- * `@identity-digital/dnsid-protocol`.
+ * `@dnsid-ai/protocol`.
  *
  * @packageDocumentation
  */
@@ -25,13 +25,13 @@ import {
   toBase64Url,
   validateAgentStatus,
   ValidationError,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import type {
   AgentStatus,
   IdentityConfig,
   DnsIdJWK,
   KeyProvider,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 export type PublicationAuthority = 'client' | 'registry';
 

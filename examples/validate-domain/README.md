@@ -15,7 +15,7 @@ The policy URL is independently trusted application configuration. Production ap
 
 ## DNS resolution and DNSSEC state
 
-When no `dnsResolver` is injected, `createNodeIdentityVerifier` installs the system-backed resolver from [`@identity-digital/dnsid-transport`](../../packages/transport/README.md). Node's system resolver cannot distinguish DNSSEC states, so it reports `UNKNOWN`.
+When no `dnsResolver` is injected, `createNodeIdentityVerifier` installs the system-backed resolver from [`@dnsid-ai/transport`](../../packages/transport/README.md). Node's system resolver cannot distinguish DNSSEC states, so it reports `UNKNOWN`.
 
 For production verification, inject a DNSSEC-aware `DNSResolver` that reports `VALID`, `UNSIGNED`, or `FAILED`.
 
@@ -25,7 +25,7 @@ From the repo root:
 
 ```sh
 npm install
-npm run start -w @identity-digital/dnsid-example-validate-domain -- your-agent.example.com
+npm run start -w @dnsid-ai/example-validate-domain -- your-agent.example.com
 ```
 
 Replace `your-agent.example.com` with a domain whose lifecycle log uses the DNSid sandbox's public C2SP log.

@@ -2,8 +2,8 @@ import { EventEmitter } from 'node:events';
 import type { ClientRequest, IncomingMessage } from 'node:http';
 import type * as https from 'node:https';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createSsrfSafeFetch, fetchJson, isUnsafeIp } from '@identity-digital/dnsid-transport';
-import { VerificationCode, VerificationError } from '@identity-digital/dnsid-protocol';
+import { createSsrfSafeFetch, fetchJson, isUnsafeIp } from '@dnsid-ai/transport';
+import { VerificationCode, VerificationError } from '@dnsid-ai/protocol';
 
 const httpsGetMock = vi.hoisted(() => vi.fn());
 

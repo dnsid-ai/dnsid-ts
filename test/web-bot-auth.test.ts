@@ -6,10 +6,10 @@ import {
   HTTP_MESSAGE_SIGNATURES_DIRECTORY_TAG,
   WebBotAuthProfile,
   wbaDirectoryJwkFromPublicKey,
-} from '@identity-digital/dnsid-web-bot-auth';
-import { parseSignatureInput } from '@identity-digital/dnsid-http-signatures';
-import { ArgumentError, jwkThumbprint, toArrayBuffer } from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/web-bot-auth';
+import { parseSignatureInput } from '@dnsid-ai/http-signatures';
+import { ArgumentError, jwkThumbprint, toArrayBuffer } from '@dnsid-ai/protocol';
+import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
 let privateKey: CryptoKey;
 let publicJwk: DnsIdJWK;

@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
 
-import { ArgumentError, DNSSECState, IdentityManager } from '@identity-digital/dnsid-protocol';
-import { createIdentityVerifier } from '@identity-digital/dnsid';
-import { createNodeIdentityVerifier } from '@identity-digital/dnsid/node';
-import { createJoseProfile } from '@identity-digital/dnsid-jose';
-import { createHttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
-import { createOIDCProfile } from '@identity-digital/dnsid-oidc';
+import { ArgumentError, DNSSECState, IdentityManager } from '@dnsid-ai/protocol';
+import { createIdentityVerifier } from '@dnsid-ai/sdk';
+import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
+import { createJoseProfile } from '@dnsid-ai/jose';
+import { createHttpSignaturesProfile } from '@dnsid-ai/http-signatures';
+import { createOIDCProfile } from '@dnsid-ai/oidc';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 describe('verification-only IdentityManager construction', () => {

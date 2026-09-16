@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
-import { IdentityManager, matchesDnsName, VerificationCode } from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+import { IdentityManager, matchesDnsName, VerificationCode } from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 let operationalKey: DnsIdJWK;

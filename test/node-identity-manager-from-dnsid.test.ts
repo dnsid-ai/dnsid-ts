@@ -3,9 +3,9 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
 
-import { DNSSECState } from '@identity-digital/dnsid';
-import { createNodeIdentityManager, createNodeIdentityManagerFromDnsid } from '@identity-digital/dnsid/node';
-import type { DNSResolver, JsonFetcher } from '@identity-digital/dnsid';
+import { DNSSECState } from '@dnsid-ai/sdk';
+import { createNodeIdentityManager, createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
+import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
 
 const dnsResolver: DNSResolver = {
   fetchTXT: vi.fn().mockResolvedValue([[], DNSSECState.UNSIGNED]),

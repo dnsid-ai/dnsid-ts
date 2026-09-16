@@ -6,12 +6,12 @@ import {
   type C2spIssuanceEvent,
   type DnsIdJWK,
   type KeyProvider,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import {
   canonicalBytes,
   prepareC2spTlogEventForSigning,
   signPreparedC2spTlogEvent,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 import {
   ManagedIssuanceActivationError,
   ManagedIssuanceSubmissionError,
@@ -19,8 +19,8 @@ import {
   resumeManagedIssuance,
   type ManagedIssuanceRegistry,
   type ManagedIssuanceState,
-} from '@identity-digital/dnsid';
-import { PreparedEventSubmissionError, type SubmissionResult } from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/sdk';
+import { PreparedEventSubmissionError, type SubmissionResult } from '@dnsid-ai/registry';
 
 const DOMAIN = 'agent.example.com';
 const GOVERNANCE = 'example.com';

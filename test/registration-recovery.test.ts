@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { RegistrationError, RegistryClient } from '@identity-digital/dnsid-registry';
+import { RegistrationError, RegistryClient } from '@dnsid-ai/registry';
 
 const domain = 'assigned.example.com';
 const idempotencyKey = 'persisted-registration-1';

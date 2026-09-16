@@ -9,14 +9,14 @@ description: "Generated API reference for the DNSid TypeScript packages."
 
 API reference for the [DNSid TypeScript SDK](https://github.com/dnsid-ai/dnsid-ts), generated from TSDoc comments. One page per published package (large packages are further divided by member kind):
 
-- [Core SDK](https://docs.dnsid.ai/reference/ts/dnsid/) (`@identity-digital/dnsid`) — Runtime-neutral SDK entry point; inject DNS, fetch, and key-provider implementations.
-- [Node runtime](https://docs.dnsid.ai/reference/ts/dnsid-node/) (`@identity-digital/dnsid/node`) — Node.js conveniences: local file-backed keys, env config, Node identity-manager factories.
-- [Protocol core](https://docs.dnsid.ai/reference/ts/dnsid-protocol/) (`@identity-digital/dnsid-protocol`) — Protocol core: TXT/JWKS parsing, validation, identity verification, runtime interfaces.
-- [Transport](https://docs.dnsid.ai/reference/ts/dnsid-transport/) (`@identity-digital/dnsid-transport`) — Node-only DNS/HTTPS transport built on Node built-ins and undici.
-- [Profile: JOSE](https://docs.dnsid.ai/reference/ts/dnsid-jose/) (`@identity-digital/dnsid-jose`) — JOSE profile helpers for JWT and JWS workflows.
-- [Profile: HTTP signatures](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/) (`@identity-digital/dnsid-http-signatures`) — RFC 9421 HTTP Message Signatures profile: sign and verify HTTP messages.
-- [Profile: Web Bot Auth](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/) (`@identity-digital/dnsid-web-bot-auth`) — Web Bot Auth profile: signed bot requests and the key-directory endpoint.
-- [Profile: OIDC](https://docs.dnsid.ai/reference/ts/dnsid-oidc/) (`@identity-digital/dnsid-oidc`) — OIDC federation profile: token minting and verification (server-side).
-- [Key providers: AWS KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-aws/) (`@identity-digital/dnsid-key-aws`) — AWS KMS-backed key provider.
-- [Registry](https://docs.dnsid.ai/reference/ts/dnsid-registry/) (`@identity-digital/dnsid-registry`) — Registry client and TXT publishing helpers.
-- [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/) (`@identity-digital/dnsid-log-c2sp-tlog`) — C2SP tlog-backed lifecycle log reader, writer, and verifier.
+- [Core SDK](https://docs.dnsid.ai/reference/ts/dnsid/) (`@dnsid-ai/sdk`) — Runtime-neutral SDK entry point; inject DNS, fetch, and key-provider implementations.
+- [Node runtime](https://docs.dnsid.ai/reference/ts/dnsid-node/) (`@dnsid-ai/sdk/node`) — Node.js conveniences: local file-backed keys, env config, Node identity-manager factories.
+- [Protocol core](https://docs.dnsid.ai/reference/ts/dnsid-protocol/) (`@dnsid-ai/protocol`) — Protocol core: TXT/JWKS parsing, validation, identity verification, runtime interfaces.
+- [Transport](https://docs.dnsid.ai/reference/ts/dnsid-transport/) (`@dnsid-ai/transport`) — Node-only DNS/HTTPS transport built on Node built-ins and undici.
+- [Profile: JOSE](https://docs.dnsid.ai/reference/ts/dnsid-jose/) (`@dnsid-ai/jose`) — JOSE profile helpers for JWT and JWS workflows.
+- [Profile: HTTP signatures](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/) (`@dnsid-ai/http-signatures`) — RFC 9421 HTTP Message Signatures profile: sign and verify HTTP messages.
+- [Profile: Web Bot Auth](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/) (`@dnsid-ai/web-bot-auth`) — Web Bot Auth profile: signed bot requests and the key-directory endpoint.
+- [Profile: OIDC](https://docs.dnsid.ai/reference/ts/dnsid-oidc/) (`@dnsid-ai/oidc`) — OIDC federation profile: token minting and verification (server-side).
+- [Key providers: AWS KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-aws/) (`@dnsid-ai/key-aws`) — AWS KMS-backed key provider.
+- [Registry](https://docs.dnsid.ai/reference/ts/dnsid-registry/) (`@dnsid-ai/registry`) — Registry client and TXT publishing helpers.
+- [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/) (`@dnsid-ai/log-c2sp-tlog`) — C2SP tlog-backed lifecycle log reader, writer, and verifier.

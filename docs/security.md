@@ -78,7 +78,7 @@ Identity cache entries also expire at the earliest of the DNS TXT TTL, the TLS c
 ### Provider-specific notes
 
 - **Local keys** (`LocalKeyProvider`) are file-backed and intended for local development, examples, and tightly controlled deployments. Keep stores private and back them up if identity continuity matters. SDK-managed operational rotation removes the old retained key during the successful rotation transaction.
-- **AWS KMS** (`@identity-digital/dnsid-key-aws`) keeps private key material in AWS KMS and exposes the DNSid `KeyProvider` contract. KMS deletion, recovery windows, aliases, grants, and audit retention are AWS operational policy, not DNSid SDK policy.
+- **AWS KMS** (`@dnsid-ai/key-aws`) keeps private key material in AWS KMS and exposes the DNSid `KeyProvider` contract. KMS deletion, recovery windows, aliases, grants, and audit retention are AWS operational policy, not DNSid SDK policy.
 - **Other KMS/HSMs** can implement `KeyProvider`, but this repo does not currently publish production GCP, Azure, or generic HSM providers. Match their retained-key and deletion behavior to the overlap formula above.
 - **Runtime examples** show local and AWS-backed key providers where supported. Browser/client runtimes should not hold DNSid private signing keys.
 
@@ -86,11 +86,11 @@ Identity cache entries also expire at the earliest of the DNS TXT TTL, the TLS c
 
 ### API versioning and compatibility
 
-The TypeScript SDK is pre-1.0. Package versions are synchronized across this monorepo, and package interdependencies use matching `^0.15.0` ranges in this release line. DNSid protocol compatibility is driven by the current identity-record parser, JWKS validation, lifecycle log verification, and status document validation in `@identity-digital/dnsid-protocol`. Upgrade SDK and server/registry components together when protocol behavior changes.
+The TypeScript SDK is pre-1.0. Package versions are synchronized across this monorepo, and package interdependencies use matching `^0.15.0` ranges in this release line. DNSid protocol compatibility is driven by the current identity-record parser, JWKS validation, lifecycle log verification, and status document validation in `@dnsid-ai/protocol`. Upgrade SDK and server/registry components together when protocol behavior changes.
 
 ### HTTP fetch, redirects, timeouts, retries, and response caps
 
-The protocol verifier is runtime-neutral. It only performs network I/O when a caller injects a `JsonFetcher`; the Node helpers wire that to `@identity-digital/dnsid-transport`.
+The protocol verifier is runtime-neutral. It only performs network I/O when a caller injects a `JsonFetcher`; the Node helpers wire that to `@dnsid-ai/transport`.
 
 Node `fetchJson()` behavior:
 

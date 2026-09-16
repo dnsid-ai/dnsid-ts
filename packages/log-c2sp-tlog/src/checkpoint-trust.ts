@@ -1,4 +1,4 @@
-import { withVerificationBudget, waitForVerification, type VerificationOptions } from '@identity-digital/dnsid-protocol';
+import { withVerificationBudget, waitForVerification, type VerificationOptions } from '@dnsid-ai/protocol';
 import type { Checkpoint } from './checkpoint.ts';
 import { C2spTlogVerificationError } from './errors.ts';
 import type { ParsedC2spTlogLr } from './lr.ts';

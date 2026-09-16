@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-key-aws"
+title: "TypeScript: @dnsid-ai/key-aws"
 description: "AWS KMS-backed key provider."
 ---
 
@@ -12,14 +12,14 @@ Private keys stay in AWS KMS. This package fetches public keys, exposes them as 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-key-aws @identity-digital/dnsid-protocol @aws-sdk/client-kms
+npm install @dnsid-ai/key-aws @dnsid-ai/protocol @aws-sdk/client-kms
 ```
 
 ## Usage
 
 ```ts
 import { KMSClient } from '@aws-sdk/client-kms';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@identity-digital/dnsid-key-aws';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 
 const state = {
   activeKeyId: 'alias/dnsid-current',
@@ -95,8 +95,8 @@ DNSID_AWS_KMS_LOCALSTACK=1 npm run test:aws-kms:localstack
 
 AWS KMS-backed key provider for DNSid.
 
-`@identity-digital/dnsid-key-aws` implements the `KeyProvider` contract from
-`@identity-digital/dnsid-protocol` on top of AWS KMS: private key material never
+`@dnsid-ai/key-aws` implements the `KeyProvider` contract from
+`@dnsid-ai/protocol` on top of AWS KMS: private key material never
 leaves KMS, while `AwsKmsKeyProvider` exposes public keys as DNSid JWKs, signs
 through KMS, and manages the active/pending/retained key lifecycle. Callers persist
 `stateSnapshot()` after lifecycle changes. `AwsSdkKmsFacade` adapts AWS SDK v3's

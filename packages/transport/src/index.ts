@@ -1,7 +1,7 @@
 /**
  * Node.js DNS and HTTPS transport for the DNSid protocol.
  *
- * Provides the concrete network layer consumed by `@identity-digital/dnsid-core`:
+ * Provides the concrete network layer consumed by `@dnsid-ai/core`:
  * DNS TXT resolvers for fetching identity records, SSRF-safe HTTPS JSON fetching
  * that captures the peer TLS certificate, and `fetch` factories that route
  * requests through a custom DNS server and/or CA bundle. Built on Node
@@ -23,8 +23,8 @@ import * as tls from 'node:tls';
 import { Agent, fetch as undiciFetch } from 'undici';
 import type { Dispatcher } from 'undici';
 
-import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@identity-digital/dnsid-protocol';
-import { DNSSECState, VerificationCode, VerificationError } from '@identity-digital/dnsid-protocol';
+import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@dnsid-ai/protocol';
+import { DNSSECState, VerificationCode, VerificationError } from '@dnsid-ai/protocol';
 
 /** Minimal WHATWG-fetch-compatible function signature returned by the fetch factories. */
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -89,7 +89,7 @@ export interface SsrfSafeFetchOptions {
  *
  * @example
  * ```ts
- * import { createDnsidFetch, createDefaultDnsResolver } from '@identity-digital/dnsid-transport';
+ * import { createDnsidFetch, createDefaultDnsResolver } from '@dnsid-ai/transport';
  *
  * const config = { dnsServer: '1.1.1.1' };
  * const fetchImpl = createDnsidFetch(config);

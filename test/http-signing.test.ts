@@ -12,7 +12,7 @@ import {
   serializeComponentIdentifier,
   setDictionaryMember,
   signHttpMessage,
-} from '@identity-digital/dnsid-http-signatures';
+} from '@dnsid-ai/http-signatures';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 import {
   ArgumentError,
@@ -21,8 +21,8 @@ import {
   verifyWithKey,
   VerificationCode,
   VerificationError,
-} from '@identity-digital/dnsid-protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
+import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
 const mockFetchJson = vi.hoisted(() => vi.fn());
 

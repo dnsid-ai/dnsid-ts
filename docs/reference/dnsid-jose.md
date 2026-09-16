@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-jose"
+title: "TypeScript: @dnsid-ai/jose"
 description: "JOSE profile helpers for JWT and JWS workflows."
 ---
 
@@ -7,18 +7,18 @@ description: "JOSE profile helpers for JWT and JWS workflows."
 
 DNSid JOSE profile helpers for JWT and JWS workflows.
 
-This package builds on `@identity-digital/dnsid-protocol` contracts and does not perform DNS or HTTPS transport itself. Provide an identity resolver and key provider directly, or construct the profile from a signing `IdentityManager`.
+This package builds on `@dnsid-ai/protocol` contracts and does not perform DNS or HTTPS transport itself. Provide an identity resolver and key provider directly, or construct the profile from a signing `IdentityManager`.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-jose @identity-digital/dnsid-protocol
+npm install @dnsid-ai/jose @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { createJoseProfile } from '@identity-digital/dnsid-jose';
+import { createJoseProfile } from '@dnsid-ai/jose';
 
 const joseProfile = createJoseProfile({
   domain: 'agent.example',
@@ -50,11 +50,11 @@ has no skew grace and is checked again after verification; fractional NumericDat
 and explicit zero clock skew are supported. Explicit invalid lifetimes are errors.
 `fl=logchk` remains caller-owned operation policy.
 
-`@identity-digital/dnsid` also re-exports this package as `jose` and exports `JoseProfile` / `createJoseProfile` directly.
+`@dnsid-ai/sdk` also re-exports this package as `jose` and exports `JoseProfile` / `createJoseProfile` directly.
 
 DNSid JOSE profile helpers for JWT/JWS workflows.
 
-Builds on the narrow contracts from `@identity-digital/dnsid-protocol`
+Builds on the narrow contracts from `@dnsid-ai/protocol`
 ([KeyProvider](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1), [IdentityResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identityresolver)) to sign and verify compact
 JWTs and detached-style JWS objects whose signers are identified by DNSid
 agent domains. This package performs no DNS or HTTPS transport itself —
@@ -610,7 +610,7 @@ ArgumentError if `opts.domain` is not a valid agent FQDN.
 #### Example
 
 ```ts
-import { createJoseProfile } from '@identity-digital/dnsid-jose';
+import { createJoseProfile } from '@dnsid-ai/jose';
 
 const joseProfile = createJoseProfile({
   domain: 'agent.example.com',
@@ -633,7 +633,7 @@ console.log(verifiedDomain.domain); // 'agent.example.com'
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: [core/src/utils.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/utils.ts#L140)
+Defined in: [protocol/src/utils.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L140)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -657,12 +657,12 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [core/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/utils.ts#L100)
+Defined in: [protocol/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L100)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
-This is an SDK/profile convention used by packages such as @identity-digital/dnsid-jose and
-@identity-digital/dnsid-http-signatures to bind a profile-level key reference to a DNSid agent
+This is an SDK/profile convention used by packages such as @dnsid-ai/jose and
+@dnsid-ai/http-signatures to bind a profile-level key reference to a DNSid agent
 FQDN plus a JWKS "kid". It is not a DNSid protocol wire-format requirement;
 the protocol itself only requires JWKS keys to carry "kid" values.
 
@@ -705,7 +705,7 @@ ArgumentError if the key ID is malformed.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: [core/src/utils.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/utils.ts#L128)
+Defined in: [protocol/src/utils.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L128)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 

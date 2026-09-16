@@ -1,6 +1,6 @@
-import type { IdentityResolver, KeyProvider } from '@identity-digital/dnsid';
-import { createJoseProfile, fromBase64Url } from '@identity-digital/dnsid';
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
+import type { IdentityResolver, KeyProvider } from '@dnsid-ai/sdk';
+import { createJoseProfile, fromBase64Url } from '@dnsid-ai/sdk';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 // Load from existing local key store if it exists, otherwise create
 const keyStorePath = 'keys.json';

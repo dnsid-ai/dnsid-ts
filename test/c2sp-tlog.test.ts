@@ -3,7 +3,7 @@ import { createHash, generateKeyPairSync, sign as signEd25519 } from 'node:crypt
 import { exportJWK, generateKeyPair } from 'jose';
 import identityVectors from './vectors/c2sp-event-identity.json';
 import { readFileSync } from 'node:fs';
-import { DnsIdTxtRecord, jwkThumbprint, toArrayBuffer, toBase64Url, type C2spIssuanceEvent, type DnsIdJWK, type KeyProvider, type LogEvent } from '@identity-digital/dnsid-protocol';
+import { DnsIdTxtRecord, jwkThumbprint, toArrayBuffer, toBase64Url, type C2spIssuanceEvent, type DnsIdJWK, type KeyProvider, type LogEvent } from '@dnsid-ai/protocol';
 import {
   canonicalBytes,
   canonicalizeC2spEvent as encodeEvent,
@@ -41,7 +41,7 @@ import {
   writePreparedEvent,
   type PreparedC2spVerificationContext,
   type VerifiedLifecycleEvent,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const TEST_STREAM_ID = 'ERERERERERERERERERERER';
 const DEFAULT_CONTEXT = { scope: 'testnet', logOrigin: 'log.example/dnsid', streamId: TEST_STREAM_ID, lr: `c2sp-tlog:testnet:https://log.example/dnsid#${TEST_STREAM_ID}` };

@@ -4,7 +4,7 @@ name: Release
 #
 # Required permissions (already granted via the `permissions` block below):
 #   contents: write  — to create the git tag and GitHub Release
-#   packages: write  — to publish the public @identity-digital/* workspace packages
+#   packages: write  — to publish the public @dnsid-ai/* workspace packages
 
 on:
   pull_request:
@@ -56,7 +56,7 @@ jobs:
         with:
           node-version: 22.x
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@identity-digital'
+          scope: '@dnsid-ai'
 
       - name: Install dependencies
         run: npm ci

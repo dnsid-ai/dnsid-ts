@@ -1,4 +1,4 @@
-import { fromBase64Url, toBase64Url } from '@identity-digital/dnsid-protocol';
+import { fromBase64Url, toBase64Url } from '@dnsid-ai/protocol';
 
 /** Encodes bytes as unpadded base64url. */
 export function b64url(bytes: Uint8Array): string {

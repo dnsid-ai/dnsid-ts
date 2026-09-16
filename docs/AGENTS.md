@@ -12,7 +12,7 @@ Durable rules for anyone touching files under `docs/` in this repo.
 
 - `docs/reference/` is exported verbatim to the `dnsid-ai/dnsid-docs` repo (Astro/Starlight) under `src/content/docs/reference/ts/`, where it renders at `https://docs.dnsid.ai/reference/ts/...`.
 - `docs/reference/nav.json` is an ordered array of `{ "label", "slug" }` entries imported by the docs site's `nav.mjs`. Page order in `scripts/build-docs-reference.mjs` is the nav order.
-- Every page must have YAML frontmatter with a `title` (pattern: `TypeScript: @identity-digital/<package>`) and a one-line `description`. The generator emits these; keep the pattern if you change the generator.
+- Every page must have YAML frontmatter with a `title` (pattern: `TypeScript: @dnsid-ai/<package>`) and a one-line `description`. The generator emits these; keep the pattern if you change the generator.
 
 ## Link rules
 
@@ -22,6 +22,6 @@ Durable rules for anyone touching files under `docs/` in this repo.
 ## Terminology and content conventions
 
 - "DNSid" (capital DNS, lowercase id) — never "DNSID", "DnsId", or "dnsid" in prose.
-- "identity record", "operational key" / "entity key", "agent" — match `packages/core` usage.
+- "identity record", "operational key" / "entity key", "agent" — match `packages/protocol` usage.
 - Known protocol gaps and sharp edges (DNSSEC state `UNKNOWN` from the system resolver, no DoH, `fl=mtls` requiring a caller-supplied peer certificate) must be stated plainly wherever the feature is mentioned, not hidden.
 - Doc comments and docs describe behavior and contracts, not implementation history.

@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-example-validate-domain",
+  "name": "@dnsid-ai/example-validate-domain",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -8,9 +8,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid": "^0.19.1",
-    "@identity-digital/dnsid-log-c2sp-tlog": "^0.19.1",
-    "@identity-digital/dnsid-transport": "^0.19.1"
+    "@dnsid-ai/sdk": "^0.19.1",
+    "@dnsid-ai/log-c2sp-tlog": "^0.19.1",
+    "@dnsid-ai/transport": "^0.19.1"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",

@@ -1,8 +1,8 @@
 /**
  * Runtime-neutral SDK entry point for DNSid.
  *
- * `@identity-digital/dnsid` aggregates the DNSid TypeScript packages: it re-exports
- * the full protocol core (`@identity-digital/dnsid-protocol`), the registry client and
+ * `@dnsid-ai/sdk` aggregates the DNSid TypeScript packages: it re-exports
+ * the full protocol core (`@dnsid-ai/protocol`), the registry client and
  * publishing helpers, the JOSE, HTTP message signatures, and web bot auth
  * profiles, and managed operational key rotation workflows.
  *
@@ -10,15 +10,15 @@
  * JSON fetching, key-provider, cache, and log implementations (see
  * {@link createIdentityManager}). Node conveniences — LocalKeyProvider, environment
  * config loading, and Node identity manager factories — live behind the
- * `@identity-digital/dnsid/node` subpath. OIDC support deliberately lives in
- * `@identity-digital/dnsid-oidc` (Node-bound transport) and is not re-exported here.
+ * `@dnsid-ai/sdk/node` subpath. OIDC support deliberately lives in
+ * `@dnsid-ai/oidc` (Node-bound transport) and is not re-exported here.
  *
  * @packageDocumentation
  */
-import { IdentityManager, LogRegistry } from '@identity-digital/dnsid-protocol';
-import type { DnsidConfig, IdentityManagerDependencies } from '@identity-digital/dnsid-protocol';
+import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import type { DnsidConfig, IdentityManagerDependencies } from '@dnsid-ai/protocol';
 
-export * from '@identity-digital/dnsid-protocol';
+export * from '@dnsid-ai/protocol';
 export {
   IdentityManager,
   JWKS_MAX_RESPONSE_BYTES,
@@ -54,13 +54,13 @@ export {
   verifyWithKey,
   DNSSECState,
   DNSSECMode,
-} from '@identity-digital/dnsid-protocol';
-export * as jose from '@identity-digital/dnsid-jose';
-export * as httpSignatures from '@identity-digital/dnsid-http-signatures';
-export * as registry from '@identity-digital/dnsid-registry';
-export * as webBotAuth from '@identity-digital/dnsid-web-bot-auth';
-export { JoseProfile, createJoseProfile } from '@identity-digital/dnsid-jose';
-export { HttpSignaturesProfile, createHttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
+} from '@dnsid-ai/protocol';
+export * as jose from '@dnsid-ai/jose';
+export * as httpSignatures from '@dnsid-ai/http-signatures';
+export * as registry from '@dnsid-ai/registry';
+export * as webBotAuth from '@dnsid-ai/web-bot-auth';
+export { JoseProfile, createJoseProfile } from '@dnsid-ai/jose';
+export { HttpSignaturesProfile, createHttpSignaturesProfile } from '@dnsid-ai/http-signatures';
 export {
   RegistryClient,
   PreparedEventSubmissionError,
@@ -69,7 +69,7 @@ export {
   publishClientControlledRecord,
   publishToRegistry,
   DEFAULT_REGISTRY_URL,
-} from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/registry';
 export {
   ManagedKeyRotationActivationError,
   ManagedKeyRotationSubmissionError,
@@ -96,7 +96,7 @@ export type {
   ManagedIssuanceSubmission,
   ResumeManagedIssuanceOptions,
 } from './managed-issuance.ts';
-export { WebBotAuthProfile, createWebBotAuthProfile } from '@identity-digital/dnsid-web-bot-auth';
+export { WebBotAuthProfile, createWebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
 
 /** Runtime-neutral dependencies: DNS and JSON fetching must be injected. */
 export type CreateIdentityManagerDependencies =
@@ -105,14 +105,14 @@ export type CreateIdentityManagerDependencies =
 /**
  * Creates a DNSid IdentityManager from explicitly injected runtime dependencies.
  *
- * The root `@identity-digital/dnsid` entrypoint is runtime-neutral: callers provide DNS, HTTPS/JSON
+ * The root `@dnsid-ai/sdk` entrypoint is runtime-neutral: callers provide DNS, HTTPS/JSON
  * fetching, key storage/signing, cache, and log implementations appropriate for Node,
  * browsers, workers, wallets, HSMs, or application backends. Omit `config.identity` for a
  * verification-only manager (see {@link createIdentityVerifier}).
  *
  * @example
  * ```ts
- * import { createIdentityManager } from '@identity-digital/dnsid';
+ * import { createIdentityManager } from '@dnsid-ai/sdk';
  *
  * const idm = createIdentityManager({ identity, verification }, {
  *   keyProvider,       // operational key

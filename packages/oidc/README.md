@@ -1,17 +1,17 @@
-# @identity-digital/dnsid-oidc
+# @dnsid-ai/oidc
 
 DNSid OIDC federation helpers for server-side token minting and verification.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-oidc
+npm install @dnsid-ai/oidc
 ```
 
 For Node.js local key loading, also install the aggregate SDK:
 
 ```sh
-npm install @identity-digital/dnsid @identity-digital/dnsid-oidc
+npm install @dnsid-ai/sdk @dnsid-ai/oidc
 ```
 
 ## Mint an OIDC access token from server code
@@ -19,8 +19,8 @@ npm install @identity-digital/dnsid @identity-digital/dnsid-oidc
 Use `mintOIDCToken()` when an agent service needs to call another service, gateway, or tool with a DNSid OIDC bearer token.
 
 ```ts
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const agentDomain = process.env.DNSID_DOMAIN!;
 const audience = process.env.AGENTCORE_GATEWAY_AUDIENCE!;
@@ -63,7 +63,7 @@ Configure either:
 Applications with private JWK material can use `privateJwk` directly:
 
 ```ts
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const token = await mintOIDCToken({
   domain: 'agent.example.com',

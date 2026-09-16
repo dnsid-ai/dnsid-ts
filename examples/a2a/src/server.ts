@@ -25,8 +25,8 @@ import {
   JoseProfile,
   type TransportConfig,
   type VerifiedDomain,
-} from '@identity-digital/dnsid';
-import { createDnsidFetch } from '@identity-digital/dnsid-transport';
+} from '@dnsid-ai/sdk';
+import { createDnsidFetch } from '@dnsid-ai/transport';
 import {
   A2A_VERSION,
   DNSID_A2A_EXTENSION_URI,

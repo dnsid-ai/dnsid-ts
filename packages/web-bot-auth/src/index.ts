@@ -11,11 +11,11 @@
  *
  * @packageDocumentation
  */
-import type { KeyProvider, SigningIdentityManager, DnsIdJWK } from '@identity-digital/dnsid-protocol';
-import { requireLocalDomain } from '@identity-digital/dnsid-protocol';
-import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN } from '@identity-digital/dnsid-protocol';
-import type { ComponentIdentifier } from '@identity-digital/dnsid-http-signatures';
-import { generateNonce, joseAlgToHttpSigAlg, sameComponent, serializeStructuredFieldValue, setDictionaryMember, signHttpMessage, validateComponentIdentifier } from '@identity-digital/dnsid-http-signatures';
+import type { KeyProvider, SigningIdentityManager, DnsIdJWK } from '@dnsid-ai/protocol';
+import { requireLocalDomain } from '@dnsid-ai/protocol';
+import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN } from '@dnsid-ai/protocol';
+import type { ComponentIdentifier } from '@dnsid-ai/http-signatures';
+import { generateNonce, joseAlgToHttpSigAlg, sameComponent, serializeStructuredFieldValue, setDictionaryMember, signHttpMessage, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
 
 /** Signature label used for the Web Bot Auth member in the `Signature`/`Signature-Input` dictionaries. */
 export const WEB_BOT_AUTH_SIGNATURE_LABEL = 'sig1';

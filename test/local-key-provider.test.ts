@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
 
-import { jwkThumbprint, verifyWithKey } from '@identity-digital/dnsid';
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
+import { jwkThumbprint, verifyWithKey } from '@dnsid-ai/sdk';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 async function withTemp(prefix: string, fn: (dir: string) => Promise<void>) {
   const dir = await mkdtemp(join(tmpdir(), prefix));

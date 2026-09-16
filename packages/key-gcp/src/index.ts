@@ -1,16 +1,16 @@
 /**
  * Google Cloud KMS key provider placeholder for DNSid.
  *
- * `@identity-digital/dnsid-key-gcp` is a private, unpublished placeholder for a
+ * `@dnsid-ai/key-gcp` is a private, unpublished placeholder for a
  * GCP Cloud KMS-backed implementation of the `KeyProvider` contract from
- * `@identity-digital/dnsid-protocol`. Every method of `GcpCloudKmsKeyProvider`
+ * `@dnsid-ai/protocol`. Every method of `GcpCloudKmsKeyProvider`
  * currently throws; install `@google-cloud/kms` and complete the implementation
- * before use. See `@identity-digital/dnsid-key-aws` for the working KMS pattern.
+ * before use. See `@dnsid-ai/key-aws` for the working KMS pattern.
  *
  * @packageDocumentation
  */
-import type { DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
-import { ArgumentError } from '@identity-digital/dnsid-protocol';
+import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
+import { ArgumentError } from '@dnsid-ai/protocol';
 
 export interface GcpCloudKmsConfig {
   /** Full resource name of the active CryptoKeyVersion. */
@@ -24,7 +24,7 @@ export interface GcpCloudKmsConfig {
 /**
  * Google Cloud KMS KeyProvider stub.
  *
- * This concrete key-provider package intentionally lives outside `@identity-digital/dnsid-protocol`.
+ * This concrete key-provider package intentionally lives outside `@dnsid-ai/protocol`.
  * Install `@google-cloud/kms` and complete this implementation before use.
  */
 export class GcpCloudKmsKeyProvider implements KeyProvider {

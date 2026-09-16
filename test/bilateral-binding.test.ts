@@ -9,8 +9,8 @@ import {
   toArrayBuffer,
   toBase64Url,
   verifyBilateralBinding,
-} from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK, IssuanceEvent } from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
+import type { DnsIdJWK, IssuanceEvent } from '@dnsid-ai/protocol';
 
 // draft-01 (#106): ISSUANCE is bilateral — both the ek and ku keys recorded in
 // the event must have signed the same canonical binding.

@@ -1,4 +1,4 @@
-import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRef, type LogSignerRole } from '@identity-digital/dnsid-protocol';
+import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRef, type LogSignerRole } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 import { parseC2spEventEntry, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
 import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';

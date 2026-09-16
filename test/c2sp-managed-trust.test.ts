@@ -9,7 +9,7 @@ import {
   requiredC2spResourceFetchGuarantees,
   type C2spBoundedResourceFetcher,
   type SignedNoteKey,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 
 const vector = JSON.parse(readFileSync(
   new URL('./vectors/c2sp-managed-trust-selection.json', import.meta.url),

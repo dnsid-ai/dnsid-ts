@@ -9,7 +9,7 @@ import {
   VerificationCode,
   VerificationError,
   VerifiedDomain,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import type {
   AgentStatus,
   DnsIdJWK,
@@ -21,7 +21,7 @@ import type {
   RetirementEvent,
   RevocationEvent,
   TLSCertificate,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 // ---- fixtures ----
 

@@ -4,22 +4,22 @@ import {
   configFromEnvironment,
   createNodeIdentityManager,
   LocalKeyProvider,
-} from '@identity-digital/dnsid/node';
+} from '@dnsid-ai/sdk/node';
 import {
   awaitRegistryManagedPublication,
   RegistryClient,
   toBase64Url,
   VerificationCode,
   VerificationError,
-} from '@identity-digital/dnsid';
-import type { IdentityManager, LogRegistry, TransportConfig } from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk';
+import type { IdentityManager, LogRegistry, TransportConfig } from '@dnsid-ai/sdk';
 import {
   createC2spTlogVerificationRegistry,
   createFetchBackedC2spResourceFetcher,
   parseC2spTlogLr,
   requiredC2spResourceFetchGuarantees,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
-import { createDefaultDnsResolver, createDnsidFetch, createSsrfSafeFetch } from '@identity-digital/dnsid-transport';
+} from '@dnsid-ai/log-c2sp-tlog';
+import { createDefaultDnsResolver, createDnsidFetch, createSsrfSafeFetch } from '@dnsid-ai/transport';
 import { createTestnetJsonFetcher } from './testnet-transport.ts';
 import { requiredTestnetLogPolicyUrl } from './testnet-config.ts';
 

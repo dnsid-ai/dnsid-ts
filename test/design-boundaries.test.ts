@@ -1,9 +1,9 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ArgumentError, DNSSECMode, DNSSECState, IdentityManager, InMemoryIdentityCache, JWKS, type DnsIdJWK, type KeyProvider, type VerifiedDomain } from '@identity-digital/dnsid-protocol';
-import { JoseProfile } from '@identity-digital/dnsid-jose';
-import { HttpSignaturesProfile, parseSignatureInput } from '@identity-digital/dnsid-http-signatures';
-import { OIDCProfile } from '@identity-digital/dnsid-oidc';
+import { ArgumentError, DNSSECMode, DNSSECState, IdentityManager, InMemoryIdentityCache, JWKS, type DnsIdJWK, type KeyProvider, type VerifiedDomain } from '@dnsid-ai/protocol';
+import { JoseProfile } from '@dnsid-ai/jose';
+import { HttpSignaturesProfile, parseSignatureInput } from '@dnsid-ai/http-signatures';
+import { OIDCProfile } from '@dnsid-ai/oidc';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 const pair = generateKeyPairSync('ed25519');

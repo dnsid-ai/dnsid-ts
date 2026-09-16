@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-jose",
+  "name": "@dnsid-ai/jose",
   "version": "0.19.1",
   "description": "DNSid JOSE JWT and JWS profile helpers.",
   "type": "module",
@@ -35,7 +35,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid-protocol": "^0.19.1"
+    "@dnsid-ai/protocol": "^0.19.1"
   },
   "license": "Apache-2.0"
 }

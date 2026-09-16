@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DnsIdTxtRecord, ValidationError } from '@identity-digital/dnsid-protocol';
+import { DnsIdTxtRecord, ValidationError } from '@dnsid-ai/protocol';
 
 // ---- helpers ----
 

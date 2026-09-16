@@ -9,10 +9,10 @@ import {
   VerificationCode,
   VerificationError,
   jwkThumbprint,
-} from '@identity-digital/dnsid-protocol';
-import type { DnsIdJWK, DnsidConfig, IdentityConfig, JsonFetcher, KeyProvider } from '@identity-digital/dnsid-protocol';
-import { createNodeIdentityManager, createNodeIdentityVerifier } from '@identity-digital/dnsid/node';
-import { awaitRegistryManagedPublication, RegistryClient } from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/protocol';
+import type { DnsIdJWK, DnsidConfig, IdentityConfig, JsonFetcher, KeyProvider } from '@dnsid-ai/protocol';
+import { createNodeIdentityManager, createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
+import { awaitRegistryManagedPublication, RegistryClient } from '@dnsid-ai/registry';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 const transportSpies = vi.hoisted(() => ({ fetchJson: vi.fn(), createDefaultDnsResolver: vi.fn() }));

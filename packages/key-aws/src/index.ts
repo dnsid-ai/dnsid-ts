@@ -1,8 +1,8 @@
 /**
  * AWS KMS-backed key provider for DNSid.
  *
- * `@identity-digital/dnsid-key-aws` implements the `KeyProvider` contract from
- * `@identity-digital/dnsid-protocol` on top of AWS KMS: private key material never
+ * `@dnsid-ai/key-aws` implements the `KeyProvider` contract from
+ * `@dnsid-ai/protocol` on top of AWS KMS: private key material never
  * leaves KMS, while `AwsKmsKeyProvider` exposes public keys as DNSid JWKs, signs
  * through KMS, and manages the active/pending/retained key lifecycle. Callers persist
  * `stateSnapshot()` after lifecycle changes. `AwsSdkKmsFacade` adapts AWS SDK v3's
@@ -18,8 +18,8 @@ import {
   SignCommand,
 } from '@aws-sdk/client-kms';
 import type { KMSClient } from '@aws-sdk/client-kms';
-import type { DnsIdJWK, KeyProvider } from '@identity-digital/dnsid-protocol';
-import { ArgumentError } from '@identity-digital/dnsid-protocol';
+import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
+import { ArgumentError } from '@dnsid-ai/protocol';
 
 export type AwsKmsSigningAlgorithm = 'ECDSA_SHA_256' | 'ED25519_SHA_512';
 

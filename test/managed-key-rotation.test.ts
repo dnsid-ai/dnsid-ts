@@ -6,12 +6,12 @@ import {
   type DnsIdJWK,
   type KeyProvider,
   type KeyRotationEvent,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 import {
   canonicalBytes,
   parseC2spEventEntry,
   prepareC2spTlogEventForSigning,
-} from '@identity-digital/dnsid-log-c2sp-tlog';
+} from '@dnsid-ai/log-c2sp-tlog';
 import {
   ManagedKeyRotationActivationError,
   ManagedKeyRotationSubmissionError,
@@ -19,13 +19,13 @@ import {
   rotateManagedOperationalKey,
   type ManagedKeyRotationRegistry,
   type ManagedKeyRotationResult,
-} from '@identity-digital/dnsid';
+} from '@dnsid-ai/sdk';
 import {
   PreparedEventSubmissionError,
   type KeyRotationPreparationRequest,
   type PreparedRegistryEvent,
   type SubmissionResult,
-} from '@identity-digital/dnsid-registry';
+} from '@dnsid-ai/registry';
 
 const DOMAIN = 'agent.example.com';
 const STREAM_ID = 'ERERERERERERERERERERER';

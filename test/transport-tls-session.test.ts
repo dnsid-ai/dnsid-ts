@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { ClientRequest, IncomingMessage } from 'node:http';
 import type * as https from 'node:https';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { fetchJson } from '@identity-digital/dnsid-transport';
+import { fetchJson } from '@dnsid-ai/transport';
 import { generateSelfSignedCert } from './helpers/self-signed-cert';
 
 // The transport's own https.get is intercepted only to capture the agent it

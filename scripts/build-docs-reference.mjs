@@ -1,7 +1,7 @@
 // Post-processes typedoc-plugin-markdown output (.typedoc-md/) into the
 // committed, docs-site-ready reference under docs/reference/.
 //
-// - One page per published package (the `@identity-digital/dnsid/node` subpath
+// - One page per published package (the `@dnsid-ai/sdk/node` subpath
 //   gets its own page so anchors never collide with the root export's).
 // - Oversized packages list the member kinds to extract in `splitKinds`: those
 //   kinds (e.g. Classes, Interfaces) move to their own pages and the package
@@ -37,81 +37,81 @@ const PAGES = [
   {
     slug: 'dnsid',
     label: 'Core SDK',
-    pkg: '@identity-digital/dnsid',
-    src: 'index/@identity-digital/dnsid/index.md',
-    prepend: '@identity-digital/dnsid/README.md',
+    pkg: '@dnsid-ai/sdk',
+    src: 'index/@dnsid-ai/sdk/index.md',
+    prepend: '@dnsid-ai/sdk/README.md',
     splitKinds: ['Classes', 'Interfaces'],
     description: 'Runtime-neutral SDK entry point; inject DNS, fetch, and key-provider implementations.',
   },
   {
     slug: 'dnsid-node',
     label: 'Node runtime',
-    pkg: '@identity-digital/dnsid/node',
-    src: '@identity-digital/dnsid/node.md',
+    pkg: '@dnsid-ai/sdk/node',
+    src: '@dnsid-ai/sdk/node.md',
     description: 'Node.js conveniences: local file-backed keys, env config, Node identity-manager factories.',
   },
   {
     slug: 'dnsid-protocol',
     label: 'Protocol core',
-    pkg: '@identity-digital/dnsid-protocol',
-    src: '@identity-digital/dnsid-protocol.md',
+    pkg: '@dnsid-ai/protocol',
+    src: '@dnsid-ai/protocol.md',
     splitKinds: ['Classes', 'Interfaces'],
     description: 'Protocol core: TXT/JWKS parsing, validation, identity verification, runtime interfaces.',
   },
   {
     slug: 'dnsid-transport',
     label: 'Transport',
-    pkg: '@identity-digital/dnsid-transport',
-    src: '@identity-digital/dnsid-transport.md',
+    pkg: '@dnsid-ai/transport',
+    src: '@dnsid-ai/transport.md',
     description: 'Node-only DNS/HTTPS transport built on Node built-ins and undici.',
   },
   {
     slug: 'dnsid-jose',
     label: 'Profile: JOSE',
-    pkg: '@identity-digital/dnsid-jose',
-    src: '@identity-digital/dnsid-jose.md',
+    pkg: '@dnsid-ai/jose',
+    src: '@dnsid-ai/jose.md',
     description: 'JOSE profile helpers for JWT and JWS workflows.',
   },
   {
     slug: 'dnsid-http-signatures',
     label: 'Profile: HTTP signatures',
-    pkg: '@identity-digital/dnsid-http-signatures',
-    src: '@identity-digital/dnsid-http-signatures.md',
+    pkg: '@dnsid-ai/http-signatures',
+    src: '@dnsid-ai/http-signatures.md',
     description: 'RFC 9421 HTTP Message Signatures profile: sign and verify HTTP messages.',
   },
   {
     slug: 'dnsid-web-bot-auth',
     label: 'Profile: Web Bot Auth',
-    pkg: '@identity-digital/dnsid-web-bot-auth',
-    src: '@identity-digital/dnsid-web-bot-auth.md',
+    pkg: '@dnsid-ai/web-bot-auth',
+    src: '@dnsid-ai/web-bot-auth.md',
     description: 'Web Bot Auth profile: signed bot requests and the key-directory endpoint.',
   },
   {
     slug: 'dnsid-oidc',
     label: 'Profile: OIDC',
-    pkg: '@identity-digital/dnsid-oidc',
-    src: '@identity-digital/dnsid-oidc.md',
+    pkg: '@dnsid-ai/oidc',
+    src: '@dnsid-ai/oidc.md',
     description: 'OIDC federation profile: token minting and verification (server-side).',
   },
   {
     slug: 'dnsid-key-aws',
     label: 'Key providers: AWS KMS',
-    pkg: '@identity-digital/dnsid-key-aws',
-    src: '@identity-digital/dnsid-key-aws.md',
+    pkg: '@dnsid-ai/key-aws',
+    src: '@dnsid-ai/key-aws.md',
     description: 'AWS KMS-backed key provider.',
   },
   {
     slug: 'dnsid-registry',
     label: 'Registry',
-    pkg: '@identity-digital/dnsid-registry',
-    src: '@identity-digital/dnsid-registry.md',
+    pkg: '@dnsid-ai/registry',
+    src: '@dnsid-ai/registry.md',
     description: 'Registry client and TXT publishing helpers.',
   },
   {
     slug: 'dnsid-log-c2sp-tlog',
     label: 'Transparency log',
-    pkg: '@identity-digital/dnsid-log-c2sp-tlog',
-    src: '@identity-digital/dnsid-log-c2sp-tlog.md',
+    pkg: '@dnsid-ai/log-c2sp-tlog',
+    src: '@dnsid-ai/log-c2sp-tlog.md',
     splitKinds: ['Classes', 'Interfaces', 'Functions'],
     description: 'C2SP tlog-backed lifecycle log reader, writer, and verifier.',
   },
@@ -120,11 +120,11 @@ const PAGES = [
 // Generated files that have no page of their own; links into them are
 // redirected to the canonical package page.
 const ALIASES = {
-  'index/@identity-digital/dnsid/namespaces/jose.md': 'dnsid-jose',
-  'index/@identity-digital/dnsid/namespaces/httpSignatures.md': 'dnsid-http-signatures',
-  'index/@identity-digital/dnsid/namespaces/webBotAuth.md': 'dnsid-web-bot-auth',
-  'index/@identity-digital/dnsid/namespaces/registry.md': 'dnsid-registry',
-  '@identity-digital/dnsid/README.md': 'dnsid',
+  'index/@dnsid-ai/sdk/namespaces/jose.md': 'dnsid-jose',
+  'index/@dnsid-ai/sdk/namespaces/httpSignatures.md': 'dnsid-http-signatures',
+  'index/@dnsid-ai/sdk/namespaces/webBotAuth.md': 'dnsid-web-bot-auth',
+  'index/@dnsid-ai/sdk/namespaces/registry.md': 'dnsid-registry',
+  '@dnsid-ai/sdk/README.md': 'dnsid',
   'README.md': '',
 };
 

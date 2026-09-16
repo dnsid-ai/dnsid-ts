@@ -1,15 +1,15 @@
 /**
  * Protocol core for the DNSid TypeScript monorepo.
  *
- * `@identity-digital/dnsid-protocol` provides the DNSid protocol engine and contracts:
+ * `@dnsid-ai/protocol` provides the DNSid protocol engine and contracts:
  * TXT identity record parsing/validation/canonicalization, JWKS validation and
  * thumbprints, the `IdentityManager` verification and lifecycle engine, transparency
  * log contracts, strict agent status validation, and common DNSid error types.
  *
  * The package is runtime-neutral: DNS resolution, JSON fetching, key storage/signing,
  * and caching are injected through the `DNSResolver`, `JsonFetcher`, `KeyProvider`,
- * and `IdentityCache` interfaces. Node conveniences live in `@identity-digital/dnsid/node`,
- * registry workflows in `@identity-digital/dnsid-registry`.
+ * and `IdentityCache` interfaces. Node conveniences live in `@dnsid-ai/sdk/node`,
+ * registry workflows in `@dnsid-ai/registry`.
  *
  * @packageDocumentation
  */

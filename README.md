@@ -3,15 +3,15 @@
 Cryptographically verifiable identity for agents, anchored in DNS. DNSid binds an agent's identity to a domain the operator controls — a DNS TXT record plus JWKS documents — so any peer can verify who an agent is with nothing but DNS and HTTPS.
 
 Node-specific packages, subpaths, tooling, and the CLI require Node.js >= 22.0.0.
-Packages ship dual ESM/CJS builds; the default `@identity-digital/dnsid`
+Packages ship dual ESM/CJS builds; the default `@dnsid-ai/sdk`
 entrypoint is also safe to bundle for browsers.
 
 ## Compatibility
 
 | Area | Supported/tested baseline | Notes |
 | --- | --- | --- |
-| Node.js | Node.js 22.x in CI; Node-bound package metadata requires `>=22.0.0`. | `@identity-digital/dnsid-transport`, `@identity-digital/dnsid-oidc`, `@identity-digital/dnsid-key-aws`, `@identity-digital/dnsid-key-gcp`, the `@identity-digital/dnsid/node` subpath, examples, and development tooling are Node-oriented. |
-| Browser and non-Node runtimes | Root `@identity-digital/dnsid` entrypoint and runtime-neutral packages can be bundled when callers inject DNS, JSON fetch, cache, log, and key-provider implementations. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
+| Node.js | Node.js 22.x in CI; Node-bound package metadata requires `>=22.0.0`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
+| Browser and non-Node runtimes | Root `@dnsid-ai/sdk` entrypoint and runtime-neutral packages can be bundled when callers inject DNS, JSON fetch, cache, log, and key-provider implementations. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
 | TypeScript | `typescript` 6.0.3 from `package-lock.json`; `tsconfig.json` targets ES2022 with `module: ESNext`, `moduleResolution: bundler`, `strict: true`, and `lib: ["ES2022", "dom"]`. | Published packages include declaration files from `tsup --dts`. |
 | Module formats | ESM and CommonJS package exports. | Packages use `type: "module"` and expose both `import` (`dist/*.js`) and `require` (`dist/*.cjs`) entries. |
 | Runtime dependencies | Locked by npm lockfile v3 and installed in CI with `npm ci`. Current key versions: `@noble/hashes` 2.2.0, `jose` 6.2.4, `structured-headers` 2.0.3, `undici` 8.9.0, `uuid` 14.0.1. | Published packages declare semver ranges; applications should use their own lockfile and upgrade through normal dependency review. |
@@ -22,14 +22,14 @@ entrypoint is also safe to bundle for browsers.
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid @identity-digital/dnsid-transport @identity-digital/dnsid-log-c2sp-tlog
+npm install @dnsid-ai/sdk @dnsid-ai/transport @dnsid-ai/log-c2sp-tlog
 ```
 
 ## Verify your first domain
 
 ```ts
-import { createC2spTlogVerificationRegistry } from '@identity-digital/dnsid-log-c2sp-tlog';
-import { createNodeIdentityVerifier } from '@identity-digital/dnsid/node';
+import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
+import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 
 const logRegistry = await createC2spTlogVerificationRegistry({
   // Explicitly trusted configuration for the DNSid sandbox.
@@ -67,32 +67,32 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 
 | Package | Purpose |
 | --- | --- |
-| `@identity-digital/dnsid` | Runtime-neutral SDK entrypoint. Verification requires injected DNS and JSON fetch implementations; local identity operations also require key providers. |
-| `@identity-digital/dnsid/node` | Node.js SDK convenience subpath: local file-backed keys, env config, and optional Node transport defaults. |
-| `@identity-digital/dnsid-protocol` | Protocol core: TXT/JWKS parsing, validation, identity verification, injected runtime interfaces. |
-| `@identity-digital/dnsid-transport` | Node.js DNS/HTTPS transport implementation. Node-only; uses Node built-ins and `undici`. |
-| `@identity-digital/dnsid-oidc` | DNSid OIDC federation profile helpers. |
-| `@identity-digital/dnsid-jose` | DNSid JOSE JWT/JWS profile helpers. |
-| `@identity-digital/dnsid-http-signatures` | DNSid RFC 9421 HTTP Message Signatures profile helpers. |
-| `@identity-digital/dnsid-web-bot-auth` | DNSid Web Bot Auth profile: signed bot requests + key directory. |
-| `@identity-digital/dnsid-registry` | Registry client and TXT publishing helpers. |
-| `@identity-digital/dnsid-log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
-| `@identity-digital/dnsid-key-aws` | AWS KMS-backed key provider. |
+| `@dnsid-ai/sdk` | Runtime-neutral SDK entrypoint. Verification requires injected DNS and JSON fetch implementations; local identity operations also require key providers. |
+| `@dnsid-ai/sdk/node` | Node.js SDK convenience subpath: local file-backed keys, env config, and optional Node transport defaults. |
+| `@dnsid-ai/protocol` | Protocol core: TXT/JWKS parsing, validation, identity verification, injected runtime interfaces. |
+| `@dnsid-ai/transport` | Node.js DNS/HTTPS transport implementation. Node-only; uses Node built-ins and `undici`. |
+| `@dnsid-ai/oidc` | DNSid OIDC federation profile helpers. |
+| `@dnsid-ai/jose` | DNSid JOSE JWT/JWS profile helpers. |
+| `@dnsid-ai/http-signatures` | DNSid RFC 9421 HTTP Message Signatures profile helpers. |
+| `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth profile: signed bot requests + key directory. |
+| `@dnsid-ai/registry` | Registry client and TXT publishing helpers. |
+| `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
+| `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |
 
-`@identity-digital/dnsid-key-gcp` remains in the workspace as a private placeholder and is not published.
+`@dnsid-ai/key-gcp` remains in the workspace as a private placeholder and is not published.
 
 ## Package layout
 
-- **Root export (`@identity-digital/dnsid`)** — runtime-neutral: no Node built-ins, `Buffer`, filesystem, or `undici`. You inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes.
-- **`@identity-digital/dnsid/node` subpath** — Node conveniences (`LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`). Loads the optional `@identity-digital/dnsid-transport` peer only when HTTPS defaults are needed.
-- **OIDC lives in its own package** — `@identity-digital/dnsid-oidc` is deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs in server-side code. Import it directly.
+- **Root export (`@dnsid-ai/sdk`)** — runtime-neutral: no Node built-ins, `Buffer`, filesystem, or `undici`. You inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences (`LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`). Loads the optional `@dnsid-ai/transport` peer only when HTTPS defaults are needed.
+- **OIDC lives in its own package** — `@dnsid-ai/oidc` is deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs in server-side code. Import it directly.
 
 ## Runtime-neutral usage
 
 Use the root SDK when your application provides runtime dependencies explicitly:
 
 ```ts
-import { createIdentityManager } from '@identity-digital/dnsid';
+import { createIdentityManager } from '@dnsid-ai/sdk';
 
 const idm = createIdentityManager({ identity, verification }, {
   keyProvider,       // operational ku key
@@ -105,7 +105,7 @@ const idm = createIdentityManager({ identity, verification }, {
 For verification without a local identity or signing keys:
 
 ```ts
-import { createIdentityVerifier } from '@identity-digital/dnsid';
+import { createIdentityVerifier } from '@dnsid-ai/sdk';
 
 const verifier = createIdentityVerifier({}, { dnsResolver, fetchJson, logRegistry });
 const verified = await verifier.verifyDomain('agent.example.com');
@@ -114,8 +114,8 @@ const verified = await verifier.verifyDomain('agent.example.com');
 For OIDC minting (server-side only — private keys never belong in browser/client code):
 
 ```ts
-import { LocalKeyProvider } from '@identity-digital/dnsid/node';
-import { mintOIDCToken } from '@identity-digital/dnsid-oidc';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const keyProvider = await LocalKeyProvider.load(process.env.DNSID_KEY_STORE ?? '.dnsid/keys.json', true);
 const token = await mintOIDCToken({
@@ -133,7 +133,7 @@ If you pass `OIDCProfile` or `OIDCTokenMinter` a custom `fetch`, that fetch repl
 ## Node.js convenience usage
 
 ```ts
-import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@identity-digital/dnsid/node';
+import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 const { config, keyStorePath } = configFromEnvironment();
 const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
@@ -147,12 +147,12 @@ By default, the Node helper uses the system or configured DNS resolver. Because 
 If the registry CLI has already written `~/.dnsid/config.json` and `~/.dnsid/<fqdn>/private.jwk`:
 
 ```ts
-import { createNodeIdentityManagerFromDnsid } from '@identity-digital/dnsid/node';
+import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
 
 const idm = await createNodeIdentityManagerFromDnsid();
 ```
 
-`@identity-digital/dnsid-transport` is an optional peer of `@identity-digital/dnsid`; it provides the Node DNS and HTTPS defaults. DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
+`@dnsid-ai/transport` is an optional peer of `@dnsid-ai/sdk`; it provides the Node DNS and HTTPS defaults. DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
 ### Environment variables
 
@@ -197,10 +197,10 @@ DNSID_STATUS_URL=https://alice.example.com/.well-known/dnsid-status.json
 
 ## Low-level core usage
 
-Use `@identity-digital/dnsid-protocol` directly when you want only the protocol engine and interfaces, with no SDK/profile conveniences:
+Use `@dnsid-ai/protocol` directly when you want only the protocol engine and interfaces, with no SDK/profile conveniences:
 
 ```ts
-import { IdentityManager } from '@identity-digital/dnsid-protocol';
+import { IdentityManager } from '@dnsid-ai/protocol';
 
 const idm = new IdentityManager(
   { identity, verification, transport: {} },              // data only

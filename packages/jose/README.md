@@ -1,19 +1,19 @@
-# @identity-digital/dnsid-jose
+# @dnsid-ai/jose
 
 DNSid JOSE profile helpers for JWT and JWS workflows.
 
-This package builds on `@identity-digital/dnsid-protocol` contracts and does not perform DNS or HTTPS transport itself. Provide an identity resolver and key provider directly, or construct the profile from a signing `IdentityManager`.
+This package builds on `@dnsid-ai/protocol` contracts and does not perform DNS or HTTPS transport itself. Provide an identity resolver and key provider directly, or construct the profile from a signing `IdentityManager`.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-jose @identity-digital/dnsid-protocol
+npm install @dnsid-ai/jose @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { createJoseProfile } from '@identity-digital/dnsid-jose';
+import { createJoseProfile } from '@dnsid-ai/jose';
 
 const joseProfile = createJoseProfile({
   domain: 'agent.example',
@@ -45,4 +45,4 @@ has no skew grace and is checked again after verification; fractional NumericDat
 and explicit zero clock skew are supported. Explicit invalid lifetimes are errors.
 `fl=logchk` remains caller-owned operation policy.
 
-`@identity-digital/dnsid` also re-exports this package as `jose` and exports `JoseProfile` / `createJoseProfile` directly.
+`@dnsid-ai/sdk` also re-exports this package as `jose` and exports `JoseProfile` / `createJoseProfile` directly.

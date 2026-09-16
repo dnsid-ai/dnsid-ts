@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-http-signatures",
+  "name": "@dnsid-ai/http-signatures",
   "version": "0.19.1",
   "description": "DNSid HTTP Message Signatures profile helpers.",
   "type": "module",
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid-protocol": "^0.19.1",
+    "@dnsid-ai/protocol": "^0.19.1",
     "structured-headers": "^2.0.3"
   },
   "license": "Apache-2.0"

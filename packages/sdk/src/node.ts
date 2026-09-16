@@ -1,10 +1,10 @@
 /**
- * Node.js conveniences for DNSid — the `@identity-digital/dnsid/node` subpath.
+ * Node.js conveniences for DNSid — the `@dnsid-ai/sdk/node` subpath.
  *
  * Provides `LocalKeyProvider` (filesystem-backed key storage), `configFromEnvironment`
  * (DNSid config from environment variables), and the {@link createNodeIdentityManager} /
  * {@link createNodeIdentityManagerFromDnsid} factories, which default DNS resolution
- * and HTTPS JSON fetching to the optional `@identity-digital/dnsid-transport` peer.
+ * and HTTPS JSON fetching to the optional `@dnsid-ai/transport` peer.
  * The system resolver reports DNSSEC state `UNKNOWN`; the default `auto` policy accepts
  * and preserves that state, while stricter policies require a DNSSEC-aware resolver.
  *
@@ -14,9 +14,9 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import type { DNSResolver, DnsidConfig, IdentityConfig, IdentityManagerDependencies, JsonFetcher, KeyProvider, MaxKeyAge, TransportConfig } from '@identity-digital/dnsid-protocol';
-import { IdentityManager, ArgumentError, normalizeFQDN, validateDnsidConfig } from '@identity-digital/dnsid-protocol';
-import { DEFAULT_REGISTRY_URL } from '@identity-digital/dnsid-registry';
+import type { DNSResolver, DnsidConfig, IdentityConfig, IdentityManagerDependencies, JsonFetcher, KeyProvider, MaxKeyAge, TransportConfig } from '@dnsid-ai/protocol';
+import { IdentityManager, ArgumentError, normalizeFQDN, validateDnsidConfig } from '@dnsid-ai/protocol';
+import { DEFAULT_REGISTRY_URL } from '@dnsid-ai/registry';
 
 import { LocalKeyProvider } from './local-key-provider.ts';
 import { readJson } from './node-fs.ts';
@@ -63,13 +63,13 @@ type JsonFetcherWithNodeOptions = (
  * `config.transport` configures only the SDK-managed defaults: `dnsServer` applies to whichever of
  * `dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` applies to
  * the default fetcher and is rejected when `fetchJson` is injected. Injected dependencies are never
- * inspected or modified. `@identity-digital/dnsid-transport` is an optional peer; install it or inject both
+ * inspected or modified. `@dnsid-ai/transport` is an optional peer; install it or inject both
  * dependencies. The system resolver reports `UNKNOWN`; `validated`/`required` DNSSEC modes need a
  * DNSSEC-aware resolver.
  *
  * @example
  * ```ts
- * import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@identity-digital/dnsid/node';
+ * import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
  *
  * const { config, keyStorePath } = configFromEnvironment();
  * const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
@@ -113,7 +113,7 @@ export async function createNodeIdentityVerifier(
  *
  * @example
  * ```ts
- * import { createNodeIdentityManagerFromDnsid } from '@identity-digital/dnsid/node';
+ * import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
  *
  * // Reads ~/.dnsid (or DNSID_CONFIG_DIR) for config.json and key files.
  * const idm = await createNodeIdentityManagerFromDnsid();
@@ -222,11 +222,11 @@ function protocolStatusUrl(registryUrl: string, domain: string): string {
 
 async function loadNodeTransport(): Promise<NodeTransportModule> {
   try {
-    return await import('@identity-digital/dnsid-transport') as NodeTransportModule;
+    return await import('@dnsid-ai/transport') as NodeTransportModule;
   } catch (e) {
     const err = e as NodeJS.ErrnoException & { code?: string };
     if (err.code === 'ERR_MODULE_NOT_FOUND' || err.code === 'MODULE_NOT_FOUND') {
-      throw new Error('`@identity-digital/dnsid/node` HTTPS defaults require optional peer `@identity-digital/dnsid-transport`; install it or inject fetchJson.');
+      throw new Error('`@dnsid-ai/sdk/node` HTTPS defaults require optional peer `@dnsid-ai/transport`; install it or inject fetchJson.');
     }
     throw e;
   }

@@ -1,5 +1,5 @@
 ---
-title: "TypeScript: @identity-digital/dnsid-http-signatures"
+title: "TypeScript: @dnsid-ai/http-signatures"
 description: "RFC 9421 HTTP Message Signatures profile: sign and verify HTTP messages."
 ---
 
@@ -7,18 +7,18 @@ description: "RFC 9421 HTTP Message Signatures profile: sign and verify HTTP mes
 
 DNSid RFC 9421 HTTP Message Signatures profile helpers.
 
-This package provides signing, verification, canonicalization, digest, nonce, and algorithm-mapping helpers built on `@identity-digital/dnsid-protocol` contracts. It does not include DNS or HTTPS transport defaults.
+This package provides signing, verification, canonicalization, digest, nonce, and algorithm-mapping helpers built on `@dnsid-ai/protocol` contracts. It does not include DNS or HTTPS transport defaults.
 
 ## Install
 
 ```sh
-npm install @identity-digital/dnsid-http-signatures @identity-digital/dnsid-protocol
+npm install @dnsid-ai/http-signatures @dnsid-ai/protocol
 ```
 
 ## Example
 
 ```ts
-import { createHttpSignaturesProfile } from '@identity-digital/dnsid-http-signatures';
+import { createHttpSignaturesProfile } from '@dnsid-ai/http-signatures';
 
 const httpSignatures = createHttpSignaturesProfile({
   domain: 'agent.example',
@@ -36,7 +36,7 @@ bodies over 1 MiB; bodies are bounded while reading without changing their bytes
 Injected identity resolvers must honor cancellation and enforce bounded I/O.
 `fl=logchk` remains caller-owned operation policy.
 
-`@identity-digital/dnsid` also re-exports this package as `httpSignatures` and exports `HttpSignaturesProfile` / `createHttpSignaturesProfile` directly.
+`@dnsid-ai/sdk` also re-exports this package as `httpSignatures` and exports `HttpSignaturesProfile` / `createHttpSignaturesProfile` directly.
 
 DNSid profile for RFC 9421 HTTP Message Signatures.
 
@@ -49,7 +49,7 @@ The package also exports the low-level RFC 9421 building blocks it is made of â€
 component identifiers, structured-field parsing/serialization, signature-base
 construction ([buildSignatureInput](#buildsignatureinput)), [signHttpMessage](#signhttpmessage), and
 Content-Digest (RFC 9530) helpers â€” for reuse by other profiles such as
-`@identity-digital/dnsid-web-bot-auth`.
+`@dnsid-ai/web-bot-auth`.
 
 ## Classes
 
@@ -512,7 +512,7 @@ If set, exactly one signature with this `tag` parameter must be present and is t
 optional signal?: AbortSignal;
 ```
 
-Defined in: [core/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/verification-budget.ts#L6)
+Defined in: [protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L6)
 
 ###### Inherited from
 
@@ -526,7 +526,7 @@ Defined in: [core/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsi
 optional timeoutMs?: number;
 ```
 
-Defined in: [core/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/verification-budget.ts#L5)
+Defined in: [protocol/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L5)
 
 Overall invocation budget, including all discovery and evidence. Default: 30 seconds.
 
@@ -1062,12 +1062,12 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [core/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/core/src/utils.ts#L100)
+Defined in: [protocol/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L100)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
-This is an SDK/profile convention used by packages such as @identity-digital/dnsid-jose and
-@identity-digital/dnsid-http-signatures to bind a profile-level key reference to a DNSid agent
+This is an SDK/profile convention used by packages such as @dnsid-ai/jose and
+@dnsid-ai/http-signatures to bind a profile-level key reference to a DNSid agent
 FQDN plus a JWKS "kid". It is not a DNSid protocol wire-format requirement;
 the protocol itself only requires JWKS keys to carry "kid" values.
 

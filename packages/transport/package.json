@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-transport",
+  "name": "@dnsid-ai/transport",
   "version": "0.19.1",
   "description": "Node.js DNS and HTTPS transport implementations for DNSid.",
   "type": "module",
@@ -38,7 +38,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@identity-digital/dnsid-protocol": "^0.19.1",
+    "@dnsid-ai/protocol": "^0.19.1",
     "undici": "^8.10.2"
   },
   "license": "Apache-2.0"

@@ -12,15 +12,15 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": "../..",
     "paths": {
-      "@identity-digital/dnsid-protocol": ["packages/core/src/index.ts"],
-      "@identity-digital/dnsid-http-signatures": ["packages/http-signatures/src/index.ts"],
-      "@identity-digital/dnsid-jose": ["packages/jose/src/index.ts"],
-      "@identity-digital/dnsid-log-c2sp-tlog": ["packages/log-c2sp-tlog/src/index.ts"],
-      "@identity-digital/dnsid-registry": ["packages/registry/src/index.ts"],
-      "@identity-digital/dnsid-transport": ["packages/transport/src/index.ts"],
-      "@identity-digital/dnsid-web-bot-auth": ["packages/web-bot-auth/src/index.ts"],
-      "@identity-digital/dnsid": ["packages/sdk/src/index.ts"],
-      "@identity-digital/dnsid/node": ["packages/sdk/src/node.ts"]
+      "@dnsid-ai/protocol": ["packages/protocol/src/index.ts"],
+      "@dnsid-ai/http-signatures": ["packages/http-signatures/src/index.ts"],
+      "@dnsid-ai/jose": ["packages/jose/src/index.ts"],
+      "@dnsid-ai/log-c2sp-tlog": ["packages/log-c2sp-tlog/src/index.ts"],
+      "@dnsid-ai/registry": ["packages/registry/src/index.ts"],
+      "@dnsid-ai/transport": ["packages/transport/src/index.ts"],
+      "@dnsid-ai/web-bot-auth": ["packages/web-bot-auth/src/index.ts"],
+      "@dnsid-ai/sdk": ["packages/sdk/src/index.ts"],
+      "@dnsid-ai/sdk/node": ["packages/sdk/src/node.ts"]
     }
   },
   "include": ["src/**/*.ts", "../shared/**/*.ts", "../../packages/**/*.ts"],

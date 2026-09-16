@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { KMSClient } from '@aws-sdk/client-kms';
 
-import { verifyWithKey } from '@identity-digital/dnsid-protocol';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@identity-digital/dnsid-key-aws';
+import { verifyWithKey } from '@dnsid-ai/protocol';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 
 const runLocalStack = process.env['DNSID_AWS_KMS_LOCALSTACK'] === '1';
 

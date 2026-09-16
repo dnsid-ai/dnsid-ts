@@ -1,7 +1,7 @@
 /**
  * DNSid JOSE profile helpers for JWT/JWS workflows.
  *
- * Builds on the narrow contracts from `@identity-digital/dnsid-protocol`
+ * Builds on the narrow contracts from `@dnsid-ai/protocol`
  * ({@link KeyProvider}, {@link IdentityResolver}) to sign and verify compact
  * JWTs and detached-style JWS objects whose signers are identified by DNSid
  * agent domains. This package performs no DNS or HTTPS transport itself —
@@ -11,8 +11,8 @@
  * @packageDocumentation
  */
 
-import type { IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@identity-digital/dnsid-protocol';
-import { requireLocalDomain } from '@identity-digital/dnsid-protocol';
+import type { IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@dnsid-ai/protocol';
+import { requireLocalDomain } from '@dnsid-ai/protocol';
 import {
   ArgumentError,
   ValidationError,
@@ -30,7 +30,7 @@ import {
   type VerificationOptions,
   withVerificationBudget,
   waitForVerification,
-} from '@identity-digital/dnsid-protocol';
+} from '@dnsid-ai/protocol';
 
 /** Options controlling the claims of a JWT created by {@link JoseProfile.createJWT}. */
 export interface JWTOptions {
@@ -67,7 +67,7 @@ const DEFAULT_JWT_MAX_LIFETIME_SECONDS = 15 * 60;
 const DEFAULT_JWT_CLOCK_SKEW_SECONDS = 60;
 
 /** Convenience re-exports of protocol-layer helpers used with JOSE compact serialization. */
-export { parseKeyId, toBase64Url, fromBase64Url } from '@identity-digital/dnsid-protocol';
+export { parseKeyId, toBase64Url, fromBase64Url } from '@dnsid-ai/protocol';
 
 /** Tunable verification and issuance limits for a {@link JoseProfile}. */
 export interface JoseProfileConfig {
@@ -442,7 +442,7 @@ export class JoseProfile {
  * @throws ArgumentError if `opts.domain` is not a valid agent FQDN.
  * @example
  * ```ts
- * import { createJoseProfile } from '@identity-digital/dnsid-jose';
+ * import { createJoseProfile } from '@dnsid-ai/jose';
  *
  * const joseProfile = createJoseProfile({
  *   domain: 'agent.example.com',

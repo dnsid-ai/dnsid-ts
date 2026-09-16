@@ -1,5 +1,5 @@
 {
-  "name": "@identity-digital/dnsid-key-aws",
+  "name": "@dnsid-ai/key-aws",
   "version": "0.19.1",
   "description": "DNSid AWS KMS key provider integration.",
   "type": "module",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1124.0",
-    "@identity-digital/dnsid-protocol": "^0.19.1"
+    "@dnsid-ai/protocol": "^0.19.1"
   },
   "license": "Apache-2.0"
 }

@@ -2,8 +2,8 @@ import {
   DEFAULT_PUBLISH_PROFILE,
   DNSID_DRAFT01_VERSION,
   DNSID_VERSION,
-} from '@identity-digital/dnsid-protocol';
-import { C2SP_TLOG_PROFILE_VERSION, C2SP_TLOG_SPECIFICATIONS, DNSID_C2SP_METHOD_REVISION } from '@identity-digital/dnsid-log-c2sp-tlog/version';
+} from '@dnsid-ai/protocol';
+import { C2SP_TLOG_PROFILE_VERSION, C2SP_TLOG_SPECIFICATIONS, DNSID_C2SP_METHOD_REVISION } from '@dnsid-ai/log-c2sp-tlog/version';
 
 /** Immutable protocol-facing conformance metadata for this SDK release. */
 export interface SDKConformance {

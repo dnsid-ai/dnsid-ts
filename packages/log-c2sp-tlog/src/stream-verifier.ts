@@ -1,4 +1,4 @@
-import { withVerificationBudget, waitForVerification, type VerificationOptions, DomainLog, verifyWithKey, fromBase64Url, jwkThumbprint, VerificationError, VerificationCode, type C2spIssuanceEvent, type LogEvent, type DnsIdJWK, type LogRef } from '@identity-digital/dnsid-protocol';
+import { withVerificationBudget, waitForVerification, type VerificationOptions, DomainLog, verifyWithKey, fromBase64Url, jwkThumbprint, VerificationError, VerificationCode, type C2spIssuanceEvent, type LogEvent, type DnsIdJWK, type LogRef } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr } from './lr.ts';
 import { assertSupportedLifecycleJwk, c2spEventId, parseC2spSignatures, parseC2spAuthorization, parseC2spEventEntry, signedC2spEntryBytes, type C2spEventContext } from './event-codec.ts';
 import { leafHash, sha256 } from './merkle.ts';
