@@ -9,6 +9,7 @@ import {
   VerificationCode,
   VerificationError,
   jwkThumbprint,
+  validateDnsidConfig,
 } from '@dnsid-ai/protocol';
 import type { DnsIdJWK, DnsidConfig, IdentityConfig, JsonFetcher, KeyProvider } from '@dnsid-ai/protocol';
 import { createNodeIdentityManager, createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
@@ -95,6 +96,12 @@ describe('DnsidConfig validation', () => {
   it('rejects explicit transport settings in the runtime-neutral core', () => {
     expect(() => new IdentityManager({ transport: { dnsServer: '1.1.1.1' } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
     expect(() => new IdentityManager({ transport: { caBundlePath: '/ca.pem' } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
+    expect(() => new IdentityManager({ transport: { allowedUnsafeHosts: ['agent.local'] } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
+  });
+
+  it('validates transport.allowedUnsafeHosts as an array of strings', () => {
+    expect(() => validateDnsidConfig({ transport: { allowedUnsafeHosts: 'agent.local' } })).toThrow(/array of strings/);
+    expect(validateDnsidConfig({ transport: { allowedUnsafeHosts: ['agent.local'] } }).transport?.allowedUnsafeHosts).toEqual(['agent.local']);
   });
 });
 

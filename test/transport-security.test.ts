@@ -79,6 +79,8 @@ describe('transport SSRF protections', () => {
     expect((err as Error).message).toContain('unsafe target IP address');
   });
 
+  // `localhost` resolves to loopback through the system resolver, which is the
+  // testnet case: a real hostname whose address is private.
   it('lets an allowed host resolve to loopback, and no other host', async () => {
     mockHttpsStatus(403);
     const lookupFor = async (allowedUnsafeHosts?: string[]) => {
@@ -90,8 +92,8 @@ describe('transport SSRF protections', () => {
     const resolve = (lookup: NonNullable<https.RequestOptions['lookup']>, host: string) =>
       new Promise<string>((res, rej) => lookup(host, { family: 4 }, (err, address) => (err ? rej(err) : res(address as string))));
 
-    await expect(resolve(await lookupFor(['127.0.0.1']), '127.0.0.1')).resolves.toBe('127.0.0.1');
-    await expect(resolve(await lookupFor(), '127.0.0.1')).rejects.toThrow('unsafe resolved IP address');
+    await expect(resolve(await lookupFor(['localhost']), 'localhost')).resolves.toBe('127.0.0.1');
+    await expect(resolve(await lookupFor(), 'localhost')).rejects.toThrow('unsafe resolved IP address');
   });
 
   it('rejects a malformed allowedUnsafeHosts entry before connecting', async () => {
