@@ -821,8 +821,8 @@ Defined in: [packages/sdk/src/node.ts:79](https://github.com/dnsid-ai/dnsid-ts/b
 Creates an IdentityManager with Node.js DNS and HTTPS defaults.
 
 `config.transport` configures only the SDK-managed defaults: `dnsServer` applies to whichever of
-`dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` applies to
-the default fetcher and is rejected when `fetchJson` is injected. Injected dependencies are never
+`dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` and
+`allowedUnsafeHosts` apply to the default fetcher and are rejected when `fetchJson` is injected. Injected dependencies are never
 inspected or modified. `@dnsid-ai/transport` is an optional peer; install it or inject both
 dependencies. The system resolver reports `UNKNOWN`; `validated`/`required` DNSSEC modes need a
 DNSSEC-aware resolver.
@@ -861,7 +861,7 @@ const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProv
 function createNodeIdentityManagerFromDnsid(options?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L122)
+Defined in: [packages/sdk/src/node.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L125)
 
 Creates an IdentityManager from a DNSid CLI directory layout (`~/.dnsid` by default).
 
@@ -905,7 +905,7 @@ const idm = await createNodeIdentityManagerFromDnsid();
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L97)
+Defined in: [packages/sdk/src/node.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L100)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 

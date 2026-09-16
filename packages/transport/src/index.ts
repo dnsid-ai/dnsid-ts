@@ -53,6 +53,11 @@ export interface HTTPSFetchOptions {
   dnsServer?: string;
   /** Maximum accepted response body size in bytes. Defaults to 1 MiB. */
   maxResponseBytes?: number;
+  /**
+   * Hostnames whose resolved private or loopback addresses may be contacted. For trusted test and
+   * private deployments only; public defaults use none.
+   */
+  allowedUnsafeHosts?: readonly string[];
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
@@ -623,7 +628,7 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
       headers: {
         'User-Agent': DNSID_USER_AGENT,
       },
-      lookup: createSsrfSafeLookup(opts.dnsServer),
+      lookup: createSsrfSafeLookup(opts.dnsServer, new Set((opts.allowedUnsafeHosts ?? []).map(normalizeAllowedUnsafeHost))),
     };
     if (opts.caBundlePath) requestOptions.ca = [...tls.rootCertificates, fs.readFileSync(opts.caBundlePath, 'utf8')];
 

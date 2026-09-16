@@ -20,7 +20,6 @@ import {
   requiredC2spResourceFetchGuarantees,
 } from '@dnsid-ai/log-c2sp-tlog';
 import { createDefaultDnsResolver, createDnsidFetch, createSsrfSafeFetch } from '@dnsid-ai/transport';
-import { createTestnetJsonFetcher } from './testnet-transport.ts';
 import { requiredTestnetLogPolicyUrl } from './testnet-config.ts';
 
 type Environment = ReturnType<typeof configFromEnvironment<'agentPort' | 'kuUrl'>>;
@@ -70,6 +69,8 @@ function loadEnvironment(): Environment {
 
 async function createIdentity(environment: Environment, transport: TransportConfig): Promise<IdentityManager> {
   const { identity } = environment.config;
+  const zone = process.env.DNSID_TESTNET_ZONE;
+  if (!zone) throw new Error('DNSID_TESTNET_ZONE is required; run with `dnsid testnet run`');
   const publicUrl = environment.publicUrl ?? new URL(identity.kuUrl).origin;
   const config = {
     ...environment.config,
@@ -77,17 +78,23 @@ async function createIdentity(environment: Environment, transport: TransportConf
       ...identity,
       capabilitiesUrl: identity.capabilitiesUrl ?? `${publicUrl}/.well-known/agent-card.json`,
     },
-    // Both transport consumers are injected below, so the transport section is consumed here.
-    transport: {},
+    // Testnet only: every host listed resolves to this machine. Both agents are
+    // listed because each verifies the other, as caller and as receiver.
+    transport: {
+      ...transport,
+      allowedUnsafeHosts: [
+        `alice.${zone}`,
+        `bob.${zone}`,
+        `dnsid.${identity.governanceId}`,
+        new URL(requiredTestnetLogPolicyUrl()).hostname,
+      ],
+    },
   };
 
   const configDir = process.env.DNSID_CONFIG_DIR;
   if (!configDir) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid testnet run`');
 
   const keyProvider = await LocalKeyProvider.fromDirectory(configDir);
-  const fetchJson = transport.dnsServer
-    ? createTestnetJsonFetcher({ dnsServer: transport.dnsServer, caBundlePath: transport.caBundlePath })
-    : undefined;
   const logRegistry = await createLogRegistry(
     identity.logRef,
     requiredTestnetLogPolicyUrl(),
@@ -97,7 +104,7 @@ async function createIdentity(environment: Environment, transport: TransportConf
   // Route testnet lookups to its local CoreDNS instance. It reports UNKNOWN,
   // which the default auto policy permits and preserves.
   const dnsResolver = createDefaultDnsResolver({ dnsServer: transport.dnsServer });
-  return createNodeIdentityManager(config, { keyProvider, dnsResolver, fetchJson, logRegistry });
+  return createNodeIdentityManager(config, { keyProvider, dnsResolver, logRegistry });
 }
 
 async function createLogRegistry(

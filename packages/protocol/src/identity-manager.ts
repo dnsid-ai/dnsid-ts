@@ -151,7 +151,7 @@ type LogCanonicalizer = Pick<LogReader, 'canonical'> & {
 
 const IDENTITY_KEYS = ['domain', 'governanceId', 'logRef', 'statusUrl', 'policyFlags', 'maxKeyAge', 'ekUrl', 'kuUrl', 'publishProfile', 'capabilitiesUrl'];
 const VERIFICATION_KEYS = ['statusCheckInterval', 'dnssecMode', 'trustedEntities'];
-const TRANSPORT_KEYS = ['dnsServer', 'caBundlePath'];
+const TRANSPORT_KEYS = ['dnsServer', 'caBundlePath', 'allowedUnsafeHosts'];
 const THUMBPRINT_RE = /^[A-Za-z0-9_-]{43}$/;
 
 function requireObject(value: unknown, path: string, allowed: string[]): Record<string, unknown> {
@@ -250,6 +250,11 @@ function validateTransport(value: unknown): TransportConfig {
     const v = optionalString(raw, 'config.transport', key);
     if (v !== undefined) transport[key] = v;
   }
+  const hosts = raw.allowedUnsafeHosts;
+  if (hosts !== undefined) {
+    if (!Array.isArray(hosts) || hosts.some(h => typeof h !== 'string')) throw new ArgumentError('config.transport.allowedUnsafeHosts must be an array of strings');
+    transport.allowedUnsafeHosts = hosts;
+  }
   return Object.freeze(transport);
 }
 
@@ -303,6 +308,7 @@ export class IdentityManager implements IdentityResolver {
     }
     if (this.config.transport.dnsServer !== undefined) throw new ArgumentError('config.transport.dnsServer has no SDK-managed consumer here; inject dnsResolver and fetchJson or use a runtime factory');
     if (this.config.transport.caBundlePath !== undefined) throw new ArgumentError('config.transport.caBundlePath has no SDK-managed consumer here; inject fetchJson or use a runtime factory');
+    if (this.config.transport.allowedUnsafeHosts !== undefined) throw new ArgumentError('config.transport.allowedUnsafeHosts has no SDK-managed consumer here; inject fetchJson or use a runtime factory');
     this.keyProvider = keyProvider ?? null;
     this.entityKeyProvider = entityKeyProvider ?? null;
     this.logRegistry = logRegistry?.snapshot() ?? null;

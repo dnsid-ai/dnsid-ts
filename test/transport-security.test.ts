@@ -79,6 +79,31 @@ describe('transport SSRF protections', () => {
     expect((err as Error).message).toContain('unsafe target IP address');
   });
 
+  // `localhost` resolves to loopback through the system resolver, which is the
+  // testnet case: a real hostname whose address is private.
+  it('lets an allowed host resolve to loopback, and no other host', async () => {
+    mockHttpsStatus(403);
+    const lookupFor = async (allowedUnsafeHosts?: string[]) => {
+      httpsGetMock.mockClear();
+      await fetchJson('https://agent.example/.well-known/jwks.json', { allowedUnsafeHosts }).catch(() => undefined);
+      const [, requestOptions] = httpsGetMock.mock.calls[0] as [string, https.RequestOptions];
+      return requestOptions.lookup!;
+    };
+    const resolve = (lookup: NonNullable<https.RequestOptions['lookup']>, host: string) =>
+      new Promise<string>((res, rej) => lookup(host, { family: 4 }, (err, address) => (err ? rej(err) : res(address as string))));
+
+    await expect(resolve(await lookupFor(['localhost']), 'localhost')).resolves.toBe('127.0.0.1');
+    await expect(resolve(await lookupFor(), 'localhost')).rejects.toThrow('unsafe resolved IP address');
+  });
+
+  it('rejects a malformed allowedUnsafeHosts entry before connecting', async () => {
+    const err = await fetchJson('https://agent.example/.well-known/jwks.json', {
+      allowedUnsafeHosts: ['agent.example:8443'],
+    }).catch(e => e);
+    expect(err).toBeInstanceOf(TypeError);
+    expect(httpsGetMock).not.toHaveBeenCalled();
+  });
+
   it('rejects initial URLs that do not match allowedHost', async () => {
     const err = await fetchJson('https://evil.example/.well-known/jwks.json', { allowedHost: 'agent.example' }).catch(e => e);
     expect(err).toBeInstanceOf(VerificationError);
