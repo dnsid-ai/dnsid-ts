@@ -54,15 +54,15 @@ interface NodeTransportModule {
 
 type JsonFetcherWithNodeOptions = (
   url: string,
-  opts?: { allowedHost?: string; maxResponseBytes?: number; dnsServer?: string; caBundlePath?: string },
+  opts?: { allowedHost?: string; maxResponseBytes?: number; dnsServer?: string; caBundlePath?: string; allowedUnsafeHosts?: readonly string[] },
 ) => ReturnType<JsonFetcher>;
 
 /**
  * Creates an IdentityManager with Node.js DNS and HTTPS defaults.
  *
  * `config.transport` configures only the SDK-managed defaults: `dnsServer` applies to whichever of
- * `dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` applies to
- * the default fetcher and is rejected when `fetchJson` is injected. Injected dependencies are never
+ * `dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` and
+ * `allowedUnsafeHosts` apply to the default fetcher and are rejected when `fetchJson` is injected. Injected dependencies are never
  * inspected or modified. `@dnsid-ai/transport` is an optional peer; install it or inject both
  * dependencies. The system resolver reports `UNKNOWN`; `validated`/`required` DNSSEC modes need a
  * DNSSEC-aware resolver.
@@ -79,16 +79,19 @@ type JsonFetcherWithNodeOptions = (
 export async function createNodeIdentityManager(config: DnsidConfig, deps: IdentityManagerDependencies = {}): Promise<IdentityManager> {
   // Validate everything (including nested lists) before touching the filesystem or network.
   const { transport, ...core } = validateDnsidConfig(config);
-  const { dnsServer, caBundlePath } = transport as TransportConfig;
+  const { dnsServer, caBundlePath, allowedUnsafeHosts } = transport as TransportConfig;
   if (dnsServer !== undefined && deps.dnsResolver && deps.fetchJson) {
     throw new ArgumentError('config.transport.dnsServer has no SDK-managed consumer when both dnsResolver and fetchJson are injected');
   }
   if (caBundlePath !== undefined && deps.fetchJson) {
     throw new ArgumentError('config.transport.caBundlePath has no SDK-managed consumer when fetchJson is injected');
   }
+  if (allowedUnsafeHosts !== undefined && deps.fetchJson) {
+    throw new ArgumentError('config.transport.allowedUnsafeHosts has no SDK-managed consumer when fetchJson is injected');
+  }
   const transportModule = deps.fetchJson && deps.dnsResolver ? null : await loadNodeTransport();
   const fetchJson: JsonFetcher = deps.fetchJson
-    ?? ((url, fetchOptions) => transportModule!.fetchJson(url, { ...fetchOptions, dnsServer, caBundlePath }));
+    ?? ((url, fetchOptions) => transportModule!.fetchJson(url, { ...fetchOptions, dnsServer, caBundlePath, allowedUnsafeHosts }));
   const dnsResolver = deps.dnsResolver ?? transportModule!.createDefaultDnsResolver({ dnsServer });
   return new IdentityManager(core, { ...deps, dnsResolver, fetchJson });
 }

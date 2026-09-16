@@ -107,6 +107,11 @@ export interface TransportConfig {
   dnsServer?: string;
   /** Path to a PEM CA bundle appended to the system root certificates for TLS verification. */
   caBundlePath?: string;
+  /**
+   * Hostnames whose resolved private or loopback addresses the default fetcher may contact. For
+   * trusted test and private deployments only.
+   */
+  allowedUnsafeHosts?: readonly string[];
 }
 
 /** Single core configuration entry point. Omit `identity` for a verification-only manager. */
