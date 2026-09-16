@@ -105,15 +105,23 @@ jobs:
             git push origin "${{ steps.version.outputs.version }}"
           fi
 
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@006b7ce8314066bdf1765b4500370d40fa6917a3 # v0.24.2
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: false
+
       - name: Create GitHub Release
         run: |
           TAG="${{ steps.version.outputs.version }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists; refreshing assets"
-            gh release upload "$TAG" tarballs/*.tgz --clobber
+            gh release upload "$TAG" tarballs/*.tgz sbom.cdx.json --clobber
           else
             gh release create "$TAG" \
-              tarballs/*.tgz \
+              tarballs/*.tgz sbom.cdx.json \
               --title "Release ${TAG}" \
               --notes-file /tmp/release-notes.md
           fi
