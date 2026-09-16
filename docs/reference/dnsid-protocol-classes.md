@@ -890,7 +890,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:313](https://github.com/dn
 
 ### IdentityManager
 
-Defined in: [packages/protocol/src/identity-manager.ts:276](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L276)
+Defined in: [packages/protocol/src/identity-manager.ts:281](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L281)
 
 Core DNSid protocol facade.
 
@@ -912,7 +912,7 @@ concrete key storage live in sibling packages.
 new IdentityManager(config?, deps?): IdentityManager;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L296)
+Defined in: [packages/protocol/src/identity-manager.ts:301](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L301)
 
 ###### Parameters
 
@@ -944,7 +944,7 @@ Injected runtime objects. The protocol core has no default DNS/HTTPS
 readonly config: DnsidConfig & object;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:278](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L278)
+Defined in: [packages/protocol/src/identity-manager.ts:283](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L283)
 
 Validated immutable snapshot. `identity` is absent for verification-only managers.
 
@@ -972,7 +972,7 @@ verification: VerificationConfig;
 canonicalizeLogEvent(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:357](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L357)
+Defined in: [packages/protocol/src/identity-manager.ts:363](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L363)
 
 ###### Parameters
 
@@ -992,7 +992,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:357](https://github.com/d
 createTxtRecord(): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:502](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L502)
+Defined in: [packages/protocol/src/identity-manager.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L508)
 
 Builds and signs the `_dnsid` TXT record for DNS publication.
 
@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:971](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L971)
+Defined in: [packages/protocol/src/identity-manager.ts:977](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L977)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1030,7 +1030,7 @@ Removes a domain from the IdentityManager cache.
 getEntityKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:464](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L464)
+Defined in: [packages/protocol/src/identity-manager.ts:470](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L470)
 
 Returns the accountable-entity public key set for ek JWKS publication.
 
@@ -1046,7 +1046,7 @@ Returns the accountable-entity public key set for ek JWKS publication.
 getKeyProvider(): KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:335](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L335)
+Defined in: [packages/protocol/src/identity-manager.ts:341](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L341)
 
 ###### Returns
 
@@ -1060,7 +1060,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:335](https://github.com/d
 getKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:457](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L457)
+Defined in: [packages/protocol/src/identity-manager.ts:463](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L463)
 
 Returns the local identity's operational public key set for ku JWKS publication.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:957](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L957)
+Defined in: [packages/protocol/src/identity-manager.ts:963](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L963)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1098,7 +1098,7 @@ Loads the full verified event history for a domain from its bound lifecycle log.
 requiredLogSignatures(event): LogSignerRole[];
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:362](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L362)
+Defined in: [packages/protocol/src/identity-manager.ts:368](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L368)
 
 ###### Parameters
 
@@ -1118,7 +1118,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:362](https://github.com/d
 rotateOperationalKey(options): Promise<OperationalKeyRotationResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:472](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L472)
+Defined in: [packages/protocol/src/identity-manager.ts:478](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L478)
 
 Runs the draft-01 operational-key rotation transaction.
 
@@ -1140,7 +1140,7 @@ Runs the draft-01 operational-key rotation transaction.
 signAndWriteEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:350](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L350)
+Defined in: [packages/protocol/src/identity-manager.ts:356](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L356)
 
 Signs and appends a lifecycle event to the local identity log.
 
@@ -1162,7 +1162,7 @@ Signs and appends a lifecycle event to the local identity log.
 signEvent(event, role): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:375](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L375)
+Defined in: [packages/protocol/src/identity-manager.ts:381](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L381)
 
 ###### Parameters
 
@@ -1190,7 +1190,7 @@ signEventWithProvider(
 logBinding?): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:385](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L385)
+Defined in: [packages/protocol/src/identity-manager.ts:391](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L391)
 
 ###### Parameters
 
@@ -1225,7 +1225,7 @@ verifyDomain(
 options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L553)
+Defined in: [packages/protocol/src/identity-manager.ts:559](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L559)
 
 Verifies a DNSid identity according to the protocol, then enforces configured
 `trustedEntities` acceptance. Acceptance runs per invocation, including cache hits,
@@ -1261,7 +1261,7 @@ and is never cached; a denial leaves valid protocol evidence cached.
 verifyPublicationEvidence(domain, options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:563](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L563)
+Defined in: [packages/protocol/src/identity-manager.ts:569](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L569)
 
 **`Internal`**
 
@@ -1291,7 +1291,7 @@ it cannot verify a counterparty and is never an acceptance decision.
 writeSignedEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:430](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L430)
+Defined in: [packages/protocol/src/identity-manager.ts:436](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L436)
 
 ###### Parameters
 

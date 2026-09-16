@@ -569,7 +569,7 @@ Defined in: [packages/protocol/src/log-events.ts:112](https://github.com/dnsid-a
 
 ### DnsidConfig
 
-Defined in: [packages/protocol/src/types.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L113)
+Defined in: [packages/protocol/src/types.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L118)
 
 Single core configuration entry point. Omit `identity` for a verification-only manager.
 
@@ -583,7 +583,7 @@ Single core configuration entry point. Omit `identity` for a verification-only m
 optional identity?: IdentityConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L114)
+Defined in: [packages/protocol/src/types.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L119)
 
 <a id="transport"></a>
 
@@ -593,7 +593,7 @@ Defined in: [packages/protocol/src/types.ts:114](https://github.com/dnsid-ai/dns
 optional transport?: TransportConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L116)
+Defined in: [packages/protocol/src/types.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L121)
 
 <a id="verification"></a>
 
@@ -603,7 +603,7 @@ Defined in: [packages/protocol/src/types.ts:116](https://github.com/dnsid-ai/dns
 optional verification?: VerificationConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L115)
+Defined in: [packages/protocol/src/types.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L120)
 
 ***
 
@@ -4110,6 +4110,19 @@ Defined in: [packages/protocol/src/types.ts:105](https://github.com/dnsid-ai/dns
 SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never alters protocol semantics.
 
 #### Properties
+
+<a id="allowedunsafehosts"></a>
+
+##### allowedUnsafeHosts?
+
+```ts
+optional allowedUnsafeHosts?: readonly string[];
+```
+
+Defined in: [packages/protocol/src/types.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L114)
+
+Hostnames whose resolved private or loopback addresses the default fetcher may contact. For
+trusted test and private deployments only.
 
 <a id="cabundlepath"></a>
 
