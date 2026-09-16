@@ -25,6 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Production deps only; dev-tool advisories arrive via Dependabot instead.
+      # Accepted risks: `npm audit` has no ignore flag, so document any in
+      # package.json "overrides" with a comment and link to the advisory.
+      - name: Dependency vulnerability audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: TypeScript compile checks
         run: npm run typecheck && npm run typecheck:packages
 
