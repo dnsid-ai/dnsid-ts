@@ -153,7 +153,7 @@ describe('counterparty acceptance', () => {
   it('accepts an exact gi match and rejects child, suffix, and lookalike names', async () => {
     const { manager } = await setup();
     await expect(manager({ verification: { trustedEntities: [{ governanceId: 'example.com' }] } }).verifyDomain('agent.example.com')).resolves.toBeDefined();
-    for (const governanceId of ['agent.example.com', 'com', 'sub.example.com', 'example.co', 'xexample.com']) {
+    for (const governanceId of ['agent.example.com', 'com', 'sub.example.com', 'example.co', 'xexample.test']) {
       await expect(manager({ verification: { trustedEntities: [{ governanceId }] } }).verifyDomain('agent.example.com'))
         .rejects.toMatchObject({ code: VerificationCode.CounterpartyNotAccepted });
     }

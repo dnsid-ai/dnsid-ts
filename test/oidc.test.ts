@@ -132,8 +132,8 @@ describe('OIDCProfile', () => {
     expect(() => validateExactOIDCIssuer('https://issuer.example.com/issuer1?x=1')).toThrow(ArgumentError);
     expect(() => validateExactOIDCIssuer('http://issuer.example.com')).toThrow(ArgumentError);
     expect(() => validateExactOIDCIssuer('http://localhost')).toThrow(ArgumentError);
-    expect(() => validateExactOIDCIssuer('http://127.evil.com/issuer', true)).toThrow(ArgumentError);
-    expect(() => validateExactOIDCIssuer('http://127.0.0.1.evil.com/issuer', true)).toThrow(ArgumentError);
+    expect(() => validateExactOIDCIssuer('http://127.evil.example/issuer', true)).toThrow(ArgumentError);
+    expect(() => validateExactOIDCIssuer('http://127.0.0.1.evil.example/issuer', true)).toThrow(ArgumentError);
   });
 
   it('validates discovery documents', async () => {

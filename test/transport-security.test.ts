@@ -118,7 +118,7 @@ describe('transport SSRF protections', () => {
     expect(httpsGetMock).toHaveBeenCalledOnce();
 
     httpsGetMock.mockClear();
-    const err = await fetchJson('https://notexample.com/jwks.json', {
+    const err = await fetchJson('https://notexample.test/jwks.json', {
       allowedHost: 'example.com', domainBoundary: true,
     }).catch(e => e);
     expect((err as Error).message).toContain('URL host not permitted');

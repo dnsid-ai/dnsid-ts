@@ -76,7 +76,7 @@ describe('DNSid version profiles', () => {
 describe('DnsIdTxtRecord wire handling', () => {
   it('requires v first and rejects duplicate tags', () => {
     expect(() => DnsIdTxtRecord.parse(raw(DNSID_VERSION).replace(/^v=[^;]+;/, '') + ';v=DNSid1')).toThrow(/v= tag must be first/);
-    expect(() => DnsIdTxtRecord.parse(raw(DNSID_VERSION) + ';gi=other.com')).toThrow(/duplicate TXT tag/);
+    expect(() => DnsIdTxtRecord.parse(raw(DNSID_VERSION) + ';gi=other.example')).toThrow(/duplicate TXT tag/);
   });
 
   it('does not invent a profile when serializing an unset record', () => {
