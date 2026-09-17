@@ -354,7 +354,7 @@ Defined in: [packages/protocol/src/types.ts:14](https://github.com/dnsid-ai/dnsi
 type JsonFetcher = (url, opts?) => Promise<FetchResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L73)
+Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L81)
 
 #### Parameters
 
@@ -535,7 +535,7 @@ Pre-RFC moving verification selector. Never published while version 1 is a draft
 const JWKS_MAX_RESPONSE_BYTES: number;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L63)
+Defined in: [packages/protocol/src/identity-manager.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L71)
 
 ***
 
@@ -601,7 +601,7 @@ Defined in: [packages/protocol/src/jwks.ts:6](https://github.com/dnsid-ai/dnsid-
 const STATUS_MAX_RESPONSE_BYTES: number;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L64)
+Defined in: [packages/protocol/src/identity-manager.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L72)
 
 ***
 
@@ -662,7 +662,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1008](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1008)
+Defined in: [packages/protocol/src/identity-manager.ts:1059](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1059)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1079,7 +1079,7 @@ ArgumentError if the key ID is malformed.
 function requireLocalDomain(manager): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L97)
+Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
 
 Returns `config.identity.domain` or throws `ArgumentError` for verification-only managers.
 
@@ -1213,7 +1213,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:265](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L265)
+Defined in: [packages/protocol/src/identity-manager.ts:273](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L273)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1243,7 +1243,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1045](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1045)
+Defined in: [packages/protocol/src/identity-manager.ts:1096](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1096)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1335,7 +1335,7 @@ Returns true if the signature is valid, false otherwise.
 function waitForVerification<T>(operation, signal): Promise<T>;
 ```
 
-Defined in: [packages/protocol/src/verification-budget.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L29)
+Defined in: [packages/protocol/src/verification-budget.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L43)
 
 Races cooperative work against cancellation, including already-aborted invocations.
 

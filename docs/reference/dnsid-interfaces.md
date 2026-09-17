@@ -765,7 +765,7 @@ The record set and the DNSSEC validation state of the response.
 
 ### FetchResult
 
-Defined in: [packages/protocol/src/identity-manager.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L46)
+Defined in: [packages/protocol/src/identity-manager.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L54)
 
 #### Properties
 
@@ -777,7 +777,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:46](https://github.com/dn
 data: unknown;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L47)
+Defined in: [packages/protocol/src/identity-manager.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L55)
 
 <a id="tlscert-1"></a>
 
@@ -787,7 +787,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:47](https://github.com/dn
 tlsCert: TLSCertificate;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L48)
+Defined in: [packages/protocol/src/identity-manager.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L56)
 
 ***
 
@@ -1014,7 +1014,7 @@ HTTPS URL for the lifecycle status endpoint (`su` tag).
 
 ### IdentityManagerDependencies
 
-Defined in: [packages/protocol/src/identity-manager.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L76)
+Defined in: [packages/protocol/src/identity-manager.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L84)
 
 Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager). Configuration data lives in [DnsidConfig](#dnsidconfig).
 
@@ -1028,7 +1028,7 @@ Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/
 optional cache?: IdentityCache;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L83)
+Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
 
 <a id="dnsresolver-1"></a>
 
@@ -1038,7 +1038,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dn
 optional dnsResolver?: DNSResolver;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L82)
+Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L90)
 
 <a id="entitykeyprovider"></a>
 
@@ -1048,7 +1048,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:82](https://github.com/dn
 optional entityKeyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L80)
+Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
 
 Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejected without `config.identity`.
 
@@ -1060,7 +1060,7 @@ Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejec
 optional fetchJson?: JsonFetcher;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L84)
+Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
 
 <a id="keyprovider"></a>
 
@@ -1070,7 +1070,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:84](https://github.com/dn
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L78)
+Defined in: [packages/protocol/src/identity-manager.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L86)
 
 Local operational signer. Required with `config.identity`; rejected without it.
 
@@ -1082,7 +1082,7 @@ Local operational signer. Required with `config.identity`; rejected without it.
 optional logRegistry?: LogRegistry;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L81)
+Defined in: [packages/protocol/src/identity-manager.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L89)
 
 ***
 
@@ -1090,7 +1090,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dn
 
 ### IdentityResolver
 
-Defined in: [packages/protocol/src/identity-manager.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L87)
+Defined in: [packages/protocol/src/identity-manager.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L95)
 
 #### Extended by
 
@@ -1109,7 +1109,7 @@ verifyDomain(
 options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
+Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
 
 ###### Parameters
 
@@ -1682,7 +1682,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:70](https://github.com/dnsid-a
 
 ### JsonFetchOptions
 
-Defined in: [packages/protocol/src/identity-manager.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L66)
+Defined in: [packages/protocol/src/identity-manager.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L74)
 
 #### Properties
 
@@ -1694,7 +1694,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:66](https://github.com/dn
 optional allowedHost?: string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L68)
+Defined in: [packages/protocol/src/identity-manager.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L76)
 
 <a id="domainboundary"></a>
 
@@ -1704,7 +1704,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:68](https://github.com/dn
 optional domainBoundary?: boolean;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L69)
+Defined in: [packages/protocol/src/identity-manager.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L77)
 
 <a id="maxresponsebytes"></a>
 
@@ -1714,7 +1714,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:69](https://github.com/dn
 optional maxResponseBytes?: number;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L70)
+Defined in: [packages/protocol/src/identity-manager.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L78)
 
 <a id="signal"></a>
 
@@ -1724,7 +1724,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:70](https://github.com/dn
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L67)
+Defined in: [packages/protocol/src/identity-manager.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L75)
 
 ***
 
@@ -3151,7 +3151,7 @@ Defined in: [packages/protocol/src/log-events.ts:101](https://github.com/dnsid-a
 
 ### OperationalKeyRotationOptions
 
-Defined in: [packages/protocol/src/identity-manager.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L51)
+Defined in: [packages/protocol/src/identity-manager.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L59)
 
 #### Properties
 
@@ -3163,7 +3163,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:51](https://github.com/dn
 publishKeySet: (keySet) => Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L53)
+Defined in: [packages/protocol/src/identity-manager.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L61)
 
 Publishes the pending operational JWKS at the configured ku endpoint before continuity is appended.
 
@@ -3185,7 +3185,7 @@ Publishes the pending operational JWKS at the configured ku endpoint before cont
 optional timestamp?: Date;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L54)
+Defined in: [packages/protocol/src/identity-manager.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L62)
 
 ***
 
@@ -3193,7 +3193,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:54](https://github.com/dn
 
 ### OperationalKeyRotationResult
 
-Defined in: [packages/protocol/src/identity-manager.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L57)
+Defined in: [packages/protocol/src/identity-manager.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L65)
 
 #### Properties
 
@@ -3205,7 +3205,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:57](https://github.com/dn
 event: KeyRotationEvent;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L58)
+Defined in: [packages/protocol/src/identity-manager.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L66)
 
 <a id="keyset"></a>
 
@@ -3215,7 +3215,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:58](https://github.com/dn
 keySet: JWKS;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L60)
+Defined in: [packages/protocol/src/identity-manager.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L68)
 
 <a id="logref-1"></a>
 
@@ -3225,7 +3225,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:60](https://github.com/dn
 logRef: string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L59)
+Defined in: [packages/protocol/src/identity-manager.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L67)
 
 ***
 
@@ -3988,7 +3988,7 @@ Defined in: [packages/sdk/src/conformance.ts:11](https://github.com/dnsid-ai/dns
 
 ### SigningIdentityManager
 
-Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
+Defined in: [packages/protocol/src/identity-manager.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L99)
 
 #### Extends
 
@@ -4004,7 +4004,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dn
 config: object;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
+Defined in: [packages/protocol/src/identity-manager.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L100)
 
 ###### identity?
 
@@ -4028,7 +4028,7 @@ domain: string;
 getKeyProvider(): KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L93)
+Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L101)
 
 ###### Returns
 
@@ -4045,7 +4045,7 @@ verifyDomain(
 options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
+Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
 
 ###### Parameters
 

@@ -10,13 +10,21 @@ import type {
   TLSCertificate,
   TXTRecord,
 } from './types.ts';
-import { withVerificationBudget, waitForVerification, type VerificationOptions } from './verification-budget.ts';
+import { withVerificationBudget, waitForVerification, cancellationError, isCancellation, type VerificationOptions } from './verification-budget.ts';
 
 interface SharedVerification {
   promise: Promise<VerifiedDomain>;
   controller: AbortController;
   callers: number;
   finished?: boolean;
+}
+
+interface IdentityEvidence {
+  jwks: JWKS;
+  tlsCert: TLSCertificate;
+  signingKeyThumbprint: string;
+  logReader: LogReader;
+  keyBoundAt: Date;
 }
 
 import { DNSSECState, DNSSECMode } from './types.ts';
@@ -829,6 +837,68 @@ export class IdentityManager implements IdentityResolver {
     const canonicalBytes = new TextEncoder().encode(record.canonical());
     const signingKey = await verifyDraft01RecordSignature(record.sg, canonicalBytes, recordSigningJwks);
 
+    // sg is authenticated: record-derived locations (ku, lr, su) may now be followed.
+    // Identity/log work and the status fetch are independent, so run them
+    // concurrently; the first definitive failure cancels the sibling. Error
+    // precedence is fixed (identity > status > cancellation) so callers see the
+    // same code regardless of which branch finished first.
+    const fanout = new AbortController();
+    const onAbort = () => fanout.abort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    let identity: PromiseSettledResult<IdentityEvidence>;
+    let statusCheck: PromiseSettledResult<AgentStatus>;
+    try {
+      const cancelSiblingOnFailure = <T>(branch: Promise<T>) => branch.catch((e: unknown) => { fanout.abort(); throw e; });
+      [identity, statusCheck] = await Promise.allSettled([
+        cancelSiblingOnFailure(this.verifyIdentityEvidence(domain, record, recordSigningJwks, recordSigningTlsCert, signingKey, fanout.signal)),
+        cancelSiblingOnFailure(this.fetchActiveStatus(record.su, fanout.signal)),
+      ]);
+    } finally {
+      signal.removeEventListener('abort', onAbort);
+    }
+    // Parent cancellation wins over any sibling result.
+    if (signal.aborted) throw cancellationError();
+    for (const settled of [identity, statusCheck]) {
+      if (settled.status === 'rejected' && !isCancellation(settled.reason)) throw settled.reason;
+    }
+    if (identity.status === 'rejected') throw identity.reason;
+    if (statusCheck.status === 'rejected') throw statusCheck.reason;
+    const { jwks, tlsCert, signingKeyThumbprint, logReader, keyBoundAt } = identity.value;
+    const status = statusCheck.value;
+
+    const now = new Date();
+    const result = new VerifiedDomain({
+      domain,
+      record,
+      jwks,
+      recordSigningJwks,
+      signingKey,
+      signingKeyThumbprint,
+      tlsCert,
+      recordSigningTlsCert,
+      registryStatus: status,
+      verifiedAt: now,
+      dnsTTL,
+      dnsExpiresAt,
+      keyBoundAt,
+      lastStatusCheckAt: now,
+      dnssecState,
+      logReader,
+    });
+
+    this.requireFreshEvidence(result);
+    return result;
+  }
+
+  /** Post-sg identity branch: runtime JWKS, two-key separation, lifecycle binding, key age. */
+  private async verifyIdentityEvidence(
+    domain: string,
+    record: DnsIdTxtRecord,
+    recordSigningJwks: JWKS,
+    recordSigningTlsCert: TLSCertificate,
+    signingKey: DnsIdJWK,
+    signal: AbortSignal,
+  ): Promise<IdentityEvidence> {
     let jwks = recordSigningJwks;
     let tlsCert = recordSigningTlsCert;
     if (record.runtimeKeyURI() !== record.signatureVerificationKeyURI()) {
@@ -916,10 +986,14 @@ export class IdentityManager implements IdentityResolver {
         });
       }
     }
+    return { jwks, tlsCert, signingKeyThumbprint, logReader, keyBoundAt };
+  }
 
+  /** Post-sg status branch: fetch su and require ACTIVE. */
+  private async fetchActiveStatus(su: string, signal: AbortSignal): Promise<AgentStatus> {
     let status: AgentStatus;
     try {
-      const { data } = await this.fetchProtocolJson(record.su, { maxResponseBytes: STATUS_MAX_RESPONSE_BYTES, signal });
+      const { data } = await this.fetchProtocolJson(su, { maxResponseBytes: STATUS_MAX_RESPONSE_BYTES, signal });
       status = parseAgentStatus(data);
     } catch (e) {
       if (e instanceof VerificationError) throw e;
@@ -927,36 +1001,13 @@ export class IdentityManager implements IdentityResolver {
         code: VerificationCode.StatusUnavailable, transient: true,
       });
     }
-
     if (status.state !== 'ACTIVE') {
       throw new VerificationError(`agent is not ACTIVE: ${status.state}`, {
         code: VerificationCode.StatusNotActive,
         agentState: status.state,
       });
     }
-
-    const now = new Date();
-    const result = new VerifiedDomain({
-      domain,
-      record,
-      jwks,
-      recordSigningJwks,
-      signingKey,
-      signingKeyThumbprint,
-      tlsCert,
-      recordSigningTlsCert,
-      registryStatus: status,
-      verifiedAt: now,
-      dnsTTL,
-      dnsExpiresAt,
-      keyBoundAt,
-      lastStatusCheckAt: now,
-      dnssecState,
-      logReader,
-    });
-
-    this.requireFreshEvidence(result);
-    return result;
+    return status;
   }
 
   /** Loads the full verified event history for a domain from its bound lifecycle log. */

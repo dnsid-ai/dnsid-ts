@@ -306,6 +306,62 @@ describe('IdentityManager.verifyDomain()', () => {
     },
   );
 
+  describe('post-sg fan-out', () => {
+    it('fetches su concurrently with ku, but only after sg is authenticated', async () => {
+      const { fixture } = await setup();
+      const kuGate = deferred();
+      const order: string[] = [];
+      const fetchJson = vi.fn(async (url: string, opts?: object) => {
+        order.push(url);
+        if (url === fixture.record.ku) await kuGate.promise;
+        return fixture.fetchJson(url, opts);
+      });
+      const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson });
+      const pending = manager.verifyDomain('agent.example.com');
+      await vi.waitFor(() => expect(order).toContain(fixture.record.su));
+      // su was requested while ku was still outstanding, and never before ek.
+      expect(order.indexOf(fixture.record.ek)).toBeLessThan(order.indexOf(fixture.record.su));
+      expect(fetchJson.mock.calls.filter(([url]) => url === fixture.record.ku)).toHaveLength(1);
+      kuGate.resolve();
+      await expect(pending).resolves.toMatchObject({ domain: 'agent.example.com' });
+    });
+
+    it('does not follow su when sg fails', async () => {
+      const { fixture } = await setup();
+      fixture.record.sg = toBase64Url(new Uint8Array(64));
+      const fetchJson = vi.fn(fixture.fetchJson);
+      const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson });
+      await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.SignatureInvalid });
+      expect(fetchJson.mock.calls.filter(([url]) => url === fixture.record.su)).toHaveLength(0);
+    });
+
+    it('reports the identity failure and cancels the outstanding status fetch', async () => {
+      const { fixture } = await setup();
+      let suSignal: AbortSignal | undefined;
+      const fetchJson = vi.fn(async (url: string, opts?: { signal?: AbortSignal }) => {
+        if (url === fixture.record.su) { suSignal = opts?.signal; await new Promise(() => {}); }
+        if (url === fixture.record.ku) return { ...await fixture.fetchJson(url, opts), data: { keys: [fixture.entityKey] } };
+        return fixture.fetchJson(url, opts);
+      });
+      const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson });
+      await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.RecordInvalid, transient: false });
+      expect(suSignal?.aborted).toBe(true);
+    });
+
+    it('reports the status failure and cancels the outstanding identity work', async () => {
+      const { fixture } = await setup();
+      let kuSignal: AbortSignal | undefined;
+      const fetchJson = vi.fn(async (url: string, opts?: { signal?: AbortSignal }) => {
+        if (url === fixture.record.su) return { ...await fixture.fetchJson(url, opts), data: { state: 'REVOKED', lastTransitionAt: new Date().toISOString(), revocationReason: 'superseded' } };
+        if (url === fixture.record.ku) { kuSignal = opts?.signal; await new Promise(() => {}); }
+        return fixture.fetchJson(url, opts);
+      });
+      const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson });
+      await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.StatusNotActive, agentState: 'REVOKED' });
+      expect(kuSignal?.aborted).toBe(true);
+    });
+  });
+
   describe('in-flight coalescing', () => {
     it('runs cold reusable verification once for 32 same-domain callers', async () => {
       const { fixture } = await setup();
