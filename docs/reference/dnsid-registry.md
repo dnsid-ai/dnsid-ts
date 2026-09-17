@@ -3058,7 +3058,7 @@ Defined in: [packages/registry/src/index.ts:234](https://github.com/dnsid-ai/dns
 ##### state
 
 ```ts
-state: "pending" | "accepted" | "rejected";
+state: "rejected" | "pending" | "accepted";
 ```
 
 Defined in: [packages/registry/src/index.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L228)

@@ -25,11 +25,25 @@ export async function withVerificationBudget<T>(operation: (signal: AbortSignal)
   } finally { clearTimeout(timer); }
 }
 
+const CANCELLATION = Symbol('dnsid.verification.canceled');
+
+/** The transient error raised when an invocation's signal aborts before cooperative work completes. */
+export function cancellationError(): VerificationError {
+  const error = new VerificationError('verification deadline exceeded or canceled', { code: VerificationCode.RecordInvalid, transient: true });
+  Object.defineProperty(error, CANCELLATION, { value: true });
+  return error;
+}
+
+/** True when `reason` is a cancellation raised by this budget, not a definitive verification failure. */
+export function isCancellation(reason: unknown): boolean {
+  return typeof reason === 'object' && reason !== null && CANCELLATION in reason;
+}
+
 /** Races cooperative work against cancellation, including already-aborted invocations. */
 export async function waitForVerification<T>(operation: (signal: AbortSignal) => Promise<T>, signal: AbortSignal): Promise<T> {
   let onAbort: () => void = () => {};
   const canceled = new Promise<never>((_, reject) => {
-    onAbort = () => reject(new VerificationError('verification deadline exceeded or canceled', { code: VerificationCode.RecordInvalid, transient: true }));
+    onAbort = () => reject(cancellationError());
     if (signal.aborted) onAbort();
     else signal.addEventListener('abort', onAbort, { once: true });
   });
