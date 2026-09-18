@@ -5,6 +5,7 @@ export const dnsidEnvironmentVariables = {
   domain: 'DNSID_DOMAIN',
   governanceId: 'DNSID_GOVERNANCE_ID',
   registryUrl: 'DNSID_REGISTRY_URL',
+  apiKey: 'DNSID_API_KEY',
   statusUrl: 'DNSID_STATUS_URL',
   logRef: 'DNSID_LOG_REF',
   ekUrl: 'DNSID_EK_URL',
@@ -31,6 +32,7 @@ const environmentSchema = {
   domain: stringField(dnsidEnvironmentVariables.domain),
   governanceId: stringField(dnsidEnvironmentVariables.governanceId),
   registryUrl: stringField(dnsidEnvironmentVariables.registryUrl),
+  apiKey: stringField(dnsidEnvironmentVariables.apiKey),
   statusUrl: stringField(dnsidEnvironmentVariables.statusUrl),
   logRef: stringField(dnsidEnvironmentVariables.logRef),
   ekUrl: stringField(dnsidEnvironmentVariables.ekUrl),
@@ -58,8 +60,10 @@ type ConfigForEnvironment<RequiredFields extends EnvironmentFieldName> = DnsidCo
 interface EnvironmentConfigResultBase<RequiredFields extends EnvironmentFieldName = never> {
   /** Core configuration: `identity` publication fields, `verification.dnssecMode`, and `transport` from the environment. */
   config: ConfigForEnvironment<RequiredFields>;
-  /** Base URL of the DNSid registry for control-plane workflows. Defaults to `https://api.dnsid.ai`. Not core config. */
+  /** Base URL of the DNSid registry for control-plane workflows. Defaults to the local registry ({@link DEFAULT_REGISTRY_URL}). Not core config. */
   registryUrl: string;
+  /** Owner API key for registry workflows (`DNSID_API_KEY`); `dnsid local env` exports one for the local registry. */
+  apiKey?: string;
   /** Optional public base URL for the agent, e.g. https://alice.example.com. */
   publicUrl?: string;
   /** Optional local key-store path for LocalKeyProvider. */
@@ -119,11 +123,24 @@ export function configFromEnvironment<const RequiredFields extends EnvironmentFi
   return {
     config,
     registryUrl,
+    apiKey: parsed.apiKey,
     publicUrl: parsed.publicUrl,
     keyStorePath: parsed.keyStorePath,
     agentName: parsed.agentName,
     agentPort: parsed.agentPort,
   } as EnvironmentConfigResult<RequiredFields>;
+}
+
+/**
+ * Registry client options from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`, the
+ * variables `dnsid local env` exports. Unset means the local registry with no
+ * credential. Unlike {@link configFromEnvironment} this needs no identity
+ * variables, so it works before an agent exists:
+ * `new RegistryClient(registryClientOptionsFromEnvironment())`.
+ */
+export function registryClientOptionsFromEnvironment(env: EnvironmentSource = process.env): { baseUrl: string; token?: string } {
+  const parsed = parseEnvironment(env);
+  return defined({ baseUrl: parsed.registryUrl ?? DEFAULT_REGISTRY_URL, token: parsed.apiKey });
 }
 
 function defined<T extends object>(value: T): T {

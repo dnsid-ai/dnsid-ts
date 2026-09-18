@@ -42,8 +42,9 @@ export interface AgentRegistrationInput {
   /** @deprecated The product registry has no arbitrary registration metadata field. */
   metadata?: Record<string, unknown>;
   publicKeyJwk?: DnsIdJWK;
-  /** Registry environment. Omitted means `production`. */
-  environment?: 'sandbox' | 'production';
+  /** Registry environment. Always `production`; omit it. */
+  environment?: 'production';
+  /** Registry-managed publication. Requires `zoneId`. */
   managed?: boolean;
   zoneId?: string;
   capabilitiesUrl?: string;
@@ -93,27 +94,35 @@ export interface LiveProvisioningResponse {
   raw?: unknown;
 }
 
-/** Default registry base URL used when none is provided. */
-export const DEFAULT_REGISTRY_URL = 'https://api.dnsid.ai';
+/**
+ * Default registry base URL: the local registry started by `dnsid local up`.
+ * Hosted use requires an explicit `baseUrl` (see `configFromEnvironment()` in
+ * `@dnsid-ai/sdk/node`, which reads `DNSID_REGISTRY_URL`).
+ */
+export const DEFAULT_REGISTRY_URL = 'http://127.0.0.1:7755';
 
 export interface RegistryClientOptions {
-  /** HTTPS registry API base URL. Defaults to `https://api.dnsid.ai`. */
+  /** Registry API base URL: HTTPS, or HTTP on loopback. Defaults to {@link DEFAULT_REGISTRY_URL}. */
   baseUrl?: string;
+  /** Owner API key or session token, sent as `Authorization: Bearer`. */
   token?: string;
   headers?: HeadersInit;
   credentials?: RequestCredentials;
   fetch?: typeof fetch;
 }
 
-function validateRegistrationInput(input: AgentRegistrationInput): { environment: string; managed: boolean } {
+function validateRegistrationInput(input: AgentRegistrationInput): { environment: 'production'; managed: boolean } {
   const environment = input.environment ?? 'production';
-  if (!['sandbox', 'production'].includes(environment)) {
-    throw new ArgumentError('registration environment must be "sandbox" or "production"');
+  if (environment !== 'production') {
+    throw new ArgumentError('registration environment must be "production"');
   }
   if (input.domain && input.zoneId) {
     throw new ArgumentError('domain and zoneId cannot both be supplied');
   }
-  const managed = input.managed === true || environment === 'sandbox' || Boolean(input.zoneId);
+  if (input.managed === true && !input.zoneId) {
+    throw new ArgumentError('managed registration requires zoneId');
+  }
+  const managed = input.managed === true || Boolean(input.zoneId);
   if (managed && input.domain) {
     throw new ArgumentError('domain must not be supplied for managed registrations; the registry assigns it');
   }
@@ -349,10 +358,6 @@ export class RegistryClient {
 
   async registerSelfManagedAgent(input: Omit<AgentRegistrationInput, 'managed' | 'zoneId'> & { domain: string }): Promise<AgentRegistration> {
     return this.registerAgent({ ...input, managed: false });
-  }
-
-  async registerManagedAgent(input: Omit<AgentRegistrationInput, 'domain' | 'managed' | 'zoneId'>): Promise<AgentRegistration> {
-    return this.registerAgent({ ...input, managed: true });
   }
 
   async registerInZone(input: Omit<AgentRegistrationInput, 'domain' | 'managed'> & { zoneId: string }): Promise<AgentRegistration> {
@@ -658,19 +663,41 @@ export class RegistryClient {
     const headers = new Headers(this.headers);
     new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     if (this.token) headers.set('Authorization', `Bearer ${this.token}`);
-    return this.fetchImpl(`${this.baseUrl}${path}`, { ...init, headers, credentials: init.credentials ?? this.credentials });
+    try {
+      return await this.fetchImpl(`${this.baseUrl}${path}`, { ...init, headers, credentials: init.credentials ?? this.credentials });
+    } catch (cause) {
+      const url = new URL(this.baseUrl);
+      if (isLoopbackUrl(url) && isConnectionRefused(cause)) {
+        throw new Error(`no registry at ${url.host}; run \`dnsid local up\` or set DNSID_REGISTRY_URL`, { cause });
+      }
+      throw cause;
+    }
   }
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+function isLoopbackUrl(url: URL): boolean {
+  return LOOPBACK_HOSTS.has(url.hostname);
+}
+
 function validateRegistryBaseUrl(raw: string): string {
+  const message = 'registry baseUrl must be an HTTPS URL, or HTTP on loopback';
   let url: URL;
-  try { url = new URL(raw); } catch { throw new ArgumentError('registry baseUrl must be an HTTPS URL'); }
-  if (url.protocol !== 'https:' || !url.hostname) {
-    throw new ArgumentError('registry baseUrl must be an HTTPS URL');
+  try { url = new URL(raw); } catch { throw new ArgumentError(message); }
+  if (!url.hostname || !(url.protocol === 'https:' || (url.protocol === 'http:' && isLoopbackUrl(url)))) {
+    throw new ArgumentError(message);
   }
   if (url.username || url.password) throw new ArgumentError('registry baseUrl must not include userinfo');
   if (url.search || url.hash) throw new ArgumentError('registry baseUrl must not include query or fragment');
   return url.toString().replace(/\/$/, '');
+}
+
+function isConnectionRefused(error: unknown): boolean {
+  for (let e: unknown = error; e instanceof Error; e = e.cause) {
+    if ((e as { code?: unknown }).code === 'ECONNREFUSED') return true;
+  }
+  return false;
 }
 
 function validateIdempotencyKey(value: string): void {

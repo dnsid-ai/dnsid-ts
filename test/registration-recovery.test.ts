@@ -3,7 +3,7 @@ import { RegistrationError, RegistryClient } from '@dnsid-ai/registry';
 
 const domain = 'assigned.example.com';
 const idempotencyKey = 'persisted-registration-1';
-const methods = ['registerAgent', 'registerManagedAgent', 'registerSelfManagedAgent', 'registerInZone'] as const;
+const methods = ['registerAgent', 'registerSelfManagedAgent', 'registerInZone'] as const;
 
 it.each(methods)('%s rejects invalid replay keys before fetch', async method => {
   const fetchMock = vi.fn();
@@ -37,8 +37,8 @@ it.each(['lost POST response', 'invalid POST body', 'GET network error', 'GET 50
     return new Response(JSON.stringify({ id: 'agent-1', domain, status: 'PENDING', managed: 'dnsid' }));
   });
   const registry = new RegistryClient({ fetch: fetchMock });
-  const input = { name: 'My agent', idempotencyKey };
-  const error = await registry.registerManagedAgent(input).catch(error => error);
+  const input = { name: 'My agent', zoneId: 'zone-1', idempotencyKey };
+  const error = await registry.registerInZone(input).catch((error: unknown) => error) as RegistrationError;
   expect(error).toBeInstanceOf(RegistrationError);
   expect(error.idempotencyKey).toBe(idempotencyKey);
   expect(error.domain).toBe(failure.startsWith('GET') || failure === 'invalid GET body' ? domain : undefined);
@@ -50,7 +50,7 @@ it.each(['lost POST response', 'invalid POST body', 'GET network error', 'GET 50
     await expect(registry.getRegistration(error.domain)).resolves.toMatchObject({ domain });
     expect(posts).toHaveLength(1);
   }
-  await expect(registry.registerManagedAgent(input)).resolves.toMatchObject({ domain });
+  await expect(registry.registerInZone(input)).resolves.toMatchObject({ domain });
   expect(posts).toHaveLength(2);
   expect(posts[0].key).toBe(idempotencyKey);
   expect(posts[1]).toEqual(posts[0]);

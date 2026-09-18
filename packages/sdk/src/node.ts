@@ -26,6 +26,7 @@ export type { LocalKeyAlgorithm, LocalKeyProviderEnvironmentOptions } from './lo
 export {
   configFromEnvironment,
   dnsidEnvironmentVariables,
+  registryClientOptionsFromEnvironment,
 } from './environment.ts';
 export type {
   ConfigFromEnvironmentOptions,

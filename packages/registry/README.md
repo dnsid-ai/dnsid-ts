@@ -14,11 +14,12 @@ npm install @dnsid-ai/registry @dnsid-ai/protocol
 
 ```ts
 import { RegistryClient, publishClientControlledRecord } from '@dnsid-ai/registry';
+import { registryClientOptionsFromEnvironment } from '@dnsid-ai/sdk/node';
 
-// Uses https://api.dnsid.ai by default; override with baseUrl if needed.
-const registryClient = new RegistryClient({
-  token: process.env.DNSID_REGISTRY_TOKEN,
-});
+// Local by default: http://127.0.0.1:7755 from `dnsid local up`, no credential.
+// Hosted: set DNSID_REGISTRY_URL and DNSID_API_KEY from the console.
+const registryClient = new RegistryClient(registryClientOptionsFromEnvironment());
+// Or explicitly: new RegistryClient({ baseUrl, token }). HTTPS required except on loopback.
 
 await publishClientControlledRecord({
   config,
@@ -31,12 +32,11 @@ await publishClientControlledRecord({
 
 Registry workflow status is kept separate from protocol `AgentStatus`. Client-controlled identities publish with `publishClientControlledRecord()`; registry-managed identities use `awaitRegistryManagedPublication()`, which requires an observed and verified DNS record before succeeding. `publishToRegistry()` remains as a deprecated compatibility alias.
 
-The client supports self-managed, managed, zone-explicit, and Live registration workflows, authenticated/custom requests, verification/challenge helpers, typed preparation of C2SP issuance and key rotation, record signing, revoke, cancel, unregister, and retire helpers. `registerLiveAgent()` sets `tier: "live"` and `managed: true` internally, requires a separate idempotency key, and returns a distinct proof challenge rather than a normal registration. While `challenge_pending`, the response includes the assigned domain and validated challenge transcript. Sign the exact bytes decoded from the latest `challengeMessage`; a reissued challenge supersedes every earlier challenge and message. Preparation returns untrusted exact bytes and their bound log reference; it does not submit or append them. Registry-managed lifecycle operations are single-owner workflows: callers submit through the registry and must not append a duplicate local lifecycle event.
+The client supports self-managed, zone-explicit, and Live registration workflows, authenticated/custom requests, verification/challenge helpers, typed preparation of C2SP issuance and key rotation, record signing, revoke, cancel, unregister, and retire helpers. `registerLiveAgent()` sets `tier: "live"` and `managed: true` internally, requires a separate idempotency key, and returns a distinct proof challenge rather than a normal registration. While `challenge_pending`, the response includes the assigned domain and validated challenge transcript. Sign the exact bytes decoded from the latest `challengeMessage`; a reissued challenge supersedes every earlier challenge and message. Preparation returns untrusted exact bytes and their bound log reference; it does not submit or append them. Registry-managed lifecycle operations are single-owner workflows: callers submit through the registry and must not append a duplicate local lifecycle event.
 
 ### Registration retries (breaking API change)
 
-`registerAgent()`, `registerManagedAgent()`, `registerSelfManagedAgent()`, and
-`registerInZone()` now require `input.idempotencyKey`. Generate and persist the
+`registerAgent()`, `registerSelfManagedAgent()`, and `registerInZone()` now require `input.idempotencyKey`. Generate and persist the
 key **and registration input before the first attempt**, then reuse both for
 reconciliation. Do not generate a fresh key on each retry: the POST may have
 created an agent even when its response or the subsequent status GET fails.
@@ -55,12 +55,11 @@ Key-rotation preparation requires owner credentials: a session cookie or organiz
 
 Registry status semantics are still expected to align with ongoing registry server status work before this API is considered stable.
 
-For the current product API, an omitted registration environment defaults to
-`production`. Self-managed registration requires a domain. Explicit `managed`
-and zone registrations are managed; managed registrations omit `domain`, and
-`domain` and `zoneId` are mutually exclusive. Registration accepts `production`
-or `sandbox` (an explicit `sandbox` environment is always registry-managed)
-and rejects private JWK members before sending a request. Client-controlled
+Registration is production-only; `environment` may be omitted or `production`.
+Self-managed registration requires a domain. Zone registrations are managed and
+omit `domain`; `managed` without `zoneId` is rejected, and `domain` and `zoneId`
+are mutually exclusive. Sandbox registration lives in the console and CLI, not
+the SDK. Registration rejects private JWK members before sending a request. Client-controlled
 publication validates every known TXT tag against
 the effective publication configuration. `config.maxKeyAge` controls the `ka`
 tag; when omitted, the helper expects `ka` to be omitted. Legacy callers may
