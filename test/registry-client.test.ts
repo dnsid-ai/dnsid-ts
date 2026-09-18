@@ -111,22 +111,32 @@ describe('RegistryClient', () => {
     vi.unstubAllGlobals();
   });
 
-  it('uses https://api.dnsid.ai as the default base URL when none is provided', async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      expect(url).toMatch(/^https:\/\/api\.dnsid\.ai\//);
-      return new Response(JSON.stringify({ id: 'agent-1', status: 'PENDING', managed: 'self' }));
-    }) as unknown as typeof fetch;
+  it('uses the local registry as the default base URL when none is provided', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'agent-1', status: 'PENDING', managed: 'self' }))) as unknown as typeof fetch;
 
     const registry = new RegistryClient({ fetch: fetchMock });
     await registry.getAgentStatus('agent.example.com');
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.dnsid.ai/api/v1/agent/agent.example.com/status',
+      'http://127.0.0.1:7755/api/v1/agent/agent.example.com/status',
       expect.anything(),
     );
   });
 
   it('exports DEFAULT_REGISTRY_URL constant matching the default', () => {
-    expect(DEFAULT_REGISTRY_URL).toBe('https://api.dnsid.ai');
+    expect(DEFAULT_REGISTRY_URL).toBe('http://127.0.0.1:7755');
+  });
+
+  it.each(['http://localhost:7755', 'http://127.0.0.1:7755/', 'http://[::1]:7755'])('accepts loopback HTTP base URL %s', (baseUrl) => {
+    expect(() => new RegistryClient({ baseUrl })).not.toThrow();
+  });
+
+  it('explains a refused connection to a loopback registry', async () => {
+    const refused = Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }) });
+    const registry = new RegistryClient({ fetch: vi.fn(async () => { throw refused; }) as unknown as typeof fetch });
+    await expect(registry.getAgentStatus('agent.example.com')).rejects.toThrow('no registry at 127.0.0.1:7755; run `dnsid local up` or set DNSID_REGISTRY_URL');
+
+    const hosted = new RegistryClient({ baseUrl: 'https://registry.example', fetch: vi.fn(async () => { throw refused; }) as unknown as typeof fetch });
+    await expect(hosted.getAgentStatus('agent.example.com')).rejects.toBe(refused);
   });
 
   it('validates server canonical content and submits a bare draft-01 signature during publication', async () => {
@@ -963,29 +973,40 @@ describe('RegistryClient', () => {
       .resolves.toMatchObject({ domain: 'agent.example.com', registryStatus: 'PENDING', publicationAuthority: 'client' });
   });
 
-  it.each([
-    undefined,
-    'sandbox',
-  ] as const)('rejects %s self-managed registration before making a request', async (environment) => {
+  it('rejects a non-production environment before making a request', async () => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = new RegistryClient({ fetch: fetchMock });
     await expect(registry.registerSelfManagedAgent({
       domain: 'agent.example.com',
-      environment,
+      environment: 'sandbox' as never,
       idempotencyKey: 'registration-1',
-    })).rejects.toThrow('domain must not be supplied for managed registrations');
+    })).rejects.toThrow('must be "production"');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('defaults self-managed registration to production', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/status')) {
+        return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING', managed: 'self' }));
+      }
+      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'production', domain: 'agent.example.com' });
+      return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING' }), { status: 201 });
+    }) as unknown as typeof fetch;
+    await expect(client(fetchMock).registerSelfManagedAgent({ domain: 'agent.example.com', idempotencyKey: 'registration-1' }))
+      .resolves.toMatchObject({ publicationAuthority: 'client' });
   });
 
   it.each([
     [{ domain: 'agent.example.com', zoneId: 'zone-1', environment: 'production' as const }, 'domain and zoneId'],
-    [{ domain: 'agent.example.com', managed: true, environment: 'production' as const }, 'domain must not be supplied'],
-    [{ domain: 'agent.example.com', environment: 'sandbox' as const }, 'domain must not be supplied'],
+    [{ managed: true }, 'managed registration requires zoneId'],
+    [{ managed: true, environment: 'production' as const }, 'managed registration requires zoneId'],
+    [{}, 'requires a domain'],
     [{ environment: 'production' as const }, 'requires a domain'],
     [{ managed: false, environment: 'production' as const }, 'requires a domain'],
     [{ tier: 'live' as never }, 'use registerLiveAgent'],
-    [{ environment: 'staging' as never }, 'must be "sandbox" or "production"'],
-    [{ environment: 'development' as never }, 'must be "sandbox" or "production"'],
+    [{ environment: 'sandbox' as never }, 'must be "production"'],
+    [{ environment: 'staging' as never }, 'must be "production"'],
+    [{ environment: 'development' as never }, 'must be "production"'],
   ])('rejects contradictory generic registration %#', async (input, message) => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = new RegistryClient({ fetch: fetchMock });
@@ -993,22 +1014,20 @@ describe('RegistryClient', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('treats sandbox and zone registrations as managed even when managed is false', async () => {
+  it('treats zone registrations as managed even when managed is false', async () => {
     const requests: Record<string, unknown>[] = [];
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/status')) {
-        return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING', managed: 'dnsid' }));
+        return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING', managed: 'dnsid' }));
       }
       requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-      return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING' }), { status: 201 });
+      return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING' }), { status: 201 });
     }) as unknown as typeof fetch;
     const registry = client(fetchMock);
 
-    await expect(registry.registerAgent({ managed: false, idempotencyKey: 'registration-1' })).resolves.toMatchObject({ publicationAuthority: 'registry' });
-    await expect(registry.registerAgent({ managed: false, zoneId: 'zone-1', environment: 'production', idempotencyKey: 'registration-2' }))
+    await expect(registry.registerAgent({ managed: false, zoneId: 'zone-1', idempotencyKey: 'registration-2' }))
       .resolves.toMatchObject({ publicationAuthority: 'registry' });
     expect(requests).toEqual([
-      expect.objectContaining({ environment: 'sandbox', managed: true }),
       expect.objectContaining({ environment: 'production', managed: true, zone_id: 'zone-1' }),
     ]);
   });
@@ -1016,7 +1035,8 @@ describe('RegistryClient', () => {
   it('rejects private registration key material before making a request', async () => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = new RegistryClient({ fetch: fetchMock });
-    await expect(registry.registerManagedAgent({
+    await expect(registry.registerInZone({
+      zoneId: 'zone-1',
       publicKeyJwk: { ...TEST_JWK, d: 'private' } as DnsIdJWK,
       idempotencyKey: 'registration-1',
     })).rejects.toThrow('private JWK member d');
@@ -1024,7 +1044,7 @@ describe('RegistryClient', () => {
   });
 
   it.each([
-    ['ordinary registration', (registry: RegistryClient) => registry.registerManagedAgent({ publicKeyJwk: JWKS_SHAPED_JWK, idempotencyKey: 'registration-1' })],
+    ['ordinary registration', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', publicKeyJwk: JWKS_SHAPED_JWK, idempotencyKey: 'registration-1' })],
     ['managed Live registration', (registry: RegistryClient) => registry.registerLiveAgent({ publicKeyJwk: JWKS_SHAPED_JWK }, 'live-1')],
     ['managed Live proof', (registry: RegistryClient) => registry.submitLiveProof('live.example', {
       requestId: 'live-1', challenge: 'challenge-1', publicKeyJwk: JWKS_SHAPED_JWK, signature: 'signature',
@@ -1040,15 +1060,15 @@ describe('RegistryClient', () => {
   });
 
   it.each([
-    ['managed', (registry: RegistryClient) => registry.registerManagedAgent({ publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-1' })],
+    ['zone-managed with key', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-1' })],
     ['zone-managed', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', idempotencyKey: 'registration-1' })],
-  ])('defaults %s registration to sandbox', async (_label, register) => {
+  ])('defaults %s registration to production', async (_label, register) => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/status')) {
-        return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING', managed: 'dnsid' }));
+        return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING', managed: 'dnsid' }));
       }
-      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'sandbox', managed: true });
-      return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING' }), { status: 201 });
+      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'production', managed: true });
+      return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING' }), { status: 201 });
     }) as unknown as typeof fetch;
     await expect(register(client(fetchMock))).resolves.toMatchObject({ publicationAuthority: 'registry' });
   });

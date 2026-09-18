@@ -411,7 +411,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:58](https://github.com/dnsid
 
 ### ConfigFromEnvironmentOptions
 
-Defined in: [packages/sdk/src/environment.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L79)
+Defined in: [packages/sdk/src/environment.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L83)
 
 #### Type Parameters
 
@@ -429,7 +429,7 @@ Defined in: [packages/sdk/src/environment.ts:79](https://github.com/dnsid-ai/dns
 optional require?: readonly RequiredFields[];
 ```
 
-Defined in: [packages/sdk/src/environment.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L80)
+Defined in: [packages/sdk/src/environment.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L84)
 
 ***
 
@@ -437,7 +437,7 @@ Defined in: [packages/sdk/src/environment.ts:80](https://github.com/dnsid-ai/dns
 
 ### CreateNodeIdentityManagerFromDnsidOptions
 
-Defined in: [packages/sdk/src/node.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L38)
+Defined in: [packages/sdk/src/node.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L39)
 
 Explicit inputs for [createNodeIdentityManagerFromDnsid](#createnodeidentitymanagerfromdnsid).
 
@@ -451,7 +451,7 @@ Explicit inputs for [createNodeIdentityManagerFromDnsid](#createnodeidentitymana
 optional config?: Omit<DnsidConfig, "identity"> & object;
 ```
 
-Defined in: [packages/sdk/src/node.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L47)
+Defined in: [packages/sdk/src/node.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L48)
 
 Caller settings. `identity` fields overlay the persisted publication fields before any
 normalization or derivation; `verification` and `transport` are never read from the CLI files.
@@ -472,7 +472,7 @@ optional identity?: Partial<IdentityConfig>;
 optional dnsidDir?: string;
 ```
 
-Defined in: [packages/sdk/src/node.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L40)
+Defined in: [packages/sdk/src/node.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L41)
 
 Root DNSid directory containing config.json and <fqdn>/{private,public}.jwk. Defaults to `DNSID_CONFIG_DIR` or ~/.dnsid.
 
@@ -484,7 +484,7 @@ Root DNSid directory containing config.json and <fqdn>/{private,public}.jwk. Def
 optional env?: Record<string, string | undefined>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L42)
+Defined in: [packages/sdk/src/node.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L43)
 
 Environment used to discover DNSID_CONFIG_DIR. Defaults to process.env.
 
@@ -544,7 +544,7 @@ Default key-store path when the environment variable is absent. Default: .dnsid/
 type DnsidEnvironment = { [K in EnvironmentFieldName]?: EnvironmentValue<K> };
 ```
 
-Defined in: [packages/sdk/src/environment.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L50)
+Defined in: [packages/sdk/src/environment.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L52)
 
 ***
 
@@ -556,7 +556,7 @@ Defined in: [packages/sdk/src/environment.ts:50](https://github.com/dnsid-ai/dns
 type EnvironmentConfigResult<RequiredFields> = EnvironmentConfigResultBase<RequiredFields> & Required<Pick<EnvironmentConfigResultBase<RequiredFields>, Extract<RequiredFields, keyof EnvironmentConfigResultBase<RequiredFields>>>>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L73)
+Defined in: [packages/sdk/src/environment.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L77)
 
 #### Type Parameters
 
@@ -574,7 +574,7 @@ Defined in: [packages/sdk/src/environment.ts:73](https://github.com/dnsid-ai/dns
 type EnvironmentFieldName = keyof typeof dnsidEnvironmentVariables;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L21)
+Defined in: [packages/sdk/src/environment.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L22)
 
 ***
 
@@ -616,6 +616,14 @@ readonly agentName: "DNSID_AGENT_NAME" = 'DNSID_AGENT_NAME';
 
 ```ts
 readonly agentPort: "DNSID_AGENT_PORT" = 'DNSID_AGENT_PORT';
+```
+
+<a id="apikey"></a>
+
+##### apiKey
+
+```ts
+readonly apiKey: "DNSID_API_KEY" = 'DNSID_API_KEY';
 ```
 
 <a id="cabundlepath"></a>
@@ -726,7 +734,7 @@ readonly statusUrl: "DNSID_STATUS_URL" = 'DNSID_STATUS_URL';
 function configFromEnvironment<RequiredFields>(options?): EnvironmentConfigResult<RequiredFields>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L87)
+Defined in: [packages/sdk/src/environment.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L91)
 
 Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
 registry/example settings. Constructors never read the environment themselves.
@@ -746,6 +754,7 @@ registry/example settings. Constructors never read the environment themselves.
   \| `"dnsServer"`
   \| `"caBundlePath"`
   \| `"registryUrl"`
+  \| `"apiKey"`
   \| `"publicUrl"`
   \| `"keyStorePath"`
   \| `"agentPort"`
@@ -767,7 +776,7 @@ registry/example settings. Constructors never read the environment themselves.
 function configFromEnvironment<RequiredFields>(env, options?): EnvironmentConfigResult<RequiredFields>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L90)
+Defined in: [packages/sdk/src/environment.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L94)
 
 Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
 registry/example settings. Constructors never read the environment themselves.
@@ -787,6 +796,7 @@ registry/example settings. Constructors never read the environment themselves.
   \| `"dnsServer"`
   \| `"caBundlePath"`
   \| `"registryUrl"`
+  \| `"apiKey"`
   \| `"publicUrl"`
   \| `"keyStorePath"`
   \| `"agentPort"`
@@ -816,7 +826,7 @@ registry/example settings. Constructors never read the environment themselves.
 function createNodeIdentityManager(config, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L79)
+Defined in: [packages/sdk/src/node.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L80)
 
 Creates an IdentityManager with Node.js DNS and HTTPS defaults.
 
@@ -861,7 +871,7 @@ const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProv
 function createNodeIdentityManagerFromDnsid(options?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L125)
+Defined in: [packages/sdk/src/node.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L126)
 
 Creates an IdentityManager from a DNSid CLI directory layout (`~/.dnsid` by default).
 
@@ -905,7 +915,7 @@ const idm = await createNodeIdentityManagerFromDnsid();
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L100)
+Defined in: [packages/sdk/src/node.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L101)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 
@@ -948,6 +958,46 @@ Defined in: [packages/sdk/src/local-key-provider.ts:229](https://github.com/dnsi
 #### Returns
 
 `string`
+
+***
+
+<a id="registryclientoptionsfromenvironment"></a>
+
+### registryClientOptionsFromEnvironment()
+
+```ts
+function registryClientOptionsFromEnvironment(env?): object;
+```
+
+Defined in: [packages/sdk/src/environment.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L141)
+
+Registry client options from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`, the
+variables `dnsid local env` exports. Unset means the local registry with no
+credential. Unlike [configFromEnvironment](#configfromenvironment) this needs no identity
+variables, so it works before an agent exists:
+`new RegistryClient(registryClientOptionsFromEnvironment())`.
+
+#### Parameters
+
+##### env?
+
+`EnvironmentSource` = `process.env`
+
+#### Returns
+
+`object`
+
+##### baseUrl
+
+```ts
+baseUrl: string;
+```
+
+##### token?
+
+```ts
+optional token?: string;
+```
 
 ## References
 

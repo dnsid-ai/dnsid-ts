@@ -4,6 +4,7 @@ import {
   configFromEnvironment,
   dnsidEnvironmentVariables,
   keyStorePathFromEnvironment,
+  registryClientOptionsFromEnvironment,
 } from '@dnsid-ai/sdk/node';
 import { DEFAULT_REGISTRY_URL } from '@dnsid-ai/sdk';
 
@@ -49,6 +50,16 @@ describe('configFromEnvironment()', () => {
     expect(environment.config.identity.statusUrl).toBe(
       `${DEFAULT_REGISTRY_URL}/v1/status/alice.example.com`,
     );
+  });
+
+  it('exposes the registry API key without touching core config', () => {
+    const environment = configFromEnvironment({
+      [dnsidEnvironmentVariables.domain]: 'alice.example.com',
+      [dnsidEnvironmentVariables.governanceId]: 'example.com',
+      [dnsidEnvironmentVariables.apiKey]: 'testnet',
+    });
+    expect(environment.apiKey).toBe('testnet');
+    expect(JSON.stringify(environment.config)).not.toContain('testnet');
   });
 
   it('uses explicit status URL when provided', () => {
@@ -105,5 +116,18 @@ describe('keyStorePathFromEnvironment()', () => {
 
   it('falls back to the supplied default path', () => {
     expect(keyStorePathFromEnvironment({}, '.tmp/keys.json')).toBe('.tmp/keys.json');
+  });
+});
+
+describe('registryClientOptionsFromEnvironment()', () => {
+  it('defaults to the local registry with no credential', () => {
+    expect(registryClientOptionsFromEnvironment({})).toEqual({ baseUrl: DEFAULT_REGISTRY_URL });
+  });
+
+  it('reads DNSID_REGISTRY_URL and DNSID_API_KEY without requiring identity variables', () => {
+    expect(registryClientOptionsFromEnvironment({
+      [dnsidEnvironmentVariables.registryUrl]: 'https://api.dnsid.ai',
+      [dnsidEnvironmentVariables.apiKey]: 'k',
+    })).toEqual({ baseUrl: 'https://api.dnsid.ai', token: 'k' });
   });
 });

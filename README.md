@@ -32,7 +32,7 @@ import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 
 const logRegistry = await createC2spTlogVerificationRegistry({
-  // Explicitly trusted configuration for the DNSid sandbox.
+  // Explicitly trusted configuration for DNSid's public test log.
   policyUrl: 'https://log.dnsid.dev/dnsid-policy',
   // Local policy for any non-revocation checks made through this registry.
   checkpointMaxAge: 24 * 60 * 60 * 1000,
@@ -154,6 +154,35 @@ const idm = await createNodeIdentityManagerFromDnsid();
 
 `@dnsid-ai/transport` is an optional peer of `@dnsid-ai/sdk`; it provides the Node DNS and HTTPS defaults. DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
+### Registering an agent
+
+**Local (default).** The registry client talks to the local registry from `dnsid local up` unless told otherwise, and needs no credential to start:
+
+```sh
+dnsid local up                             # local registry, DNS, and CA in Docker
+dnsid local run my-agent -- node app.js    # registers my-agent if needed, runs with DNSID_* set
+```
+
+```ts
+import { RegistryClient } from '@dnsid-ai/registry';
+import { registryClientOptionsFromEnvironment } from '@dnsid-ai/sdk/node';
+
+// DNSID_REGISTRY_URL and DNSID_API_KEY when set; otherwise http://127.0.0.1:7755 with no credential.
+const registry = new RegistryClient(registryClientOptionsFromEnvironment());
+```
+
+To export the same variables into your shell instead of wrapping one command: `eval "$(dnsid local env my-agent)"`.
+If nothing is listening, calls fail with `no registry at 127.0.0.1:7755; run \`dnsid local up\` or set DNSID_REGISTRY_URL`.
+
+**Hosted.** Set `DNSID_REGISTRY_URL` and `DNSID_API_KEY` from the console; the same code then talks to the hosted registry:
+
+```sh
+export DNSID_REGISTRY_URL=https://api.dnsid.ai
+export DNSID_API_KEY=...   # console-issued owner key
+```
+
+Registration is production-only: `registerSelfManagedAgent({ domain })` for a domain you control, `registerInZone({ zoneId })` for a delegated zone, `registerLiveAgent()` for Live. Sandbox registration lives in the console and CLI; use the SDK for everything after registration.
+
 ### Environment variables
 
 `configFromEnvironment()` reads the following `DNSID_*` variables:
@@ -163,7 +192,8 @@ const idm = await createNodeIdentityManagerFromDnsid();
 | `DNSID_DOMAIN` | Yes | Agent FQDN, e.g. `alice.example.com`. |
 | `DNSID_GOVERNANCE_ID` | Yes | Governance identifier. Usually a parent/domain FQDN, e.g. `example.com`. |
 | `DNSID_STATUS_URL` | No | HTTPS URL for the agent status document. Derived from `registryUrl` + domain when not set. |
-| `DNSID_REGISTRY_URL` | No | Registry base URL. Defaults to `https://api.dnsid.ai`. Used to derive the status URL and for registry workflows. |
+| `DNSID_REGISTRY_URL` | No | Registry base URL. Defaults to the local registry, `http://127.0.0.1:7755`; set it to the hosted registry for hosted use. HTTPS, or HTTP on loopback only. Used to derive the status URL and for registry workflows. |
+| `DNSID_API_KEY` | No | Owner API key for registry workflows. `dnsid local env` exports one for the local registry; hosted keys come from the console. |
 | `DNSID_LOG_REF` | No | Lifecycle log reference. Defaults to `noop:0`. |
 | `DNSID_EK_URL` | Yes for DNSid1 publishing | Accountable-entity JWKS URL. Host must equal `DNSID_GOVERNANCE_ID` or be a subdomain of it. |
 | `DNSID_KU_URL` | Yes for DNSid1 publishing | Operational JWKS URL. Host must match `DNSID_DOMAIN`. |
@@ -175,7 +205,7 @@ const idm = await createNodeIdentityManagerFromDnsid();
 | `DNSID_AGENT_PORT` | No | Local example/server port. |
 | `DNSID_AGENT_NAME` | No | Local example/server display name. |
 
-Minimal registry-backed configuration:
+Minimal hosted-registry configuration (the local registry needs none of this — `dnsid local run` exports it):
 
 ```sh
 DNSID_DOMAIN=alice.example.com
@@ -183,6 +213,7 @@ DNSID_GOVERNANCE_ID=example.com
 DNSID_EK_URL=https://example.com/.well-known/entity-jwks.json
 DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
 DNSID_REGISTRY_URL=https://api.dnsid.ai
+DNSID_API_KEY=...
 ```
 
 Minimal direct-status configuration:

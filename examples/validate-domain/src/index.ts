@@ -1,7 +1,7 @@
 import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 
-// Independently trusted configuration for the DNSid sandbox's public log.
+// Independently trusted configuration for DNSid's public test log.
 // Production applications should select their own trusted policy URL or bytes.
 const policyUrl = 'https://log.dnsid.dev/dnsid-policy';
 
