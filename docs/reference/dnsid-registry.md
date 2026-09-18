@@ -61,11 +61,10 @@ Key-rotation preparation requires owner credentials: a session cookie or organiz
 Registry status semantics are still expected to align with ongoing registry server status work before this API is considered stable.
 
 For the current product API, an omitted registration environment defaults to
-`sandbox`, and `sandbox` is registry-managed. Self-managed registration therefore
-requires an explicit non-sandbox environment through every registration entry
-point and a domain. Sandbox, explicit `managed`, and zone registrations are
-managed; managed registrations omit `domain`, and `domain` and `zoneId` are
-mutually exclusive. Registration accepts `sandbox` or `production`
+`production`. Self-managed registration requires a domain. Explicit `managed`
+and zone registrations are managed; managed registrations omit `domain`, and
+`domain` and `zoneId` are mutually exclusive. Registration accepts `production`
+or `sandbox` (an explicit `sandbox` environment is always registry-managed)
 and rejects private JWK members before sending a request. Client-controlled
 publication validates every known TXT tag against
 the effective publication configuration. `config.maxKeyAge` controls the `ka`
@@ -1745,7 +1744,7 @@ optional environment?: "sandbox" | "production";
 
 Defined in: [packages/registry/src/index.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L46)
 
-Registry environment. Omitted means `sandbox`, which is registry-managed.
+Registry environment. Omitted means `production`.
 
 <a id="idempotencykey-1"></a>
 
