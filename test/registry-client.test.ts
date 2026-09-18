@@ -963,24 +963,34 @@ describe('RegistryClient', () => {
       .resolves.toMatchObject({ domain: 'agent.example.com', registryStatus: 'PENDING', publicationAuthority: 'client' });
   });
 
-  it.each([
-    undefined,
-    'sandbox',
-  ] as const)('rejects %s self-managed registration before making a request', async (environment) => {
+  it('rejects sandbox self-managed registration before making a request', async () => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = new RegistryClient({ fetch: fetchMock });
     await expect(registry.registerSelfManagedAgent({
       domain: 'agent.example.com',
-      environment,
+      environment: 'sandbox',
       idempotencyKey: 'registration-1',
     })).rejects.toThrow('domain must not be supplied for managed registrations');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('defaults self-managed registration to production', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/status')) {
+        return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING', managed: 'self' }));
+      }
+      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'production', domain: 'agent.example.com' });
+      return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING' }), { status: 201 });
+    }) as unknown as typeof fetch;
+    await expect(client(fetchMock).registerSelfManagedAgent({ domain: 'agent.example.com', idempotencyKey: 'registration-1' }))
+      .resolves.toMatchObject({ publicationAuthority: 'client' });
   });
 
   it.each([
     [{ domain: 'agent.example.com', zoneId: 'zone-1', environment: 'production' as const }, 'domain and zoneId'],
     [{ domain: 'agent.example.com', managed: true, environment: 'production' as const }, 'domain must not be supplied'],
     [{ domain: 'agent.example.com', environment: 'sandbox' as const }, 'domain must not be supplied'],
+    [{}, 'requires a domain'],
     [{ environment: 'production' as const }, 'requires a domain'],
     [{ managed: false, environment: 'production' as const }, 'requires a domain'],
     [{ tier: 'live' as never }, 'use registerLiveAgent'],
@@ -993,7 +1003,7 @@ describe('RegistryClient', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('treats sandbox and zone registrations as managed even when managed is false', async () => {
+  it('treats explicit sandbox and zone registrations as managed even when managed is false', async () => {
     const requests: Record<string, unknown>[] = [];
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/status')) {
@@ -1004,7 +1014,7 @@ describe('RegistryClient', () => {
     }) as unknown as typeof fetch;
     const registry = client(fetchMock);
 
-    await expect(registry.registerAgent({ managed: false, idempotencyKey: 'registration-1' })).resolves.toMatchObject({ publicationAuthority: 'registry' });
+    await expect(registry.registerAgent({ managed: false, environment: 'sandbox', idempotencyKey: 'registration-1' })).resolves.toMatchObject({ publicationAuthority: 'registry' });
     await expect(registry.registerAgent({ managed: false, zoneId: 'zone-1', environment: 'production', idempotencyKey: 'registration-2' }))
       .resolves.toMatchObject({ publicationAuthority: 'registry' });
     expect(requests).toEqual([
@@ -1042,13 +1052,13 @@ describe('RegistryClient', () => {
   it.each([
     ['managed', (registry: RegistryClient) => registry.registerManagedAgent({ publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-1' })],
     ['zone-managed', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', idempotencyKey: 'registration-1' })],
-  ])('defaults %s registration to sandbox', async (_label, register) => {
+  ])('defaults %s registration to production', async (_label, register) => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/status')) {
-        return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING', managed: 'dnsid' }));
+        return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING', managed: 'dnsid' }));
       }
-      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'sandbox', managed: true });
-      return new Response(JSON.stringify({ domain: 'assigned.sandbox.dnsid.dev', status: 'PENDING' }), { status: 201 });
+      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'production', managed: true });
+      return new Response(JSON.stringify({ domain: 'assigned.zone.example', status: 'PENDING' }), { status: 201 });
     }) as unknown as typeof fetch;
     await expect(register(client(fetchMock))).resolves.toMatchObject({ publicationAuthority: 'registry' });
   });

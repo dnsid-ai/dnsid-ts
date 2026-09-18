@@ -32,7 +32,7 @@ import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 
 const logRegistry = await createC2spTlogVerificationRegistry({
-  // Explicitly trusted configuration for the DNSid sandbox.
+  // Explicitly trusted configuration for DNSid's public test log.
   policyUrl: 'https://log.dnsid.dev/dnsid-policy',
   // Local policy for any non-revocation checks made through this registry.
   checkpointMaxAge: 24 * 60 * 60 * 1000,

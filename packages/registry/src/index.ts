@@ -42,7 +42,7 @@ export interface AgentRegistrationInput {
   /** @deprecated The product registry has no arbitrary registration metadata field. */
   metadata?: Record<string, unknown>;
   publicKeyJwk?: DnsIdJWK;
-  /** Registry environment. Omitted means `sandbox`, which is registry-managed. */
+  /** Registry environment. Omitted means `production`. */
   environment?: 'sandbox' | 'production';
   managed?: boolean;
   zoneId?: string;
@@ -106,7 +106,7 @@ export interface RegistryClientOptions {
 }
 
 function validateRegistrationInput(input: AgentRegistrationInput): { environment: string; managed: boolean } {
-  const environment = input.environment ?? 'sandbox';
+  const environment = input.environment ?? 'production';
   if (!['sandbox', 'production'].includes(environment)) {
     throw new ArgumentError('registration environment must be "sandbox" or "production"');
   }

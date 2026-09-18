@@ -11,7 +11,7 @@ it.each(methods)('%s rejects invalid replay keys before fetch', async method => 
   for (const key of [undefined, null, 123, '', ' ', ' padded', 'a\nb', 'a\u0000b', 'x'.repeat(201), 'é'.repeat(101)]) {
     await expect(registry[method]({
       idempotencyKey: key,
-      ...(method === 'registerSelfManagedAgent' ? { domain, environment: 'production' } : {}),
+      ...(method === 'registerAgent' || method === 'registerSelfManagedAgent' ? { domain } : {}),
       ...(method === 'registerInZone' ? { zoneId: 'zone-1' } : {}),
     } as never)).rejects.toThrow('idempotencyKey');
   }
