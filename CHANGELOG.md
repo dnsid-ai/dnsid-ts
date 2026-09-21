@@ -1,4 +1,36 @@
 
+## [0.20.0] - 2026-09-21
+
+### Bug Fixes
+
+- fix: rename packages ([#8](https://github.com/dnsid-ai/dnsid-ts/pull/8))
+
+### Chores
+
+- Bump @a2a-js/sdk from 1.0.1 to 1.1.0 ([#1](https://github.com/dnsid-ai/dnsid-ts/pull/1))
+- Bump vitest from 4.1.11 to 5.0.0 ([#2](https://github.com/dnsid-ai/dnsid-ts/pull/2))
+- Bump undici from 8.9.0 to 8.10.2 ([#3](https://github.com/dnsid-ai/dnsid-ts/pull/3))
+- Bump tsx from 4.23.5 to 4.23.13 ([#5](https://github.com/dnsid-ai/dnsid-ts/pull/5))
+- ci: sign release PR commits via GitHub API ([#10](https://github.com/dnsid-ai/dnsid-ts/pull/10))
+- ci: sign regenerated-docs commits via GitHub API ([#12](https://github.com/dnsid-ai/dnsid-ts/pull/12))
+- Chore/public release cleanup ([#15](https://github.com/dnsid-ai/dnsid-ts/pull/15))
+
+### Documentation
+
+- docs: describe registration positively ([#14](https://github.com/dnsid-ai/dnsid-ts/pull/14))
+
+### Features
+
+- feat(transport): allowedUnsafeHosts on fetchJson ([#6](https://github.com/dnsid-ai/dnsid-ts/pull/6))
+- Add release-readiness check from dnsid-sdk-compliance ([#9](https://github.com/dnsid-ai/dnsid-ts/pull/9))
+
+### Other
+
+- perf(protocol): run post-sg identity and status work concurrently ([#11](https://github.com/dnsid-ai/dnsid-ts/pull/11))
+- registry: default registration environment to production ([#13](https://github.com/dnsid-ai/dnsid-ts/pull/13))
+- examples(validate-domain): support the local registry via dnsid local env ([#17](https://github.com/dnsid-ai/dnsid-ts/pull/17))
+
+
 ## [0.19.1] - 2026-09-15
 
 ### Chores
