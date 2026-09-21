@@ -46,7 +46,7 @@ type ReaderInternals = {
 
 const internals = (reader: C2spTlogReader): ReaderInternals => reader as unknown as ReaderInternals;
 
-describe('Identity Digital-managed C2SP trust', () => {
+describe('DNSid-managed C2SP trust', () => {
   it('implements the managed trust selection conformance vectors', async () => {
     const registry = await createDnsidManagedVerificationRegistry();
 
