@@ -55,11 +55,10 @@ Key-rotation preparation requires owner credentials: a session cookie or organiz
 
 Registry status semantics are still expected to align with ongoing registry server status work before this API is considered stable.
 
-Registration is production-only; `environment` may be omitted or `production`.
-Self-managed registration requires a domain. Zone registrations are managed and
-omit `domain`; `managed` without `zoneId` is rejected, and `domain` and `zoneId`
-are mutually exclusive. Sandbox registration lives in the console and CLI, not
-the SDK. Registration rejects private JWK members before sending a request. Client-controlled
+`registerAgent()` takes either `domain`, for a name you control (self-managed),
+or `zoneId`, for a registry-assigned name in a delegated zone (managed). The two
+are mutually exclusive, and `managed` requires `zoneId`. `environment` may be
+left unset. Private JWK members are rejected before any request is sent. Client-controlled
 publication validates every known TXT tag against
 the effective publication configuration. `config.maxKeyAge` controls the `ka`
 tag; when omitted, the helper expects `ka` to be omitted. Legacy callers may
