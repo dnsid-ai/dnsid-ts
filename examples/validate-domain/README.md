@@ -30,4 +30,11 @@ npm run start -w @dnsid-ai/example-validate-domain -- your-agent.example.com
 
 Replace `your-agent.example.com` with a domain whose lifecycle log uses DNSid's public test C2SP log.
 
+Against the local registry, evaluate `dnsid local env` first; it exports `DNSID_LOG_POLICY_URL`, `DNSID_DNS_SERVER`, and `DNSID_CA_BUNDLE`, which the example picks up:
+
+```sh
+eval "$(dnsid local env)"
+npm run start -w @dnsid-ai/example-validate-domain -- bob.dev.dnsid.test
+```
+
 On success it prints the `VerifiedDomain` object: domain, agent status, verified key set, and the DNSSEC state the resolver reported.
