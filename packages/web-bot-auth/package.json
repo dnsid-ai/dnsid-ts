@@ -36,5 +36,8 @@
     "@dnsid-ai/protocol": "^0.19.1",
     "@dnsid-ai/http-signatures": "^0.19.1"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0"
 }

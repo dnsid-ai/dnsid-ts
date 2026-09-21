@@ -32,7 +32,6 @@
     "@dnsid-ai/protocol": "^0.19.1",
     "@dnsid-ai/transport": "^0.19.1"
   },
-  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/dnsid-ai/dnsid-ts.git",
@@ -47,5 +46,9 @@
     "transparency-log",
     "c2sp",
     "identity"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0"
 }

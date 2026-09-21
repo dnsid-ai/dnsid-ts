@@ -41,5 +41,8 @@
     "@dnsid-ai/protocol": "^0.19.1",
     "undici": "^8.10.2"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0"
 }

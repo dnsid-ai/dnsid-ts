@@ -131,6 +131,24 @@ more detail, see GitHub's docs for
 [telling Git about your signing key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
 and [signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
 
+## Publishing to npm
+
+Releases are published to [npmjs.com](https://www.npmjs.com/org/dnsid-ai) by
+`.github/workflows/release.yml` using
+[trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) with
+`--provenance`. No npm token is stored in this repository.
+
+One-time setup for each **new** public workspace package (npm cannot create a
+package via OIDC):
+
+1. As a member of the `@dnsid-ai` npm org, from a clean checkout of the release
+   tag: `npm ci && npm run build && npm publish --workspace @dnsid-ai/<name>`.
+2. On npmjs.com → package → Settings → Trusted Publisher: add GitHub Actions
+   with organization `dnsid-ai`, repository `dnsid-ts`, workflow `release.yml`.
+3. Subsequent versions are published automatically by the release workflow.
+
+Packages marked `"private": true` (currently `@dnsid-ai/key-gcp`) are skipped.
+
 ## Reporting security issues
 
 See [SECURITY.md](SECURITY.md) — do not file public issues for vulnerabilities.
