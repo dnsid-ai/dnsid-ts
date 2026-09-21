@@ -42,8 +42,8 @@ export interface AgentRegistrationInput {
   /** @deprecated The product registry has no arbitrary registration metadata field. */
   metadata?: Record<string, unknown>;
   publicKeyJwk?: DnsIdJWK;
-  /** Registry environment. Always `production`; omit it. */
-  environment?: 'production';
+  /** Registry environment. Defaults to `production`. */
+  environment?: 'production' | 'sandbox';
   /** Registry-managed publication. Requires `zoneId`. */
   managed?: boolean;
   zoneId?: string;
@@ -111,10 +111,10 @@ export interface RegistryClientOptions {
   fetch?: typeof fetch;
 }
 
-function validateRegistrationInput(input: AgentRegistrationInput): { environment: 'production'; managed: boolean } {
+function validateRegistrationInput(input: AgentRegistrationInput): { environment: 'production' | 'sandbox'; managed: boolean } {
   const environment = input.environment ?? 'production';
-  if (environment !== 'production') {
-    throw new ArgumentError('registration environment must be "production"');
+  if (environment !== 'production' && environment !== 'sandbox') {
+    throw new ArgumentError('registration environment must be "production" or "sandbox"');
   }
   if (input.domain && input.zoneId) {
     throw new ArgumentError('domain and zoneId cannot both be supplied');

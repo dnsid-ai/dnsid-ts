@@ -973,15 +973,27 @@ describe('RegistryClient', () => {
       .resolves.toMatchObject({ domain: 'agent.example.com', registryStatus: 'PENDING', publicationAuthority: 'client' });
   });
 
-  it('rejects a non-production environment before making a request', async () => {
+  it('rejects an unknown environment before making a request', async () => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = new RegistryClient({ fetch: fetchMock });
     await expect(registry.registerSelfManagedAgent({
       domain: 'agent.example.com',
-      environment: 'sandbox' as never,
+      environment: 'staging' as never,
       idempotencyKey: 'registration-1',
-    })).rejects.toThrow('must be "production"');
+    })).rejects.toThrow('must be "production" or "sandbox"');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts an explicit sandbox environment', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/status')) {
+        return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING', managed: 'self' }));
+      }
+      expect(JSON.parse(String(init?.body))).toMatchObject({ environment: 'sandbox', domain: 'agent.example.com' });
+      return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING' }), { status: 201 });
+    }) as unknown as typeof fetch;
+    await expect(client(fetchMock).registerSelfManagedAgent({ domain: 'agent.example.com', environment: 'sandbox', idempotencyKey: 'registration-1' }))
+      .resolves.toMatchObject({ publicationAuthority: 'client' });
   });
 
   it('defaults self-managed registration to production', async () => {
@@ -1004,7 +1016,6 @@ describe('RegistryClient', () => {
     [{ environment: 'production' as const }, 'requires a domain'],
     [{ managed: false, environment: 'production' as const }, 'requires a domain'],
     [{ tier: 'live' as never }, 'use registerLiveAgent'],
-    [{ environment: 'sandbox' as never }, 'must be "production"'],
     [{ environment: 'staging' as never }, 'must be "production"'],
     [{ environment: 'development' as never }, 'must be "production"'],
   ])('rejects contradictory generic registration %#', async (input, message) => {
