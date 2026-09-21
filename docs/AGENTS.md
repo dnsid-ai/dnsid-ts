@@ -10,7 +10,7 @@ Durable rules for anyone touching files under `docs/` in this repo.
 
 ## Export contract with the docs site
 
-- `docs/reference/` is exported verbatim to the `dnsid-ai/dnsid-docs` repo (Astro/Starlight) under `src/content/docs/reference/ts/`, where it renders at `https://docs.dnsid.ai/reference/ts/...`.
+- `docs/reference/` is exported verbatim to the docs site repository (Astro/Starlight, behind docs.dnsid.ai) under `src/content/docs/reference/ts/`, where it renders at `https://docs.dnsid.ai/reference/ts/...`.
 - `docs/reference/nav.json` is an ordered array of `{ "label", "slug" }` entries imported by the docs site's `nav.mjs`. Page order in `scripts/build-docs-reference.mjs` is the nav order.
 - Every page must have YAML frontmatter with a `title` (pattern: `TypeScript: @dnsid-ai/<package>`) and a one-line `description`. The generator emits these; keep the pattern if you change the generator.
 
