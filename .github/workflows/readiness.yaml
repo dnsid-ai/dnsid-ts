@@ -17,3 +17,4 @@ jobs:
       sdk: ts
       ref: ${{ github.event.pull_request.head.sha || github.sha }}
       pr-number: ${{ github.event.pull_request.number }}
+      accept-unsigned: true # release signing/provenance deferred post-launch by decision (dnsid-sdk-compliance STATUS #8 / DECISIONS E5, M3)
