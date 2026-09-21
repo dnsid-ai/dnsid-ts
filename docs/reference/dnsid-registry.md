@@ -1717,12 +1717,12 @@ Defined in: [packages/registry/src/index.ts:39](https://github.com/dnsid-ai/dnsi
 ##### environment?
 
 ```ts
-optional environment?: "production";
+optional environment?: "production" | "sandbox";
 ```
 
 Defined in: [packages/registry/src/index.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L46)
 
-Registry environment. Always `production`; omit it.
+Registry environment. Defaults to `production`.
 
 <a id="idempotencykey-1"></a>
 
