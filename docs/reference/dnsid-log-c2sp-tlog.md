@@ -48,7 +48,7 @@ const registry = await createC2spTlogVerificationRegistry({
 
 The factory fetches the policy with SSRF-safe destination checks, rejects redirects, requires HTTP 200, bounds decoded responses during reading, and uses the same bounded resource fetcher for log evidence. With an independently distributed `trustProfile`, or `policyDocument`/`policyUrl` plus direct `bundleVerifierKeys`, set `checkpointMaxAge` and `maxBundleLifetimeMs`; the default reader then prefers `{lr log-prefix}/streams/{fqdn}?format=bundle` and shares its verified lifecycle snapshot across binding, continuity, and key-age checks. A missing or temporarily unavailable endpoint falls back to the bounded complete-log scan. A valid newer bundle also falls back when no consistency-proof source is available, allowing the complete scan to verify both roots independently. Malformed, expired, invalid, rollback, or conflicting bundle evidence never falls back. Set `requireStreamBundle` to disable fallback.
 
-For an explicit application decision to trust Identity Digital-managed DNSid logs, use the separately named managed factory:
+For an explicit application decision to trust DNSid-managed DNSid logs, use the separately named managed factory:
 
 ```ts
 import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
@@ -145,7 +145,7 @@ by witnessed checkpoints under a local trust policy.
 
 Key entry points: [createC2spTlogVerificationRegistry](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#createc2sptlogverificationregistry) for generic
 caller-supplied trust, [createDnsidManagedVerificationRegistry](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#creatednsidmanagedverificationregistry) for the
-reviewed Identity Digital-managed trust catalog, [registerC2spTlog](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#registerc2sptlog) / [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) for
+reviewed DNSid-managed trust catalog, [registerC2spTlog](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#registerc2sptlog) / [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) for
 lower-level composition, [C2spTlogBinding](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogbinding) and the prepared-event writer
 API for appending events, and [verifyC2spStreamBundle](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#verifyc2spstreambundle) for offline bundles.
 

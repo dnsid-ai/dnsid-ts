@@ -11,7 +11,7 @@
  *
  * Key entry points: {@link createC2spTlogVerificationRegistry} for generic
  * caller-supplied trust, {@link createDnsidManagedVerificationRegistry} for the
- * reviewed Identity Digital-managed trust catalog, {@link registerC2spTlog} / {@link C2spTlogReader} for
+ * reviewed DNSid-managed trust catalog, {@link registerC2spTlog} / {@link C2spTlogReader} for
  * lower-level composition, {@link C2spTlogBinding} and the prepared-event writer
  * API for appending events, and {@link verifyC2spStreamBundle} for offline bundles.
  *

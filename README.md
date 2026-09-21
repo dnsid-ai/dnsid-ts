@@ -261,6 +261,34 @@ Browser support should use injected browser-safe transport and key-provider impl
 
 DNSid is pre-1.0. APIs may change between minor releases. Review the current limitations before production use.
 
+## Security & trust
+
+**Official sources.** Source: `github.com/dnsid-ai/dnsid-ts`. Package: `@dnsid-ai/*` on GitHub Packages (`npm.pkg.github.com`). Releases: GitHub Releases on
+this repository, each with a CycloneDX SBOM attached. Forks, mirrors, and similarly named packages
+are not maintained by us. Report vulnerabilities per [SECURITY.md](SECURITY.md); never in a public issue.
+
+**Software is not identity.** This SDK ships no keys, credentials, or trust. A DNSid identity is proven
+by control of a DNS zone, an agent private key, and the registry's published status. Possessing, forking,
+or modifying this code grants none of those: an unofficial build cannot mint or inherit anyone's identity.
+
+**What it does on the network.** Only when you call it, and only to hosts you or the domain being verified
+chose:
+
+- DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
+- HTTPS GET to the JWKS and status URLs published in that TXT record
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `log.dnsid.dev` (C2SP transparency log, bundled public trust roots), cloud KMS endpoints
+- No telemetry, usage reporting, update checks, or crash reporting
+
+**Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.
+
+**Hosted endpoints.** `api.dnsid.ai` and `log.dnsid.ai` are operated separately from this SDK under their
+own terms. Nothing in this repository is an availability, uptime, or support commitment for them.
+
+**For your privacy notice.** Using this SDK causes your system to make DNS and HTTPS requests to the domains
+you verify and to the JWKS/status hosts they publish. It sends them nothing about your users. If you enable
+the registry or transparency-log clients, requests also go to DNSid-operated endpoints; disclose that where
+your notice requires it.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).

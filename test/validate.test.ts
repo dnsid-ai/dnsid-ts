@@ -47,7 +47,7 @@ describe('DnsIdTxtRecord.validate() — gi hierarchy', () => {
   });
 
   it('classifies an agentFQDN outside gi as delegated pending ISSUANCE evidence', () => {
-    const r = makeRecord({ gi: 'other.com', agentFQDN: 'agent.example.com' });
+    const r = makeRecord({ gi: 'other.example', agentFQDN: 'agent.example.com' });
     expect(() => r.validate()).not.toThrow();
     expect(r.hasStructuralGovernanceRelationship()).toBe(false);
   });
@@ -110,12 +110,12 @@ describe('DnsIdTxtRecord.validate() — ek host / gi constraint', () => {
   });
 
   it('throws when ek host is outside gi', () => {
-    const r = makeRecord({ gi: 'example.com', ek: 'https://other.com/entity-jwks.json' });
+    const r = makeRecord({ gi: 'example.com', ek: 'https://other.example/entity-jwks.json' });
     expect(() => r.validate()).toThrow(ValidationError);
   });
 
   it('throws when ek host merely ends with gi as a substring (not a subdomain)', () => {
-    const r = makeRecord({ gi: 'example.com', ek: 'https://notexample.com/entity-jwks.json' });
+    const r = makeRecord({ gi: 'example.com', ek: 'https://notexample.test/entity-jwks.json' });
     expect(() => r.validate()).toThrow(ValidationError);
   });
 

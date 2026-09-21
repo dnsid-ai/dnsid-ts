@@ -45,7 +45,7 @@ export interface DnsidManagedVerificationOptions {
 }
 
 /**
- * Creates a registry for the reviewed trust roots of Identity Digital-managed
+ * Creates a registry for the reviewed trust roots of DNSid-managed
  * DNSid logs. Calling this separately named factory is an explicit application
  * trust decision; the generic factory never selects these roots implicitly.
  *
