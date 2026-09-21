@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/web-bot-auth",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "DNSid Web Bot Auth profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -33,8 +33,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.19.1",
-    "@dnsid-ai/http-signatures": "^0.19.1"
+    "@dnsid-ai/protocol": "^0.20.0",
+    "@dnsid-ai/http-signatures": "^0.20.0"
   },
   "license": "Apache-2.0"
 }
