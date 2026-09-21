@@ -5,8 +5,9 @@ dist/
 **/**/keys.json
 **/keys.json.bak
 **/keys.json.*.tmp
+# local scratch (never committed)
 .pi-*.json
-DESIGN_TODO.md
-STARLIGHT_ISSUES.md
+/*_TODO.md
+/*_ISSUES.md
 docs/api/
 .typedoc-md/

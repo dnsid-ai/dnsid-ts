@@ -4,7 +4,7 @@ Runs two A2A agents, Alice and Bob, on the local DNSid testnet. Each agent gets 
 
 ## Run
 
-Install the `dnsid` CLI from the main [dnsid-ai/dnsid](https://github.com/dnsid-ai/dnsid) repo and make sure Docker is running. The CLI manages the testnet directly; the retired `dnsid-testnet` repo is not needed. By default it pulls `ghcr.io/identity-digital/dnsid-testnet-registry:latest`.
+Install the `dnsid` CLI ([installation guide](https://docs.dnsid.ai/cli-installation)) and make sure Docker is running. The CLI manages the testnet directly. By default it pulls `ghcr.io/identity-digital/dnsid-testnet-registry:latest`.
 
 If the CLI is not the `dnsid` on your `PATH`, set
 `DNSID_CLI=/path/to/dnsid`. To override the container image, set
