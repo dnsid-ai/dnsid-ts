@@ -181,7 +181,7 @@ export DNSID_REGISTRY_URL=https://api.dnsid.ai
 export DNSID_API_KEY=...   # console-issued owner key
 ```
 
-Registration is production-only: `registerSelfManagedAgent({ domain })` for a domain you control, `registerInZone({ zoneId })` for a delegated zone, `registerLiveAgent()` for Live. Sandbox registration lives in the console and CLI; use the SDK for everything after registration.
+Registration defaults to production: `registerSelfManagedAgent({ domain })` for a domain you control, `registerInZone({ zoneId })` for a delegated zone, `registerLiveAgent()` for Live. Pass `environment: 'sandbox'` for a sandbox agent.
 
 ### Environment variables
 
