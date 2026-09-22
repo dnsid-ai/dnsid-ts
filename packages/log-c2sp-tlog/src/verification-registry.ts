@@ -1,4 +1,4 @@
-import { ArgumentError, LogRegistry, VerificationError } from '@dnsid-ai/protocol';
+import { ArgumentError, LogRegistry, VerificationError, type TransportConfig } from '@dnsid-ai/protocol';
 import { InMemoryTrustedC2spCheckpointStore, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 import { C2spTlogError, C2spTlogParseError } from './errors.ts';
 import { normalizedOriginPolicy, parseC2spPolicyFile } from './policy.ts';
@@ -44,6 +44,12 @@ export interface C2spTlogVerificationOptions {
   policyUrl?: string;
   /** Bounded transport used for both policy and standard log resources. */
   resourceFetcher?: C2spBoundedResourceFetcher;
+  /**
+   * DNS server, CA bundle, and private-address exceptions for the default resource fetcher; pass
+   * the same `DnsidConfig.transport` given to the IdentityManager when verifying against a private
+   * registry such as `dnsid local`. Mutually exclusive with `resourceFetcher`.
+   */
+  transport?: TransportConfig;
   /** Optional overrides for the built-in complete scanner's secure limits. */
   scanLimits?: C2spScanLimits;
   /** Independently trusted stream-bundle signer keys. Mutually exclusive with `trustProfile`. */
@@ -119,7 +125,10 @@ export async function createC2spTlogVerificationRegistry(
   const limits = validatedLimits(options.scanLimits);
   const policyUrl = hasUrl ? validatePolicyUrl(options.policyUrl!) : undefined;
 
-  const resourceFetcher = options.resourceFetcher ?? createDefaultC2spBoundedResourceFetcher();
+  if (options.resourceFetcher !== undefined && options.transport !== undefined) {
+    throw new ArgumentError('transport is mutually exclusive with an injected resourceFetcher');
+  }
+  const resourceFetcher = options.resourceFetcher ?? createDefaultC2spBoundedResourceFetcher(options.transport);
   try {
     validateC2spResourceFetcher(resourceFetcher);
   } catch (cause) {
