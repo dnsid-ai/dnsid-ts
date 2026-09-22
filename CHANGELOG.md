@@ -1,4 +1,16 @@
 
+## [0.21.0] - 2026-09-22
+
+### Chores
+
+- ci: stage npm releases for 2FA approval instead of direct publish ([#24](https://github.com/dnsid-ai/dnsid-ts/pull/24))
+- ci: drop accept-unsigned from readiness caller — npm provenance is live (0.20.2) ([#26](https://github.com/dnsid-ai/dnsid-ts/pull/26))
+
+### Features
+
+- feat: verify against a private registry such as dnsid local ([#27](https://github.com/dnsid-ai/dnsid-ts/pull/27))
+
+
 ## [0.20.2] - 2026-09-22
 
 ### Chores
