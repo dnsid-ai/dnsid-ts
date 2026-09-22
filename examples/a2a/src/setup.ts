@@ -9,17 +9,10 @@ import {
   awaitRegistryManagedPublication,
   RegistryClient,
   toBase64Url,
-  VerificationCode,
-  VerificationError,
 } from '@dnsid-ai/sdk';
-import type { IdentityManager, LogRegistry, TransportConfig } from '@dnsid-ai/sdk';
-import {
-  createC2spTlogVerificationRegistry,
-  createFetchBackedC2spResourceFetcher,
-  parseC2spTlogLr,
-  requiredC2spResourceFetchGuarantees,
-} from '@dnsid-ai/log-c2sp-tlog';
-import { createDefaultDnsResolver, createDnsidFetch, createSsrfSafeFetch } from '@dnsid-ai/transport';
+import type { IdentityManager, TransportConfig } from '@dnsid-ai/sdk';
+import { createC2spTlogVerificationRegistry, parseC2spTlogLr } from '@dnsid-ai/log-c2sp-tlog';
+import { createDefaultDnsResolver, createDnsidFetch } from '@dnsid-ai/transport';
 import { requiredTestnetLogPolicyUrl } from './testnet-config.ts';
 
 type Environment = ReturnType<typeof configFromEnvironment<'agentPort' | 'kuUrl'>>;
@@ -69,25 +62,14 @@ function loadEnvironment(): Environment {
 
 async function createIdentity(environment: Environment, transport: TransportConfig): Promise<IdentityManager> {
   const { identity } = environment.config;
-  const zone = process.env.DNSID_TESTNET_ZONE;
-  if (!zone) throw new Error('DNSID_TESTNET_ZONE is required; run with `dnsid testnet run`');
   const publicUrl = environment.publicUrl ?? new URL(identity.kuUrl).origin;
+  // Testnet hosts live under the reserved `.test` TLD, so the SSRF guard lets
+  // them resolve to this machine without an allowedUnsafeHosts list.
   const config = {
     ...environment.config,
     identity: {
       ...identity,
       capabilitiesUrl: identity.capabilitiesUrl ?? `${publicUrl}/.well-known/agent-card.json`,
-    },
-    // Testnet only: every host listed resolves to this machine. Both agents are
-    // listed because each verifies the other, as caller and as receiver.
-    transport: {
-      ...transport,
-      allowedUnsafeHosts: [
-        `alice.${zone}`,
-        `bob.${zone}`,
-        `dnsid.${identity.governanceId}`,
-        new URL(requiredTestnetLogPolicyUrl()).hostname,
-      ],
     },
   };
 
@@ -95,47 +77,13 @@ async function createIdentity(environment: Environment, transport: TransportConf
   if (!configDir) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid testnet run`');
 
   const keyProvider = await LocalKeyProvider.fromDirectory(configDir);
-  const logRegistry = await createLogRegistry(
-    identity.logRef,
-    requiredTestnetLogPolicyUrl(),
-    transport.dnsServer,
-    transport.caBundlePath,
-  );
+  // Trusted testnet configuration includes the complete URL so a CLI-selected
+  // non-default HTTPS port is preserved. Never derive this trust anchor from lr.
+  const logRegistry = await createC2spTlogVerificationRegistry({ policyUrl: requiredTestnetLogPolicyUrl(), transport });
   // Route testnet lookups to its local CoreDNS instance. It reports UNKNOWN,
   // which the default auto policy permits and preserves.
   const dnsResolver = createDefaultDnsResolver({ dnsServer: transport.dnsServer });
   return createNodeIdentityManager(config, { keyProvider, dnsResolver, logRegistry });
-}
-
-async function createLogRegistry(
-  logRef: string,
-  policyUrl: string,
-  dnsServer?: string,
-  caBundlePath?: string,
-): Promise<LogRegistry> {
-  // Trusted testnet configuration includes the complete URL so a CLI-selected
-  // non-default HTTPS port is preserved. Never derive this trust anchor from lr.
-  const policyHost = new URL(policyUrl).host;
-  const logHost = new URL(parseC2spTlogLr(logRef).logPrefix).host;
-  const allowedHosts = new Set([policyHost, logHost]);
-  const testnetFetch = createSsrfSafeFetch(
-    { dnsServer, caBundlePath },
-    { allowedUnsafeHosts: [...allowedHosts].map(host => new URL(`https://${host}`).hostname) },
-  );
-  const hostnameScopedFetch: typeof fetch = async (input, init) => {
-    const target = new URL(input instanceof Request ? input.url : input);
-    if (!allowedHosts.has(target.host)) {
-      throw new VerificationError(`testnet C2SP resource host is not allowlisted: ${target.host}`, {
-        code: VerificationCode.TLSError,
-      });
-    }
-    return testnetFetch(input, init);
-  };
-  const resourceFetcher = createFetchBackedC2spResourceFetcher(
-    hostnameScopedFetch,
-    requiredC2spResourceFetchGuarantees(),
-  );
-  return createC2spTlogVerificationRegistry({ policyUrl, resourceFetcher });
 }
 
 async function createAndStartAgent(idm: IdentityManager, environment: Environment, transport: TransportConfig): Promise<EchoAgent> {

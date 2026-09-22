@@ -1,10 +1,5 @@
-import {
-  createC2spTlogVerificationRegistry,
-  createFetchBackedC2spResourceFetcher,
-  requiredC2spResourceFetchGuarantees,
-} from '@dnsid-ai/log-c2sp-tlog';
+import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
-import { createSsrfSafeFetch } from '@dnsid-ai/transport';
 
 // Independently trusted configuration for DNSid's public test log.
 // Production applications should select their own trusted policy URL or bytes.
@@ -12,19 +7,14 @@ import { createSsrfSafeFetch } from '@dnsid-ai/transport';
 const policyUrl = process.env.DNSID_LOG_POLICY_URL ?? 'https://log.dnsid.dev/dnsid-policy';
 
 export async function validateDomain(domain: string): Promise<void> {
-  // Local registry only (`eval "$(dnsid local env)"`): route DNS to its CoreDNS, trust its CA,
-  // and allow the loopback hosts it serves. All undefined in production.
-  const { DNSID_DNS_SERVER: dnsServer, DNSID_CA_BUNDLE: caBundlePath, DNSID_GOVERNANCE_ID: governanceId } = process.env;
-  const allowedUnsafeHosts = dnsServer ? [domain, new URL(policyUrl).hostname, `dnsid.${governanceId}`] : undefined;
-  const transport = { dnsServer, caBundlePath, allowedUnsafeHosts };
+  // Local registry only (`eval "$(dnsid local env)"`): route DNS to its CoreDNS and trust its CA.
+  // Its `.test` hosts may resolve to loopback without an allowlist. Both undefined in production.
+  const transport = { dnsServer: process.env.DNSID_DNS_SERVER, caBundlePath: process.env.DNSID_CA_BUNDLE };
 
   const logRegistry = await createC2spTlogVerificationRegistry({
     policyUrl,
     checkpointMaxAge: 24 * 60 * 60 * 1000,
-    resourceFetcher: createFetchBackedC2spResourceFetcher(
-      createSsrfSafeFetch(transport, { allowedUnsafeHosts }),
-      requiredC2spResourceFetchGuarantees(),
-    ),
+    transport,
   });
   const idm = await createNodeIdentityVerifier({ transport }, { logRegistry });
 
