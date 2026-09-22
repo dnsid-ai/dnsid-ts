@@ -4,7 +4,7 @@ name: Release
 #
 # Required permissions (already granted via the `permissions` block below):
 #   contents: write  — to create the git tag and GitHub Release
-#   id-token: write  — npmjs trusted publishing (OIDC) with provenance
+#   id-token: write  — npmjs trusted publishing (OIDC) with provenance; staged, approved by a maintainer
 #
 # Publishing uses npmjs trusted publishing: no npm token is stored in this
 # repository. Each public @dnsid-ai/* package must have this repository +
@@ -151,7 +151,11 @@ jobs:
             if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
               echo "${NAME}@${VERSION} already published, skipping"
             else
-              npm publish --workspace "$NAME" --access public --provenance
+              # Staged, not live: a maintainer approves with 2FA (`npm stage approve`).
+              # The trusted publisher on npmjs allows stage publish only. Re-running
+              # after a partial failure errors on already-staged versions (the OIDC
+              # token cannot `npm stage list`); `npm stage reject` them first.
+              npm stage publish --workspace "$NAME" --access public --provenance
             fi
           done
 
