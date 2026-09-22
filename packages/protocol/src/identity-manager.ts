@@ -161,6 +161,7 @@ const IDENTITY_KEYS = ['domain', 'governanceId', 'logRef', 'statusUrl', 'policyF
 const VERIFICATION_KEYS = ['statusCheckInterval', 'dnssecMode', 'trustedEntities'];
 const TRANSPORT_KEYS = ['dnsServer', 'caBundlePath', 'privateAddressHosts'];
 const IPV4_LITERAL_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+const HOSTNAME_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 
 /**
  * Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
@@ -172,12 +173,15 @@ export function normalizePrivateAddressHost(entry: string): string {
   const host = suffix ? entry.slice(1) : entry;
   let parsed: URL | undefined;
   try { parsed = new URL(`https://${host}`); } catch { /* rejected below */ }
-  if (!host || !parsed || host.includes('/') || parsed.username || parsed.password || parsed.port
+  // `host.includes(':')` catches default ports (`a.test:443` parses with `port === ''`) and bare IPv6.
+  if (!host || !parsed || host.includes('/') || host.includes(':') || parsed.username || parsed.password || parsed.port
     || parsed.pathname !== '/' || parsed.search || parsed.hash
-    || parsed.hostname.startsWith('.') || parsed.hostname.startsWith('[') || IPV4_LITERAL_RE.test(parsed.hostname)) {
+    || parsed.hostname.startsWith('[') || IPV4_LITERAL_RE.test(parsed.hostname)) {
     throw new ArgumentError(`invalid privateAddressHosts entry: ${entry}`);
   }
-  return (suffix ? '.' : '') + parsed.hostname.replace(/\.$/, '');
+  const normalized = parsed.hostname.replace(/\.$/, '');
+  if (!HOSTNAME_RE.test(normalized)) throw new ArgumentError(`invalid privateAddressHosts entry: ${entry}`);
+  return (suffix ? '.' : '') + normalized;
 }
 const THUMBPRINT_RE = /^[A-Za-z0-9_-]{43}$/;
 
