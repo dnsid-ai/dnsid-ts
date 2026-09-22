@@ -102,7 +102,7 @@ describe('DnsidConfig validation', () => {
   it('validates and normalizes transport.privateAddressHosts at construction', () => {
     expect(() => validateDnsidConfig({ transport: { privateAddressHosts: 'agent.local' } })).toThrow(/array of strings/);
     expect(validateDnsidConfig({ transport: { privateAddressHosts: ['Agent.Local.', '.Test'] } }).transport?.privateAddressHosts).toEqual(['agent.local', '.test']);
-    for (const entry of ['', '.', '127.0.0.1', '[::1]', '.10.0.0.1', 'agent.local:8443', 'https://agent.local', 'agent.local/x', 'user:pw@agent.local', 'agent.local?q', '..test']) {
+    for (const entry of ['', '.', '127.0.0.1', '[::1]', '.10.0.0.1', 'agent.local:8443', 'agent.local:443', '::1', 'https://agent.local', 'agent.local/x', 'user:pw@agent.local', 'agent.local?q', '..test', 'agent..local', '-bad.test', 'bad-.test']) {
       expect(() => validateDnsidConfig({ transport: { privateAddressHosts: [entry] } }), JSON.stringify(entry)).toThrow(ArgumentError);
     }
   });
