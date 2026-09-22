@@ -1106,7 +1106,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:95](https://github.com/dn
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
@@ -2409,7 +2410,8 @@ returned.
 verifyBilateralBinding(
    record, 
    entityKey, 
-   operationalKey): Promise<{
+   operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -2478,7 +2480,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    domain, 
    initialOperationalThumbprint, 
-currentOperationalThumbprint): Promise<void>;
+   currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/protocol/src/log.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L77)
@@ -2643,7 +2646,8 @@ Defined in: [packages/sdk/src/managed-issuance.ts:18](https://github.com/dnsid-a
 submitPreparedEvent(
    domain, 
    entryBytes, 
-idempotencyKey): Promise<SubmissionResult>;
+   idempotencyKey
+): Promise<SubmissionResult>;
 ```
 
 Defined in: [packages/sdk/src/managed-issuance.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L19)
@@ -2842,7 +2846,8 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:20](https://github.com/dns
 prepareKeyRotation(
    domain, 
    request, 
-idempotencyKey): Promise<PreparedRegistryEvent>;
+   idempotencyKey
+): Promise<PreparedRegistryEvent>;
 ```
 
 Defined in: [packages/sdk/src/managed-key-rotation.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L21)
@@ -2873,7 +2878,8 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:21](https://github.com/dns
 submitPreparedEvent(
    domain, 
    entryBytes, 
-idempotencyKey): Promise<SubmissionResult>;
+   idempotencyKey
+): Promise<SubmissionResult>;
 ```
 
 Defined in: [packages/sdk/src/managed-key-rotation.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L26)
@@ -4042,7 +4048,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/d
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)

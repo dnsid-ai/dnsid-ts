@@ -1187,7 +1187,8 @@ signEventWithProvider(
    event, 
    role, 
    keyProvider, 
-logBinding?): Promise<LogEvent>;
+   logBinding?
+): Promise<LogEvent>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:399](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L399)
@@ -1222,7 +1223,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:399](https://github.com/d
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:567](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L567)
@@ -2119,7 +2121,8 @@ new ManagedIssuanceSubmissionError(
    issuance, 
    retryWithSameBytes, 
    transient, 
-   cause?): ManagedIssuanceSubmissionError;
+   cause?
+): ManagedIssuanceSubmissionError;
 ```
 
 Defined in: [packages/sdk/src/managed-issuance.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L86)
@@ -2482,7 +2485,8 @@ Registry acceptance succeeded, but local key-state reconciliation did not.
 new ManagedKeyRotationActivationError(
    message, 
    rotation, 
-   cause?): ManagedKeyRotationActivationError;
+   cause?
+): ManagedKeyRotationActivationError;
 ```
 
 Defined in: [packages/sdk/src/managed-key-rotation.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L87)
@@ -2828,7 +2832,8 @@ new ManagedKeyRotationSubmissionError(
    message, 
    rotation, 
    retryWithSameBytes, 
-   cause?): ManagedKeyRotationSubmissionError;
+   cause?
+): ManagedKeyRotationSubmissionError;
 ```
 
 Defined in: [packages/sdk/src/managed-key-rotation.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L75)
@@ -3327,7 +3332,8 @@ returned.
 verifyBilateralBinding(
    _record, 
    _entityKey, 
-   _operationalKey): Promise<{
+   _operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -3404,7 +3410,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    _domain, 
    _initialOperationalThumbprint, 
-_currentOperationalThumbprint): Promise<void>;
+   _currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/protocol/src/log-registry.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L80)

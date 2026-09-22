@@ -382,7 +382,8 @@ Defined in: [packages/sdk/src/local-key-provider.ts:93](https://github.com/dnsid
 static load(
    filePath, 
    createIfMissing?, 
-algorithm?): Promise<LocalKeyProvider>;
+   algorithm?
+): Promise<LocalKeyProvider>;
 ```
 
 Defined in: [packages/sdk/src/local-key-provider.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L58)

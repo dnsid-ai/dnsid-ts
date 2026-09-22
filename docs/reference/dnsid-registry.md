@@ -430,7 +430,8 @@ Registration may have succeeded; reconcile rather than retrying with a new key.
 new RegistrationError(
    idempotencyKey, 
    domain, 
-   cause): RegistrationError;
+   cause
+): RegistrationError;
 ```
 
 Defined in: [packages/registry/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L57)
@@ -813,7 +814,8 @@ Use getRegistration().
 getIdentityRecordToSign(
    domain, 
    agentFQDN?, 
-signingKid?): Promise<IdentityRecordToSign>;
+   signingKid?
+): Promise<IdentityRecordToSign>;
 ```
 
 Defined in: [packages/registry/src/index.ts:469](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L469)
@@ -888,7 +890,8 @@ Defined in: [packages/registry/src/index.ts:539](https://github.com/dnsid-ai/dns
 prepareKeyRotation(
    domain, 
    request, 
-idempotencyKey): Promise<PreparedRegistryEvent>;
+   idempotencyKey
+): Promise<PreparedRegistryEvent>;
 ```
 
 Defined in: [packages/registry/src/index.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L553)
@@ -921,7 +924,8 @@ Requires owner credentials (session or API key); an agent bearer token is not ac
 publishTxtRecordWithSigner(
    domain, 
    sign, 
-validation): Promise<PublishedRecord>;
+   validation
+): Promise<PublishedRecord>;
 ```
 
 Defined in: [packages/registry/src/index.ts:454](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L454)
@@ -1036,7 +1040,8 @@ Defined in: [packages/registry/src/index.ts:359](https://github.com/dnsid-ai/dns
 reissueLiveProof(
    domain, 
    requestId, 
-publicKeyJwk): Promise<LiveProofReissueResponse>;
+   publicKeyJwk
+): Promise<LiveProofReissueResponse>;
 ```
 
 Defined in: [packages/registry/src/index.ts:407](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L407)
@@ -1091,7 +1096,8 @@ Defined in: [packages/registry/src/index.ts:626](https://github.com/dnsid-ai/dns
 revokeAgent(
    domain, 
    agentId, 
-reason): Promise<LifecycleResult>;
+   reason
+): Promise<LifecycleResult>;
 ```
 
 Defined in: [packages/registry/src/index.ts:612](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L612)
@@ -1194,7 +1200,8 @@ Defined in: [packages/registry/src/index.ts:386](https://github.com/dnsid-ai/dns
 submitPreparedEvent(
    domain, 
    entryBytes, 
-idempotencyKey): Promise<SubmissionResult>;
+   idempotencyKey
+): Promise<SubmissionResult>;
 ```
 
 Defined in: [packages/registry/src/index.ts:570](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L570)
@@ -1287,7 +1294,8 @@ Defined in: [packages/registry/src/index.ts:367](https://github.com/dnsid-ai/dns
 waitForStatus(
    domain, 
    predicate, 
-options?): Promise<AgentRegistration>;
+   options?
+): Promise<AgentRegistration>;
 ```
 
 Defined in: [packages/registry/src/index.ts:436](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L436)

@@ -1252,7 +1252,8 @@ function setDictionaryMember(
    headers, 
    name, 
    label, 
-   value): void;
+   value
+): void;
 ```
 
 Defined in: [http-signatures/src/index.ts:959](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L959)
@@ -1292,7 +1293,8 @@ to `label=value`, replacing any existing member with that label and preserving t
 function signHttpMessage<T>(
    msg, 
    params, 
-keyProvider): Promise<T>;
+   keyProvider
+): Promise<T>;
 ```
 
 Defined in: [http-signatures/src/index.ts:772](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L772)
