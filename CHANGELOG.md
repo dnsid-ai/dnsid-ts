@@ -1,4 +1,11 @@
 
+## [0.20.1] - 2026-09-21
+
+### Other
+
+- registry: accept sandbox environment in agent registration ([#18](https://github.com/dnsid-ai/dnsid-ts/pull/18))
+
+
 ## [0.20.0] - 2026-09-21
 
 ### Bug Fixes
