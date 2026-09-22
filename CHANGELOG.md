@@ -1,4 +1,11 @@
 
+## [0.20.2] - 2026-09-22
+
+### Chores
+
+- chore: normalize repository.url to git+https (npm pkg fix) ([#22](https://github.com/dnsid-ai/dnsid-ts/pull/22))
+
+
 ## [0.20.1] - 2026-09-21
 
 ### Other
