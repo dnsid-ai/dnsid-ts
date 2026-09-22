@@ -35,5 +35,8 @@
   "dependencies": {
     "@dnsid-ai/protocol": "^0.20.0"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0"
 }

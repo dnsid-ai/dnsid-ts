@@ -41,5 +41,8 @@
     "@dnsid-ai/transport": "^0.20.0",
     "jose": "^6.2.10"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0"
 }

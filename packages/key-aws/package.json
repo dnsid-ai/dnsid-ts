@@ -40,5 +40,8 @@
     "@aws-sdk/client-kms": "^3.1124.0",
     "@dnsid-ai/protocol": "^0.20.0"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0"
 }
