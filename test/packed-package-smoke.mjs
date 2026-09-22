@@ -49,7 +49,8 @@ for (const name of packages) {
   if (result.status !== 0) {
     throw new Error(`npm pack packages/${name} failed with exit code ${result.status}`);
   }
-  const [packed] = JSON.parse(result.stdout);
+  const parsed = JSON.parse(result.stdout);
+  const [packed] = Array.isArray(parsed) ? parsed : Object.values(parsed); // npm <=11: array; npm 12: {name: {...}}
   if (!packed.files.some((file) => file.path === 'LICENSE')) throw new Error(`${packed.name} tarball is missing LICENSE`);
   tarballs.push(path.join(tarballDir, packed.filename));
 }
