@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/http-signatures",
-  "version": "0.20.0",
+  "version": "0.20.1",
   "description": "DNSid HTTP Message Signatures profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.20.0",
+    "@dnsid-ai/protocol": "^0.20.1",
     "structured-headers": "^2.0.3"
   },
   "publishConfig": {

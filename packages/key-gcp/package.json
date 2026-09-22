@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/key-gcp",
-  "version": "0.20.0",
+  "version": "0.20.1",
   "private": true,
   "description": "Private placeholder for future DNSid Google Cloud KMS key provider integration.",
   "type": "module",
@@ -38,7 +38,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.20.0"
+    "@dnsid-ai/protocol": "^0.20.1"
   },
   "license": "Apache-2.0"
 }
