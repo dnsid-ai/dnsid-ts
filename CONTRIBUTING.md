@@ -138,6 +138,17 @@ Releases are published to [npmjs.com](https://www.npmjs.com/org/dnsid-ai) by
 [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) with
 `--provenance`. No npm token is stored in this repository.
 
+The workflow **stages** each package (`npm stage publish`); nothing goes live
+until a maintainer approves it with 2FA. After the release workflow is green:
+
+```sh
+npm stage list @dnsid-ai/sdk            # one stage-id per package/version
+npm stage approve <stage-id>            # prompts for 2FA; repeat per package
+```
+
+Approve every package of a release together so versions stay in sync. To
+discard a staged version: `npm stage reject <stage-id>`.
+
 One-time setup for each **new** public workspace package (npm cannot create a
 package via OIDC):
 
@@ -145,7 +156,9 @@ package via OIDC):
    tag: `npm ci && npm run build && npm publish --workspace @dnsid-ai/<name>`.
 2. On npmjs.com → package → Settings → Trusted Publisher: add GitHub Actions
    with organization `dnsid-ai`, repository `dnsid-ts`, workflow `release.yml`.
-3. Subsequent versions are published automatically by the release workflow.
+   Leave **npm publish** disallowed — only stage publish (the default).
+3. Subsequent versions are staged automatically by the release workflow and
+   approved as above.
 
 Packages marked `"private": true` (currently `@dnsid-ai/key-gcp`) are skipped.
 
