@@ -14,6 +14,12 @@ import {
   type C2spBoundedResourceFetcher,
 } from '@dnsid-ai/log-c2sp-tlog';
 
+// Every non-literal hostname answers loopback, as dnsid local's DNS does for its zone.
+vi.mock('node:dns/promises', async importOriginal => ({
+  ...await importOriginal<typeof import('node:dns/promises')>(),
+  lookup: vi.fn(async () => [{ address: '127.0.0.1', family: 4 }]),
+}));
+
 const policyDocument = new TextEncoder().encode(`log testnet.dnsid.example/log+63868553+Ae1JKMYo0cLG6ukDOJBZlWEpWSc6XGP5NjbBRhSshzfR
 quorum none
 `);
@@ -239,13 +245,28 @@ describe('createC2spTlogVerificationRegistry', () => {
   });
 
   it('applies transport to the default fetcher and rejects it beside an injected fetcher', async () => {
-    // allowedUnsafeHosts lifts the block above; nothing listens, so the fetch fails past the guard.
+    // `.test` lets policy.dnsid.test resolve to loopback; nothing listens on :65530, so the fetch fails past the guard.
+    const unsafeResolution = (err: unknown) => JSON.stringify(err, (_k, v: unknown) => (v instanceof Error ? { message: v.message, cause: v.cause } : v)).includes('unsafe resolved IP address');
+    const allowed = await createC2spTlogVerificationRegistry({
+      policyUrl: 'https://policy.dnsid.test:65530/dnsid-policy',
+      transport: { privateAddressHosts: ['.test'] },
+    }).catch(e => e);
+    expect(allowed).toBeInstanceOf(Error);
+    expect(unsafeResolution(allowed)).toBe(false);
+    // Without the entry the same URL is stopped at resolution: no implicit .test rule.
+    const blocked = await createC2spTlogVerificationRegistry({ policyUrl: 'https://policy.dnsid.test:65530/dnsid-policy' }).catch(e => e);
+    expect(unsafeResolution(blocked)).toBe(true);
+    // IP literals are never exempted, and IP-literal entries are rejected at construction.
     await expect(createC2spTlogVerificationRegistry({
-      policyUrl: 'https://127.0.0.1:1/dnsid-policy',
-      transport: { allowedUnsafeHosts: ['127.0.0.1'] },
-    })).rejects.not.toMatchObject({
+      policyUrl: 'https://127.0.0.1:65530/dnsid-policy',
+      transport: { privateAddressHosts: ['.test'] },
+    })).rejects.toMatchObject({
       cause: expect.objectContaining({ message: expect.stringContaining('unsafe target IP address') }),
     });
+    await expect(createC2spTlogVerificationRegistry({
+      policyUrl: 'https://policy.dnsid.test:65530/dnsid-policy',
+      transport: { privateAddressHosts: ['127.0.0.1'] },
+    })).rejects.toThrow(ArgumentError);
 
     await expect(createC2spTlogVerificationRegistry({
       policyDocument,

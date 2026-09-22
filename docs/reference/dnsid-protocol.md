@@ -662,7 +662,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1059](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1059)
+Defined in: [packages/protocol/src/identity-manager.ts:1078](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1078)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -901,6 +901,32 @@ and validates DNS label constraints.
 
 ValidationError if the name is empty, contains empty labels, has any label over 63 octets,
         exceeds the 253-octet DNS limit, or (when agentFQDN=true) exceeds the 246-octet DNSid agent limit.
+
+***
+
+<a id="normalizeprivateaddresshost"></a>
+
+### normalizePrivateAddressHost()
+
+```ts
+function normalizePrivateAddressHost(entry): string;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L170)
+
+Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
+no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
+schemes, paths, credentials, and empty strings are rejected with [ArgumentError](https://docs.dnsid.ai/reference/ts/dnsid-protocol-classes/#argumenterror).
+
+#### Parameters
+
+##### entry
+
+`string`
+
+#### Returns
+
+`string`
 
 ***
 
@@ -1213,7 +1239,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:273](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L273)
+Defined in: [packages/protocol/src/identity-manager.ts:292](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L292)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1243,7 +1269,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1096](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1096)
+Defined in: [packages/protocol/src/identity-manager.ts:1115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1115)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial

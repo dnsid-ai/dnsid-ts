@@ -52,6 +52,21 @@ describe('configFromEnvironment()', () => {
     );
   });
 
+  it('parses DNSID_PRIVATE_HOSTS as a trimmed comma-separated list, omitted when unset or empty', () => {
+    const base = {
+      [dnsidEnvironmentVariables.domain]: 'alice.example.com',
+      [dnsidEnvironmentVariables.governanceId]: 'example.com',
+    };
+    const transportFor = (value?: string) => configFromEnvironment(
+      value === undefined ? base : { ...base, [dnsidEnvironmentVariables.privateAddressHosts]: value },
+    ).config.transport;
+
+    expect(transportFor(' .test, agent.local ,,')).toEqual({ privateAddressHosts: ['.test', 'agent.local'] });
+    expect(transportFor()).toEqual({});
+    expect(transportFor('')).toEqual({});
+    expect(transportFor(' , ')).toEqual({});
+  });
+
   it('exposes the registry API key without touching core config', () => {
     const environment = configFromEnvironment({
       [dnsidEnvironmentVariables.domain]: 'alice.example.com',

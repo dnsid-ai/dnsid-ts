@@ -8,8 +8,13 @@ const policyUrl = process.env.DNSID_LOG_POLICY_URL ?? 'https://log.dnsid.dev/dns
 
 export async function validateDomain(domain: string): Promise<void> {
   // Local registry only (`eval "$(dnsid local env)"`): route DNS to its CoreDNS and trust its CA.
-  // Its `.test` hosts may resolve to loopback without an allowlist. Both undefined in production.
-  const transport = { dnsServer: process.env.DNSID_DNS_SERVER, caBundlePath: process.env.DNSID_CA_BUNDLE };
+  // Its `.test` hosts resolve to loopback, so DNSID_PRIVATE_HOSTS=.test is needed too. All undefined in production.
+  const privateHosts = process.env.DNSID_PRIVATE_HOSTS?.split(',').map(h => h.trim()).filter(Boolean);
+  const transport = {
+    dnsServer: process.env.DNSID_DNS_SERVER,
+    caBundlePath: process.env.DNSID_CA_BUNDLE,
+    ...(privateHosts?.length ? { privateAddressHosts: privateHosts } : {}),
+  };
 
   const logRegistry = await createC2spTlogVerificationRegistry({
     policyUrl,

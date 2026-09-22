@@ -199,6 +199,7 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 | `DNSID_KU_URL` | Yes for DNSid1 publishing | Operational JWKS URL. Host must match `DNSID_DOMAIN`. |
 | `DNSID_DNS_SERVER` | No | DNS server for SDK-managed DNS and HTTPS lookups. |
 | `DNSID_CA_BUNDLE` | No | Additional PEM CA bundle for SDK-managed HTTPS verification. |
+| `DNSID_PRIVATE_HOSTS` | No | Comma-separated hostnames or `.suffix` entries (e.g. `.test`) whose SDK-managed HTTPS destinations may resolve to loopback/private addresses. Nothing is allowed by default. |
 | `DNSID_DNSSEC_MODE` | No | DNSSEC mode: `auto` (default), `validated`, or `required`. |
 | `DNSID_KEY_STORE` | No | Local key-store path for `LocalKeyProvider`. Defaults to `.dnsid/keys.json` when loading from environment. |
 | `DNSID_PUBLIC_URL` | No | Public base URL for examples/servers. Not part of core DNSid config. |

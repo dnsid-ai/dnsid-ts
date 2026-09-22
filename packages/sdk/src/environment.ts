@@ -12,6 +12,7 @@ export const dnsidEnvironmentVariables = {
   kuUrl: 'DNSID_KU_URL',
   dnsServer: 'DNSID_DNS_SERVER',
   caBundlePath: 'DNSID_CA_BUNDLE',
+  privateAddressHosts: 'DNSID_PRIVATE_HOSTS',
   dnssecMode: 'DNSID_DNSSEC_MODE',
   publicUrl: 'DNSID_PUBLIC_URL',
   keyStorePath: 'DNSID_KEY_STORE',
@@ -39,6 +40,7 @@ const environmentSchema = {
   kuUrl: stringField(dnsidEnvironmentVariables.kuUrl),
   dnsServer: stringField(dnsidEnvironmentVariables.dnsServer),
   caBundlePath: stringField(dnsidEnvironmentVariables.caBundlePath),
+  privateAddressHosts: listField(dnsidEnvironmentVariables.privateAddressHosts),
   dnssecMode: dnssecModeField(dnsidEnvironmentVariables.dnssecMode),
   publicUrl: stringField(dnsidEnvironmentVariables.publicUrl),
   keyStorePath: stringField(dnsidEnvironmentVariables.keyStorePath),
@@ -118,7 +120,7 @@ export function configFromEnvironment<const RequiredFields extends EnvironmentFi
       kuUrl: parsed.kuUrl,
     }),
     verification: defined({ dnssecMode: parsed.dnssecMode }),
-    transport: defined({ dnsServer: parsed.dnsServer, caBundlePath: parsed.caBundlePath }),
+    transport: defined({ dnsServer: parsed.dnsServer, caBundlePath: parsed.caBundlePath, privateAddressHosts: parsed.privateAddressHosts }),
   };
   return {
     config,
@@ -186,6 +188,17 @@ function requireFields<T extends DnsidEnvironment>(
 
 function stringField(variable: EnvironmentVariableName): EnvironmentField<string> {
   return { variable, parse: value => value };
+}
+
+/** Comma-separated list; entries trimmed, empties dropped, `undefined` when nothing remains. */
+function listField(variable: EnvironmentVariableName): EnvironmentField<string[] | undefined> {
+  return {
+    variable,
+    parse(value) {
+      const items = value.split(',').map(item => item.trim()).filter(Boolean);
+      return items.length > 0 ? items : undefined;
+    },
+  };
 }
 
 function positiveIntField(variable: EnvironmentVariableName): EnvironmentField<number> {

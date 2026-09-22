@@ -24,7 +24,7 @@ import { Agent, fetch as undiciFetch } from 'undici';
 import type { Dispatcher } from 'undici';
 
 import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@dnsid-ai/protocol';
-import { DNSSECState, VerificationCode, VerificationError } from '@dnsid-ai/protocol';
+import { DNSSECState, VerificationCode, VerificationError, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
 
 /** Minimal WHATWG-fetch-compatible function signature returned by the fetch factories. */
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -53,11 +53,8 @@ export interface HTTPSFetchOptions {
   dnsServer?: string;
   /** Maximum accepted response body size in bytes. Defaults to 1 MiB. */
   maxResponseBytes?: number;
-  /**
-   * Hostnames whose resolved private or loopback addresses may be contacted. For trusted test and
-   * private deployments only; public defaults use none.
-   */
-  allowedUnsafeHosts?: readonly string[];
+  /** Same as `TransportConfig.privateAddressHosts`: hostnames or `.suffix` entries that may resolve to loopback/private addresses. */
+  privateAddressHosts?: readonly string[];
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
@@ -73,11 +70,12 @@ export type { TransportConfig };
 /** Explicit exceptions for trusted test/private deployments using {@link createSsrfSafeFetch}. */
 export interface SsrfSafeFetchOptions {
   /**
-   * Hostnames whose resolved RFC 1918/ULA private or loopback addresses may be contacted.
-   * Link-local and other unsafe ranges remain blocked. Matching is exact after
-   * URL hostname normalization; public defaults use no exceptions.
+   * Hostnames, or leading-dot suffixes such as `.test`, whose resolved RFC 1918/ULA private or
+   * loopback addresses may be contacted. Link-local and other unsafe ranges remain blocked, IP-literal
+   * URLs are never exempted, and nothing is allowed by default. Same semantics as
+   * `TransportConfig.privateAddressHosts`.
    */
-  allowedUnsafeHosts?: readonly string[];
+  privateAddressHosts?: readonly string[];
 }
 
 /**
@@ -132,14 +130,13 @@ export function createDnsidFetch(config: TransportConfig): FetchLike {
  * @returns A {@link FetchLike} with address filtering applied on every lookup.
  */
 export function createSsrfSafeFetch(config: TransportConfig = {}, options: SsrfSafeFetchOptions = {}): FetchLike {
-  const allowedUnsafeHosts = new Set((options.allowedUnsafeHosts ?? []).map(normalizeAllowedUnsafeHost));
-  const connect: Record<string, unknown> = { lookup: createSsrfSafeLookup(config.dnsServer, allowedUnsafeHosts) };
+  const privateAddressHosts = (options.privateAddressHosts ?? []).map(normalizePrivateAddressHost);
+  const connect: Record<string, unknown> = { lookup: createSsrfSafeLookup(config.dnsServer, privateAddressHosts) };
   if (config.caBundlePath) connect.ca = [...tls.rootCertificates, fs.readFileSync(config.caBundlePath, 'utf8')];
   const fetchWithSafeLookup = createFetchWithDispatcher(new Agent({ connect }) as Dispatcher);
   return async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input);
-    if (isUnsafeIp(url.hostname)
-      && !(allowedUnsafeHosts.has(url.hostname) && isPrivateOrLoopbackIp(url.hostname))) {
+    if (isUnsafeIp(url.hostname)) {
       throw new VerificationError(`unsafe target IP address: ${url.hostname}`, {
         code: VerificationCode.TLSError,
       });
@@ -305,7 +302,7 @@ export function createLookup(dnsServer: string): NonNullable<https.RequestOption
  */
 function createSsrfSafeLookup(
   dnsServer?: string,
-  allowedUnsafeHosts: ReadonlySet<string> = new Set(),
+  privateAddressHosts: readonly string[] = [],
 ): NonNullable<https.RequestOptions['lookup']> {
   let resolverPromise: Promise<dnsPromises.Resolver> | null = null;
   async function customResolver(): Promise<dnsPromises.Resolver> {
@@ -329,7 +326,7 @@ function createSsrfSafeLookup(
     void (async () => {
       const addresses = await resolveAddresses(hostname, family, dnsServer ? await customResolver() : undefined);
       const unsafe = addresses.find(({ address }) => isUnsafeIp(address));
-      if (unsafe && !(unsafeHostAllowed(hostname, allowedUnsafeHosts) && addresses.every(({ address }) => isPrivateOrLoopbackIp(address)))) {
+      if (unsafe && !(privateAddressHostMatches(hostname, privateAddressHosts) && addresses.every(({ address }) => isPrivateOrLoopbackIp(address)))) {
         throw new VerificationError(`unsafe resolved IP address for ${hostname}: ${unsafe.address}`, {
           code: VerificationCode.TLSError,
         });
@@ -344,27 +341,15 @@ function createSsrfSafeLookup(
 }
 
 /**
- * True when `hostname` may resolve to private or loopback addresses: an explicit
- * `allowedUnsafeHosts` entry, or any name under the reserved `.test` TLD (RFC 2606).
- * `.test` names can never resolve publicly, so a private answer is deliberate local
- * configuration (such as `dnsid local`), not a rebinding attack.
+ * True when `hostname` matches a normalized `privateAddressHosts` entry: exactly, or on a
+ * DNS-label boundary under a leading-dot suffix (`.test` matches `test` and `a.test`, not
+ * `evil-test` or `a.test.example`). Case-insensitive; ignores a trailing dot.
  */
-function unsafeHostAllowed(hostname: string, allowedUnsafeHosts: ReadonlySet<string>): boolean {
+function privateAddressHostMatches(hostname: string, privateAddressHosts: readonly string[]): boolean {
   const host = hostname.toLowerCase().replace(/\.$/, '');
-  return allowedUnsafeHosts.has(hostname) || host === 'test' || host.endsWith('.test');
-}
-
-function normalizeAllowedUnsafeHost(host: string): string {
-  let parsed: URL;
-  try {
-    parsed = new URL(`https://${host}`);
-  } catch {
-    throw new TypeError(`invalid allowed unsafe hostname: ${host}`);
-  }
-  if (!host || parsed.username || parsed.password || parsed.port || parsed.pathname !== '/' || parsed.search || parsed.hash) {
-    throw new TypeError(`invalid allowed unsafe hostname: ${host}`);
-  }
-  return parsed.hostname;
+  return privateAddressHosts.some(entry => entry.startsWith('.')
+    ? host === entry.slice(1) || host.endsWith(entry)
+    : host === entry);
 }
 
 /** Resolves a hostname to A/AAAA addresses (passing IP literals through), throwing when none exist. */
@@ -639,7 +624,7 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
       headers: {
         'User-Agent': DNSID_USER_AGENT,
       },
-      lookup: createSsrfSafeLookup(opts.dnsServer, new Set((opts.allowedUnsafeHosts ?? []).map(normalizeAllowedUnsafeHost))),
+      lookup: createSsrfSafeLookup(opts.dnsServer, (opts.privateAddressHosts ?? []).map(normalizePrivateAddressHost)),
     };
     if (opts.caBundlePath) requestOptions.ca = [...tls.rootCertificates, fs.readFileSync(opts.caBundlePath, 'utf8')];
 

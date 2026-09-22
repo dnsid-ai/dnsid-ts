@@ -159,7 +159,26 @@ type LogCanonicalizer = Pick<LogReader, 'canonical'> & {
 
 const IDENTITY_KEYS = ['domain', 'governanceId', 'logRef', 'statusUrl', 'policyFlags', 'maxKeyAge', 'ekUrl', 'kuUrl', 'publishProfile', 'capabilitiesUrl'];
 const VERIFICATION_KEYS = ['statusCheckInterval', 'dnssecMode', 'trustedEntities'];
-const TRANSPORT_KEYS = ['dnsServer', 'caBundlePath', 'allowedUnsafeHosts'];
+const TRANSPORT_KEYS = ['dnsServer', 'caBundlePath', 'privateAddressHosts'];
+const IPV4_LITERAL_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
+ * no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
+ * schemes, paths, credentials, and empty strings are rejected with {@link ArgumentError}.
+ */
+export function normalizePrivateAddressHost(entry: string): string {
+  const suffix = entry.startsWith('.');
+  const host = suffix ? entry.slice(1) : entry;
+  let parsed: URL | undefined;
+  try { parsed = new URL(`https://${host}`); } catch { /* rejected below */ }
+  if (!host || !parsed || host.includes('/') || parsed.username || parsed.password || parsed.port
+    || parsed.pathname !== '/' || parsed.search || parsed.hash
+    || parsed.hostname.startsWith('.') || parsed.hostname.startsWith('[') || IPV4_LITERAL_RE.test(parsed.hostname)) {
+    throw new ArgumentError(`invalid privateAddressHosts entry: ${entry}`);
+  }
+  return (suffix ? '.' : '') + parsed.hostname.replace(/\.$/, '');
+}
 const THUMBPRINT_RE = /^[A-Za-z0-9_-]{43}$/;
 
 function requireObject(value: unknown, path: string, allowed: string[]): Record<string, unknown> {
@@ -258,10 +277,10 @@ function validateTransport(value: unknown): TransportConfig {
     const v = optionalString(raw, 'config.transport', key);
     if (v !== undefined) transport[key] = v;
   }
-  const hosts = raw.allowedUnsafeHosts;
+  const hosts = raw.privateAddressHosts;
   if (hosts !== undefined) {
-    if (!Array.isArray(hosts) || hosts.some(h => typeof h !== 'string')) throw new ArgumentError('config.transport.allowedUnsafeHosts must be an array of strings');
-    transport.allowedUnsafeHosts = hosts;
+    if (!Array.isArray(hosts) || hosts.some(h => typeof h !== 'string')) throw new ArgumentError('config.transport.privateAddressHosts must be an array of strings');
+    transport.privateAddressHosts = hosts.map(normalizePrivateAddressHost);
   }
   return Object.freeze(transport);
 }
@@ -316,7 +335,7 @@ export class IdentityManager implements IdentityResolver {
     }
     if (this.config.transport.dnsServer !== undefined) throw new ArgumentError('config.transport.dnsServer has no SDK-managed consumer here; inject dnsResolver and fetchJson or use a runtime factory');
     if (this.config.transport.caBundlePath !== undefined) throw new ArgumentError('config.transport.caBundlePath has no SDK-managed consumer here; inject fetchJson or use a runtime factory');
-    if (this.config.transport.allowedUnsafeHosts !== undefined) throw new ArgumentError('config.transport.allowedUnsafeHosts has no SDK-managed consumer here; inject fetchJson or use a runtime factory');
+    if (this.config.transport.privateAddressHosts !== undefined) throw new ArgumentError('config.transport.privateAddressHosts has no SDK-managed consumer here; inject fetchJson or use a runtime factory');
     this.keyProvider = keyProvider ?? null;
     this.entityKeyProvider = entityKeyProvider ?? null;
     this.logRegistry = logRegistry?.snapshot() ?? null;

@@ -96,12 +96,15 @@ describe('DnsidConfig validation', () => {
   it('rejects explicit transport settings in the runtime-neutral core', () => {
     expect(() => new IdentityManager({ transport: { dnsServer: '1.1.1.1' } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
     expect(() => new IdentityManager({ transport: { caBundlePath: '/ca.pem' } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
-    expect(() => new IdentityManager({ transport: { allowedUnsafeHosts: ['agent.local'] } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
+    expect(() => new IdentityManager({ transport: { privateAddressHosts: ['agent.local'] } }, { dnsResolver: { fetchTXT: vi.fn() }, fetchJson: vi.fn() })).toThrow(/no SDK-managed consumer/);
   });
 
-  it('validates transport.allowedUnsafeHosts as an array of strings', () => {
-    expect(() => validateDnsidConfig({ transport: { allowedUnsafeHosts: 'agent.local' } })).toThrow(/array of strings/);
-    expect(validateDnsidConfig({ transport: { allowedUnsafeHosts: ['agent.local'] } }).transport?.allowedUnsafeHosts).toEqual(['agent.local']);
+  it('validates and normalizes transport.privateAddressHosts at construction', () => {
+    expect(() => validateDnsidConfig({ transport: { privateAddressHosts: 'agent.local' } })).toThrow(/array of strings/);
+    expect(validateDnsidConfig({ transport: { privateAddressHosts: ['Agent.Local.', '.Test'] } }).transport?.privateAddressHosts).toEqual(['agent.local', '.test']);
+    for (const entry of ['', '.', '127.0.0.1', '[::1]', '.10.0.0.1', 'agent.local:8443', 'https://agent.local', 'agent.local/x', 'user:pw@agent.local', 'agent.local?q', '..test']) {
+      expect(() => validateDnsidConfig({ transport: { privateAddressHosts: [entry] } }), JSON.stringify(entry)).toThrow(ArgumentError);
+    }
   });
 });
 
@@ -132,8 +135,17 @@ describe('Node transport conflict rules', () => {
     expect(dnsResolver.fetchTXT).not.toHaveBeenCalled();
   });
 
-  it('rejects caBundlePath when the HTTPS fetcher is injected', async () => {
+  it('rejects caBundlePath and privateAddressHosts when the HTTPS fetcher is injected', async () => {
     await expect(createNodeIdentityManager({ identity, transport: { caBundlePath: '/ca.pem' } }, { keyProvider, dnsResolver, fetchJson })).rejects.toThrow(ArgumentError);
+    await expect(createNodeIdentityVerifier({ transport: { privateAddressHosts: ['.test'] } }, { dnsResolver, fetchJson })).rejects.toThrow(ArgumentError);
+  });
+
+  it('passes privateAddressHosts to the default fetcher', async () => {
+    const { fixture } = await setup();
+    transportSpies.fetchJson.mockImplementation(fixture.fetchJson);
+    const idm = await createNodeIdentityVerifier({ transport: { privateAddressHosts: ['.test'] } }, { dnsResolver: fixture.dnsResolver, logRegistry: fixture.logRegistry });
+    await idm.verifyDomain('agent.example.com');
+    expect(transportSpies.fetchJson).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ privateAddressHosts: ['.test'] }));
   });
 
   it('validates configuration before loading transport or touching the network', async () => {

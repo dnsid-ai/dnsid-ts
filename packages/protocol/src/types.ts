@@ -108,10 +108,17 @@ export interface TransportConfig {
   /** Path to a PEM CA bundle appended to the system root certificates for TLS verification. */
   caBundlePath?: string;
   /**
-   * Hostnames whose resolved private or loopback addresses the default fetcher may contact. For
-   * trusted test and private deployments only.
+   * Hostnames, or leading-dot suffixes such as `.test`, whose SDK-managed HTTPS destinations may
+   * resolve to loopback or private-use addresses. An exact entry matches only that name; `.test`
+   * matches `test` and every name beneath it on a DNS-label boundary, case-insensitively and
+   * ignoring a trailing dot. Link-local, multicast, reserved, and mixed public/private resolutions
+   * stay rejected, IP-literal URLs are never exempted, and every redirect hop is matched
+   * independently. Nothing is allowed by default; there is no built-in `.test` exemption. Entries
+   * are validated at construction (IP literals, ports, schemes, paths, credentials → `ArgumentError`).
+   * Applies only to the default fetcher; rejected when `fetchJson` is injected. Not a DNSid protocol
+   * field.
    */
-  allowedUnsafeHosts?: readonly string[];
+  privateAddressHosts?: readonly string[];
 }
 
 /** Single core configuration entry point. Omit `identity` for a verification-only manager. */

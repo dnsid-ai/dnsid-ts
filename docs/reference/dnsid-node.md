@@ -411,7 +411,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:58](https://github.com/dnsid
 
 ### ConfigFromEnvironmentOptions
 
-Defined in: [packages/sdk/src/environment.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L83)
+Defined in: [packages/sdk/src/environment.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L85)
 
 #### Type Parameters
 
@@ -429,7 +429,7 @@ Defined in: [packages/sdk/src/environment.ts:83](https://github.com/dnsid-ai/dns
 optional require?: readonly RequiredFields[];
 ```
 
-Defined in: [packages/sdk/src/environment.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L84)
+Defined in: [packages/sdk/src/environment.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L86)
 
 ***
 
@@ -544,7 +544,7 @@ Default key-store path when the environment variable is absent. Default: .dnsid/
 type DnsidEnvironment = { [K in EnvironmentFieldName]?: EnvironmentValue<K> };
 ```
 
-Defined in: [packages/sdk/src/environment.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L52)
+Defined in: [packages/sdk/src/environment.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L54)
 
 ***
 
@@ -556,7 +556,7 @@ Defined in: [packages/sdk/src/environment.ts:52](https://github.com/dnsid-ai/dns
 type EnvironmentConfigResult<RequiredFields> = EnvironmentConfigResultBase<RequiredFields> & Required<Pick<EnvironmentConfigResultBase<RequiredFields>, Extract<RequiredFields, keyof EnvironmentConfigResultBase<RequiredFields>>>>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L77)
+Defined in: [packages/sdk/src/environment.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L79)
 
 #### Type Parameters
 
@@ -574,7 +574,7 @@ Defined in: [packages/sdk/src/environment.ts:77](https://github.com/dnsid-ai/dns
 type EnvironmentFieldName = keyof typeof dnsidEnvironmentVariables;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L22)
+Defined in: [packages/sdk/src/environment.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L23)
 
 ***
 
@@ -698,6 +698,14 @@ readonly kuUrl: "DNSID_KU_URL" = 'DNSID_KU_URL';
 readonly logRef: "DNSID_LOG_REF" = 'DNSID_LOG_REF';
 ```
 
+<a id="privateaddresshosts"></a>
+
+##### privateAddressHosts
+
+```ts
+readonly privateAddressHosts: "DNSID_PRIVATE_HOSTS" = 'DNSID_PRIVATE_HOSTS';
+```
+
 <a id="publicurl"></a>
 
 ##### publicUrl
@@ -734,7 +742,7 @@ readonly statusUrl: "DNSID_STATUS_URL" = 'DNSID_STATUS_URL';
 function configFromEnvironment<RequiredFields>(options?): EnvironmentConfigResult<RequiredFields>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L91)
+Defined in: [packages/sdk/src/environment.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L93)
 
 Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
 registry/example settings. Constructors never read the environment themselves.
@@ -753,6 +761,7 @@ registry/example settings. Constructors never read the environment themselves.
   \| `"dnssecMode"`
   \| `"dnsServer"`
   \| `"caBundlePath"`
+  \| `"privateAddressHosts"`
   \| `"registryUrl"`
   \| `"apiKey"`
   \| `"publicUrl"`
@@ -776,7 +785,7 @@ registry/example settings. Constructors never read the environment themselves.
 function configFromEnvironment<RequiredFields>(env, options?): EnvironmentConfigResult<RequiredFields>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L94)
+Defined in: [packages/sdk/src/environment.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L96)
 
 Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
 registry/example settings. Constructors never read the environment themselves.
@@ -795,6 +804,7 @@ registry/example settings. Constructors never read the environment themselves.
   \| `"dnssecMode"`
   \| `"dnsServer"`
   \| `"caBundlePath"`
+  \| `"privateAddressHosts"`
   \| `"registryUrl"`
   \| `"apiKey"`
   \| `"publicUrl"`
@@ -832,7 +842,7 @@ Creates an IdentityManager with Node.js DNS and HTTPS defaults.
 
 `config.transport` configures only the SDK-managed defaults: `dnsServer` applies to whichever of
 `dnsResolver`/`fetchJson` is not injected and is rejected when both are; `caBundlePath` and
-`allowedUnsafeHosts` apply to the default fetcher and are rejected when `fetchJson` is injected. Injected dependencies are never
+`privateAddressHosts` apply to the default fetcher and are rejected when `fetchJson` is injected. Injected dependencies are never
 inspected or modified. `@dnsid-ai/transport` is an optional peer; install it or inject both
 dependencies. The system resolver reports `UNKNOWN`; `validated`/`required` DNSSEC modes need a
 DNSSEC-aware resolver.
@@ -969,7 +979,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:229](https://github.com/dnsi
 function registryClientOptionsFromEnvironment(env?): object;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L141)
+Defined in: [packages/sdk/src/environment.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L143)
 
 Registry client options from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`, the
 variables `dnsid local env` exports. Unset means the local registry with no

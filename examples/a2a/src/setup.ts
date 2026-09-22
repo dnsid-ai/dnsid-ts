@@ -63,8 +63,8 @@ function loadEnvironment(): Environment {
 async function createIdentity(environment: Environment, transport: TransportConfig): Promise<IdentityManager> {
   const { identity } = environment.config;
   const publicUrl = environment.publicUrl ?? new URL(identity.kuUrl).origin;
-  // Testnet hosts live under the reserved `.test` TLD, so the SSRF guard lets
-  // them resolve to this machine without an allowedUnsafeHosts list.
+  // Testnet hosts under `.test` resolve to this machine; `dnsid testnet run` exports
+  // DNSID_PRIVATE_HOSTS=.test so the SSRF guard admits them (config.transport.privateAddressHosts).
   const config = {
     ...environment.config,
     identity: {
