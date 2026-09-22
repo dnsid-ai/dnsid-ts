@@ -662,7 +662,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1078](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1078)
+Defined in: [packages/protocol/src/identity-manager.ts:1082](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1082)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -912,7 +912,7 @@ ValidationError if the name is empty, contains empty labels, has any label over 
 function normalizePrivateAddressHost(entry): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L170)
+Defined in: [packages/protocol/src/identity-manager.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L171)
 
 Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
 no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
@@ -1239,7 +1239,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:292](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L292)
+Defined in: [packages/protocol/src/identity-manager.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L296)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1269,7 +1269,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1115)
+Defined in: [packages/protocol/src/identity-manager.ts:1119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1119)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
