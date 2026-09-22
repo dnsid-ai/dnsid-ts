@@ -1,5 +1,5 @@
 import { VerificationError, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
-import { createSsrfSafeFetch, type FetchLike } from '@dnsid-ai/transport';
+import { createSsrfSafeFetch, type FetchLike, type TransportConfig } from '@dnsid-ai/transport';
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import { C2spTlogError, C2spTlogVerificationError } from './errors.ts';
 import { checkpointPath, entryBundlePath, parseEntryBundle } from './tiles.ts';
@@ -78,10 +78,13 @@ export function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarante
 /**
  * Creates the default public-resource fetcher. It uses connection-time SSRF
  * checks, rejects redirects, requires HTTP 200, and bounds the decoded body
- * while reading it.
+ * while reading it. `transport` applies the same DNS server, CA bundle, and
+ * private-address exceptions as `DnsidConfig.transport`, so a private registry
+ * such as `dnsid local` is reachable for policy and log reads.
  */
-export function createDefaultC2spBoundedResourceFetcher(): C2spBoundedResourceFetcher {
-  return createFetchBackedC2spResourceFetcher(createSsrfSafeFetch(), REQUIRED_FETCH_GUARANTEES);
+export function createDefaultC2spBoundedResourceFetcher(transport: TransportConfig = {}): C2spBoundedResourceFetcher {
+  const { allowedUnsafeHosts, ...config } = transport;
+  return createFetchBackedC2spResourceFetcher(createSsrfSafeFetch(config, { allowedUnsafeHosts }), REQUIRED_FETCH_GUARANTEES);
 }
 
 /**

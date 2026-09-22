@@ -237,4 +237,20 @@ describe('createC2spTlogVerificationRegistry', () => {
       cause: expect.objectContaining({ message: expect.stringContaining('unsafe target IP address') }),
     });
   });
+
+  it('applies transport to the default fetcher and rejects it beside an injected fetcher', async () => {
+    // allowedUnsafeHosts lifts the block above; nothing listens, so the fetch fails past the guard.
+    await expect(createC2spTlogVerificationRegistry({
+      policyUrl: 'https://127.0.0.1:1/dnsid-policy',
+      transport: { allowedUnsafeHosts: ['127.0.0.1'] },
+    })).rejects.not.toMatchObject({
+      cause: expect.objectContaining({ message: expect.stringContaining('unsafe target IP address') }),
+    });
+
+    await expect(createC2spTlogVerificationRegistry({
+      policyDocument,
+      transport: { dnsServer: '127.0.0.1:7753' },
+      resourceFetcher: createFetchBackedC2spResourceFetcher(vi.fn(), requiredC2spResourceFetchGuarantees()),
+    })).rejects.toThrow(ArgumentError);
+  });
 });

@@ -329,7 +329,7 @@ function createSsrfSafeLookup(
     void (async () => {
       const addresses = await resolveAddresses(hostname, family, dnsServer ? await customResolver() : undefined);
       const unsafe = addresses.find(({ address }) => isUnsafeIp(address));
-      if (unsafe && !(allowedUnsafeHosts.has(hostname) && addresses.every(({ address }) => isPrivateOrLoopbackIp(address)))) {
+      if (unsafe && !(unsafeHostAllowed(hostname, allowedUnsafeHosts) && addresses.every(({ address }) => isPrivateOrLoopbackIp(address)))) {
         throw new VerificationError(`unsafe resolved IP address for ${hostname}: ${unsafe.address}`, {
           code: VerificationCode.TLSError,
         });
@@ -341,6 +341,17 @@ function createSsrfSafeLookup(
       }
     })().catch(err => cb(err as NodeJS.ErrnoException, '', 0));
   };
+}
+
+/**
+ * True when `hostname` may resolve to private or loopback addresses: an explicit
+ * `allowedUnsafeHosts` entry, or any name under the reserved `.test` TLD (RFC 2606).
+ * `.test` names can never resolve publicly, so a private answer is deliberate local
+ * configuration (such as `dnsid local`), not a rebinding attack.
+ */
+function unsafeHostAllowed(hostname: string, allowedUnsafeHosts: ReadonlySet<string>): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, '');
+  return allowedUnsafeHosts.has(hostname) || host === 'test' || host.endsWith('.test');
 }
 
 function normalizeAllowedUnsafeHost(host: string): string {
