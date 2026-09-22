@@ -1405,7 +1405,7 @@ Options for [createC2spTlogVerificationRegistry](https://docs.dnsid.ai/reference
 optional allowedClockSkew?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L71)
 
 Accepted timestamp clock skew in milliseconds (default zero).
 
@@ -1417,7 +1417,7 @@ Accepted timestamp clock skew in milliseconds (default zero).
 optional bundleVerifierKeys?: SignedNoteKey[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L56)
 
 Independently trusted stream-bundle signer keys. Mutually exclusive with `trustProfile`.
 
@@ -1429,7 +1429,7 @@ Independently trusted stream-bundle signer keys. Mutually exclusive with `trustP
 optional checkpointMaxAge?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L69)
 
 Maximum accepted checkpoint age in milliseconds for fresh logged-state and
 non-revocation checks. Omission intentionally makes those operations fail closed.
@@ -1442,7 +1442,7 @@ non-revocation checks. Omission intentionally makes those operations fail closed
 optional maxBundleLifetimeMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L58)
 
 Maximum bundle expiry distance from its witnessed checkpoint. Required with bundle verifier keys.
 
@@ -1454,7 +1454,7 @@ Maximum bundle expiry distance from its witnessed checkpoint. Required with bund
 optional maxPolicyBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L75)
 
 Maximum policy size in bytes (default 1,048,576).
 
@@ -1466,7 +1466,7 @@ Maximum policy size in bytes (default 1,048,576).
 optional maxStreamBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L60)
 
 Maximum decoded stream-bundle response size (default 8 MiB).
 
@@ -1478,7 +1478,7 @@ Maximum decoded stream-bundle response size (default 8 MiB).
 optional maxStreamBundleEvents?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L62)
 
 Maximum lifecycle events in one stream bundle (default 10,000).
 
@@ -1514,7 +1514,7 @@ Independently trusted absolute HTTPS URL of a C2SP `tlog-policy` document.
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L77)
 
 Finite timeout for each policy/log resource request (default 10 seconds).
 
@@ -1526,7 +1526,7 @@ Finite timeout for each policy/log resource request (default 10 seconds).
 optional requireStreamBundle?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L58)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L64)
 
 Fail instead of using the bounded raw scanner when the bundle endpoint is unavailable.
 
@@ -1550,7 +1550,7 @@ Bounded transport used for both policy and standard log resources.
 optional scanLimits?: C2spScanLimits;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L48)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L54)
 
 Optional overrides for the built-in complete scanner's secure limits.
 
@@ -1562,9 +1562,23 @@ Optional overrides for the built-in complete scanner's secure limits.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L79)
 
 Cancels policy retrieval and later reads made by readers from this registry.
+
+<a id="transport"></a>
+
+##### transport?
+
+```ts
+optional transport?: TransportConfig;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L52)
+
+DNS server, CA bundle, and private-address exceptions for the default resource fetcher; pass
+the same `DnsidConfig.transport` given to the IdentityManager when verifying against a private
+registry such as `dnsid local`. Mutually exclusive with `resourceFetcher`.
 
 <a id="trustedcheckpointstore-1"></a>
 
@@ -1574,7 +1588,7 @@ Cancels policy retrieval and later reads made by readers from this registry.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L73)
 
 Persistence for accepted checkpoints. The default is process-lifetime only.
 

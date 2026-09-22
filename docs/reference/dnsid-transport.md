@@ -578,7 +578,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:392](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L392)
+Defined in: [transport/src/index.ts:403](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L403)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,

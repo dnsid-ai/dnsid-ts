@@ -361,7 +361,7 @@ URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 function createC2spTlogVerificationRegistry(options): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L87)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L93)
 
 Creates a [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry) ready to verify `c2sp-tlog` lifecycle
 references. Trust policy is explicit and never inferred from an identity
@@ -390,14 +390,22 @@ protection must survive process restarts.
 ### createDefaultC2spBoundedResourceFetcher()
 
 ```ts
-function createDefaultC2spBoundedResourceFetcher(): C2spBoundedResourceFetcher;
+function createDefaultC2spBoundedResourceFetcher(transport?): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L83)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L85)
 
 Creates the default public-resource fetcher. It uses connection-time SSRF
 checks, rejects redirects, requires HTTP 200, and bounds the decoded body
-while reading it.
+while reading it. `transport` applies the same DNS server, CA bundle, and
+private-address exceptions as `DnsidConfig.transport`, so a private registry
+such as `dnsid local` is reachable for policy and log reads.
+
+#### Parameters
+
+##### transport?
+
+[`TransportConfig`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#transportconfig) = `{}`
 
 #### Returns
 
@@ -443,7 +451,7 @@ signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L93)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L96)
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -1597,7 +1605,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L105)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L108)
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 

@@ -2504,7 +2504,7 @@ Returns the currently trusted checkpoint for `origin`, if any.
 
 ### ScanStreamSource
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L127)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L130)
 
 StreamSource that performs a complete scan of a C2SP tlog-tiles log: it
 fetches the checkpoint, authenticates it via the configured callback, then
@@ -2524,7 +2524,7 @@ downloads every fixed-geometry entry bundle up to the checkpoint tree size.
 new ScanStreamSource(options, resourceFetcher?): ScanStreamSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:134](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L134)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L137)
 
 ###### Parameters
 
@@ -2550,7 +2550,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:134](https://github.com
 load(prefix, options?): Promise<StreamEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L147)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L150)
 
 Loads and authenticates the checkpoint, then every entry of the log at `prefix` (`complete` is always true).
 
