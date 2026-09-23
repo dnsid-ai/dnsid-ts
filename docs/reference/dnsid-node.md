@@ -7,10 +7,12 @@ description: "Node.js conveniences: local file-backed keys, env config, Node ide
 
 Node.js conveniences for DNSid — the `@dnsid-ai/sdk/node` subpath.
 
-Provides `LocalKeyProvider` (filesystem-backed key storage), `configFromEnvironment`
-(DNSid config from environment variables), and the [createNodeIdentityManager](#createnodeidentitymanager) /
-[createNodeIdentityManagerFromDnsid](#createnodeidentitymanagerfromdnsid) factories, which default DNS resolution
-and HTTPS JSON fetching to the optional `@dnsid-ai/transport` peer.
+Provides `LocalKeyProvider` (filesystem-backed key storage), the configuration loaders
+(`loadEnvironment`, `loadFile`, `loadCliDirectory` → `mergeLoadedConfig` → `constructIdentityManager`),
+the one-call [createNodeIdentityManagerFromEnvironment](#createnodeidentitymanagerfromenvironment) / [createNodeIdentityManagerFromDnsid](#createnodeidentitymanagerfromdnsid) /
+[createNodeIdentityManagerFromFile](#createnodeidentitymanagerfromfile) constructors, and [createNodeIdentityManager](#createnodeidentitymanager), which
+defaults DNS resolution and HTTPS JSON fetching to the optional `@dnsid-ai/transport` peer.
+Loaders parse; constructors default. No constructor reads the environment or files.
 The system resolver reports DNSSEC state `UNKNOWN`; the default `auto` policy accepts
 and preserves that state, while stricter policies require a DNSSEC-aware resolver.
 
@@ -20,7 +22,7 @@ and preserves that state, while stricter policies require a DNSSEC-aware resolve
 
 ### LocalKeyProvider
 
-Defined in: [packages/sdk/src/local-key-provider.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L47)
+Defined in: [packages/sdk/src/local-key-provider.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L38)
 
 File-backed KeyProvider that stores Ed25519 or ECDSA P-256 keys as a JSON file.
 
@@ -45,7 +47,7 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L161)
+Defined in: [packages/sdk/src/local-key-provider.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L145)
 
 Promotes a pending key to active. The previously active key transitions to retained.
 
@@ -71,7 +73,7 @@ Promotes a pending key to active. The previously active key transitions to retai
 generateKey(): Promise<string>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:153](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L153)
+Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -92,7 +94,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L128)
+Defined in: [packages/sdk/src/local-key-provider.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L112)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -119,7 +121,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
+Defined in: [packages/sdk/src/local-key-provider.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L121)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -140,7 +142,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L183)
+Defined in: [packages/sdk/src/local-key-provider.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L167)
 
 ###### Parameters
 
@@ -168,7 +170,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L141)
+Defined in: [packages/sdk/src/local-key-provider.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L125)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -195,7 +197,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L124)
+Defined in: [packages/sdk/src/local-key-provider.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L108)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -216,7 +218,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L145)
+Defined in: [packages/sdk/src/local-key-provider.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L129)
 
 Signs with a specified active or pending key.
 
@@ -246,7 +248,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L171)
+Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -272,7 +274,7 @@ Supersedes and removes a retained key from this provider's published key set.
 static fromDirectory(dir): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L97)
+Defined in: [packages/sdk/src/local-key-provider.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L81)
 
 ###### Parameters
 
@@ -292,7 +294,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:97](https://github.com/dnsid
 static fromDomain(domain, dnsidDir?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L120)
+Defined in: [packages/sdk/src/local-key-provider.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L104)
 
 ###### Parameters
 
@@ -308,30 +310,6 @@ Defined in: [packages/sdk/src/local-key-provider.ts:120](https://github.com/dnsi
 
 `Promise`\<[`LocalKeyProvider`](#localkeyprovider)\>
 
-<a id="fromenvironment"></a>
-
-##### fromEnvironment()
-
-```ts
-static fromEnvironment(env?, options?): Promise<LocalKeyProvider>;
-```
-
-Defined in: [packages/sdk/src/local-key-provider.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L86)
-
-###### Parameters
-
-###### env?
-
-`Record`\<`string`, `string` \| `undefined`\>
-
-###### options?
-
-[`LocalKeyProviderEnvironmentOptions`](#localkeyproviderenvironmentoptions) = `{}`
-
-###### Returns
-
-`Promise`\<[`LocalKeyProvider`](#localkeyprovider)\>
-
 <a id="fromfile"></a>
 
 ##### fromFile()
@@ -340,7 +318,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:86](https://github.com/dnsid
 static fromFile(filePath): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L114)
+Defined in: [packages/sdk/src/local-key-provider.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L98)
 
 Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 
@@ -362,7 +340,7 @@ Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 static generate(algorithm?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L93)
+Defined in: [packages/sdk/src/local-key-provider.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L77)
 
 ###### Parameters
 
@@ -385,7 +363,7 @@ static load(
 algorithm?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L58)
+Defined in: [packages/sdk/src/local-key-provider.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L49)
 
 ###### Parameters
 
@@ -407,174 +385,259 @@ Defined in: [packages/sdk/src/local-key-provider.ts:58](https://github.com/dnsid
 
 ## Interfaces
 
-<a id="configfromenvironmentoptions"></a>
+<a id="keysource"></a>
 
-### ConfigFromEnvironmentOptions
+### KeySource
 
-Defined in: [packages/sdk/src/environment.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L85)
-
-#### Type Parameters
-
-##### RequiredFields
-
-`RequiredFields` *extends* [`EnvironmentFieldName`](#environmentfieldname) = `never`
+Defined in: [packages/sdk/src/config-loading.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L49)
 
 #### Properties
 
-<a id="require"></a>
+<a id="clidirectory"></a>
 
-##### require?
+##### cliDirectory?
 
 ```ts
-optional require?: readonly RequiredFields[];
+optional cliDirectory?: string;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L86)
+Defined in: [packages/sdk/src/config-loading.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L51)
+
+DNSid CLI identity directory; key files are located under the effective identity domain.
+
+<a id="entitykeypath"></a>
+
+##### entityKeyPath?
+
+```ts
+optional entityKeyPath?: string;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L53)
+
+Accountable-entity private JWK file.
+
+<a id="keystorepath"></a>
+
+##### keyStorePath?
+
+```ts
+optional keyStorePath?: string;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L55)
+
+`LocalKeyProvider` key-store file; used only when `cliDirectory` is absent.
 
 ***
 
-<a id="createnodeidentitymanagerfromdnsidoptions"></a>
+<a id="loadedconfig"></a>
 
-### CreateNodeIdentityManagerFromDnsidOptions
+### LoadedConfig
 
-Defined in: [packages/sdk/src/node.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L39)
+Defined in: [packages/sdk/src/config-loading.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L68)
 
-Explicit inputs for [createNodeIdentityManagerFromDnsid](#createnodeidentitymanagerfromdnsid).
+Partial configuration from one source. Every field is present only when sourced.
 
 #### Properties
 
-<a id="config"></a>
+<a id="dnsid"></a>
 
-##### config?
+##### dnsid?
 
 ```ts
-optional config?: Omit<DnsidConfig, "identity"> & object;
+optional dnsid?: LoadedDnsidConfig;
 ```
 
-Defined in: [packages/sdk/src/node.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L48)
+Defined in: [packages/sdk/src/config-loading.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L69)
 
-Caller settings. `identity` fields overlay the persisted publication fields before any
-normalization or derivation; `verification` and `transport` are never read from the CLI files.
+<a id="keysource-1"></a>
 
-###### Type Declaration
+##### keySource?
 
-###### identity?
+```ts
+optional keySource?: KeySource;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L74)
+
+<a id="logtrust"></a>
+
+##### logTrust?
+
+```ts
+optional logTrust?: LogTrust;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L70)
+
+<a id="registry"></a>
+
+##### registry?
+
+```ts
+optional registry?: LoadedRegistryConfig;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L71)
+
+<a id="registrycredential"></a>
+
+##### registryCredential?
+
+```ts
+optional registryCredential?: string;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L73)
+
+Secret; never placed in `dnsid`.
+
+***
+
+<a id="loadeddnsidconfig"></a>
+
+### LoadedDnsidConfig
+
+Defined in: [packages/sdk/src/config-loading.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L63)
+
+`DnsidConfig` with a partial `identity`: sources may supply some publication fields and leave the rest to an overlay.
+
+#### Extends
+
+- `Omit`\<[`DnsidConfig`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig), `"identity"`\>
+
+#### Properties
+
+<a id="identity"></a>
+
+##### identity?
 
 ```ts
 optional identity?: Partial<IdentityConfig>;
 ```
 
-<a id="dnsiddir"></a>
+Defined in: [packages/sdk/src/config-loading.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L64)
 
-##### dnsidDir?
+<a id="transport"></a>
 
-```ts
-optional dnsidDir?: string;
-```
-
-Defined in: [packages/sdk/src/node.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L41)
-
-Root DNSid directory containing config.json and <fqdn>/{private,public}.jwk. Defaults to `DNSID_CONFIG_DIR` or ~/.dnsid.
-
-<a id="env"></a>
-
-##### env?
+##### transport?
 
 ```ts
-optional env?: Record<string, string | undefined>;
+optional transport?: TransportConfig;
 ```
 
-Defined in: [packages/sdk/src/node.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L43)
+Defined in: [packages/protocol/src/types.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L128)
 
-Environment used to discover DNSID_CONFIG_DIR. Defaults to process.env.
+###### Inherited from
+
+[`DnsidConfig`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig).[`transport`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#transport)
+
+<a id="verification"></a>
+
+##### verification?
+
+```ts
+optional verification?: VerificationConfig;
+```
+
+Defined in: [packages/protocol/src/types.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L127)
+
+###### Inherited from
+
+[`DnsidConfig`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig).[`verification`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verification)
 
 ***
 
-<a id="localkeyproviderenvironmentoptions"></a>
+<a id="loadedregistryconfig"></a>
 
-### LocalKeyProviderEnvironmentOptions
+### LoadedRegistryConfig
 
-Defined in: [packages/sdk/src/local-key-provider.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L28)
+Defined in: [packages/sdk/src/config-loading.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L58)
 
 #### Properties
 
-<a id="algorithm"></a>
+<a id="registryurl"></a>
 
-##### algorithm?
-
-```ts
-optional algorithm?: LocalKeyAlgorithm;
-```
-
-Defined in: [packages/sdk/src/local-key-provider.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L34)
-
-Algorithm used when creating a missing key store. Default: EdDSA.
-
-<a id="createifmissing"></a>
-
-##### createIfMissing?
+##### registryUrl?
 
 ```ts
-optional createIfMissing?: boolean;
+optional registryUrl?: string;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L32)
+Defined in: [packages/sdk/src/config-loading.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L59)
 
-Create an initial key store if the file does not exist. Default: false.
+***
 
-<a id="defaultpath"></a>
+<a id="logtrust-1"></a>
 
-##### defaultPath?
+### LogTrust
+
+Defined in: [packages/sdk/src/config-loading.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L38)
+
+Log trust for `deps.logRegistry`; exactly one variant is required at construction.
+
+#### Properties
+
+<a id="managed"></a>
+
+##### managed?
 
 ```ts
-optional defaultPath?: string;
+optional managed?: boolean;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L30)
+Defined in: [packages/sdk/src/config-loading.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L40)
 
-Default key-store path when the environment variable is absent. Default: .dnsid/keys.json.
+`true` selects the embedded DNSid-managed catalog.
+
+<a id="policydocument"></a>
+
+##### policyDocument?
+
+```ts
+optional policyDocument?: Uint8Array<ArrayBufferLike>;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L44)
+
+Trusted C2SP `tlog-policy` bytes.
+
+<a id="policyurl"></a>
+
+##### policyUrl?
+
+```ts
+optional policyUrl?: string;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L46)
+
+Trusted C2SP `tlog-policy` HTTPS URL.
+
+<a id="profile"></a>
+
+##### profile?
+
+```ts
+optional profile?: Record<string, unknown>;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L42)
+
+`dnsid-c2sp-tlog-trust-profile@v1` document (parsed JSON).
 
 ## Type Aliases
 
-<a id="dnsidenvironment"></a>
+<a id="environmentsource"></a>
 
-### DnsidEnvironment
-
-```ts
-type DnsidEnvironment = { [K in EnvironmentFieldName]?: EnvironmentValue<K> };
-```
-
-Defined in: [packages/sdk/src/environment.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L54)
-
-***
-
-<a id="environmentconfigresult"></a>
-
-### EnvironmentConfigResult
+### EnvironmentSource
 
 ```ts
-type EnvironmentConfigResult<RequiredFields> = EnvironmentConfigResultBase<RequiredFields> & Required<Pick<EnvironmentConfigResultBase<RequiredFields>, Extract<RequiredFields, keyof EnvironmentConfigResultBase<RequiredFields>>>>;
+type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L79)
-
-#### Type Parameters
-
-##### RequiredFields
-
-`RequiredFields` *extends* [`EnvironmentFieldName`](#environmentfieldname) = `never`
-
-***
-
-<a id="environmentfieldname"></a>
-
-### EnvironmentFieldName
-
-```ts
-type EnvironmentFieldName = keyof typeof dnsidEnvironmentVariables;
-```
-
-Defined in: [packages/sdk/src/environment.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L23)
+Defined in: [packages/sdk/src/config-loading.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L35)
 
 ***
 
@@ -588,243 +651,34 @@ type LocalKeyAlgorithm = "EdDSA" | "ES256";
 
 Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L16)
 
-## Variables
-
-<a id="dnsidenvironmentvariables"></a>
-
-### dnsidEnvironmentVariables
-
-```ts
-const dnsidEnvironmentVariables: object;
-```
-
-Defined in: [packages/sdk/src/environment.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L4)
-
-#### Type Declaration
-
-<a id="agentname"></a>
-
-##### agentName
-
-```ts
-readonly agentName: "DNSID_AGENT_NAME" = 'DNSID_AGENT_NAME';
-```
-
-<a id="agentport"></a>
-
-##### agentPort
-
-```ts
-readonly agentPort: "DNSID_AGENT_PORT" = 'DNSID_AGENT_PORT';
-```
-
-<a id="apikey"></a>
-
-##### apiKey
-
-```ts
-readonly apiKey: "DNSID_API_KEY" = 'DNSID_API_KEY';
-```
-
-<a id="cabundlepath"></a>
-
-##### caBundlePath
-
-```ts
-readonly caBundlePath: "DNSID_CA_BUNDLE" = 'DNSID_CA_BUNDLE';
-```
-
-<a id="dnssecmode"></a>
-
-##### dnssecMode
-
-```ts
-readonly dnssecMode: "DNSID_DNSSEC_MODE" = 'DNSID_DNSSEC_MODE';
-```
-
-<a id="dnsserver"></a>
-
-##### dnsServer
-
-```ts
-readonly dnsServer: "DNSID_DNS_SERVER" = 'DNSID_DNS_SERVER';
-```
-
-<a id="domain"></a>
-
-##### domain
-
-```ts
-readonly domain: "DNSID_DOMAIN" = 'DNSID_DOMAIN';
-```
-
-<a id="ekurl"></a>
-
-##### ekUrl
-
-```ts
-readonly ekUrl: "DNSID_EK_URL" = 'DNSID_EK_URL';
-```
-
-<a id="governanceid"></a>
-
-##### governanceId
-
-```ts
-readonly governanceId: "DNSID_GOVERNANCE_ID" = 'DNSID_GOVERNANCE_ID';
-```
-
-<a id="keystorepath"></a>
-
-##### keyStorePath
-
-```ts
-readonly keyStorePath: "DNSID_KEY_STORE" = 'DNSID_KEY_STORE';
-```
-
-<a id="kuurl"></a>
-
-##### kuUrl
-
-```ts
-readonly kuUrl: "DNSID_KU_URL" = 'DNSID_KU_URL';
-```
-
-<a id="logref"></a>
-
-##### logRef
-
-```ts
-readonly logRef: "DNSID_LOG_REF" = 'DNSID_LOG_REF';
-```
-
-<a id="privateaddresshosts"></a>
-
-##### privateAddressHosts
-
-```ts
-readonly privateAddressHosts: "DNSID_PRIVATE_HOSTS" = 'DNSID_PRIVATE_HOSTS';
-```
-
-<a id="publicurl"></a>
-
-##### publicUrl
-
-```ts
-readonly publicUrl: "DNSID_PUBLIC_URL" = 'DNSID_PUBLIC_URL';
-```
-
-<a id="registryurl"></a>
-
-##### registryUrl
-
-```ts
-readonly registryUrl: "DNSID_REGISTRY_URL" = 'DNSID_REGISTRY_URL';
-```
-
-<a id="statusurl"></a>
-
-##### statusUrl
-
-```ts
-readonly statusUrl: "DNSID_STATUS_URL" = 'DNSID_STATUS_URL';
-```
-
 ## Functions
 
-<a id="configfromenvironment"></a>
+<a id="constructidentitymanager"></a>
 
-### configFromEnvironment()
-
-#### Call Signature
+### constructIdentityManager()
 
 ```ts
-function configFromEnvironment<RequiredFields>(options?): EnvironmentConfigResult<RequiredFields>;
+function constructIdentityManager(loaded, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L93)
+Defined in: [packages/sdk/src/config-loading.ts:255](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L255)
 
-Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
-registry/example settings. Constructors never read the environment themselves.
+Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
+did not supply them, then calls [createNodeIdentityManager](#createnodeidentitymanager). Adds no configuration values.
 
-##### Type Parameters
+#### Parameters
 
-###### RequiredFields
+##### loaded
 
-`RequiredFields` *extends* 
-  \| `"domain"`
-  \| `"governanceId"`
-  \| `"logRef"`
-  \| `"statusUrl"`
-  \| `"ekUrl"`
-  \| `"kuUrl"`
-  \| `"dnssecMode"`
-  \| `"dnsServer"`
-  \| `"caBundlePath"`
-  \| `"privateAddressHosts"`
-  \| `"registryUrl"`
-  \| `"apiKey"`
-  \| `"publicUrl"`
-  \| `"keyStorePath"`
-  \| `"agentPort"`
-  \| `"agentName"` = `never`
+[`LoadedConfig`](#loadedconfig)
 
-##### Parameters
+##### deps?
 
-###### options?
+[`IdentityManagerDependencies`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identitymanagerdependencies) = `{}`
 
-[`ConfigFromEnvironmentOptions`](#configfromenvironmentoptions)\<`RequiredFields`\>
+#### Returns
 
-##### Returns
-
-[`EnvironmentConfigResult`](#environmentconfigresult)\<`RequiredFields`\>
-
-#### Call Signature
-
-```ts
-function configFromEnvironment<RequiredFields>(env, options?): EnvironmentConfigResult<RequiredFields>;
-```
-
-Defined in: [packages/sdk/src/environment.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L96)
-
-Explicit loader mapping DNSID_* environment variables to a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig) plus
-registry/example settings. Constructors never read the environment themselves.
-
-##### Type Parameters
-
-###### RequiredFields
-
-`RequiredFields` *extends* 
-  \| `"domain"`
-  \| `"governanceId"`
-  \| `"logRef"`
-  \| `"statusUrl"`
-  \| `"ekUrl"`
-  \| `"kuUrl"`
-  \| `"dnssecMode"`
-  \| `"dnsServer"`
-  \| `"caBundlePath"`
-  \| `"privateAddressHosts"`
-  \| `"registryUrl"`
-  \| `"apiKey"`
-  \| `"publicUrl"`
-  \| `"keyStorePath"`
-  \| `"agentPort"`
-  \| `"agentName"` = `never`
-
-##### Parameters
-
-###### env
-
-`EnvironmentSource` \| `undefined`
-
-###### options?
-
-[`ConfigFromEnvironmentOptions`](#configfromenvironmentoptions)\<`RequiredFields`\>
-
-##### Returns
-
-[`EnvironmentConfigResult`](#environmentconfigresult)\<`RequiredFields`\>
+`Promise`\<[`IdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager)\>
 
 ***
 
@@ -836,7 +690,7 @@ registry/example settings. Constructors never read the environment themselves.
 function createNodeIdentityManager(config, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L80)
+Defined in: [packages/sdk/src/node-identity-manager.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L32)
 
 Creates an IdentityManager with Node.js DNS and HTTPS defaults.
 
@@ -864,11 +718,10 @@ DNSSEC-aware resolver.
 #### Example
 
 ```ts
-import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
-const { config, keyStorePath } = configFromEnvironment();
-const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
-const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProvider });
+const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
+const idm = await createNodeIdentityManager({ identity, verification }, { keyProvider, entityKeyProvider });
 ```
 
 ***
@@ -878,42 +731,97 @@ const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProv
 ### createNodeIdentityManagerFromDnsid()
 
 ```ts
-function createNodeIdentityManagerFromDnsid(options?, deps?): Promise<IdentityManager>;
+function createNodeIdentityManagerFromDnsid(
+   dnsidDir?, 
+   overlay?, 
+deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L126)
-
-Creates an IdentityManager from a DNSid CLI directory layout (`~/.dnsid` by default).
-
-Reads `config.json` (following a `domain` pointer to a per-identity config when present) and
-maps its publication fields into `config.identity`; caller `options.config.identity` values win
-and are applied before normalization or `status_url` derivation. Key files are located by the
-effective domain. Verification and transport settings come only from `options.config`. Supplied
-`deps.keyProvider`/`deps.entityKeyProvider` win over loaded key files. The result is identical to
-calling [createNodeIdentityManager](#createnodeidentitymanager) with the assembled configuration.
+Defined in: [packages/sdk/src/config-loading.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L319)
 
 #### Parameters
 
-##### options?
+##### dnsidDir?
 
-[`CreateNodeIdentityManagerFromDnsidOptions`](#createnodeidentitymanagerfromdnsidoptions) = `{}`
+`string`
+
+##### overlay?
+
+[`LoadedDnsidConfig`](#loadeddnsidconfig)
 
 ##### deps?
 
-[`IdentityManagerDependencies`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identitymanagerdependencies) = `{}`
+[`IdentityManagerDependencies`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identitymanagerdependencies)
 
 #### Returns
 
 `Promise`\<[`IdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager)\>
 
-#### Example
+***
+
+<a id="createnodeidentitymanagerfromenvironment"></a>
+
+### createNodeIdentityManagerFromEnvironment()
 
 ```ts
-import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
-
-// Reads ~/.dnsid (or DNSID_CONFIG_DIR) for config.json and key files.
-const idm = await createNodeIdentityManagerFromDnsid();
+function createNodeIdentityManagerFromEnvironment(
+   env?, 
+   overlay?, 
+deps?): Promise<IdentityManager>;
 ```
+
+Defined in: [packages/sdk/src/config-loading.ts:315](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L315)
+
+#### Parameters
+
+##### env?
+
+`Readonly`\<`Record`\<`string`, `string` \| `undefined`\>\>
+
+##### overlay?
+
+[`LoadedDnsidConfig`](#loadeddnsidconfig)
+
+##### deps?
+
+[`IdentityManagerDependencies`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identitymanagerdependencies)
+
+#### Returns
+
+`Promise`\<[`IdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager)\>
+
+***
+
+<a id="createnodeidentitymanagerfromfile"></a>
+
+### createNodeIdentityManagerFromFile()
+
+```ts
+function createNodeIdentityManagerFromFile(
+   filePath, 
+   overlay?, 
+deps?): Promise<IdentityManager>;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L323)
+
+#### Parameters
+
+##### filePath
+
+`string`
+
+##### overlay?
+
+[`LoadedDnsidConfig`](#loadeddnsidconfig)
+
+##### deps?
+
+[`IdentityManagerDependencies`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identitymanagerdependencies)
+
+#### Returns
+
+`Promise`\<[`IdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager)\>
 
 ***
 
@@ -925,7 +833,7 @@ const idm = await createNodeIdentityManagerFromDnsid();
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node.ts#L101)
+Defined in: [packages/sdk/src/node-identity-manager.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L53)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 
@@ -945,69 +853,132 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 
 ***
 
-<a id="keystorepathfromenvironment"></a>
+<a id="createregistryclientfromenvironment"></a>
 
-### keyStorePathFromEnvironment()
+### createRegistryClientFromEnvironment()
 
 ```ts
-function keyStorePathFromEnvironment(env?, defaultPath?): string;
+function createRegistryClientFromEnvironment(env?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L229)
+Defined in: [packages/sdk/src/config-loading.ts:328](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L328)
+
+`RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry.
 
 #### Parameters
 
 ##### env?
 
-`Record`\<`string`, `string` \| `undefined`\> = `process.env`
-
-##### defaultPath?
-
-`string` = `'.dnsid/keys.json'`
+`Readonly`\<`Record`\<`string`, `string` \| `undefined`\>\>
 
 #### Returns
 
-`string`
+`Promise`\<[`RegistryClient`](https://docs.dnsid.ai/reference/ts/dnsid-registry/#registryclient)\>
 
 ***
 
-<a id="registryclientoptionsfromenvironment"></a>
+<a id="loadclidirectory"></a>
 
-### registryClientOptionsFromEnvironment()
+### loadCliDirectory()
 
 ```ts
-function registryClientOptionsFromEnvironment(env?): object;
+function loadCliDirectory(dnsidDir?): Promise<LoadedConfig>;
 ```
 
-Defined in: [packages/sdk/src/environment.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/environment.ts#L143)
+Defined in: [packages/sdk/src/config-loading.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L183)
 
-Registry client options from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`, the
-variables `dnsid local env` exports. Unset means the local registry with no
-credential. Unlike [configFromEnvironment](#configfromenvironment) this needs no identity
-variables, so it works before an agent exists:
-`new RegistryClient(registryClientOptionsFromEnvironment())`.
+Reads a DNSid CLI directory (`~/.dnsid` by default): `config.json`, following a root `domain`
+pointer to `<domain>/config.json` when that file exists. Maps the snake_case publication fields
+into `dnsid.identity` and records the directory (and resolved `entity_key_path`) as `keySource`.
+Never consults `DNSID_CONFIG_DIR`.
+
+#### Parameters
+
+##### dnsidDir?
+
+`string` = `...`
+
+#### Returns
+
+`Promise`\<[`LoadedConfig`](#loadedconfig)\>
+
+***
+
+<a id="loadenvironment"></a>
+
+### loadEnvironment()
+
+```ts
+function loadEnvironment(env?): Promise<LoadedConfig>;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L92)
+
+Reads the 20-variable `DNSID_*` schema. Unset, empty, or whitespace-only variables are absent.
 
 #### Parameters
 
 ##### env?
 
-`EnvironmentSource` = `process.env`
+[`EnvironmentSource`](#environmentsource) = `process.env`
 
 #### Returns
 
-`object`
+`Promise`\<[`LoadedConfig`](#loadedconfig)\>
 
-##### baseUrl
+***
 
-```ts
-baseUrl: string;
-```
+<a id="loadfile"></a>
 
-##### token?
+### loadFile()
 
 ```ts
-optional token?: string;
+function loadFile(filePath): Promise<LoadedConfig>;
 ```
+
+Defined in: [packages/sdk/src/config-loading.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L140)
+
+Reads a JSON deployment file: `{ dnsid?, logTrust?, registry? }`. Unknown members, mistyped
+values, and duplicate members are rejected; `dnsid` contents are validated by the constructor.
+
+#### Parameters
+
+##### filePath
+
+`string`
+
+#### Returns
+
+`Promise`\<[`LoadedConfig`](#loadedconfig)\>
+
+***
+
+<a id="mergeloadedconfig"></a>
+
+### mergeLoadedConfig()
+
+```ts
+function mergeLoadedConfig(base, overlay): LoadedConfig;
+```
+
+Defined in: [packages/sdk/src/config-loading.ts:222](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L222)
+
+Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
+whole section when `overlay` sets any variant.
+
+#### Parameters
+
+##### base
+
+[`LoadedConfig`](#loadedconfig)
+
+##### overlay
+
+[`LoadedConfig`](#loadedconfig)
+
+#### Returns
+
+[`LoadedConfig`](#loadedconfig)
 
 ## References
 
