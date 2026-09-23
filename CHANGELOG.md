@@ -1,3 +1,10 @@
+
+## [0.22.0] - 2026-09-23
+
+### Features
+
+- feat(transport)!: rename allowedUnsafeHosts to privateAddressHosts ([#28](https://github.com/dnsid-ai/dnsid-ts/pull/28))
+
 ## [unreleased]
 
 ### Features

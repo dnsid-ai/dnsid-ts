@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/protocol",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "DNSid protocol core contracts, TXT record parsing, JWKS validation, and identity verification engine.",
   "type": "module",
   "types": "./dist/index.d.ts",
