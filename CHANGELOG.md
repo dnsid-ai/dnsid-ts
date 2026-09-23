@@ -6,6 +6,7 @@
 - [**breaking**] transport: `.test` names are no longer implicitly allowed to resolve to loopback/private addresses; configure `privateAddressHosts: ['.test']`
 - transport: `privateAddressHosts` accepts leading-dot suffix entries (`.test` matches `test` and every name beneath it, label-bounded, case-insensitive); IP-literal URLs are never exempted; entries are validated with `ArgumentError` at construction
 - sdk: `configFromEnvironment` reads `DNSID_PRIVATE_HOSTS` (comma-separated) into `transport.privateAddressHosts`
+- [**breaking**] protocol/registry: `IdentityManager.verifyPublicationEvidence` is no longer part of the published typings (`stripInternal`); `awaitRegistryManagedPublication` takes an `IdentityManager` and `RegistryPublicationVerifier` is no longer exported
 
 ## [0.21.0] - 2026-09-22
 

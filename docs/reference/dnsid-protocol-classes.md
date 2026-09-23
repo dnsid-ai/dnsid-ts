@@ -1253,36 +1253,6 @@ and is never cached; a denial leaves valid protocol evidence cached.
 
 [`IdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#identityresolver).[`verifyDomain`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#verifydomain-1)
 
-<a id="verifypublicationevidence"></a>
-
-##### verifyPublicationEvidence()
-
-```ts
-verifyPublicationEvidence(domain, options?): Promise<VerifiedDomain>;
-```
-
-Defined in: [packages/protocol/src/identity-manager.ts:600](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L600)
-
-**`Internal`**
-
-Protocol-only verification used to confirm registry-managed publication of the local
-identity. Skips counterparty acceptance, so it is restricted to `config.identity.domain`:
-it cannot verify a counterparty and is never an acceptance decision.
-
-###### Parameters
-
-###### domain
-
-`string`
-
-###### options?
-
-[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#verificationoptions) = `{}`
-
-###### Returns
-
-`Promise`\<[`VerifiedDomain`](#verifieddomain)\>
-
 <a id="writesignedevent"></a>
 
 ##### writeSignedEvent()

@@ -8,7 +8,7 @@ import {
   publishToRegistry,
 } from '@dnsid-ai/registry';
 import { ArgumentError, jwkThumbprint, toBase64Url } from '@dnsid-ai/protocol';
-import type { IdentityConfig, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
+import type { IdentityConfig, IdentityManager, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { DRAFT01_UNSIGNED_CANONICAL } from './fixtures/draft01-record-vectors.ts';
 
 const VALID_CANONICAL = DRAFT01_UNSIGNED_CANONICAL;
@@ -665,7 +665,7 @@ describe('RegistryClient', () => {
     await expect(awaitRegistryManagedPublication({
       domain: 'agent.example.com',
       registryClient: client(fetchMock),
-      identityManager,
+      identityManager: identityManager as unknown as IdentityManager,
     })).resolves.toMatchObject({
       ownerName: '_dnsid.agent.example.com',
       txtRecord: 'v=dnsid-draft-01;...',
@@ -689,7 +689,7 @@ describe('RegistryClient', () => {
     };
 
     await expect(awaitRegistryManagedPublication({
-      domain: 'agent.example.com', registryClient: client(fetchMock), identityManager,
+      domain: 'agent.example.com', registryClient: client(fetchMock), identityManager: identityManager as unknown as IdentityManager,
     })).rejects.toThrow(/unexpected profile DNSid1/);
   });
 
@@ -1150,7 +1150,7 @@ describe('RegistryClient', () => {
       .rejects.toThrow(`terminal status ${terminalStatus}`);
     await expect(awaitRegistryManagedPublication({
       domain: 'agent.example', registryClient: registry,
-      identityManager: { verifyPublicationEvidence: vi.fn() },
+      identityManager: { verifyPublicationEvidence: vi.fn() } as unknown as IdentityManager,
     })).rejects.toThrow(`publication failed with status ${terminalStatus}`);
   });
 
