@@ -20,6 +20,7 @@ export {
   verifyBilateralBinding,
   canonicalIssuanceBinding,
   validateDnsidConfig,
+  normalizePrivateAddressHost,
   requireLocalDomain,
 } from './identity-manager.ts';
 export { sha256 as sha256Bytes } from '@noble/hashes/sha2.js';

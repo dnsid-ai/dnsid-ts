@@ -96,7 +96,7 @@ Node `fetchJson()` behavior:
 
 - HTTPS only; plain HTTP URLs are rejected.
 - Optional `allowedHost` pinning is used by JWKS verification: `ek`/record-signing JWKS may be on the governance domain or a subdomain, and `ku` runtime JWKS must be on the agent FQDN. Status fetches use the record's `su` URL with HTTPS, SSRF-safe lookup, and response-size enforcement, but without JWKS-style host pinning.
-- SSRF-safe lookup rejects private, loopback, link-local, multicast, documentation, CGN, reserved, 6to4/Teredo, and IPv4-mapped/compatible unsafe addresses.
+- SSRF-safe lookup rejects private, loopback, link-local, multicast, documentation, CGN, reserved, 6to4/Teredo, and IPv4-mapped/compatible unsafe addresses. The only opt-out is `transport.privateAddressHosts` (hostnames or `.suffix` entries such as `.test`), which permits loopback/private-use answers for matching hostnames only; there is no built-in exemption for any TLD.
 - Redirects are followed up to 5 hops, but every redirect must stay HTTPS and satisfy the same host policy.
 - Default timeout is 10 seconds per request; pass `timeoutMs` in transport options where you call `fetchJson` directly.
 - Default body cap is 1 MiB. Protocol verification uses tighter caps: 256 KiB for JWKS and 16 KiB for status.

@@ -569,7 +569,7 @@ Defined in: [packages/protocol/src/log-events.ts:112](https://github.com/dnsid-a
 
 ### DnsidConfig
 
-Defined in: [packages/protocol/src/types.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L118)
+Defined in: [packages/protocol/src/types.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L125)
 
 Single core configuration entry point. Omit `identity` for a verification-only manager.
 
@@ -583,7 +583,7 @@ Single core configuration entry point. Omit `identity` for a verification-only m
 optional identity?: IdentityConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L119)
+Defined in: [packages/protocol/src/types.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L126)
 
 <a id="transport"></a>
 
@@ -593,7 +593,7 @@ Defined in: [packages/protocol/src/types.ts:119](https://github.com/dnsid-ai/dns
 optional transport?: TransportConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L121)
+Defined in: [packages/protocol/src/types.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L128)
 
 <a id="verification"></a>
 
@@ -603,7 +603,7 @@ Defined in: [packages/protocol/src/types.ts:121](https://github.com/dnsid-ai/dns
 optional verification?: VerificationConfig;
 ```
 
-Defined in: [packages/protocol/src/types.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L120)
+Defined in: [packages/protocol/src/types.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L127)
 
 ***
 
@@ -3037,19 +3037,6 @@ SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never a
 
 #### Properties
 
-<a id="allowedunsafehosts"></a>
-
-##### allowedUnsafeHosts?
-
-```ts
-optional allowedUnsafeHosts?: readonly string[];
-```
-
-Defined in: [packages/protocol/src/types.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L114)
-
-Hostnames whose resolved private or loopback addresses the default fetcher may contact. For
-trusted test and private deployments only.
-
 <a id="cabundlepath"></a>
 
 ##### caBundlePath?
@@ -3073,6 +3060,26 @@ optional dnsServer?: string;
 Defined in: [packages/protocol/src/types.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L107)
 
 Custom DNS server (`host`, `host:port`, or `[ipv6]:port`). Omit to use the system resolver.
+
+<a id="privateaddresshosts"></a>
+
+##### privateAddressHosts?
+
+```ts
+optional privateAddressHosts?: readonly string[];
+```
+
+Defined in: [packages/protocol/src/types.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L121)
+
+Hostnames, or leading-dot suffixes such as `.test`, whose SDK-managed HTTPS destinations may
+resolve to loopback or private-use addresses. An exact entry matches only that name; `.test`
+matches `test` and every name beneath it on a DNS-label boundary, case-insensitively and
+ignoring a trailing dot. Link-local, multicast, reserved, and mixed public/private resolutions
+stay rejected, IP-literal URLs are never exempted, and every redirect hop is matched
+independently. Nothing is allowed by default; there is no built-in `.test` exemption. Entries
+are validated at construction (IP literals, ports, schemes, paths, credentials → `ArgumentError`).
+Applies only to the default fetcher; rejected when `fetchJson` is injected. Not a DNSid protocol
+field.
 
 ***
 

@@ -83,8 +83,8 @@ export function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarante
  * such as `dnsid local` is reachable for policy and log reads.
  */
 export function createDefaultC2spBoundedResourceFetcher(transport: TransportConfig = {}): C2spBoundedResourceFetcher {
-  const { allowedUnsafeHosts, ...config } = transport;
-  return createFetchBackedC2spResourceFetcher(createSsrfSafeFetch(config, { allowedUnsafeHosts }), REQUIRED_FETCH_GUARANTEES);
+  const { privateAddressHosts, ...config } = transport;
+  return createFetchBackedC2spResourceFetcher(createSsrfSafeFetch(config, { privateAddressHosts }), REQUIRED_FETCH_GUARANTEES);
 }
 
 /**

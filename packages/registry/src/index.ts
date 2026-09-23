@@ -29,6 +29,7 @@ import {
 import type {
   AgentStatus,
   IdentityConfig,
+  IdentityManager,
   DnsIdJWK,
   KeyProvider,
 } from '@dnsid-ai/protocol';
@@ -721,12 +722,12 @@ export interface PublishClientControlledRecordOptions {
 export type PublishToRegistryOptions = PublishClientControlledRecordOptions;
 
 /**
- * Protocol-evidence verifier for publication confirmation. Satisfied by
- * `IdentityManager.verifyPublicationEvidence`, which runs every protocol check
- * but not counterparty acceptance: confirming our own publication is a
- * control-plane operation, not an acceptance decision.
+ * Non-exported view of `IdentityManager.verifyPublicationEvidence`, which is stripped from the
+ * published typings (`@internal`): it runs every protocol check but not counterparty acceptance,
+ * and only for the manager's own `config.identity.domain`. Confirming our own publication is a
+ * control-plane operation, not an acceptance decision, and never a public API.
  */
-export interface RegistryPublicationVerifier {
+interface RegistryPublicationVerifier {
   verifyPublicationEvidence(domain: string): Promise<{
     record: { v: string; serialize(): string };
     dnsTTL: number;
@@ -737,7 +738,8 @@ export interface RegistryPublicationVerifier {
 export interface AwaitRegistryManagedPublicationOptions {
   domain: string;
   registryClient: RegistryClient;
-  identityManager: RegistryPublicationVerifier;
+  /** The local identity's manager; its protocol evidence (not acceptance) confirms publication. */
+  identityManager: IdentityManager;
   publishProfile?: string;
   intervalMs?: number;
   timeoutMs?: number;
@@ -815,7 +817,7 @@ export async function awaitRegistryManagedPublication(
     registration = next;
   }
 
-  const verified = await options.identityManager.verifyPublicationEvidence(options.domain);
+  const verified = await (options.identityManager as unknown as RegistryPublicationVerifier).verifyPublicationEvidence(options.domain);
   if (verified.record.v !== expectedProfile) {
     throw new Error(`published DNSid record uses unexpected profile ${verified.record.v}; expected ${expectedProfile}`);
   }
