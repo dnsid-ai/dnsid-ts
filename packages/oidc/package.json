@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/oidc",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "DNSid OIDC federation profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -37,8 +37,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.21.0",
-    "@dnsid-ai/transport": "^0.21.0",
+    "@dnsid-ai/protocol": "^0.22.0",
+    "@dnsid-ai/transport": "^0.22.0",
     "jose": "^6.2.10"
   },
   "publishConfig": {
