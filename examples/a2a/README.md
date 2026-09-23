@@ -35,7 +35,7 @@ npm -w examples/a2a run bob
 npm -w examples/a2a run alice
 ```
 
-`dnsid testnet run` starts the local testnet if needed, creates/reuses agent identity files under `~/.dnsid-testnet`, registers each local upstream, and injects the DNS/TLS environment used by the TypeScript SDK. The example requires and consumes the independently trusted `DNSID_LOG_POLICY_URL` value supplied by that environment, preserving non-default testnet ports, rather than discovering trust from an identity record's log reference. Production applications must keep official or pinned policies independently configured in the same way.
+`dnsid testnet run` starts the local testnet if needed, creates/reuses agent identity files under `~/.dnsid-testnet`, registers each local upstream, and injects the DNS/TLS environment used by the TypeScript SDK. The example builds its identity manager with the SDK's `loadEnvironment` → `mergeLoadedConfig` → `constructIdentityManager` flow: identity from `DNSID_*`, keys from `DNSID_CONFIG_DIR`, and log trust from the independently trusted `DNSID_LOG_POLICY_URL` that `dnsid testnet run` exports (preserving non-default testnet ports), never from an identity record's log reference. `DNSID_AGENT_PORT`, `DNSID_AGENT_NAME`, and `DNSID_PUBLIC_URL` are deployment settings the example reads itself. Production applications must keep official or pinned policies independently configured in the same way.
 
 The CLI also owns the testnet lifecycle and state:
 

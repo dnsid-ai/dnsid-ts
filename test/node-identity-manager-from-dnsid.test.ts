@@ -1,36 +1,19 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DNSSECState } from '@dnsid-ai/sdk';
-import { createNodeIdentityManager, createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
+import { createNodeIdentityManager, createNodeIdentityManagerFromDnsid, loadCliDirectory } from '@dnsid-ai/sdk/node';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
+import { withTemp, writeKeyPair } from './helpers/cli-directory.ts';
 
 const dnsResolver: DNSResolver = {
   fetchTXT: vi.fn().mockResolvedValue([[], DNSSECState.UNSIGNED]),
 };
 const fetchJson: JsonFetcher = vi.fn();
-const options = (dnsidDir: string) => [{ dnsidDir }, { dnsResolver, fetchJson }] as const;
-
-async function withTemp(fn: (root: string) => Promise<void>) {
-  const root = await mkdtemp(join(tmpdir(), 'dnsid-manager-'));
-  try { await fn(root); } finally { await rm(root, { recursive: true, force: true }); }
-}
-
-async function writeKeyPair(dir: string, kid: string, filename = 'private.jwk') {
-  const pair = await crypto.subtle.generateKey(
-    { name: 'Ed25519' } as AlgorithmIdentifier,
-    true,
-    ['sign', 'verify'],
-  ) as CryptoKeyPair;
-  await writeFile(join(dir, filename), JSON.stringify({
-    ...(await crypto.subtle.exportKey('jwk', pair.privateKey)),
-    kid,
-    alg: 'EdDSA',
-    use: 'sig',
-  }));
-}
+const options = (dnsidDir: string) => [dnsidDir, undefined, { dnsResolver, fetchJson }] as const;
+// Publication fields the CLI persists; tests that exercise key loading overlay them so construction succeeds.
+const PUBLISHED = { log_ref: 'noop:0', status_url: 'https://agent.example.com/status' };
 
 async function writePemKey(dir: string, algorithm: 'EdDSA' | 'ES256' = 'EdDSA') {
   const generationAlgorithm = algorithm === 'EdDSA'
@@ -43,16 +26,6 @@ async function writePemKey(dir: string, algorithm: 'EdDSA' | 'ES256' = 'EdDSA') 
 }
 
 describe('createNodeIdentityManagerFromDnsid', () => {
-  it('accepts zero arguments and uses the default DNSid directory', () => withTemp(async root => {
-    vi.stubEnv('DNSID_CONFIG_DIR', join(root, 'missing'));
-    try {
-      await expect(createNodeIdentityManagerFromDnsid())
-        .rejects.toThrow('run the DNSid CLI to register your domain first');
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  }));
-
   it('uses the Node default resolver when callers omit a DNS resolver', async () => {
     await expect(createNodeIdentityManager({
       identity: {
@@ -70,15 +43,33 @@ describe('createNodeIdentityManagerFromDnsid', () => {
   }));
 
   it.each([
-    ['without domain', { governance_id: 'example.com' }, 'must include domain'],
-    ['without governanceId', { domain: 'agent.example.com' }, 'must include governanceId or governance_id'],
-    ['with invalid maxKeyAge', { domain: 'agent.example.com', governance_id: 'example.com', max_key_age: 'forever' }, 'invalid maxKeyAge'],
+    ['without domain', { governance_id: 'example.com', ...PUBLISHED }, 'config.identity.domain is required'],
+    ['without governance_id', { domain: 'agent.example.com', ...PUBLISHED }, 'config.identity.governanceId is required'],
+    ['without status_url (never derived from server_url)', { domain: 'agent.example.com', governance_id: 'example.com', log_ref: 'noop:0', server_url: 'https://registry.example.com' }, 'config.identity.statusUrl is required'],
+    ['without log_ref (no placeholder)', { domain: 'agent.example.com', governance_id: 'example.com', status_url: 'https://agent.example.com/status' }, 'config.identity.logRef is required'],
+    ['with camelCase keys', { domain: 'agent.example.com', governanceId: 'example.com', ...PUBLISHED }, 'config.identity.governanceId is required'],
+    ['with a mistyped field', { domain: 'agent.example.com', governance_id: 42, ...PUBLISHED }, 'governance_id must be a string'],
   ])('rejects config %s', (_name, config, message) => withTemp(async root => {
     await writeFile(join(root, 'config.json'), JSON.stringify(config));
     await expect(createNodeIdentityManagerFromDnsid(...options(root))).rejects.toThrow(message);
   }));
 
-  it('loads config and keys from a DNSid root directory', () => withTemp(async root => {
+  it('loads only persisted fields; server_url and agent_id are ignored and nothing is derived', () => withTemp(async root => {
+    await writeFile(join(root, 'config.json'), JSON.stringify({
+      domain: 'agent.example.com',
+      governance_id: 'example.com',
+      server_url: 'https://registry.example.com',
+      agent_id: 'ag_1',
+      environment: 'production',
+      ku_url: '',
+    }));
+    expect(await loadCliDirectory(root)).toEqual({
+      dnsid: { identity: { domain: 'agent.example.com', governanceId: 'example.com' } },
+      keySource: { cliDirectory: root },
+    });
+  }));
+
+  it('loads config and keys from a DNSid root directory; the overlay supplies missing publication fields', () => withTemp(async root => {
     const dir = join(root, 'agent.example.com');
     await mkdir(dir, { recursive: true });
     await writeFile(join(root, 'config.json'), JSON.stringify({
@@ -88,28 +79,31 @@ describe('createNodeIdentityManagerFromDnsid', () => {
     }));
     await writeKeyPair(dir, 'registry-key');
 
-    const idm = await createNodeIdentityManagerFromDnsid({ dnsidDir: root }, { fetchJson });
+    const idm = await createNodeIdentityManagerFromDnsid(root, {
+      identity: { logRef: 'noop:0', statusUrl: 'https://agent.example.com/status' },
+    }, { fetchJson });
 
     expect(idm.config.identity).toMatchObject({
       domain: 'agent.example.com',
       governanceId: 'example.com',
-      statusUrl: 'https://registry.example.com/v1/status/agent.example.com',
+      statusUrl: 'https://agent.example.com/status',
     });
     await expect(idm.getKeyProvider().listKeyIds()).resolves.toEqual(['registry-key']);
   }));
 
-  it('uses DNSID_CONFIG_DIR and resolves the root pointer to per-identity config', () => withTemp(async root => {
+  it('resolves the root pointer to per-identity config', () => withTemp(async root => {
     const dir = join(root, 'agent.example.com');
     await mkdir(dir, { recursive: true });
     await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'agent.example.com' }));
     await writeFile(join(dir, 'config.json'), JSON.stringify({
       domain: 'agent.example.com',
       governance_id: 'example.com',
+      log_ref: 'noop:0',
       status_url: 'https://agent.example.com/status',
     }));
     await writeKeyPair(dir, 'pointer-key');
 
-    const idm = await createNodeIdentityManagerFromDnsid({ env: { DNSID_CONFIG_DIR: root } }, { dnsResolver, fetchJson });
+    const idm = await createNodeIdentityManagerFromDnsid(...options(root));
 
     expect(idm.config.identity!.statusUrl).toBe('https://agent.example.com/status');
     await expect(idm.getKeyProvider().listKeyIds()).resolves.toEqual(['pointer-key']);
@@ -175,10 +169,7 @@ describe('createNodeIdentityManagerFromDnsid', () => {
   }));
 
   it('loads PKCS#8 Ed25519 private.pem when private.jwk is absent', () => withTemp(async root => {
-    await writeFile(join(root, 'config.json'), JSON.stringify({
-      domain: 'agent.example.com',
-      governance_id: 'example.com',
-    }));
+    await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'agent.example.com', governance_id: 'example.com', ...PUBLISHED }));
     await writePemKey(root);
 
     const idm = await createNodeIdentityManagerFromDnsid(...options(root));
@@ -192,10 +183,7 @@ describe('createNodeIdentityManagerFromDnsid', () => {
   }));
 
   it('loads PKCS#8 ECDSA P-256 private.pem when private.jwk is absent', () => withTemp(async root => {
-    await writeFile(join(root, 'config.json'), JSON.stringify({
-      domain: 'agent.example.com',
-      governance_id: 'example.com',
-    }));
+    await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'agent.example.com', governance_id: 'example.com', ...PUBLISHED }));
     await writePemKey(root, 'ES256');
 
     const idm = await createNodeIdentityManagerFromDnsid(...options(root));
@@ -215,6 +203,7 @@ describe('createNodeIdentityManagerFromDnsid', () => {
       domain: 'agent.example.com',
       governance_id: 'example.com',
       server_url: 'https://registry.example.com',
+      ...PUBLISHED,
     }));
     await writeKeyPair(dir, 'direct-key');
 

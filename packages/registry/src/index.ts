@@ -97,7 +97,7 @@ export interface LiveProvisioningResponse {
 
 /**
  * Default registry base URL: the local registry started by `dnsid local up`.
- * Hosted use requires an explicit `baseUrl` (see `configFromEnvironment()` in
+ * Hosted use requires an explicit `baseUrl` (see `createRegistryClientFromEnvironment()` in
  * `@dnsid-ai/sdk/node`, which reads `DNSID_REGISTRY_URL`).
  */
 export const DEFAULT_REGISTRY_URL = 'http://127.0.0.1:7755';
