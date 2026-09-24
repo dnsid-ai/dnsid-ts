@@ -633,7 +633,7 @@ console.log(verifiedDomain.domain); // 'agent.example.com'
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: [protocol/src/utils.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L140)
+Defined in: [protocol/src/utils.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L150)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -657,7 +657,7 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [protocol/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L100)
+Defined in: [protocol/src/utils.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L110)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
@@ -705,7 +705,7 @@ ArgumentError if the key ID is malformed.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: [protocol/src/utils.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L128)
+Defined in: [protocol/src/utils.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L138)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 

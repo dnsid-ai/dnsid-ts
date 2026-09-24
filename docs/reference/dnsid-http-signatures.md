@@ -1062,7 +1062,7 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [protocol/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L100)
+Defined in: [protocol/src/utils.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L110)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 

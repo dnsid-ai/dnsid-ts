@@ -863,7 +863,7 @@ eviction. Local signing, publication, and lifecycle mutation methods throw Argum
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L140)
+Defined in: [packages/protocol/src/utils.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L150)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -887,7 +887,7 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function isDomainName(value): boolean;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L80)
+Defined in: [packages/protocol/src/utils.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L90)
 
 Checks whether a string is a valid domain name (for gi consistency checks).
 Returns true if the value looks like a domain name (as opposed to a URI or other identifier).
@@ -1043,7 +1043,7 @@ Throws a normalized ValidationError if any key in either set is too malformed to
 function matchesDnsName(san, fqdn): boolean;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:198](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L198)
+Defined in: [packages/protocol/src/utils.ts:208](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L208)
 
 RFC 9525 §4 dNSName SAN matching.
 Returns true when at least one SAN entry matches the given FQDN.
@@ -1228,7 +1228,7 @@ UTF-8 JSON with duplicate member rejection, including escaped member names.
 function parseKaDuration(ka): number;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L156)
+Defined in: [packages/protocol/src/utils.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L166)
 
 Parses a duration string (as used in the `ka` tag) to milliseconds.
 Valid values: "24h", "7d", "30d", "90d".
@@ -1253,7 +1253,7 @@ Valid values: "24h", "7d", "30d", "90d".
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L100)
+Defined in: [packages/protocol/src/utils.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L110)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
@@ -1435,7 +1435,7 @@ result for the exact, durably persisted bytes while application signing is pause
 function toArrayBuffer(bytes): Uint8Array<ArrayBuffer>;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L171)
+Defined in: [packages/protocol/src/utils.ts:181](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L181)
 
 Returns a Uint8Array<ArrayBuffer> view over the same memory — no copy.
 Required because WebCrypto's BufferSource only accepts ArrayBuffer-backed views,
@@ -1461,7 +1461,7 @@ not the default Uint8Array<ArrayBufferLike> that TypeScript infers.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L128)
+Defined in: [packages/protocol/src/utils.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L138)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 
@@ -1594,7 +1594,7 @@ function verifyWithKey(
 expectedAlg?): Promise<boolean>;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:218](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L218)
+Defined in: [packages/protocol/src/utils.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L228)
 
 Verifies a signing input against a raw signature using a public JWK.
 Returns true if the signature is valid, false otherwise.
