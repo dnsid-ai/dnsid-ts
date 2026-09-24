@@ -106,6 +106,17 @@ describe('normalizeFQDN()', () => {
 
   it('returns the normalized form for a valid FQDN', () => {
     expect(normalizeFQDN('foo.example.com', true)).toBe('foo.example.com');
+    expect(normalizeFQDN('München.DE.', true)).toBe('xn--mnchen-3ya.de');
+  });
+
+  it.each([
+    'evil.com/victim.example.com', 'victim.example.com@evil.com',
+    'evil.com?x=victim.example.com', 'evil.com#victim.example.com',
+    'evil.com:8443', 'evil.com\\victim.example.com', 'ex%61mple.com',
+    'exa\tmple.com', 'example.com\u200b', 'example.com\ufeff',
+    '127.0.0.1', '127.1', '0x7f000001', '2130706433', '[::1]',
+  ])('rejects URL syntax, invisible characters and IP literals in %s', (input) => {
+    expect(() => normalizeFQDN(input)).toThrow(ValidationError);
   });
 });
 
