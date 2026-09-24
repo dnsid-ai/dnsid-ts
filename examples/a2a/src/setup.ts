@@ -1,21 +1,14 @@
 import { echoExecutor } from './agent.ts';
 import { EchoAgent } from './server.ts';
-import {
-  configFromEnvironment,
-  createNodeIdentityManager,
-  LocalKeyProvider,
-} from '@dnsid-ai/sdk/node';
+import { constructIdentityManager, loadEnvironment, mergeLoadedConfig } from '@dnsid-ai/sdk/node';
 import {
   awaitRegistryManagedPublication,
   RegistryClient,
   toBase64Url,
 } from '@dnsid-ai/sdk';
 import type { IdentityManager, TransportConfig } from '@dnsid-ai/sdk';
-import { createC2spTlogVerificationRegistry, parseC2spTlogLr } from '@dnsid-ai/log-c2sp-tlog';
-import { createDefaultDnsResolver, createDnsidFetch } from '@dnsid-ai/transport';
-import { requiredTestnetLogPolicyUrl } from './testnet-config.ts';
-
-type Environment = ReturnType<typeof configFromEnvironment<'agentPort' | 'kuUrl'>>;
+import { parseC2spTlogLr } from '@dnsid-ai/log-c2sp-tlog';
+import { createDnsidFetch } from '@dnsid-ai/transport';
 
 export interface RunningEchoAgent {
   idm: IdentityManager;
@@ -24,12 +17,11 @@ export interface RunningEchoAgent {
 }
 
 export async function startEchoAgent(): Promise<RunningEchoAgent> {
-  const environment = loadEnvironment();
+  const idm = await createIdentity();
   // Core has no default transport; the testnet DNS/CA settings are consumed
   // here and handed to every HTTP client the example builds.
-  const transport = environment.config.transport ?? {};
-  const idm = await createIdentity(environment, transport);
-  const agent = await createAndStartAgent(idm, environment, transport);
+  const transport = idm.config.transport;
+  const agent = await createAndStartAgent(idm, transport);
 
   await ensurePublished(idm, transport);
   // CoreDNS reloads the generated zone every two seconds. Avoid caching the
@@ -54,44 +46,28 @@ export async function poll(label: string, fn: () => Promise<void>): Promise<void
   throw new Error(`${label} failed: ${String(lastError)}`);
 }
 
-function loadEnvironment(): Environment {
-  return configFromEnvironment({
-    require: ['agentPort', 'kuUrl'],
-  });
+/** `dnsid testnet run` exports the DNSID_* environment: identity, DNSID_CONFIG_DIR (keys), DNSID_LOG_POLICY_URL (trust), and transport. */
+async function createIdentity(): Promise<IdentityManager> {
+  const loaded = await loadEnvironment();
+  const kuUrl = loaded.dnsid?.identity?.kuUrl;
+  if (!kuUrl) throw new Error('DNSID_KU_URL is required; run with `dnsid testnet run`');
+  if (!loaded.keySource?.cliDirectory) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid testnet run`');
+  if (!loaded.logTrust) throw new Error('DNSID_LOG_POLICY_URL is required; run with `dnsid testnet run`');
+  // Not SDK configuration: the example derives its agent card URL from the public URL the testnet exports.
+  const publicUrl = process.env.DNSID_PUBLIC_URL ?? new URL(kuUrl).origin;
+  const overlay = { dnsid: { identity: { capabilitiesUrl: `${publicUrl}/.well-known/agent-card.json` } } };
+  return constructIdentityManager(mergeLoadedConfig(overlay, loaded));
 }
 
-async function createIdentity(environment: Environment, transport: TransportConfig): Promise<IdentityManager> {
-  const { identity } = environment.config;
-  const publicUrl = environment.publicUrl ?? new URL(identity.kuUrl).origin;
-  // Testnet hosts under `.test` resolve to this machine; `dnsid testnet run` exports
-  // DNSID_PRIVATE_HOSTS=.test so the SSRF guard admits them (config.transport.privateAddressHosts).
-  const config = {
-    ...environment.config,
-    identity: {
-      ...identity,
-      capabilitiesUrl: identity.capabilitiesUrl ?? `${publicUrl}/.well-known/agent-card.json`,
-    },
-  };
-
-  const configDir = process.env.DNSID_CONFIG_DIR;
-  if (!configDir) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid testnet run`');
-
-  const keyProvider = await LocalKeyProvider.fromDirectory(configDir);
-  // Trusted testnet configuration includes the complete URL so a CLI-selected
-  // non-default HTTPS port is preserved. Never derive this trust anchor from lr.
-  const logRegistry = await createC2spTlogVerificationRegistry({ policyUrl: requiredTestnetLogPolicyUrl(), transport });
-  // Route testnet lookups to its local CoreDNS instance. It reports UNKNOWN,
-  // which the default auto policy permits and preserves.
-  const dnsResolver = createDefaultDnsResolver({ dnsServer: transport.dnsServer });
-  return createNodeIdentityManager(config, { keyProvider, dnsResolver, logRegistry });
-}
-
-async function createAndStartAgent(idm: IdentityManager, environment: Environment, transport: TransportConfig): Promise<EchoAgent> {
-  const publicUrl = environment.publicUrl ?? new URL(idm.config.identity!.kuUrl ?? `https://${idm.config.identity!.domain}`).origin;
-  const agent = await EchoAgent.create(echoExecutor(idm.config.identity!.domain), idm, environment.agentPort, { publicUrl, transport });
+/** DNSID_AGENT_PORT / DNSID_AGENT_NAME / DNSID_PUBLIC_URL are deployment settings, read by the example, not the SDK. */
+async function createAndStartAgent(idm: IdentityManager, transport: TransportConfig): Promise<EchoAgent> {
+  const port = Number(process.env.DNSID_AGENT_PORT);
+  if (!Number.isInteger(port) || port <= 0) throw new Error('DNSID_AGENT_PORT must be a positive integer');
+  const publicUrl = process.env.DNSID_PUBLIC_URL ?? new URL(idm.config.identity!.kuUrl ?? `https://${idm.config.identity!.domain}`).origin;
+  const agent = await EchoAgent.create(echoExecutor(idm.config.identity!.domain), idm, port, { publicUrl, transport });
 
   await agent.start();
-  console.log(`${environment.agentName ?? idm.config.identity!.domain} -> ${agent.url}`);
+  console.log(`${process.env.DNSID_AGENT_NAME ?? idm.config.identity!.domain} -> ${agent.url}`);
 
   // Give the local proxy a moment to see the server before registry verification starts.
   await new Promise(resolve => setTimeout(resolve, 500));

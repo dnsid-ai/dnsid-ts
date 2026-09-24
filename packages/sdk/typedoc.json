@@ -4,10 +4,5 @@
     "src/index.ts",
     "src/node.ts"
   ],
-  "intentionallyNotExported": [
-    "src/environment.ts:EnvironmentValue",
-    "src/environment.ts:EnvironmentConfigResultBase",
-    "src/environment.ts:EnvironmentSource"
-  ],
   "gitRevision": "main"
 }

@@ -1,27 +1,13 @@
-import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
-import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
+import { constructIdentityManager, loadEnvironment, mergeLoadedConfig } from '@dnsid-ai/sdk/node';
 
-// Independently trusted configuration for DNSid's public test log.
-// Production applications should select their own trusted policy URL or bytes.
-// `dnsid local env` exports DNSID_LOG_POLICY_URL for the local registry.
-const policyUrl = process.env.DNSID_LOG_POLICY_URL ?? 'https://log.dnsid.dev/dnsid-policy';
+// Trust is explicit configuration, never discovered from an identity record's log reference.
+// The example's fallback is DNSid's public test log; `dnsid local env` exports DNSID_LOG_POLICY_URL
+// plus DNSID_DNS_SERVER, DNSID_CA_BUNDLE, and DNSID_PRIVATE_HOSTS=.test for the local registry, and
+// production sets its own independently trusted DNSID_LOG_POLICY_URL / _FILE / DNSID_LOG_TRUST_PROFILE_FILE.
+const FALLBACK = { logTrust: { policyUrl: 'https://log.dnsid.dev/dnsid-policy' } };
 
 export async function validateDomain(domain: string): Promise<void> {
-  // Local registry only (`eval "$(dnsid local env)"`): route DNS to its CoreDNS and trust its CA.
-  // Its `.test` hosts resolve to loopback, so DNSID_PRIVATE_HOSTS=.test is needed too. All undefined in production.
-  const privateHosts = process.env.DNSID_PRIVATE_HOSTS?.split(',').map(h => h.trim()).filter(Boolean);
-  const transport = {
-    dnsServer: process.env.DNSID_DNS_SERVER,
-    caBundlePath: process.env.DNSID_CA_BUNDLE,
-    ...(privateHosts?.length ? { privateAddressHosts: privateHosts } : {}),
-  };
-
-  const logRegistry = await createC2spTlogVerificationRegistry({
-    policyUrl,
-    checkpointMaxAge: 24 * 60 * 60 * 1000,
-    transport,
-  });
-  const idm = await createNodeIdentityVerifier({ transport }, { logRegistry });
+  const idm = await constructIdentityManager(mergeLoadedConfig(FALLBACK, await loadEnvironment()));
 
   const verified = await idm.verifyDomain(domain);
   console.log(verified);

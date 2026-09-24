@@ -7,7 +7,7 @@ The root `@dnsid-ai/sdk` entrypoint is runtime-neutral: callers inject DNS resol
 ## Package layout
 
 - **Root export (`@dnsid-ai/sdk`)** — runtime-neutral. No Node built-ins, `Buffer`, filesystem, or `undici` imports; you inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes. Its managed C2SP workflows use the portable writer-only binding entrypoint.
-- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, configuration loaders (`loadEnvironment`, `loadFile`, `loadCliDirectory`, `mergeLoadedConfig`, `constructIdentityManager`), `createNodeIdentityManager`, and the one-call `createNodeIdentityManagerFromEnvironment` / `FromDnsid` / `FromFile`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
 - **OIDC lives in `@dnsid-ai/oidc`** — deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs server-side. Import it directly.
 
 ## Install
@@ -71,12 +71,27 @@ rotation state; already-completed activation or supersession is not repeated.
 ## Node.js convenience usage
 
 ```ts
-import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { createNodeIdentityManagerFromEnvironment } from '@dnsid-ai/sdk/node';
 
-const { config, keyStorePath } = configFromEnvironment();
-const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
+// Loaders parse; constructors default. Identity from DNSID_*, keys from DNSID_CONFIG_DIR or
+// DNSID_KEY_STORE, log trust from DNSID_LOG_POLICY_URL / _FILE / DNSID_LOG_TRUST_PROFILE_FILE.
+// Without DNSID_DOMAIN the result is a verification-only manager.
+const idm = await createNodeIdentityManagerFromEnvironment();
+```
+
+`createNodeIdentityManagerFromEnvironment(env?, overlay?, deps?)` is exactly
+`constructIdentityManager(mergeLoadedConfig(await loadEnvironment(env), { dnsid: overlay }), deps)`;
+`createNodeIdentityManagerFromDnsid(dir?)` and `createNodeIdentityManagerFromFile(path)` are the same
+shape over `loadCliDirectory` and `loadFile`. Compose sources yourself with `mergeLoadedConfig`
+(field-wise, presence wins, lists replace, `logTrust` atomic). Supplied `deps` always win over loaded
+`logTrust` and `keySource`. The environment schema is in the repository README.
+
+```ts
+import { createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
+
+const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
 const entityKeyProvider = await LocalKeyProvider.load('.dnsid/entity.keys.json', true);
-const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProvider });
+const idm = await createNodeIdentityManager({ identity, verification }, { keyProvider, entityKeyProvider });
 ```
 
 `config.transport.dnsServer`/`caBundlePath` configure only the SDK-managed default resolver and
@@ -102,8 +117,10 @@ If the registry CLI has already written `~/.dnsid/config.json` and `~/.dnsid/<fq
 ```ts
 import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
 
-const idm = await createNodeIdentityManagerFromDnsid();
+const idm = await createNodeIdentityManagerFromDnsid(); // ~/.dnsid by default; never reads DNSID_CONFIG_DIR
 ```
+
+The CLI loader maps persisted fields as written: a missing `status_url` or `log_ref` fails construction with `ArgumentError` unless the overlay supplies it.
 
 DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 

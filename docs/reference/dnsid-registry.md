@@ -19,11 +19,11 @@ npm install @dnsid-ai/registry @dnsid-ai/protocol
 
 ```ts
 import { RegistryClient, publishClientControlledRecord } from '@dnsid-ai/registry';
-import { registryClientOptionsFromEnvironment } from '@dnsid-ai/sdk/node';
+import { createRegistryClientFromEnvironment } from '@dnsid-ai/sdk/node';
 
 // Local by default: http://127.0.0.1:7755 from `dnsid local up`, no credential.
 // Hosted: set DNSID_REGISTRY_URL and DNSID_API_KEY from the console.
-const registryClient = new RegistryClient(registryClientOptionsFromEnvironment());
+const registryClient = await createRegistryClientFromEnvironment();
 // Or explicitly: new RegistryClient({ baseUrl, token }). HTTPS required except on loopback.
 
 await publishClientControlledRecord({
@@ -3096,7 +3096,7 @@ const DEFAULT_REGISTRY_URL: "http://127.0.0.1:7755" = 'http://127.0.0.1:7755';
 Defined in: [packages/registry/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L103)
 
 Default registry base URL: the local registry started by `dnsid local up`.
-Hosted use requires an explicit `baseUrl` (see `configFromEnvironment()` in
+Hosted use requires an explicit `baseUrl` (see `createRegistryClientFromEnvironment()` in
 `@dnsid-ai/sdk/node`, which reads `DNSID_REGISTRY_URL`).
 
 ## Functions

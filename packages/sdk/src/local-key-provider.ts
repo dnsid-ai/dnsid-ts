@@ -25,15 +25,6 @@ interface KeyStore {
   pending: StoredKey[];
 }
 
-export interface LocalKeyProviderEnvironmentOptions {
-  /** Default key-store path when the environment variable is absent. Default: .dnsid/keys.json. */
-  defaultPath?: string;
-  /** Create an initial key store if the file does not exist. Default: false. */
-  createIfMissing?: boolean;
-  /** Algorithm used when creating a missing key store. Default: EdDSA. */
-  algorithm?: LocalKeyAlgorithm;
-}
-
 /**
  * File-backed KeyProvider that stores Ed25519 or ECDSA P-256 keys as a JSON file.
  *
@@ -81,13 +72,6 @@ export class LocalKeyProvider implements KeyProvider {
       }
     }
     return new LocalKeyProvider(store, filePath);
-  }
-
-  static async fromEnvironment(
-    env?: Record<string, string | undefined>,
-    options: LocalKeyProviderEnvironmentOptions = {},
-  ): Promise<LocalKeyProvider> {
-    return LocalKeyProvider.load(keyStorePathFromEnvironment(env, options.defaultPath), options.createIfMissing, options.algorithm);
   }
 
   static async generate(algorithm: LocalKeyAlgorithm = 'EdDSA'): Promise<LocalKeyProvider> {
@@ -224,13 +208,6 @@ async function writeStore(filePath: string, store: KeyStore, committed?: () => v
 async function syncDirectory(dir: string): Promise<void> {
   const directory = await fs.open(dir, 'r');
   try { await directory.sync(); } finally { await directory.close(); }
-}
-
-export function keyStorePathFromEnvironment(
-  env: Record<string, string | undefined> = process.env,
-  defaultPath = '.dnsid/keys.json',
-): string {
-  return env['DNSID_KEY_STORE'] || env['DNSID_KEY_STORE_PATH'] || env['DNSID_KEYSTORE_PATH'] || defaultPath;
 }
 
 function toPublicJwk(key: StoredKey): DnsIdJWK {

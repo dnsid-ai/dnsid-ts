@@ -45,7 +45,7 @@ describe('LocalKeyProvider.load', () => {
     const link = join(dir, 'keys.json');
     await LocalKeyProvider.load(target, true);
     await symlink('store/keys.json', link);
-    const provider = await LocalKeyProvider.fromEnvironment({ DNSID_KEY_STORE: link });
+    const provider = await LocalKeyProvider.load(link);
     const original = await provider.signingKey();
     const pending = await provider.generateKey();
     const before = await readFile(target, 'utf8');

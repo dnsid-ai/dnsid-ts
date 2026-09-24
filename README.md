@@ -84,7 +84,7 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 ## Package layout
 
 - **Root export (`@dnsid-ai/sdk`)** — runtime-neutral: no Node built-ins, `Buffer`, filesystem, or `undici`. You inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes.
-- **`@dnsid-ai/sdk/node` subpath** — Node conveniences (`LocalKeyProvider`, `configFromEnvironment`, `createNodeIdentityManager`, `createNodeIdentityManagerFromDnsid`). Loads the optional `@dnsid-ai/transport` peer only when HTTPS defaults are needed.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences (`LocalKeyProvider`, configuration loaders, `createNodeIdentityManager`, `createNodeIdentityManagerFromEnvironment`, `createNodeIdentityManagerFromDnsid`, `createNodeIdentityManagerFromFile`). Loads the optional `@dnsid-ai/transport` peer only when HTTPS defaults are needed.
 - **OIDC lives in its own package** — `@dnsid-ai/oidc` is deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs in server-side code. Import it directly.
 
 ## Runtime-neutral usage
@@ -133,12 +133,30 @@ If you pass `OIDCProfile` or `OIDCTokenMinter` a custom `fetch`, that fetch repl
 ## Node.js convenience usage
 
 ```ts
-import { configFromEnvironment, createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { createNodeIdentityManagerFromEnvironment } from '@dnsid-ai/sdk/node';
 
-const { config, keyStorePath } = configFromEnvironment();
-const keyProvider = await LocalKeyProvider.load(keyStorePath ?? '.dnsid/keys.json', true);
+// Under `dnsid local run`: identity from DNSID_*, keys from DNSID_CONFIG_DIR, log trust from DNSID_LOG_POLICY_URL.
+// Without DNSID_DOMAIN: a verification-only manager.
+const idm = await createNodeIdentityManagerFromEnvironment();
+```
+
+Configuration follows one rule: **loaders parse; constructors default.** `loadEnvironment()`, `loadFile(path)`, and `loadCliDirectory(dir)` each return only the fields present in their source as a `LoadedConfig` (`dnsid`, `logTrust`, `registry`, `keySource`); `mergeLoadedConfig(base, overlay)` combines sources field-wise (presence wins, lists replace, `logTrust` atomic); `constructIdentityManager(loaded, deps)` fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when you did not supply them, then calls the ordinary constructor, which applies every default and validation. The one-call constructors are exactly `Load → Merge → Construct`:
+
+```ts
+import { constructIdentityManager, loadEnvironment, loadFile, mergeLoadedConfig } from '@dnsid-ai/sdk/node';
+
+const loaded = mergeLoadedConfig(await loadFile('dnsid.json'), await loadEnvironment());
+const idm = await constructIdentityManager(loaded, { cache });
+```
+
+Explicit wiring still works when you hold the pieces yourself:
+
+```ts
+import { createNodeIdentityManager, LocalKeyProvider } from '@dnsid-ai/sdk/node';
+
+const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
 const entityKeyProvider = await LocalKeyProvider.load('.dnsid/entity.keys.json', true);
-const idm = await createNodeIdentityManager(config, { keyProvider, entityKeyProvider });
+const idm = await createNodeIdentityManager({ identity, verification }, { keyProvider, entityKeyProvider });
 ```
 
 `LocalKeyProvider.load(path)` loads an existing store; pass `true` to create one when missing.
@@ -149,8 +167,10 @@ If the registry CLI has already written `~/.dnsid/config.json` and `~/.dnsid/<fq
 ```ts
 import { createNodeIdentityManagerFromDnsid } from '@dnsid-ai/sdk/node';
 
-const idm = await createNodeIdentityManagerFromDnsid();
+const idm = await createNodeIdentityManagerFromDnsid(); // ~/.dnsid; pass a directory to read another
 ```
+
+The CLI loader maps the persisted publication fields as written. A `config.json` missing `status_url` or `log_ref` fails construction with `ArgumentError` unless the overlay supplies the field; nothing is derived from `server_url`.
 
 `@dnsid-ai/transport` is an optional peer of `@dnsid-ai/sdk`; it provides the Node DNS and HTTPS defaults. DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
@@ -164,11 +184,10 @@ dnsid local run my-agent -- node app.js    # registers my-agent if needed, runs 
 ```
 
 ```ts
-import { RegistryClient } from '@dnsid-ai/registry';
-import { registryClientOptionsFromEnvironment } from '@dnsid-ai/sdk/node';
+import { createRegistryClientFromEnvironment } from '@dnsid-ai/sdk/node';
 
 // DNSID_REGISTRY_URL and DNSID_API_KEY when set; otherwise http://127.0.0.1:7755 with no credential.
-const registry = new RegistryClient(registryClientOptionsFromEnvironment());
+const registry = await createRegistryClientFromEnvironment();
 ```
 
 To export the same variables into your shell instead of wrapping one command: `eval "$(dnsid local env my-agent)"`.
@@ -185,32 +204,41 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 
 ### Environment variables
 
-`configFromEnvironment()` reads the following `DNSID_*` variables:
+`loadEnvironment()` reads the configuration variables below. `DNSID_API_KEY` is read only by `createRegistryClientFromEnvironment()` and never returned in `LoadedConfig`. Unset, empty, or whitespace-only values are absent; unknown `DNSID_*` variables are ignored. Nothing is defaulted or derived here — the constructors do that.
 
-| Variable | Required? | Purpose |
+| Variable | Maps to | Notes |
 | --- | --- | --- |
-| `DNSID_DOMAIN` | Yes | Agent FQDN, e.g. `alice.example.com`. |
-| `DNSID_GOVERNANCE_ID` | Yes | Governance identifier. Usually a parent/domain FQDN, e.g. `example.com`. |
-| `DNSID_STATUS_URL` | No | HTTPS URL for the agent status document. Derived from `registryUrl` + domain when not set. |
-| `DNSID_REGISTRY_URL` | No | Registry base URL. Defaults to the local registry, `http://127.0.0.1:7755`; set it to the hosted registry for hosted use. HTTPS, or HTTP on loopback only. Used to derive the status URL and for registry workflows. |
-| `DNSID_API_KEY` | No | Owner API key for registry workflows. `dnsid local env` exports one for the local registry; hosted keys come from the console. |
-| `DNSID_LOG_REF` | No | Lifecycle log reference. Defaults to `noop:0`. |
-| `DNSID_EK_URL` | Yes for DNSid1 publishing | Accountable-entity JWKS URL. Host must equal `DNSID_GOVERNANCE_ID` or be a subdomain of it. |
-| `DNSID_KU_URL` | Yes for DNSid1 publishing | Operational JWKS URL. Host must match `DNSID_DOMAIN`. |
-| `DNSID_DNS_SERVER` | No | DNS server for SDK-managed DNS and HTTPS lookups. |
-| `DNSID_CA_BUNDLE` | No | Additional PEM CA bundle for SDK-managed HTTPS verification. |
-| `DNSID_PRIVATE_HOSTS` | No | Comma-separated hostnames or `.suffix` entries (e.g. `.test`) whose SDK-managed HTTPS destinations may resolve to loopback/private addresses. Nothing is allowed by default. |
-| `DNSID_DNSSEC_MODE` | No | DNSSEC mode: `auto` (default), `validated`, or `required`. |
-| `DNSID_KEY_STORE` | No | Local key-store path for `LocalKeyProvider`. Defaults to `.dnsid/keys.json` when loading from environment. |
-| `DNSID_PUBLIC_URL` | No | Public base URL for examples/servers. Not part of core DNSid config. |
-| `DNSID_AGENT_PORT` | No | Local example/server port. |
-| `DNSID_AGENT_NAME` | No | Local example/server display name. |
+| `DNSID_DOMAIN` | `dnsid.identity.domain` | Agent FQDN. Omit for a verification-only manager. |
+| `DNSID_GOVERNANCE_ID` | `dnsid.identity.governanceId` | Governance identifier, usually the parent FQDN. |
+| `DNSID_STATUS_URL` | `dnsid.identity.statusUrl` | Required for a local identity; never derived from the registry URL. |
+| `DNSID_LOG_REF` | `dnsid.identity.logRef` | Required for a local identity; no placeholder is substituted. |
+| `DNSID_EK_URL` | `dnsid.identity.ekUrl` | Accountable-entity JWKS URL (draft-01 publishing). |
+| `DNSID_KU_URL` | `dnsid.identity.kuUrl` | Operational JWKS URL (draft-01 publishing). |
+| `DNSID_PUBLISH_PROFILE` | `dnsid.identity.publishProfile` | |
+| `DNSID_CAPABILITIES_URL` | `dnsid.identity.capabilitiesUrl` | |
+| `DNSID_DNSSEC_MODE` | `dnsid.verification.dnssecMode` | `auto`, `validated`, or `required`; anything else fails loading. |
+| `DNSID_DNS_SERVER` | `dnsid.transport.dnsServer` | |
+| `DNSID_CA_BUNDLE` | `dnsid.transport.caBundlePath` | |
+| `DNSID_PRIVATE_HOSTS` | `dnsid.transport.privateAddressHosts` | Comma-separated; entries trimmed, empties dropped. |
+| `DNSID_LOG_POLICY_URL` | `logTrust.policyUrl` | Trusted C2SP `tlog-policy` URL; `dnsid local env` exports one. |
+| `DNSID_LOG_POLICY_FILE` | `logTrust.policyDocument` | Path; the loader reads the bytes. |
+| `DNSID_LOG_TRUST_PROFILE_FILE` | `logTrust.profile` | Path to a `dnsid-c2sp-tlog-trust-profile@v1` document. |
+| `DNSID_REGISTRY_URL` | `registry.registryUrl` | `RegistryClient` defaults to `http://127.0.0.1:7755` when absent. |
+| `DNSID_API_KEY` | `createRegistryClientFromEnvironment()` only | Owner API key for registry workflows; not loaded configuration. |
+| `DNSID_CONFIG_DIR` | `keySource.cliDirectory` | DNSid CLI identity directory; supplies the operational key provider. |
+| `DNSID_KEY_STORE` | `keySource.keyStorePath` | `LocalKeyProvider` store; used only when `DNSID_CONFIG_DIR` is absent. |
+
+Exactly one `logTrust` variant may be set. `DNSID_PUBLIC_URL`, `DNSID_AGENT_PORT`, `DNSID_AGENT_NAME`, and `DNSID_SERVER` are deployment-tooling variables, not SDK configuration; read them in your application.
+
+A deployment file (`loadFile`) is the JSON form of the same shape minus secrets and key sources: `{ "dnsid": {...}, "logTrust": { "managed": true } | { "policyUrl": "..." } | { "profile": {...} }, "registry": { "registryUrl": "..." } }`. Unknown members are rejected.
 
 Minimal hosted-registry configuration (the local registry needs none of this — `dnsid local run` exports it):
 
 ```sh
 DNSID_DOMAIN=alice.example.com
 DNSID_GOVERNANCE_ID=example.com
+DNSID_STATUS_URL=https://api.dnsid.ai/api/v1/agent/alice.example.com/status
+DNSID_LOG_REF=c2sp-tlog:public:https://log.dnsid.ai#...
 DNSID_EK_URL=https://example.com/.well-known/entity-jwks.json
 DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
 DNSID_REGISTRY_URL=https://api.dnsid.ai
@@ -222,6 +250,7 @@ Minimal direct-status configuration:
 ```sh
 DNSID_DOMAIN=alice.example.com
 DNSID_GOVERNANCE_ID=example.com
+DNSID_LOG_REF=c2sp-tlog:public:https://log.dnsid.ai#...
 DNSID_EK_URL=https://example.com/.well-known/entity-jwks.json
 DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
 DNSID_STATUS_URL=https://alice.example.com/.well-known/dnsid-status.json
