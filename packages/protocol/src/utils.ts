@@ -26,6 +26,10 @@ export function normalizeFQDN(name: string, agentFQDN = false): string {
   const withoutTrailingDot = name.endsWith('.') ? name.slice(0, -1) : name;
 
   if (!withoutTrailingDot) throw new ValidationError('FQDN cannot be empty after normalization');
+  // URL syntax and invisible characters must not be silently stripped or parsed as authority.
+  if (/[\/\\:@?#%\p{C}\p{Z}]/u.test(withoutTrailingDot)) {
+    throw new ValidationError(`FQDN contains invalid characters: ${name}`);
+  }
 
   // RFC 5890 §2.3.1 LDH: labels may not begin or end with a hyphen. Check the raw input
   // labels first — IDNA/punycode conversion masks this (e.g. "-é" → "xn--..." no longer
@@ -42,12 +46,18 @@ export function normalizeFQDN(name: string, agentFQDN = false): string {
   // Example: münchen.DE → xn--mnchen-3ya.de
   let normalized: string;
   try {
-    normalized = new URL(`https://${withoutTrailingDot}`).hostname;
+    const url = new URL(`https://${withoutTrailingDot}`);
+    if (url.pathname !== '/' || url.search || url.hash || url.port || url.username || url.password) {
+      throw new ValidationError(`FQDN is not a plain host name: ${name}`);
+    }
+    normalized = url.hostname;
   } catch {
     throw new ValidationError(`FQDN is not a valid domain name: ${name}`);
   }
 
-  if (!normalized) throw new ValidationError('FQDN cannot be empty after normalization');
+  if (!normalized || normalized.startsWith('[') || /^(?:\d+\.){3}\d+$/.test(normalized)) {
+    throw new ValidationError(`FQDN must be a domain name, not an IP address: ${name}`);
+  }
 
   const labels = normalized.split('.');
   for (const label of labels) {
