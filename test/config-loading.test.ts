@@ -50,6 +50,7 @@ describe('loadEnvironment()', () => {
     expect(await loadEnvironment({})).toEqual({});
     expect(await loadEnvironment({ DNSID_DNS_SERVER: '', DNSID_CA_BUNDLE: '   ', DNSID_PRIVATE_HOSTS: ' , ' })).toEqual({});
     expect(await loadEnvironment({ DNSID_DNS_SERVER: ' 10.0.0.1:53 ' })).toEqual({ dnsid: { transport: { dnsServer: '10.0.0.1:53' } } });
+    expect(await loadEnvironment({ DNSID_API_KEY: 'secret' })).toEqual({});
   });
 
   it('maps the 20-variable schema without deriving or defaulting anything', async () => {
@@ -84,12 +85,11 @@ describe('loadEnvironment()', () => {
       },
       logTrust: { policyUrl: 'https://policy.example/p' },
       registry: { registryUrl: 'https://registry.example' },
-      registryCredential: 'secret',
       keySource: { cliDirectory: '/cli', keyStorePath: '/keys.json' },
     });
     // statusUrl absent; not derived from the registry URL.
     expect(loaded.dnsid!.identity!.statusUrl).toBeUndefined();
-    expect(JSON.stringify(loaded.dnsid)).not.toContain('secret');
+    expect(JSON.stringify(loaded)).not.toContain('secret');
   });
 
   it('ignores deployment-tooling variables', async () => {
@@ -164,7 +164,6 @@ describe('mergeLoadedConfig()', () => {
     expect(mergeLoadedConfig(base, {
       dnsid: { verification: { trustedEntities: [] }, transport: { privateAddressHosts: ['.local'], dnsServer: '' } },
       logTrust: { policyUrl: 'https://policy' },
-      registryCredential: 'k',
     })).toEqual({
       dnsid: {
         identity: base.dnsid.identity,
@@ -173,7 +172,6 @@ describe('mergeLoadedConfig()', () => {
       },
       logTrust: { policyUrl: 'https://policy' },
       registry: { registryUrl: 'https://base' },
-      registryCredential: 'k',
     });
     expect(mergeLoadedConfig(base, { dnsid: { verification: {} } }).dnsid!.verification!.trustedEntities).toEqual([{ governanceId: 'a.example' }]);
     expect(mergeLoadedConfig({}, {})).toEqual({});
@@ -306,7 +304,9 @@ describe('createRegistryClientFromEnvironment()', () => {
   it('needs no identity variables and lets the constructor default the URL', async () => {
     const local = await createRegistryClientFromEnvironment({});
     expect((local as unknown as { baseUrl: string }).baseUrl).toBe('http://127.0.0.1:7755');
-    const hosted = await createRegistryClientFromEnvironment({ DNSID_REGISTRY_URL: 'https://api.dnsid.ai', DNSID_API_KEY: 'k' });
+    const hosted = await createRegistryClientFromEnvironment({ DNSID_REGISTRY_URL: 'https://api.dnsid.ai', DNSID_API_KEY: ' k ' });
     expect(hosted as unknown as { baseUrl: string; token: string }).toMatchObject({ baseUrl: 'https://api.dnsid.ai', token: 'k' });
+    const blank = await createRegistryClientFromEnvironment({ DNSID_API_KEY: '   ' });
+    expect((blank as unknown as { token?: string }).token).toBeUndefined();
   });
 });

@@ -459,7 +459,7 @@ Defined in: [packages/sdk/src/config-loading.ts:69](https://github.com/dnsid-ai/
 optional keySource?: KeySource;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L74)
+Defined in: [packages/sdk/src/config-loading.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L72)
 
 <a id="logtrust"></a>
 
@@ -480,18 +480,6 @@ optional registry?: LoadedRegistryConfig;
 ```
 
 Defined in: [packages/sdk/src/config-loading.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L71)
-
-<a id="registrycredential"></a>
-
-##### registryCredential?
-
-```ts
-optional registryCredential?: string;
-```
-
-Defined in: [packages/sdk/src/config-loading.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L73)
-
-Secret; never placed in `dnsid`.
 
 ***
 
@@ -661,7 +649,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid
 function constructIdentityManager(loaded, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:255](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L255)
+Defined in: [packages/sdk/src/config-loading.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L251)
 
 Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
 did not supply them, then calls [createNodeIdentityManager](#createnodeidentitymanager). Adds no configuration values.
@@ -737,7 +725,7 @@ function createNodeIdentityManagerFromDnsid(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L319)
+Defined in: [packages/sdk/src/config-loading.ts:315](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L315)
 
 #### Parameters
 
@@ -770,7 +758,7 @@ function createNodeIdentityManagerFromEnvironment(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:315](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L315)
+Defined in: [packages/sdk/src/config-loading.ts:311](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L311)
 
 #### Parameters
 
@@ -803,7 +791,7 @@ function createNodeIdentityManagerFromFile(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L323)
+Defined in: [packages/sdk/src/config-loading.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L319)
 
 #### Parameters
 
@@ -861,7 +849,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:328](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L328)
+Defined in: [packages/sdk/src/config-loading.ts:324](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L324)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry.
 
@@ -885,7 +873,7 @@ Defined in: [packages/sdk/src/config-loading.ts:328](https://github.com/dnsid-ai
 function loadCliDirectory(dnsidDir?): Promise<LoadedConfig>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L183)
+Defined in: [packages/sdk/src/config-loading.ts:180](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L180)
 
 Reads a DNSid CLI directory (`~/.dnsid` by default): `config.json`, following a root `domain`
 pointer to `<domain>/config.json` when that file exists. Maps the snake_case publication fields
@@ -912,9 +900,9 @@ Never consults `DNSID_CONFIG_DIR`.
 function loadEnvironment(env?): Promise<LoadedConfig>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L92)
+Defined in: [packages/sdk/src/config-loading.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L90)
 
-Reads the 20-variable `DNSID_*` schema. Unset, empty, or whitespace-only variables are absent.
+Reads configuration from `DNSID_*`. Secrets such as `DNSID_API_KEY` stay out of `LoadedConfig`.
 
 #### Parameters
 
@@ -936,7 +924,7 @@ Reads the 20-variable `DNSID_*` schema. Unset, empty, or whitespace-only variabl
 function loadFile(filePath): Promise<LoadedConfig>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L140)
+Defined in: [packages/sdk/src/config-loading.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L137)
 
 Reads a JSON deployment file: `{ dnsid?, logTrust?, registry? }`. Unknown members, mistyped
 values, and duplicate members are rejected; `dnsid` contents are validated by the constructor.
@@ -961,7 +949,7 @@ values, and duplicate members are rejected; `dnsid` contents are validated by th
 function mergeLoadedConfig(base, overlay): LoadedConfig;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:222](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L222)
+Defined in: [packages/sdk/src/config-loading.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L219)
 
 Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
 whole section when `overlay` sets any variant.

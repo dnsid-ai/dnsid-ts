@@ -69,8 +69,6 @@ export interface LoadedConfig {
   dnsid?: LoadedDnsidConfig;
   logTrust?: LogTrust;
   registry?: LoadedRegistryConfig;
-  /** Secret; never placed in `dnsid`. */
-  registryCredential?: string;
   keySource?: KeySource;
 }
 
@@ -88,7 +86,7 @@ const IDENTITY_VARIABLES: Record<string, keyof IdentityConfig> = {
   DNSID_CAPABILITIES_URL: 'capabilitiesUrl',
 };
 
-/** Reads the 20-variable `DNSID_*` schema. Unset, empty, or whitespace-only variables are absent. */
+/** Reads configuration from `DNSID_*`. Secrets such as `DNSID_API_KEY` stay out of `LoadedConfig`. */
 export async function loadEnvironment(env: EnvironmentSource = process.env): Promise<LoadedConfig> {
   const get = (name: string): string | undefined => {
     const value = env[name]?.trim();
@@ -125,7 +123,6 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
     dnsid,
     logTrust,
     registry: compact({ registryUrl: get('DNSID_REGISTRY_URL') }),
-    registryCredential: get('DNSID_API_KEY'),
     keySource: compact({ cliDirectory: get('DNSID_CONFIG_DIR'), keyStorePath: get('DNSID_KEY_STORE') }),
   });
 }
@@ -224,7 +221,6 @@ export function mergeLoadedConfig(base: LoadedConfig, overlay: LoadedConfig): Lo
     dnsid: mergeDnsid(base.dnsid, overlay.dnsid),
     logTrust: overlay.logTrust ?? base.logTrust,
     registry: mergeSection(base.registry, overlay.registry),
-    registryCredential: overlay.registryCredential ?? base.registryCredential,
     keySource: mergeSection(base.keySource, overlay.keySource),
   });
 }
@@ -326,8 +322,9 @@ export function createNodeIdentityManagerFromFile(filePath: string, overlay?: Lo
 
 /** `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry. */
 export async function createRegistryClientFromEnvironment(env?: EnvironmentSource): Promise<RegistryClient> {
-  const loaded = await loadEnvironment(env);
-  return new RegistryClient(compact({ baseUrl: loaded.registry?.registryUrl, token: loaded.registryCredential }));
+  const source = env ?? process.env;
+  const loaded = await loadEnvironment(source);
+  return new RegistryClient(compact({ baseUrl: loaded.registry?.registryUrl, token: source.DNSID_API_KEY?.trim() || undefined }));
 }
 
 // ---------------------------------------------------------------------------------------------

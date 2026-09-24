@@ -140,7 +140,7 @@ import { createNodeIdentityManagerFromEnvironment } from '@dnsid-ai/sdk/node';
 const idm = await createNodeIdentityManagerFromEnvironment();
 ```
 
-Configuration follows one rule: **loaders parse; constructors default.** `loadEnvironment()`, `loadFile(path)`, and `loadCliDirectory(dir)` each return only the fields present in their source as a `LoadedConfig` (`dnsid`, `logTrust`, `registry`, `registryCredential`, `keySource`); `mergeLoadedConfig(base, overlay)` combines sources field-wise (presence wins, lists replace, `logTrust` atomic); `constructIdentityManager(loaded, deps)` fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when you did not supply them, then calls the ordinary constructor, which applies every default and validation. The one-call constructors are exactly `Load → Merge → Construct`:
+Configuration follows one rule: **loaders parse; constructors default.** `loadEnvironment()`, `loadFile(path)`, and `loadCliDirectory(dir)` each return only the fields present in their source as a `LoadedConfig` (`dnsid`, `logTrust`, `registry`, `keySource`); `mergeLoadedConfig(base, overlay)` combines sources field-wise (presence wins, lists replace, `logTrust` atomic); `constructIdentityManager(loaded, deps)` fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when you did not supply them, then calls the ordinary constructor, which applies every default and validation. The one-call constructors are exactly `Load → Merge → Construct`:
 
 ```ts
 import { constructIdentityManager, loadEnvironment, loadFile, mergeLoadedConfig } from '@dnsid-ai/sdk/node';
@@ -204,7 +204,7 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 
 ### Environment variables
 
-`loadEnvironment()` reads exactly these `DNSID_*` variables. Unset, empty, or whitespace-only values are absent; unknown `DNSID_*` variables are ignored. Nothing is defaulted or derived here — the constructors do that.
+`loadEnvironment()` reads the configuration variables below. `DNSID_API_KEY` is read only by `createRegistryClientFromEnvironment()` and never returned in `LoadedConfig`. Unset, empty, or whitespace-only values are absent; unknown `DNSID_*` variables are ignored. Nothing is defaulted or derived here — the constructors do that.
 
 | Variable | Maps to | Notes |
 | --- | --- | --- |
@@ -224,7 +224,7 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 | `DNSID_LOG_POLICY_FILE` | `logTrust.policyDocument` | Path; the loader reads the bytes. |
 | `DNSID_LOG_TRUST_PROFILE_FILE` | `logTrust.profile` | Path to a `dnsid-c2sp-tlog-trust-profile@v1` document. |
 | `DNSID_REGISTRY_URL` | `registry.registryUrl` | `RegistryClient` defaults to `http://127.0.0.1:7755` when absent. |
-| `DNSID_API_KEY` | `registryCredential` | Owner API key for registry workflows. |
+| `DNSID_API_KEY` | `createRegistryClientFromEnvironment()` only | Owner API key for registry workflows; not loaded configuration. |
 | `DNSID_CONFIG_DIR` | `keySource.cliDirectory` | DNSid CLI identity directory; supplies the operational key provider. |
 | `DNSID_KEY_STORE` | `keySource.keyStorePath` | `LocalKeyProvider` store; used only when `DNSID_CONFIG_DIR` is absent. |
 
