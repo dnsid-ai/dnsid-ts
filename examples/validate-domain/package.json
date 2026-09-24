@@ -8,9 +8,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.22.0",
-    "@dnsid-ai/log-c2sp-tlog": "^0.22.0",
-    "@dnsid-ai/transport": "^0.22.0"
+    "@dnsid-ai/sdk": "^0.23.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.23.0",
+    "@dnsid-ai/transport": "^0.23.0"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",

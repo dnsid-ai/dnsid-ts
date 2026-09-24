@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/registry",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "DNSid registry client and TXT publishing helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -33,7 +33,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.22.0"
+    "@dnsid-ai/protocol": "^0.23.0"
   },
   "publishConfig": {
     "access": "public"
