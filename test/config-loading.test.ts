@@ -143,10 +143,23 @@ describe('loadFile()', () => {
     await expect(loadFile(file)).rejects.toThrow(ArgumentError);
   }));
 
-  it('passes unknown dnsid fields through to the constructor, which rejects them', () => withTemp(async root => {
+  it('rejects mistyped nested dnsid members at loading, but leaves partial identity unset', () => withTemp(async root => {
     const file = join(root, 'dnsid.json');
-    await writeFile(file, JSON.stringify({ dnsid: { verification: { bogus: 1 } } }));
-    await expect(createNodeIdentityManagerFromFile(file, undefined, deps)).rejects.toThrow(/unknown field "bogus"/);
+    await writeFile(file, JSON.stringify({ dnsid: { identity: { domain: 'alice.example.com' } } }));
+    expect(await loadFile(file)).toEqual({ dnsid: { identity: { domain: 'alice.example.com' } } });
+    for (const [dnsid, message] of [
+      [{ identity: { domain: 123 } }, /identity.domain must be a string/],
+      [{ identity: null }, /identity must be a JSON object/],
+      [{ verification: { bogus: 1 } }, /unknown member "bogus"/],
+      [{ verification: { statusCheckInterval: '30' } }, /statusCheckInterval must be a finite number/],
+      [{ verification: { trustedEntities: 'oops' } }, /trustedEntities must be an array/],
+      [{ verification: { trustedEntities: [{ governanceId: 'acme.example', entityKeyThumbprints: [42] }] } }, /entityKeyThumbprints must be an array of strings/],
+      [{ transport: { dnsServer: 123 } }, /transport.dnsServer must be a string/],
+      [{ transport: { privateAddressHosts: '.test' } }, /privateAddressHosts must be an array of strings/],
+    ] as const) {
+      await writeFile(file, JSON.stringify({ dnsid }));
+      await expect(loadFile(file)).rejects.toThrow(message);
+    }
   }));
 });
 

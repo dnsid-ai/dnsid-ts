@@ -132,13 +132,13 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
 
 /**
  * Reads a JSON deployment file: `{ dnsid?, logTrust?, registry? }`. Unknown members, mistyped
- * values, and duplicate members are rejected; `dnsid` contents are validated by the constructor.
+ * values, and duplicate members are rejected; semantic `dnsid` validation stays with the constructor.
  */
 export async function loadFile(filePath: string): Promise<LoadedConfig> {
   const root = jsonObject(await fs.readFile(filePath), filePath);
   rejectUnknown(root, filePath, ['dnsid', 'logTrust', 'registry']);
   const loaded: LoadedConfig = {};
-  if (root.dnsid !== undefined) loaded.dnsid = object(root.dnsid, `${filePath}: dnsid`) as LoadedDnsidConfig;
+  if (root.dnsid !== undefined) loaded.dnsid = loadedDnsid(root.dnsid, `${filePath}: dnsid`);
   if (root.logTrust !== undefined) {
     const trust = object(root.logTrust, `${filePath}: logTrust`);
     rejectUnknown(trust, `${filePath}: logTrust`, ['managed', 'profile', 'policyUrl']);
@@ -154,6 +154,52 @@ export async function loadFile(filePath: string): Promise<LoadedConfig> {
     loaded.registry = compact({ registryUrl: optional(registry, 'registryUrl', 'string', `${filePath}: registry`) });
   }
   return loaded;
+}
+
+function loadedDnsid(value: unknown, source: string): LoadedDnsidConfig {
+  const raw = object(value, source);
+  rejectUnknown(raw, source, ['identity', 'verification', 'transport']);
+  if (raw.identity !== undefined) {
+    const identity = object(raw.identity, `${source}.identity`);
+    const keys = ['domain', 'governanceId', 'logRef', 'statusUrl', 'policyFlags', 'maxKeyAge', 'ekUrl', 'kuUrl', 'publishProfile', 'capabilitiesUrl'];
+    rejectUnknown(identity, `${source}.identity`, keys);
+    for (const key of keys) optional(identity, key, 'string', `${source}.identity`);
+  }
+  if (raw.verification !== undefined) {
+    const verification = object(raw.verification, `${source}.verification`);
+    rejectUnknown(verification, `${source}.verification`, ['statusCheckInterval', 'dnssecMode', 'trustedEntities']);
+    if (verification.statusCheckInterval !== undefined
+      && (typeof verification.statusCheckInterval !== 'number' || !Number.isFinite(verification.statusCheckInterval))) {
+      throw new ArgumentError(`${source}.verification.statusCheckInterval must be a finite number`);
+    }
+    const mode = optional(verification, 'dnssecMode', 'string', `${source}.verification`);
+    if (mode !== undefined && !Object.values(DNSSECMode).includes(mode as DNSSECMode)) {
+      throw new ArgumentError(`${source}.verification.dnssecMode is invalid`);
+    }
+    if (verification.trustedEntities !== undefined) {
+      if (!Array.isArray(verification.trustedEntities)) throw new ArgumentError(`${source}.verification.trustedEntities must be an array`);
+      for (const [index, entry] of verification.trustedEntities.entries()) {
+        const label = `${source}.verification.trustedEntities[${index}]`;
+        const entity = object(entry, label);
+        rejectUnknown(entity, label, ['governanceId', 'entityKeyThumbprints']);
+        if (typeof entity.governanceId !== 'string') throw new ArgumentError(`${label}.governanceId must be a string`);
+        if (entity.entityKeyThumbprints !== undefined
+          && (!Array.isArray(entity.entityKeyThumbprints) || entity.entityKeyThumbprints.some(pin => typeof pin !== 'string'))) {
+          throw new ArgumentError(`${label}.entityKeyThumbprints must be an array of strings`);
+        }
+      }
+    }
+  }
+  if (raw.transport !== undefined) {
+    const transport = object(raw.transport, `${source}.transport`);
+    rejectUnknown(transport, `${source}.transport`, ['dnsServer', 'caBundlePath', 'privateAddressHosts']);
+    for (const key of ['dnsServer', 'caBundlePath']) optional(transport, key, 'string', `${source}.transport`);
+    if (transport.privateAddressHosts !== undefined
+      && (!Array.isArray(transport.privateAddressHosts) || transport.privateAddressHosts.some(host => typeof host !== 'string'))) {
+      throw new ArgumentError(`${source}.transport.privateAddressHosts must be an array of strings`);
+    }
+  }
+  return raw as LoadedDnsidConfig;
 }
 
 // ---------------------------------------------------------------------------------------------

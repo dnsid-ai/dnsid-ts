@@ -13,6 +13,7 @@
 - [**breaking**] sdk: loaders no longer substitute a `noop:0` log reference or derive `statusUrl` from a registry URL; a local identity needs `DNSID_LOG_REF` and `DNSID_STATUS_URL` (or the persisted CLI values) or construction fails with `ArgumentError`.
 - [**breaking**] sdk: `createNodeIdentityManagerFromDnsid()` with no directory reads `~/.dnsid` and no longer consults `DNSID_CONFIG_DIR`. Under `dnsid local run` use `createNodeIdentityManagerFromEnvironment()`, which takes keys from `DNSID_CONFIG_DIR`.
 - [**breaking**] sdk: `DNSID_API_KEY` is no longer returned in `LoadedConfig` or merged configuration; `createRegistryClientFromEnvironment()` reads the secret directly.
+- sdk: `loadFile()` rejects unknown and mistyped nested `dnsid` members before construction, while leaving semantic validation and defaults to the constructor.
 - sdk: new variables `DNSID_PUBLISH_PROFILE`, `DNSID_CAPABILITIES_URL`, `DNSID_LOG_POLICY_URL`, `DNSID_LOG_POLICY_FILE`, `DNSID_LOG_TRUST_PROFILE_FILE`, `DNSID_CONFIG_DIR`; `DNSID_PUBLIC_URL`, `DNSID_AGENT_PORT`, `DNSID_AGENT_NAME` are no longer read by the SDK.
 - [**breaking**] transport: rename `allowedUnsafeHosts` to `privateAddressHosts` (no alias) on `TransportConfig`, `HTTPSFetchOptions`, and `SsrfSafeFetchOptions`
 - [**breaking**] transport: `.test` names are no longer implicitly allowed to resolve to loopback/private addresses; configure `privateAddressHosts: ['.test']`

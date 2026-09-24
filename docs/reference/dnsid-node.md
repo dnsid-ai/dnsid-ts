@@ -649,7 +649,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid
 function constructIdentityManager(loaded, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L251)
+Defined in: [packages/sdk/src/config-loading.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L297)
 
 Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
 did not supply them, then calls [createNodeIdentityManager](#createnodeidentitymanager). Adds no configuration values.
@@ -725,7 +725,7 @@ function createNodeIdentityManagerFromDnsid(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:315](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L315)
+Defined in: [packages/sdk/src/config-loading.ts:361](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L361)
 
 #### Parameters
 
@@ -758,7 +758,7 @@ function createNodeIdentityManagerFromEnvironment(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:311](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L311)
+Defined in: [packages/sdk/src/config-loading.ts:357](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L357)
 
 #### Parameters
 
@@ -791,7 +791,7 @@ function createNodeIdentityManagerFromFile(
 deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L319)
+Defined in: [packages/sdk/src/config-loading.ts:365](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L365)
 
 #### Parameters
 
@@ -849,7 +849,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:324](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L324)
+Defined in: [packages/sdk/src/config-loading.ts:370](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L370)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry.
 
@@ -873,7 +873,7 @@ Defined in: [packages/sdk/src/config-loading.ts:324](https://github.com/dnsid-ai
 function loadCliDirectory(dnsidDir?): Promise<LoadedConfig>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:180](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L180)
+Defined in: [packages/sdk/src/config-loading.ts:226](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L226)
 
 Reads a DNSid CLI directory (`~/.dnsid` by default): `config.json`, following a root `domain`
 pointer to `<domain>/config.json` when that file exists. Maps the snake_case publication fields
@@ -927,7 +927,7 @@ function loadFile(filePath): Promise<LoadedConfig>;
 Defined in: [packages/sdk/src/config-loading.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L137)
 
 Reads a JSON deployment file: `{ dnsid?, logTrust?, registry? }`. Unknown members, mistyped
-values, and duplicate members are rejected; `dnsid` contents are validated by the constructor.
+values, and duplicate members are rejected; semantic `dnsid` validation stays with the constructor.
 
 #### Parameters
 
@@ -949,7 +949,7 @@ values, and duplicate members are rejected; `dnsid` contents are validated by th
 function mergeLoadedConfig(base, overlay): LoadedConfig;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L219)
+Defined in: [packages/sdk/src/config-loading.ts:265](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L265)
 
 Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
 whole section when `overlay` sets any variant.
