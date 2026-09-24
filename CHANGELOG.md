@@ -1,4 +1,19 @@
 
+## [0.23.0] - 2026-09-24
+
+### Bug Fixes
+
+- fix(ci): pin compliance workflow and stop inheriting secrets ([#41](https://github.com/dnsid-ai/dnsid-ts/pull/41))
+
+### Chores
+
+- security: reject URL syntax and IP literals in FQDNs ([#42](https://github.com/dnsid-ai/dnsid-ts/pull/42))
+
+### Features
+
+- feat(sdk): configuration loading per design 12 ([#40](https://github.com/dnsid-ai/dnsid-ts/pull/40))
+
+
 ## [0.22.0] - 2026-09-23
 
 ### Features

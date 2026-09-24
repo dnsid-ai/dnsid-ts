@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/sdk",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Runtime-neutral DNSid SDK entrypoint with optional Node.js convenience helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -39,15 +39,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.22.0",
-    "@dnsid-ai/http-signatures": "^0.22.0",
-    "@dnsid-ai/jose": "^0.22.0",
-    "@dnsid-ai/log-c2sp-tlog": "^0.22.0",
-    "@dnsid-ai/registry": "^0.22.0",
-    "@dnsid-ai/web-bot-auth": "^0.22.0"
+    "@dnsid-ai/protocol": "^0.23.0",
+    "@dnsid-ai/http-signatures": "^0.23.0",
+    "@dnsid-ai/jose": "^0.23.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.23.0",
+    "@dnsid-ai/registry": "^0.23.0",
+    "@dnsid-ai/web-bot-auth": "^0.23.0"
   },
   "peerDependencies": {
-    "@dnsid-ai/transport": "^0.22.0"
+    "@dnsid-ai/transport": "^0.23.0"
   },
   "peerDependenciesMeta": {
     "@dnsid-ai/transport": {

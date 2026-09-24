@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/log-c2sp-tlog",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "DNSid C2SP tiled transparency log binding.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -29,8 +29,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.22.0",
-    "@dnsid-ai/transport": "^0.22.0"
+    "@dnsid-ai/protocol": "^0.23.0",
+    "@dnsid-ai/transport": "^0.23.0"
   },
   "repository": {
     "type": "git",
