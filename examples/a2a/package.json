@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@a2a-js/sdk": "^1.1.0",
-    "@dnsid-ai/sdk": "^0.23.0",
-    "@dnsid-ai/log-c2sp-tlog": "^0.23.0",
-    "@dnsid-ai/transport": "^0.23.0",
+    "@dnsid-ai/sdk": "^0.23.1",
+    "@dnsid-ai/log-c2sp-tlog": "^0.23.1",
+    "@dnsid-ai/transport": "^0.23.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.7.0"
   },
