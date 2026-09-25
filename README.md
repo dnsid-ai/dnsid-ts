@@ -56,8 +56,8 @@ if (verified.requiresLogCheck()) {
 `fl=logchk` does not classify an operation as high value. The application makes
 that policy decision and calls `verifyNonRevocation()` before relying on the
 identity. Local policy may require the same check even when the record does not
-advertise `logchk`. The returned evidence retains the verified history, completeness,
-checkpoint, and freshness boundary. Log unavailability or stale evidence fails the check closed.
+advertise `logchk`. The returned evidence identifies the verified history bounds, completeness
+mechanism, checkpoint, and freshness boundary; it does not contain the events. Log unavailability or stale evidence fails the check closed.
 
 Never derive the policy URL from an unverified identity record or log reference. The factory's default checkpoint store protects against rollback only for the process lifetime; production deployments that need protection across restarts should inject durable storage.
 
@@ -256,6 +256,11 @@ DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
 DNSID_STATUS_URL=https://alice.example.com/.well-known/dnsid-status.json
 ```
 
+The `#...` above is a placeholder, not a stream ID. Use the registry-issued
+bound log reference for managed issuance, or generate and persist a unique ID
+with `generateC2spTlogStreamId()` for each self-managed identity instance.
+Do not use the domain name as the stream ID.
+
 ## Low-level core usage
 
 Use `@dnsid-ai/protocol` directly when you want only the protocol engine and interfaces, with no SDK/profile conveniences:
@@ -297,7 +302,7 @@ DNSid is pre-1.0. APIs may change between minor releases. Review the current lim
 this repository, each with a CycloneDX SBOM attached. Forks, mirrors, and similarly named packages
 are not maintained by us. Report vulnerabilities per [SECURITY.md](SECURITY.md); never in a public issue.
 
-**Software is not identity.** This SDK ships no keys, credentials, or trust. A DNSid identity is proven
+**Software is not identity.** This SDK ships no private keys or credentials; the opt-in DNSid-managed log factory bundles public trust roots. A DNSid identity is proven
 by control of a DNS zone, an agent private key, and the registry's published status. Possessing, forking,
 or modifying this code grants none of those: an unofficial build cannot mint or inherit anyone's identity.
 
@@ -306,7 +311,7 @@ chose:
 
 - DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
 - HTTPS GET to the JWKS and status URLs published in that TXT record
-- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `log.dev.dnsid.ai` (C2SP transparency log, bundled public trust roots), cloud KMS endpoints
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
 - No telemetry, usage reporting, update checks, or crash reporting
 
 **Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.

@@ -185,11 +185,13 @@ export function parseC2spStreamBundle(bytes: Uint8Array, options: ParseC2spStrea
 }
 
 /**
- * Fully verifies a stream bundle for offline identity-record validation:
+ * Verifies offline lifecycle evidence for an expected identity and log reference:
  * checks the expected agent FQDN and log reference, the producer signature,
  * the policy hash, checkpoint policy and trusted-checkpoint advancement,
  * freshness and expiry windows, each event's inclusion proof, and the complete
- * lifecycle history, then confirms the bundle's asserted state summary.
+ * lifecycle history, then confirms the bundle's asserted state summary. The
+ * caller must independently trust the policy, bundle keys, and entity key;
+ * this does not verify the DNS identity record or current status.
  *
  * @returns The verified bundle, lifecycle, and active operational key thumbprint.
  * @throws C2spTlogParseError when the bundle is malformed.

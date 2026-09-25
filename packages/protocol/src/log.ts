@@ -27,7 +27,8 @@ export interface LoggedStateEvidence {
  * Write interface for the agent's own immutable log.
  * Implementations may wrap a blockchain, CT-style transparency log, SCITT service, or any append-only log.
  *
- * A concrete implementation (e.g. an Algorand client) typically satisfies both Log and LogReader.
+ * Implementations may satisfy both Log and LogReader; C2SP uses a separate
+ * prepared-event append workflow instead of the generic writeEvent method.
  */
 export interface Log {
   /**
@@ -39,7 +40,7 @@ export interface Log {
 
   /**
    * Appends a signed event to the log.
-   * The event MUST already carry the accountable entity's signature before writeEvent is called.
+   * The event MUST already carry the signatures required by its log method before writeEvent is called.
    * Returns a LogRef identifying the recorded entry.
    */
   writeEvent(event: LogEvent): Promise<LogRef>;
@@ -49,14 +50,15 @@ export interface Log {
  * Read and verify interface for a specific log entry.
  * Bound at construction to a full `lr` value (e.g. "algorand:AGENT_ADDR_BASE32").
  *
- * All methods MUST verify cryptographic inclusion proofs, verifiable timestamps,
- * append-only consistency, and accountable-entity signatures before returning success.
+ * Evidence-returning methods MUST verify the applicable inclusion, timestamp,
+ * append-only consistency, and lifecycle signatures before returning success.
+ * `canonical` only serializes an event; it does not verify log evidence.
  */
 export interface LogReader {
   /**
    * Returns the canonical byte representation of the event for this log method.
-   * Used to verify the accountable entity's signature on events read from the log.
-   * MUST produce identical output to Log.canonical for the same event.
+   * Used to verify the signatures required by the log method on events read from the log.
+   * MUST produce identical output to Log.canonical for the same supported event.
    */
   canonical(event: LogEvent): Promise<Uint8Array>;
 
@@ -77,8 +79,8 @@ export interface LogReader {
   verifyOperationalContinuity(domain: string, initialOperationalThumbprint: string, currentOperationalThumbprint: string): Promise<void>;
 
   /**
-   * Verifies that no REVOCATION event exists for the domain at or before the given timestamp.
-   * Raises if a REVOCATION entry is found or if complete, fresh evidence cannot be established.
+   * Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
+   * Raises on a terminal state or if complete, fresh evidence cannot be established.
    * Returns the accepted proof boundary.
    */
   verifyNonRevocation(domain: string, at: Date): Promise<LoggedStateEvidence>;
@@ -92,8 +94,8 @@ export interface LogReader {
   /**
    * Rebuilds the full event history for the domain in authoritative log order.
    * MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
-   * accountable-entity signatures on every returned event. Event signature
-   * verification MUST use the public key that is valid for that event in the
+   * required lifecycle signatures on every returned event. Event signature
+   * verification MUST use the public keys valid for that event in the
    * reconstructed lifecycle history. Events with invalid signatures MUST NOT be
    * returned.
    */

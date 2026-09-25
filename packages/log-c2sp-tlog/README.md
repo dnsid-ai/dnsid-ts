@@ -41,7 +41,7 @@ const registry = await createC2spTlogVerificationRegistry({
 });
 ```
 
-The factory fetches the policy with SSRF-safe destination checks, rejects redirects, requires HTTP 200, bounds decoded responses during reading, and uses the same bounded resource fetcher for log evidence. With an independently distributed `trustProfile`, or `policyDocument`/`policyUrl` plus direct `bundleVerifierKeys`, set `checkpointMaxAge` and `maxBundleLifetimeMs`; the default reader then prefers `{lr log-prefix}/streams/{fqdn}?format=bundle` and shares its verified lifecycle snapshot across binding, continuity, and key-age checks. A missing or temporarily unavailable endpoint falls back to the bounded complete-log scan. A valid newer bundle also falls back when no consistency-proof source is available, allowing the complete scan to verify both roots independently. Malformed, expired, invalid, rollback, or conflicting bundle evidence never falls back. Set `requireStreamBundle` to disable fallback.
+The factory fetches the policy with SSRF-safe destination checks, rejects redirects, requires HTTP 200, bounds decoded responses during reading, and uses the same bounded resource fetcher for log evidence. The example above supplies no bundle keys, so it uses a complete-log scan. With an independently distributed `trustProfile`, or `policyDocument`/`policyUrl` plus direct `bundleVerifierKeys`, set `maxBundleLifetimeMs` to enable bundle verification (and `checkpointMaxAge` for non-revocation); the default reader then prefers `{lr log-prefix}/streams/{fqdn}?format=bundle` and shares its verified lifecycle snapshot across binding, continuity, and key-age checks. A missing or temporarily unavailable endpoint falls back to the bounded complete-log scan. A valid newer bundle also falls back when no consistency-proof source is available, allowing the complete scan to verify both roots independently. Malformed, expired, invalid, rollback, or conflicting bundle evidence never falls back. Set `requireStreamBundle` to disable fallback.
 
 For an explicit application decision to trust DNSid-managed DNSid logs, use the separately named managed factory:
 
@@ -51,7 +51,7 @@ import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog'
 const registry = await createDnsidManagedVerificationRegistry();
 ```
 
-It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback only when bundle evidence is unavailable or unsupported. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
+It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback when bundle evidence is unavailable or consistency evidence requires a complete scan. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
 
 Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
 
@@ -66,12 +66,13 @@ Never derive `policyUrl` from an unverified identity record, its `lr`, or a log 
 
 Public verification needs a trusted local policy and complete stream evidence. A single inclusion proof proves historical inclusion only; it is not current lifecycle state or non-revocation evidence.
 
-Writers use `generateC2spTlogStreamId()` for each new identity instance. It
-returns an opaque 128-bit cryptographically random value as unpadded base64url;
-do not reuse a bare FQDN as the stream ID.
+For self-managed new identity instances, generate and persist a stream ID with
+`generateC2spTlogStreamId()` (128 random bits, 22 unpadded base64url characters).
+For registry-managed issuance, use the registry-provided bound log reference;
+do not generate a second ID or reuse a bare FQDN as the stream ID.
 
 For writes, construct `C2spTlogBinding` with a bound reference, call
-`prepareEvent`, and pass the immutable prepared value between signer processes.
+`prepareEvent`, and pass the prepared event between signer processes.
 Each process calls `parsePreparedEvent` before `signPreparedEvent`; existing
 signatures and the provider's public key are checked before another signature is
 added. The operational side of split ISSUANCE supplies its locally expected
@@ -116,14 +117,13 @@ retained history at 10,000 logical events. Copies still consume input limits.
 Reuse registries/transports/checkpoint stores, monitor fallback cost, and lower
 scan limits or require bundles for predictable cost.
 
-Lifecycle and non-revocation verification require a timestamped witness quorum. `checkpointMaxAge` is required only for current non-revocation checks; historical binding and key-continuity checks accept older authenticated checkpoints. Text policies in the C2SP `tlog-policy` format, including nested groups, can be loaded with `parseC2spPolicyFile`.
+Lifecycle and non-revocation verification require a timestamped witness quorum. `checkpointMaxAge` is required for non-revocation; bundle reads also enforce checkpoint freshness (using `checkpointMaxAge` when set, otherwise `maxBundleLifetimeMs`). Raw-scan historical binding and key-continuity checks accept older authenticated checkpoints. Text policies in the C2SP `tlog-policy` format, including nested groups, can be loaded with `parseC2spPolicyFile`.
 
 This package currently supports C2SP signed-note Ed25519 log signatures (type `0x01`) and timestamped Ed25519 witness cosignatures (type `0x04`).
 
 `verifyC2spStreamBundle` verifies canonical
 `dnsid-c2sp-stream-bundle@v1` bytes against exact independently accepted policy
 bytes, a trusted bundle-signing key, C2SP inclusion proofs, lifecycle signatures,
-checkpoint freshness, trusted-index completeness, and the origin-scoped checkpoint store. Callers must set
-positive bundle byte, event-count, and lifetime limits. The exported
+checkpoint freshness, trusted-index completeness, and the origin-scoped checkpoint store. It does not resolve DNS or validate the identity record/status; callers must independently supply trusted policy, bundle keys, and entity key, plus a checkpoint store and positive bundle byte, event-count, and lifetime limits. The exported
 `C2SP_TLOG_SPECIFICATIONS` object identifies the exact external C2SP revisions
 implemented by this package.

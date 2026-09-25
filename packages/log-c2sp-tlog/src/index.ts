@@ -20,7 +20,7 @@
 import type { LogRegistry } from '@dnsid-ai/protocol';
 import { C2spTlogReader, type C2spTlogReaderOptions } from './reader.ts';
 
-/** Registers the `c2sp-tlog` log method on a protocol {@link LogRegistry}, constructing a {@link C2spTlogReader} per lr. */
+/** Registers the `c2sp-tlog` method on a protocol {@link LogRegistry}, constructing a {@link C2spTlogReader} per lr. Reader options are shared; this low-level registration does not propagate per-invocation signals. */
 export function registerC2spTlog(registry: LogRegistry, options: C2spTlogReaderOptions): void {
   registry.register('c2sp-tlog', (lr) => new C2spTlogReader(lr, options));
 }

@@ -28,7 +28,7 @@ import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 /** Role a signature is produced under when signing a prepared lifecycle event. */
 export type C2spSignerRole = 'Entity' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational';
 
-/** Chain metadata linking a public non-genesis event to its predecessor in the stream. */
+/** Chain metadata linking a non-genesis event to its predecessor in the stream. */
 export interface C2spChain {
   sequence: number;
   previousEventId?: string;
@@ -68,7 +68,7 @@ export interface C2spTlogAppendOptions extends PreparedC2spVerificationContext {
   /** Appends the finished entry bytes to the log and returns its assigned index. */
   submit: (entryBytes: Uint8Array, idempotencyKey?: string) => Promise<{ index: number }>;
   idempotencyKey?: string;
-  /** Required for non-genesis public events to validate authoritative prior stream state. */
+  /** Required for non-genesis events to validate authoritative prior stream state. */
   validateChain?: (prepared: PreparedC2spTlogEvent) => Promise<void>;
 }
 
@@ -200,7 +200,7 @@ export async function c2spTlogEntryBytes(
 
 /**
  * Appends a finalized prepared event to the log via `options.submit`, running
- * the required chain validation for public non-genesis events.
+ * the required chain validation for non-genesis events.
  *
  * @returns The event's log reference (`<lr>@<index>`).
  * @throws C2spTlogVerificationError when finalization, chain validation, or the

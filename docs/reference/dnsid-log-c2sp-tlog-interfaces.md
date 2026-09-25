@@ -75,7 +75,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:31](https://github.com/
 
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L32)
 
-Chain metadata linking a public non-genesis event to its predecessor in the stream.
+Chain metadata linking a non-genesis event to its predecessor in the stream.
 
 #### Properties
 
@@ -982,7 +982,7 @@ optional validateChain?: (prepared) => Promise<void>;
 
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L72)
 
-Required for non-genesis public events to validate authoritative prior stream state.
+Required for non-genesis events to validate authoritative prior stream state.
 
 ###### Parameters
 
@@ -1042,7 +1042,7 @@ Defined in: [packages/log-c2sp-tlog/src/policy.ts:22](https://github.com/dnsid-a
 
 <a id="unchained"></a>
 
-##### unchained?
+##### ~~unchained?~~
 
 ```ts
 optional unchained?: boolean;
@@ -1050,7 +1050,9 @@ optional unchained?: boolean;
 
 Defined in: [packages/log-c2sp-tlog/src/policy.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L24)
 
-Permits lifecycle verification without per-event chaining fields for this origin.
+###### Deprecated
+
+Ignored: every scope requires a logical predecessor chain.
 
 <a id="witnesskeys"></a>
 
@@ -1238,7 +1240,7 @@ optional resourceFetcher?: C2spBoundedResourceFetcher;
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L45)
 
-Bounded resource fetcher for the default [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#scanstreamsource); ignored when `streamSource` is set.
+Bounded resource fetcher for the default [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#scanstreamsource) and stream-bundle reads.
 
 <a id="signal-1"></a>
 
@@ -1260,7 +1262,7 @@ optional streamBundle?: C2spStreamBundleReaderOptions;
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L49)
 
-Preferred verified per-domain bundle source. Raw scans remain the bounded unavailable-path fallback.
+Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence.
 
 <a id="streamsource"></a>
 
@@ -1672,7 +1674,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:7](https://github.com/dnsi
 
 ### CheckpointPolicyResult
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L48)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L49)
 
 Outcome of checkpoint policy enforcement.
 
@@ -1686,7 +1688,7 @@ Outcome of checkpoint policy enforcement.
 acceptedWitnessTimestamps: number[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L51)
 
 Epoch-second timestamps of the accepted witness cosignatures.
 
@@ -1698,7 +1700,7 @@ Epoch-second timestamps of the accepted witness cosignatures.
 optional checkpointWitnessTime?: Date;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L53)
 
 Earliest accepted witness timestamp; undefined when the quorum rule required no witnesses.
 
