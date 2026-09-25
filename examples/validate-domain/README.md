@@ -8,7 +8,7 @@ This is the runnable version of the snippet in the [root README](../../README.md
 
 - Creating a verification-only identity manager with `createNodeIdentityVerifier`.
 - Creating a ready-to-use C2SP `LogRegistry` with `createC2spTlogVerificationRegistry`.
-- Explicitly trusting DNSid's public test log policy at `https://log.dnsid.dev/dnsid-policy`.
+- Explicitly trusting DNSid's public test log policy at `https://log.dev.dnsid.ai/dnsid-policy`.
 - Verifying a third-party domain with `idm.verifyDomain(domain)`.
 
 The policy URL is independently trusted application configuration. Production applications should select their own trusted policy URL or pass trusted `policyDocument` bytes. Never derive the policy location from an unverified identity record, its `lr`, or its log prefix. `constructIdentityManager` builds the log registry with the SDK's fixed 10-minute checkpoint maximum age; a deployment that needs a different freshness policy calls `createC2spTlogVerificationRegistry` itself and injects `logRegistry`. The factory's default trusted-checkpoint store is process-lifetime only; inject durable storage when rollback protection must survive restarts.
