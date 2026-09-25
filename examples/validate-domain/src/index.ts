@@ -4,7 +4,7 @@ import { constructIdentityManager, loadEnvironment, mergeLoadedConfig } from '@d
 // The example's fallback is DNSid's public test log; `dnsid local env` exports DNSID_LOG_POLICY_URL
 // plus DNSID_DNS_SERVER, DNSID_CA_BUNDLE, and DNSID_PRIVATE_HOSTS=.test for the local registry, and
 // production sets its own independently trusted DNSID_LOG_POLICY_URL / _FILE / DNSID_LOG_TRUST_PROFILE_FILE.
-const FALLBACK = { logTrust: { policyUrl: 'https://log.dnsid.dev/dnsid-policy' } };
+const FALLBACK = { logTrust: { policyUrl: 'https://log.dev.dnsid.ai/dnsid-policy' } };
 
 export async function validateDomain(domain: string): Promise<void> {
   const idm = await constructIdentityManager(mergeLoadedConfig(FALLBACK, await loadEnvironment()));

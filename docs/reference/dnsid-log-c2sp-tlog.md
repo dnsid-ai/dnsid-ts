@@ -56,7 +56,7 @@ import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog'
 const registry = await createDnsidManagedVerificationRegistry();
 ```
 
-It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dnsid.dev` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback only when bundle evidence is unavailable or unsupported. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
+It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback only when bundle evidence is unavailable or unsupported. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
 
 Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
 

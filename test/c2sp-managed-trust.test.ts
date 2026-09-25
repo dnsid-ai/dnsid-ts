@@ -22,6 +22,11 @@ const vector = JSON.parse(readFileSync(
   }>;
 };
 
+const DEVELOPMENT_POLICY = `log log.dev.dnsid.ai+cad12acd+Afnd3sdzfp8nCXzDQchrnWn9QOox5AglR147bURESRqu
+witness dnsid-witness-1 witness.dev.dnsid.ai/w1+50822ded+BAH9KuulelD3yZBDTneG46gKZY+OWwdUPBmLmq/YjOkO
+quorum dnsid-witness-1
+`;
+const DEVELOPMENT_BUNDLE_KEY = 'dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0';
 const PRODUCTION_POLICY = `log log.dnsid.ai+c4683585+AWZYC4OLE9KeRnpaI9xaHWwHUKoxgp/24ukzgVYlDwIt
 witness dnsid-witness-1 witness.dnsid.ai/w1+b5ea211e+BH0nGTkjF4tYpkefsQhHNg0YagPvQ6H96Y3UBbXo7a/b
 quorum dnsid-witness-1
@@ -73,7 +78,7 @@ describe('DNSid-managed C2SP trust', () => {
       trustedCheckpointStore: store,
     });
     const development = internals(registry.newReader(
-      'c2sp-tlog:public:https://log.dnsid.dev#EREREREREREREREREREREQ',
+      'c2sp-tlog:public:https://log.dev.dnsid.ai#EREREREREREREREREREREREQ',
     ) as C2spTlogReader);
     const production = internals(registry.newReader(
       'c2sp-tlog:public:https://log.dnsid.ai#EREREREREREREREREREREQ',
@@ -86,6 +91,8 @@ describe('DNSid-managed C2SP trust', () => {
     expect(development.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
     expect(production.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
     expect(development.options.streamBundle).toMatchObject({
+      policyDocument: new TextEncoder().encode(DEVELOPMENT_POLICY),
+      bundleKeys: [parseSignedNoteVerifierKey(DEVELOPMENT_BUNDLE_KEY)],
       maxBundleLifetimeMs: 600_000,
       checkpointFreshnessMs: 600_000,
     });

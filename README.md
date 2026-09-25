@@ -33,7 +33,7 @@ import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 
 const logRegistry = await createC2spTlogVerificationRegistry({
   // Explicitly trusted configuration for DNSid's public test log.
-  policyUrl: 'https://log.dnsid.dev/dnsid-policy',
+  policyUrl: 'https://log.dev.dnsid.ai/dnsid-policy',
   // Local policy for any non-revocation checks made through this registry.
   checkpointMaxAge: 24 * 60 * 60 * 1000,
 });
@@ -306,7 +306,7 @@ chose:
 
 - DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
 - HTTPS GET to the JWKS and status URLs published in that TXT record
-- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `log.dnsid.dev` (C2SP transparency log, bundled public trust roots), cloud KMS endpoints
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `log.dev.dnsid.ai` (C2SP transparency log, bundled public trust roots), cloud KMS endpoints
 - No telemetry, usage reporting, update checks, or crash reporting
 
 **Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.
