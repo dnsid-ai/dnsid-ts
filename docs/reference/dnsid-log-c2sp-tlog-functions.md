@@ -19,7 +19,8 @@ function advanceTrustedC2spCheckpoint(
    reference, 
    checkpoint, 
    witnessTime, 
-options?): Promise<TrustedC2spCheckpoint>;
+   options?
+): Promise<TrustedC2spCheckpoint>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L70)
@@ -514,7 +515,8 @@ function enforceCheckpointPolicy(
    policy, 
    scope, 
    nowMs?, 
-   maxClockSkewMs?): CheckpointPolicyResult;
+   maxClockSkewMs?
+): CheckpointPolicyResult;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/policy.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L114)
@@ -570,7 +572,8 @@ C2spTlogVerificationError when any requirement is not met.
 function entryBundlePath(
    prefix, 
    n, 
-   width?): string;
+   width?
+): string;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/tiles.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L8)
@@ -605,7 +608,8 @@ URL of entry bundle `n` under the C2SP tlog-tiles layout; `width` selects a part
 function eventToC2spEnvelope(
    event, 
    context?, 
-   includeSigs?): C2spJsonEvent;
+   includeSigs?
+): C2spJsonEvent;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L34)
@@ -667,7 +671,8 @@ function inclusionRoot(
    leaf, 
    index, 
    treeSize, 
-   proof): Uint8Array;
+   proof
+): Uint8Array;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/merkle.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L26)
@@ -886,7 +891,8 @@ C2spTlogVerificationError when a line is malformed, names collide,
 function parseC2spSignatures(
    value, 
    type, 
-   requireComplete?): C2spSignatures;
+   requireComplete?
+): C2spSignatures;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L297)
@@ -1132,7 +1138,8 @@ C2spTlogParseError when the line does not match the signed-note format.
 function parsePreparedC2spTlogEvent(
    bytes, 
    lr, 
-context?): Promise<PreparedC2spTlogEvent>;
+   context?
+): Promise<PreparedC2spTlogEvent>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L119)
@@ -1271,7 +1278,8 @@ C2spTlogParseError when the event or its public binding is invalid.
 function prepareC2spTlogEventForSigning(
    event, 
    lr, 
-   chain?): PreparedC2spTlogEvent;
+   chain?
+): PreparedC2spTlogEvent;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L96)
@@ -1446,7 +1454,8 @@ function signPreparedC2spTlogEvent(
    prepared, 
    role, 
    keyProvider, 
-options?): Promise<PreparedC2spTlogEvent>;
+   options?
+): Promise<PreparedC2spTlogEvent>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L143)
@@ -1518,7 +1527,8 @@ Base64url hash of a lifecycle state object (domain-separated SHA-256 over canoni
 function stitchVerifiedMigrationHistory(
    domain, 
    currentEvents, 
-migration): Promise<LogEvent[]>;
+   migration
+): Promise<LogEvent[]>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L47)
@@ -1566,7 +1576,8 @@ function tilePath(
    prefix, 
    level, 
    n, 
-   width?): string;
+   width?
+): string;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/tiles.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L6)
@@ -1663,7 +1674,8 @@ function verifyC2spConsistencyProof(
    toSize, 
    fromRoot, 
    toRoot, 
-   proof): boolean;
+   proof
+): boolean;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L100)
@@ -1756,7 +1768,8 @@ function verifyC2spTlogProof(
    origin?, 
    scope?, 
    nowMs?, 
-   maxClockSkewMs?): TlogProofV1;
+   maxClockSkewMs?
+): TlogProofV1;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/proof.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/proof.ts#L55)
@@ -1851,7 +1864,8 @@ function verifyInclusion(
    index, 
    treeSize, 
    rootHash, 
-   proof): boolean;
+   proof
+): boolean;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/merkle.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L44)
@@ -1972,7 +1986,8 @@ VerificationError (SignatureInvalid) when verification fails.
 function verifyNoteSignature(
    message, 
    sig, 
-   key): boolean;
+   key
+): boolean;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L60)
@@ -2009,7 +2024,8 @@ Supports plain log signatures (type 0x01) and timestamped C2SP cosignatures
 function verifyStreamLifecycle(
    entries, 
    domain, 
-options?): Promise<VerifiedLifecycleEvent[]>;
+   options?
+): Promise<VerifiedLifecycleEvent[]>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L162)

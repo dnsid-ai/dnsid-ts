@@ -1551,7 +1551,8 @@ initialization paths apply identical defaults and rejections.
 function verifyBilateralBinding(
    event, 
    record, 
-   currentEntityKey): Promise<{
+   currentEntityKey
+): Promise<{
   initialOperationalThumbprint: string;
 }>;
 ```
@@ -1608,7 +1609,8 @@ function verifyWithKey(
    signingInput, 
    signature, 
    key, 
-expectedAlg?): Promise<boolean>;
+   expectedAlg?
+): Promise<boolean>;
 ```
 
 Defined in: [packages/protocol/src/utils.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L228)

@@ -30,7 +30,8 @@ capabilities.
 fetchBounded(
    url, 
    maxBytes, 
-options): Promise<Uint8Array<ArrayBufferLike>>;
+   options
+): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L30)
@@ -130,7 +131,8 @@ fetchConsistencyProof(
    reference, 
    fromSize, 
    toSize, 
-signal?): Promise<Uint8Array<ArrayBufferLike>[]>;
+   signal?
+): Promise<Uint8Array<ArrayBufferLike>[]>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L35)
@@ -2832,7 +2834,8 @@ compareAndSwap(
    origin, 
    expected, 
    candidate, 
-signal?): Promise<boolean>;
+   signal?
+): Promise<boolean>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L25)

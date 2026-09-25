@@ -360,7 +360,8 @@ Defined in: [packages/sdk/src/local-key-provider.ts:77](https://github.com/dnsid
 static load(
    filePath, 
    createIfMissing?, 
-algorithm?): Promise<LocalKeyProvider>;
+   algorithm?
+): Promise<LocalKeyProvider>;
 ```
 
 Defined in: [packages/sdk/src/local-key-provider.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L49)

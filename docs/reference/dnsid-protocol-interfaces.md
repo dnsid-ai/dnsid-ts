@@ -1106,7 +1106,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:95](https://github.com/dn
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
@@ -2224,7 +2225,8 @@ returned.
 verifyBilateralBinding(
    record, 
    entityKey, 
-   operationalKey): Promise<{
+   operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -2293,7 +2295,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    domain, 
    initialOperationalThumbprint, 
-currentOperationalThumbprint): Promise<void>;
+   currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/protocol/src/log.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L79)
@@ -2970,7 +2973,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/d
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
