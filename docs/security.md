@@ -86,7 +86,7 @@ Identity cache entries also expire at the earliest of the DNS TXT TTL, the TLS c
 
 ### API versioning and compatibility
 
-The TypeScript SDK is pre-1.0. Package versions are synchronized across this monorepo, and package interdependencies use matching `^0.15.0` ranges in this release line. DNSid protocol compatibility is driven by the current identity-record parser, JWKS validation, lifecycle log verification, and status document validation in `@dnsid-ai/protocol`. Upgrade SDK and server/registry components together when protocol behavior changes.
+The TypeScript SDK is pre-1.0. Package versions are synchronized across this monorepo, and package interdependencies use matching release-line semver ranges. DNSid protocol compatibility is driven by the current identity-record parser, JWKS validation, lifecycle log verification, and status document validation in `@dnsid-ai/protocol`. Upgrade SDK and server/registry components together when protocol behavior changes.
 
 ### HTTP fetch, redirects, timeouts, retries, and response caps
 

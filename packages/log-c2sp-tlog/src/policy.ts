@@ -20,7 +20,7 @@ export interface C2spTlogOriginPolicy {
   /** Flat witness quorum count; superseded by `quorumRule` when both are set. */
   quorum?: number;
   quorumRule?: C2spTlogQuorumRule;
-  /** Permits lifecycle verification without per-event chaining fields for this origin. */
+  /** @deprecated Ignored: every scope requires a logical predecessor chain. */
   unchained?: boolean;
 }
 
@@ -36,6 +36,7 @@ export interface NormalizedOriginPolicy {
   witnessKeys: SignedNoteKey[];
   quorum: number;
   quorumRule: NormalizedQuorumRule;
+  /** @deprecated Ignored: every scope requires a logical predecessor chain. */
   unchained: boolean;
 }
 

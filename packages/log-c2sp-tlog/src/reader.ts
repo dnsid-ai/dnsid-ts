@@ -41,11 +41,11 @@ export interface C2spStreamBundleReaderOptions {
 export interface C2spTlogReaderOptions {
   /** Local trust policy: accepted log keys and witness quorum per origin. */
   policy: C2spTlogPolicy;
-  /** Bounded resource fetcher for the default {@link ScanStreamSource}; ignored when `streamSource` is set. */
+  /** Bounded resource fetcher for the default {@link ScanStreamSource} and stream-bundle reads. */
   resourceFetcher?: C2spBoundedResourceFetcher;
   /** Alternative raw evidence source; defaults to a complete tlog-tiles scan. */
   streamSource?: StreamSource;
-  /** Preferred verified per-domain bundle source. Raw scans remain the bounded unavailable-path fallback. */
+  /** Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence. */
   streamBundle?: C2spStreamBundleReaderOptions;
   /** Inclusion proofs by entry index, required by `readEvent` for historical refs. */
   proofs?: Record<string, TlogProofV1 | string>;
@@ -89,9 +89,10 @@ interface CachedHistory {
 
 /**
  * LogReader for the `c2sp-tlog` method: verifies an agent's identity-record
- * lifecycle against a C2SP tlog-tiles log. Evidence is loaded through the
- * configured stream source, checkpoints are policy-enforced and advanced in a
- * trusted checkpoint store. One verified lifecycle snapshot is shared by the
+ * lifecycle against a C2SP tlog-tiles log. Evidence is loaded from a verified
+ * stream bundle when configured, otherwise through the stream source; checkpoints
+ * are policy-enforced and advanced in a trusted checkpoint store. One verified
+ * lifecycle snapshot is shared by the
  * binding, continuity, and key-age checks performed by one reader.
  *
  * @throws VerificationError (LogError) from every LogReader boundary.

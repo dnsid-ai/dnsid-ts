@@ -89,8 +89,8 @@ if (verified.requiresLogCheck()) {
 
 Operation classification remains application policy. Call
 `verifyNonRevocation()` regardless of the advertised flag when local policy
-requires it. The returned evidence retains the verified history, completeness,
-checkpoint, and freshness boundary. Log unavailability or stale evidence fails the check closed.
+requires it. The returned evidence identifies the verified history bounds, completeness
+mechanism, checkpoint, and freshness boundary; it does not contain the events. Log unavailability or stale evidence fails the check closed.
 
 Protocol core for the DNSid TypeScript monorepo.
 

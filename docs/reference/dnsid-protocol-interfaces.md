@@ -1932,12 +1932,13 @@ Defined in: [packages/protocol/src/log-events.ts:76](https://github.com/dnsid-ai
 
 ### Log
 
-Defined in: [packages/protocol/src/log.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L32)
+Defined in: [packages/protocol/src/log.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L33)
 
 Write interface for the agent's own immutable log.
 Implementations may wrap a blockchain, CT-style transparency log, SCITT service, or any append-only log.
 
-A concrete implementation (e.g. an Algorand client) typically satisfies both Log and LogReader.
+Implementations may satisfy both Log and LogReader; C2SP uses a separate
+prepared-event append workflow instead of the generic writeEvent method.
 
 #### Methods
 
@@ -1949,7 +1950,7 @@ A concrete implementation (e.g. an Algorand client) typically satisfies both Log
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L38)
+Defined in: [packages/protocol/src/log.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L39)
 
 Returns the canonical byte representation of the event for this log method.
 Called by IdentityManager.signAndWriteEvent to produce the bytes that are signed.
@@ -1973,10 +1974,10 @@ MUST produce identical output to LogReader.canonical for the same event.
 writeEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L45)
+Defined in: [packages/protocol/src/log.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L46)
 
 Appends a signed event to the log.
-The event MUST already carry the accountable entity's signature before writeEvent is called.
+The event MUST already carry the signatures required by its log method before writeEvent is called.
 Returns a LogRef identifying the recorded entry.
 
 ###### Parameters
@@ -2103,13 +2104,14 @@ Complete identity-instance log reference verified by the binding.
 
 ### LogReader
 
-Defined in: [packages/protocol/src/log.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L55)
+Defined in: [packages/protocol/src/log.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L57)
 
 Read and verify interface for a specific log entry.
 Bound at construction to a full `lr` value (e.g. "algorand:AGENT_ADDR_BASE32").
 
-All methods MUST verify cryptographic inclusion proofs, verifiable timestamps,
-append-only consistency, and accountable-entity signatures before returning success.
+Evidence-returning methods MUST verify the applicable inclusion, timestamp,
+append-only consistency, and lifecycle signatures before returning success.
+`canonical` only serializes an event; it does not verify log evidence.
 
 #### Methods
 
@@ -2121,11 +2123,11 @@ append-only consistency, and accountable-entity signatures before returning succ
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L61)
+Defined in: [packages/protocol/src/log.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L63)
 
 Returns the canonical byte representation of the event for this log method.
-Used to verify the accountable entity's signature on events read from the log.
-MUST produce identical output to Log.canonical for the same event.
+Used to verify the signatures required by the log method on events read from the log.
+MUST produce identical output to Log.canonical for the same supported event.
 
 ###### Parameters
 
@@ -2145,7 +2147,7 @@ MUST produce identical output to Log.canonical for the same event.
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L67)
+Defined in: [packages/protocol/src/log.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L69)
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -2172,7 +2174,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L90)
+Defined in: [packages/protocol/src/log.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L92)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -2195,12 +2197,12 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L100)
+Defined in: [packages/protocol/src/log.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L102)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
-accountable-entity signatures on every returned event. Event signature
-verification MUST use the public key that is valid for that event in the
+required lifecycle signatures on every returned event. Event signature
+verification MUST use the public keys valid for that event in the
 reconstructed lifecycle history. Events with invalid signatures MUST NOT be
 returned.
 
@@ -2229,7 +2231,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L70)
+Defined in: [packages/protocol/src/log.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L72)
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -2263,10 +2265,10 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L84)
+Defined in: [packages/protocol/src/log.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L86)
 
-Verifies that no REVOCATION event exists for the domain at or before the given timestamp.
-Raises if a REVOCATION entry is found or if complete, fresh evidence cannot be established.
+Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
+Raises on a terminal state or if complete, fresh evidence cannot be established.
 Returns the accepted proof boundary.
 
 ###### Parameters
@@ -2294,7 +2296,7 @@ verifyOperationalContinuity(
 currentOperationalThumbprint): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L77)
+Defined in: [packages/protocol/src/log.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L79)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 

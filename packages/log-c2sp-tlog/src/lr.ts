@@ -1,7 +1,7 @@
 import { C2spTlogParseError } from './errors.ts';
 import { b64url } from './base64.ts';
 
-/** Deployment scope of a c2sp-tlog reference; `public` demands full chaining, witnessing, and https logs. */
+/** Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS and a non-zero witness quorum. All scopes require chaining; lifecycle reads require witnessed checkpoints. */
 export type C2spTlogScope = 'public' | 'testnet' | `private-${string}`;
 
 /** Components of a parsed `c2sp-tlog:<scope>:<logPrefix>#<streamId>[@index]` log reference. */

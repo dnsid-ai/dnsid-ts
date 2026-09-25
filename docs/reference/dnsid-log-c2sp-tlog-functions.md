@@ -517,7 +517,7 @@ function enforceCheckpointPolicy(
    maxClockSkewMs?): CheckpointPolicyResult;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L114)
 
 Enforces the local trust policy on a parsed checkpoint: origin and scope
 match, a valid signature from an accepted log key, and a satisfied witness
@@ -787,7 +787,7 @@ RFC 6962 interior node hash: SHA-256(0x01 || left || right).
 function normalizedOriginPolicy(policy, origin): NormalizedOriginPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L63)
 
 Resolves and validates the policy for `origin`: parses key strings, checks
 signature types (0x01 for log keys, 0x04 for witness cosignature keys),
@@ -855,7 +855,7 @@ C2spTlogParseError when the entry is oversized, non-canonical, or malformed.
 function parseC2spPolicyFile(text): C2spTlogPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L135)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L136)
 
 Parses a C2SP tlog-policy file (`log`, `witness`, `group`, and exactly one
 `quorum` directive) into a [C2spTlogPolicy](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy) keyed by log-key origin.
@@ -1314,7 +1314,7 @@ function registerC2spTlog(registry, options): void;
 
 Defined in: [packages/log-c2sp-tlog/src/index.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/index.ts#L24)
 
-Registers the `c2sp-tlog` log method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr.
+Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr. Reader options are shared; this low-level registration does not propagate per-invocation signals.
 
 #### Parameters
 
@@ -1708,13 +1708,15 @@ Returns false rather than throwing on invalid input.
 function verifyC2spStreamBundle(bytes, options): Promise<VerifiedC2spStreamBundle>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:198](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L198)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:200](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L200)
 
-Fully verifies a stream bundle for offline identity-record validation:
+Verifies offline lifecycle evidence for an expected identity and log reference:
 checks the expected agent FQDN and log reference, the producer signature,
 the policy hash, checkpoint policy and trusted-checkpoint advancement,
 freshness and expiry windows, each event's inclusion proof, and the complete
-lifecycle history, then confirms the bundle's asserted state summary.
+lifecycle history, then confirms the bundle's asserted state summary. The
+caller must independently trust the policy, bundle keys, and entity key;
+this does not verify the DNS identity record or current status.
 
 #### Parameters
 
@@ -2058,7 +2060,7 @@ function writePreparedEvent(prepared, options): Promise<string>;
 Defined in: [packages/log-c2sp-tlog/src/writer.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L209)
 
 Appends a finalized prepared event to the log via `options.submit`, running
-the required chain validation for public non-genesis events.
+the required chain validation for non-genesis events.
 
 #### Parameters
 
