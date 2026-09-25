@@ -256,6 +256,11 @@ DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
 DNSID_STATUS_URL=https://alice.example.com/.well-known/dnsid-status.json
 ```
 
+The `#...` above is a placeholder, not a stream ID. Use the registry-issued
+bound log reference for managed issuance, or generate and persist a unique ID
+with `generateC2spTlogStreamId()` for each self-managed identity instance.
+Do not use the domain name as the stream ID.
+
 ## Low-level core usage
 
 Use `@dnsid-ai/protocol` directly when you want only the protocol engine and interfaces, with no SDK/profile conveniences:

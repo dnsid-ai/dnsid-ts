@@ -66,9 +66,10 @@ Never derive `policyUrl` from an unverified identity record, its `lr`, or a log 
 
 Public verification needs a trusted local policy and complete stream evidence. A single inclusion proof proves historical inclusion only; it is not current lifecycle state or non-revocation evidence.
 
-Writers use `generateC2spTlogStreamId()` for each new identity instance. It
-returns an opaque 128-bit cryptographically random value as unpadded base64url;
-do not reuse a bare FQDN as the stream ID.
+For self-managed new identity instances, generate and persist a stream ID with
+`generateC2spTlogStreamId()` (128 random bits, 22 unpadded base64url characters).
+For registry-managed issuance, use the registry-provided bound log reference;
+do not generate a second ID or reuse a bare FQDN as the stream ID.
 
 For writes, construct `C2spTlogBinding` with a bound reference, call
 `prepareEvent`, and pass the prepared event between signer processes.
