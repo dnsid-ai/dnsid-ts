@@ -1,4 +1,15 @@
 
+## [0.23.1] - 2026-09-25
+
+### Bug Fixes
+
+- fix: pin current development C2SP log trust ([#44](https://github.com/dnsid-ai/dnsid-ts/pull/44))
+
+### Documentation
+
+- docs: correct tlog guidance and refresh API reference ([#46](https://github.com/dnsid-ai/dnsid-ts/pull/46))
+
+
 ## [0.23.0] - 2026-09-24
 
 ### Bug Fixes

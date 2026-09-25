@@ -8,8 +8,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.23.0",
-    "@dnsid-ai/oidc": "^0.23.0"
+    "@dnsid-ai/sdk": "^0.23.1",
+    "@dnsid-ai/oidc": "^0.23.1"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",

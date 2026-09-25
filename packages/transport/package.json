@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/transport",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "description": "Node.js DNS and HTTPS transport implementations for DNSid.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -38,7 +38,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.23.0",
+    "@dnsid-ai/protocol": "^0.23.1",
     "undici": "^8.10.2"
   },
   "publishConfig": {
