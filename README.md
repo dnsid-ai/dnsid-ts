@@ -311,7 +311,7 @@ chose:
 
 - DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
 - HTTPS GET to the JWKS and status URLs published in that TXT record
-- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` / `https://log.partners.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
 - No telemetry, usage reporting, update checks, or crash reporting
 
 **Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.
