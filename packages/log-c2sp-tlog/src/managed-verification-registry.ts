@@ -30,9 +30,9 @@ const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
 }`);
 
 // The partner environment's log. Its log and bundle keys were checked against
-// the partner account's KMS public keys and its witness key against the
-// reviewed partner witness policy; the log's own discovery endpoints are not
-// what the pins rest on.
+// the signing keys' public halves, obtained out of band, and its witness key
+// against the reviewed partner witness policy; the log's own discovery
+// endpoints are not what the pins rest on.
 const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
   "version": 1,
   "scope": "public",
