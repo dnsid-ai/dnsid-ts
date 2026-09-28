@@ -38,7 +38,11 @@ export type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 export interface LogTrust {
   /** `true` selects the embedded DNSid-managed catalog. */
   managed?: boolean;
-  /** `dnsid-c2sp-tlog-trust-profile@v1` document (parsed JSON). */
+  /**
+   * DNSid C2SP trust-profile document, version 1 or 2 (parsed JSON). It is re-serialized before
+   * parsing, so number tokens are normalized: pass the raw bytes to `parseC2spTlogTrustProfile`
+   * directly when the exact token form of epoch tree-size bounds must be checked.
+   */
   profile?: Record<string, unknown>;
   /** Trusted C2SP `tlog-policy` bytes. */
   policyDocument?: Uint8Array;

@@ -5,7 +5,7 @@ import { normalizedOriginPolicy, parseC2spPolicyFile } from './policy.ts';
 import { C2spTlogReader } from './reader.ts';
 import { parseC2spTlogLr } from './lr.ts';
 import type { SignedNoteKey } from './signed-note.ts';
-import { validateC2spBundleVerifierKeys, validateC2spTlogTrustProfile, type C2spTlogTrustProfile } from './trust-profile.ts';
+import { c2spTlogTrustEpochs, createC2spTlogEpochPolicy, validateC2spBundleVerifierKeys, validateC2spTlogTrustProfile, type C2spTlogTrustProfile } from './trust-profile.ts';
 import {
   createDefaultC2spBoundedResourceFetcher,
   DEFAULT_C2SP_MAX_CHECKPOINT_BYTES,
@@ -36,7 +36,11 @@ export interface C2spScanLimits {
  * `trustProfile`, `policyDocument`, and `policyUrl` is required.
  */
 export interface C2spTlogVerificationOptions {
-  /** Independently distributed trust profile for one exact log. */
+  /**
+   * Independently distributed trust profile for one exact log. A version 2
+   * profile binds a list of trust epochs: checkpoints and stream bundles must
+   * then satisfy one epoch completely.
+   */
   trustProfile?: C2spTlogTrustProfile;
   /** Independently trusted C2SP `tlog-policy` bytes, parsed locally. */
   policyDocument?: Uint8Array;
@@ -105,8 +109,11 @@ export async function createC2spTlogVerificationRegistry(
     throw new ArgumentError('trustProfile is mutually exclusive with direct bundleVerifierKeys');
   }
   if (options.bundleVerifierKeys !== undefined) validateDirectBundleVerifierKeys(options.bundleVerifierKeys);
-  const bundleVerifierKeys = options.trustProfile?.bundleVerifierKeys ?? options.bundleVerifierKeys ?? [];
-  const hasBundleTrust = bundleVerifierKeys.length > 0;
+  const profileEpochs = options.trustProfile?.version === 2 ? c2spTlogTrustEpochs(options.trustProfile) : undefined;
+  const bundleVerifierKeys = options.trustProfile?.version === 1
+    ? options.trustProfile.bundleVerifierKeys
+    : options.bundleVerifierKeys ?? [];
+  const hasBundleTrust = profileEpochs !== undefined || bundleVerifierKeys.length > 0;
 
   const maximum = positiveInteger(options.maxPolicyBytes ?? DEFAULT_MAX_POLICY_BYTES, 'maxPolicyBytes');
   const checkpointMaxAge = optionalPositiveInteger(options.checkpointMaxAge, 'checkpointMaxAge');
@@ -136,7 +143,10 @@ export async function createC2spTlogVerificationRegistry(
   }
 
   let document: Uint8Array;
-  if (options.trustProfile !== undefined) {
+  if (profileEpochs !== undefined) {
+    for (const epoch of profileEpochs) boundedPolicy(epoch.policyDocument, maximum);
+    document = profileEpochs[0]!.policyDocument;
+  } else if (options.trustProfile?.version === 1) {
     document = boundedPolicy(options.trustProfile.policyDocument, maximum);
   } else if (options.policyDocument !== undefined) {
     if (!(options.policyDocument instanceof Uint8Array)) throw new ArgumentError('policyDocument must be a Uint8Array');
@@ -155,7 +165,9 @@ export async function createC2spTlogVerificationRegistry(
     document = boundedPolicy(document, maximum);
   }
 
-  const policy = parseC2spPolicyDocument(document);
+  // Version 1 keeps its original single-policy path; version 2 checks every
+  // checkpoint against one epoch at a time.
+  const policy = profileEpochs !== undefined ? createC2spTlogEpochPolicy(profileEpochs) : parseC2spPolicyDocument(document);
   if (options.bundleVerifierKeys?.length) {
     const checkpointKeys = Object.keys(policy.origins).flatMap((origin) => {
       const originPolicy = normalizedOriginPolicy(policy, origin);
@@ -189,8 +201,9 @@ export async function createC2spTlogVerificationRegistry(
       requestTimeoutMs,
       signal: invocation?.signal && options.signal ? AbortSignal.any([invocation.signal, options.signal]) : invocation?.signal ?? options.signal,
       streamBundle: hasBundleTrust ? {
-        policyDocument: document,
-        bundleKeys: bundleVerifierKeys,
+        ...(profileEpochs !== undefined
+          ? { trustEpochs: profileEpochs }
+          : { policyDocument: document, bundleKeys: bundleVerifierKeys }),
         maxBundleLifetimeMs: maxBundleLifetimeMs!,
         checkpointFreshnessMs: checkpointMaxAge ?? maxBundleLifetimeMs!,
         maxBundleBytes: maxStreamBundleBytes,

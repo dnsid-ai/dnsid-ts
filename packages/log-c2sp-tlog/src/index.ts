@@ -38,7 +38,7 @@ export type { Checkpoint, NoteSignature } from './checkpoint.ts';
 export { parseSignedNoteVerifierKey, verifyCheckpointSignature, verifyNoteSignature, verifiedCosignatureTimestamp } from './signed-note.ts';
 export type { SignedNoteKey } from './signed-note.ts';
 export { parseC2spPolicyFile, enforceCheckpointPolicy, normalizedOriginPolicy } from './policy.ts';
-export type { C2spTlogPolicy, C2spTlogOriginPolicy, C2spTlogQuorumRule, CheckpointPolicyResult } from './policy.ts';
+export type { C2spTlogPolicy, C2spTlogPolicyEpoch, C2spTlogOriginPolicy, C2spTlogQuorumRule, CheckpointPolicyOptions, CheckpointPolicyResult } from './policy.ts';
 export { checkpointPath, tilePath, entryBundlePath, parseEntryBundle, encodeEntryBundle } from './tiles.ts';
 export {
   ScanStreamSource,
@@ -70,8 +70,8 @@ export { createC2spTlogVerificationRegistry } from './verification-registry.ts';
 export type { C2spScanLimits, C2spTlogVerificationOptions } from './verification-registry.ts';
 export { createDnsidManagedVerificationRegistry } from './managed-verification-registry.ts';
 export type { DnsidManagedVerificationOptions } from './managed-verification-registry.ts';
-export { parseC2spTlogTrustProfile } from './trust-profile.ts';
-export type { C2spTlogTrustProfile } from './trust-profile.ts';
+export { c2spTlogTrustEpochs, c2spTlogTrustProfilePolicy, createC2spTlogEpochPolicy, parseC2spTlogTrustProfile } from './trust-profile.ts';
+export type { C2spTlogTrustEpoch, C2spTlogTrustProfile, C2spTlogTrustProfileV1, C2spTlogTrustProfileV2 } from './trust-profile.ts';
 export { prepareC2spTlogEventForSigning, parsePreparedC2spTlogEvent, signPreparedC2spTlogEvent, c2spTlogEntryBytes, writePreparedEvent } from './writer.ts';
 export type { C2spSignerRole, C2spChain, PreparedC2spTlogEvent, PreparedC2spVerificationContext, SignPreparedC2spOptions, C2spTlogAppendOptions } from './writer.ts';
 export { C2spTlogError, C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';

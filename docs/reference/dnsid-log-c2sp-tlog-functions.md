@@ -188,6 +188,65 @@ C2spTlogParseError when the entry is malformed or oversized.
 
 ***
 
+<a id="c2sptlogtrustepochs"></a>
+
+### c2spTlogTrustEpochs()
+
+```ts
+function c2spTlogTrustEpochs(profile): C2spTlogTrustEpoch[];
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L90)
+
+Returns the profile's trust epochs in profile order. A version 1 profile
+yields one epoch with id `''` and no tree-size bounds.
+
+#### Parameters
+
+##### profile
+
+[`C2spTlogTrustProfile`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/#c2sptlogtrustprofile)
+
+#### Returns
+
+[`C2spTlogTrustEpoch`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogtrustepoch)[]
+
+#### Throws
+
+C2spTlogParseError when the profile is invalid.
+
+***
+
+<a id="c2sptlogtrustprofilepolicy"></a>
+
+### c2spTlogTrustProfilePolicy()
+
+```ts
+function c2spTlogTrustProfilePolicy(profile): C2spTlogPolicy;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L132)
+
+Returns the checkpoint policy a trust profile defines, as the verification
+registry uses it: the parsed `tlog_policy` for version 1 (unchanged), or an
+epoch policy ([createC2spTlogEpochPolicy](#createc2sptlogepochpolicy)) for version 2.
+
+#### Parameters
+
+##### profile
+
+[`C2spTlogTrustProfile`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/#c2sptlogtrustprofile)
+
+#### Returns
+
+[`C2spTlogPolicy`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy)
+
+#### Throws
+
+C2spTlogParseError when the profile is invalid.
+
+***
+
 <a id="canonicalbytes"></a>
 
 ### canonicalBytes()
@@ -353,6 +412,37 @@ URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 
 ***
 
+<a id="createc2sptlogepochpolicy"></a>
+
+### createC2spTlogEpochPolicy()
+
+```ts
+function createC2spTlogEpochPolicy(epochs): C2spTlogPolicy;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L106)
+
+Builds a checkpoint policy that accepts a checkpoint only when it satisfies
+one of `epochs` completely: that epoch's log signature, tree-size bounds and
+witness quorum. Epochs are tried in order and must all name one log origin,
+so trusted checkpoint state, which is keyed by origin, carries across them.
+
+#### Parameters
+
+##### epochs
+
+[`C2spTlogTrustEpoch`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogtrustepoch)[]
+
+#### Returns
+
+[`C2spTlogPolicy`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy)
+
+#### Throws
+
+C2spTlogParseError when the epoch set is invalid.
+
+***
+
 <a id="createc2sptlogverificationregistry"></a>
 
 ### createC2spTlogVerificationRegistry()
@@ -361,7 +451,7 @@ URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 function createC2spTlogVerificationRegistry(options): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L93)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L97)
 
 Creates a [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry) ready to verify `c2sp-tlog` lifecycle
 references. Trust policy is explicit and never inferred from an identity
@@ -421,7 +511,7 @@ such as `dnsid local` is reachable for policy and log reads.
 function createDnsidManagedVerificationRegistry(options?): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L61)
 
 Creates a registry for the reviewed trust roots of DNSid-managed
 DNSid logs. Calling this separately named factory is an explicit application
@@ -514,15 +604,24 @@ function enforceCheckpointPolicy(
    policy, 
    scope, 
    nowMs?, 
-   maxClockSkewMs?): CheckpointPolicyResult;
+   maxClockSkewMs?, 
+   options?): CheckpointPolicyResult;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L114)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:160](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L160)
 
 Enforces the local trust policy on a parsed checkpoint: origin and scope
 match, a valid signature from an accepted log key, and a satisfied witness
 quorum of timestamped cosignatures no further than `maxClockSkewMs` in the
 future. Public scope additionally requires a non-empty quorum rule.
+
+With `policy.epochs`, epochs are tried in order. An epoch is relevant when
+the checkpoint carries a signature line under its log key name and key hash.
+A relevant epoch checks, in order, its log signature, its tree-size bounds,
+its own witness quorum (by witness name and key hash) and, when
+`options.maxCheckpointAgeMs` is set, freshness. The first epoch passing every
+check accepts. Otherwise the error is that of the first relevant epoch, or a
+missing log signature when no epoch is relevant.
 
 #### Parameters
 
@@ -550,11 +649,15 @@ future. Public scope additionally requires a non-empty quorum rule.
 
 `number` = `0`
 
+##### options?
+
+[`CheckpointPolicyOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#checkpointpolicyoptions) = `{}`
+
 #### Returns
 
 [`CheckpointPolicyResult`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#checkpointpolicyresult)
 
-The accepted witness timestamps and derived checkpoint witness time.
+The accepted witness timestamps, derived checkpoint witness time and accepting epoch.
 
 #### Throws
 
@@ -787,7 +890,7 @@ RFC 6962 interior node hash: SHA-256(0x01 || left || right).
 function normalizedOriginPolicy(policy, origin): NormalizedOriginPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L101)
 
 Resolves and validates the policy for `origin`: parses key strings, checks
 signature types (0x01 for log keys, 0x04 for witness cosignature keys),
@@ -855,7 +958,7 @@ C2spTlogParseError when the entry is oversized, non-canonical, or malformed.
 function parseC2spPolicyFile(text): C2spTlogPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L136)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L260)
 
 Parses a C2SP tlog-policy file (`log`, `witness`, `group`, and exactly one
 `quorum` directive) into a [C2spTlogPolicy](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy) keyed by log-key origin.
@@ -928,7 +1031,7 @@ C2spTlogParseError when the object, a role, or a signature value is invalid.
 function parseC2spStreamBundle(bytes, options): C2spStreamBundle;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L121)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L135)
 
 Parses and structurally validates a canonical-JSON stream bundle without
 verifying any signatures, proofs, or freshness: exact member sets, canonical
@@ -991,9 +1094,11 @@ C2spTlogParseError when any component is missing or non-canonical.
 function parseC2spTlogTrustProfile(bytes): C2spTlogTrustProfile;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L21)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L76)
 
-Parses and validates a `dnsid-c2sp-tlog-trust-profile@v1` JSON document.
+Parses and validates a DNSid C2SP trust-profile JSON document: version 1
+(`dnsid-c2sp-tlog-trust-profile@v1`) or version 2 (epochs). Members that
+belong to the other version are rejected even when empty.
 
 #### Parameters
 
@@ -1003,7 +1108,11 @@ Parses and validates a `dnsid-c2sp-tlog-trust-profile@v1` JSON document.
 
 #### Returns
 
-[`C2spTlogTrustProfile`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogtrustprofile)
+[`C2spTlogTrustProfile`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/#c2sptlogtrustprofile)
+
+#### Throws
+
+C2spTlogParseError when the document is malformed or invalid.
 
 ***
 
@@ -1708,7 +1817,7 @@ Returns false rather than throwing on invalid input.
 function verifyC2spStreamBundle(bytes, options): Promise<VerifiedC2spStreamBundle>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:200](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L200)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L214)
 
 Verifies offline lifecycle evidence for an expected identity and log reference:
 checks the expected agent FQDN and log reference, the producer signature,
@@ -1756,10 +1865,11 @@ function verifyC2spTlogProof(
    origin?, 
    scope?, 
    nowMs?, 
-   maxClockSkewMs?): TlogProofV1;
+   maxClockSkewMs?, 
+   options?): TlogProofV1;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/proof.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/proof.ts#L55)
+Defined in: [packages/log-c2sp-tlog/src/proof.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/proof.ts#L56)
 
 Verifies an entry's inclusion proof: enforces the local checkpoint policy
 (log signature and witness quorum) and checks the RFC 6962 inclusion path
@@ -1796,6 +1906,12 @@ Parsed proof or raw tlog-proof@v1 text.
 ##### maxClockSkewMs?
 
 `number` = `0`
+
+##### options?
+
+[`CheckpointPolicyOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#checkpointpolicyoptions) = `{}`
+
+Optional checks passed to [enforceCheckpointPolicy](#enforcecheckpointpolicy).
 
 #### Returns
 

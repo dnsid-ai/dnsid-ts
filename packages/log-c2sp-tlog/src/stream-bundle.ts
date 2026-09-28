@@ -9,7 +9,8 @@ import { advanceTrustedC2spCheckpoint, type C2spConsistencyProofSource, type Tru
 import { C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 import { sha256, verifyInclusion } from './merkle.ts';
-import { enforceCheckpointPolicy, normalizedOriginPolicy, parseC2spPolicyFile } from './policy.ts';
+import { enforceCheckpointPolicy, normalizedOriginPolicy, parseC2spPolicyFile, type C2spTlogPolicy } from './policy.ts';
+import { bundleKeyId, createC2spTlogEpochPolicy, type C2spTlogTrustEpoch } from './trust-profile.ts';
 import type { SignedNoteKey } from './signed-note.ts';
 import { stitchVerifiedMigrationHistory, stitchVerifiedMigrationReferences, verifyStreamLifecycle, type MigrationVerificationResult, type StreamVerifierOptions, type VerifiedLifecycleEvent } from './stream-verifier.ts';
 
@@ -77,10 +78,21 @@ export interface VerifyC2spStreamBundleOptions extends ParseC2spStreamBundleOpti
   expectedFqdn: string;
   /** Canonical bound c2sp-tlog lr the bundle must reference. */
   expectedLogReference: string;
-  /** Local C2SP policy file bytes; their hash must match the bundle's `policy_hash`. */
-  policyBytes: Uint8Array;
-  /** Trusted bundle-producer keys (with key IDs) accepted for the bundle signature. */
-  bundleKeys: SignedNoteKey[];
+  /**
+   * Local C2SP policy file bytes; their hash must match the bundle's `policy_hash`.
+   * Required with `bundleKeys`; mutually exclusive with `trustEpochs`.
+   */
+  policyBytes?: Uint8Array;
+  /** Trusted bundle-producer keys (with key IDs) accepted for the bundle signature. Required with `policyBytes`. */
+  bundleKeys?: SignedNoteKey[];
+  /**
+   * Trust epochs (from a version 2 trust profile) in place of `policyBytes` and
+   * `bundleKeys`. The bundle's `sig.kid` selects the epochs that hold that
+   * signer, `policy_hash` must be the SHA-256 of one of their policy
+   * documents, and the embedded checkpoint must satisfy that epoch alone,
+   * including its tree-size bounds.
+   */
+  trustEpochs?: C2spTlogTrustEpoch[];
   /** Trusted accountable-entity key for the identity record. */
   entityKey: DnsIdJWK;
   /** Maximum allowed distance between checkpoint witness time and bundle expiry. */
@@ -109,6 +121,8 @@ export interface VerifiedC2spStreamBundle {
   /** Thumbprint of the agent's operational key after the last verified event. */
   activeOperationalKeyThumbprint: string;
   checkpointWitnessTime: Date;
+  /** Id of the trust epoch that accepted the bundle; `''` without `trustEpochs`. */
+  trustEpoch: string;
 }
 
 /**
@@ -218,14 +232,13 @@ export async function verifyC2spStreamBundleContents(bytes: Uint8Array, options:
   }
   if (bundle.fqdn !== expectedFqdn) throw new C2spTlogVerificationError('stream bundle fqdn does not match expected identity');
   if (bundle.reference.lr !== expectedReference.lr) throw new C2spTlogVerificationError('stream bundle lr does not match expected identity record');
-  if (!equalBytes(bundle.policyHash, sha256(options.policyBytes))) throw new C2spTlogVerificationError('stream bundle policy_hash mismatch');
-  const policyText = new TextDecoder('utf-8', { fatal: true }).decode(options.policyBytes);
-  const policy = parseC2spPolicyFile(policyText);
-  const checkpointKeys = normalizedOriginPolicy(policy, bundle.reference.origin);
-  verifyBundleSignature(bundle, options.bundleKeys, [...checkpointKeys.logKeys, ...checkpointKeys.witnessKeys]);
+  const { policy, trustEpoch } = selectBundleTrust(bundle, options);
   const nowMs = options.nowMs ?? Date.now();
   const maxClockSkewMs = nonNegativeInteger(options.maxClockSkewMs ?? 0, 'maxClockSkewMs');
-  const policyResult = enforceCheckpointPolicy(bundle.checkpoint, bundle.reference.origin, policy, bundle.reference.scope, nowMs, maxClockSkewMs);
+  // With epochs the selected epoch alone must accept, freshness included, so
+  // the checks run in the same order as for a bare checkpoint.
+  const policyResult = enforceCheckpointPolicy(bundle.checkpoint, bundle.reference.origin, policy, bundle.reference.scope, nowMs, maxClockSkewMs,
+    options.trustEpochs === undefined ? {} : { maxCheckpointAgeMs: positiveInteger(options.checkpointFreshnessMs, 'checkpointFreshnessMs') });
   if (bundle.checkpoint.treeSize !== bundle.completeThroughSize) throw new C2spTlogVerificationError('stream bundle checkpoint size mismatch');
   const maxTreeSize = positiveInteger(options.maxTreeSize ?? DEFAULT_C2SP_MAX_STREAM_BUNDLE_TREE_SIZE, 'maxTreeSize');
   if (bundle.checkpoint.treeSize > maxTreeSize) throw new C2spTlogVerificationError('stream bundle checkpoint exceeds configured tree-size maximum');
@@ -273,7 +286,52 @@ export async function verifyC2spStreamBundleContents(bytes: Uint8Array, options:
     lifecycle = await stitchVerifiedMigrationHistory(bundle.fqdn, lifecycle, migration);
   }
   const activeOperationalKeyThumbprint = activeOperationalThumbprint(lifecycle);
-  return { bundle, events: verified, lifecycle, historyReferences, activeOperationalKeyThumbprint, checkpointWitnessTime: witnessTime };
+  return { bundle, events: verified, lifecycle, historyReferences, activeOperationalKeyThumbprint, checkpointWitnessTime: witnessTime, trustEpoch };
+}
+
+/**
+ * Selects the checkpoint policy for a bundle, in the order every DNSid SDK
+ * uses: the signer (`sig.kid`), then its signature, then `policy_hash`.
+ */
+function selectBundleTrust(bundle: C2spStreamBundle, options: VerifyC2spStreamBundleContentsOptions): { policy: C2spTlogPolicy; trustEpoch: string } {
+  if (options.trustEpochs !== undefined) {
+    if (options.policyBytes !== undefined || options.bundleKeys !== undefined) {
+      throw new C2spTlogVerificationError('stream bundle trustEpochs are mutually exclusive with policyBytes and bundleKeys');
+    }
+    // Validates the whole set, so selection below is unambiguous.
+    createC2spTlogEpochPolicy(options.trustEpochs);
+    const candidates = options.trustEpochs.flatMap(epoch => {
+      const keys = epoch.bundleVerifierKeys.filter(key => bundleKeyId(key) === bundle.signature.kid);
+      return keys.length === 1 ? [{ epoch, key: keys[0]! }] : [];
+    });
+    if (candidates.length === 0) throw new C2spTlogVerificationError('stream bundle signer is not accepted by any trust epoch');
+    const signed = candidates.filter(candidate => bundleSignatureVerifies(bundle, candidate.key));
+    if (signed.length === 0) throw new C2spTlogVerificationError('invalid stream bundle signature');
+    const selected = signed.find(candidate => equalBytes(bundle.policyHash, sha256(candidate.epoch.policyDocument)));
+    if (!selected) throw new C2spTlogVerificationError('stream bundle policy_hash mismatch');
+    const epochPolicy = createC2spTlogEpochPolicy([selected.epoch]);
+    return { policy: epochPolicy, trustEpoch: selected.epoch.id };
+  }
+  if (!(options.policyBytes instanceof Uint8Array) || !Array.isArray(options.bundleKeys)) {
+    throw new C2spTlogVerificationError('stream bundle verification requires policyBytes and bundleKeys, or trustEpochs');
+  }
+  // A policy that does not parse cannot match policy_hash either; report the
+  // signer and hash first, as for epochs, and the parse failure after them.
+  let policy: C2spTlogPolicy | undefined;
+  let checkpointKeys: SignedNoteKey[] | undefined;
+  let policyError: unknown;
+  try {
+    policy = parseC2spPolicyFile(new TextDecoder('utf-8', { fatal: true }).decode(options.policyBytes));
+    const originPolicy = normalizedOriginPolicy(policy, bundle.reference.origin);
+    checkpointKeys = [...originPolicy.logKeys, ...originPolicy.witnessKeys];
+  } catch (cause) {
+    policyError = cause;
+  }
+  if (checkpointKeys) assertBundleKeysIndependent(options.bundleKeys, checkpointKeys);
+  verifyBundleSignature(bundle, options.bundleKeys);
+  if (!equalBytes(bundle.policyHash, sha256(options.policyBytes))) throw new C2spTlogVerificationError('stream bundle policy_hash mismatch');
+  if (policyError !== undefined || !policy) throw policyError;
+  return { policy, trustEpoch: '' };
 }
 
 function parseEvent(value: unknown, position: number, treeSize: number): C2spStreamBundleEvent {
@@ -290,35 +348,38 @@ function parseEvent(value: unknown, position: number, treeSize: number): C2spStr
 }
 
 /** Verifies the bundle's Ed25519 signature against the unique trusted key matching its `name+keyid` kid. */
-function verifyBundleSignature(bundle: C2spStreamBundle, keys: SignedNoteKey[], checkpointKeys: SignedNoteKey[]): void {
+function verifyBundleSignature(bundle: C2spStreamBundle, keys: SignedNoteKey[]): void {
   if (!Array.isArray(keys) || keys.some(key => !key || key.kind !== 'ed25519'
     || !(key.keyBytes instanceof Uint8Array) || key.keyBytes.length !== 32
     || (key.signatureType !== undefined && (!(key.signatureType instanceof Uint8Array)
       || key.signatureType.length !== 1 || key.signatureType[0] !== 1)))) {
     throw new C2spTlogVerificationError('stream bundle signer must be Ed25519');
   }
-  const checkpointPublicKeys = new Set(checkpointKeys.map(key => Buffer.from(key.keyBytes).toString('hex')));
-  if (keys.some(key => checkpointPublicKeys.has(Buffer.from(key.keyBytes).toString('hex')))) {
-    throw new C2spTlogVerificationError('stream bundle signer must be independent of checkpoint policy keys');
-  }
   const candidates = keys.filter(candidate => candidate.keyId !== undefined
     && bundle.signature.kid === `${candidate.name}+${Buffer.from(candidate.keyId).toString('hex')}`);
   if (candidates.length !== 1 || candidates[0]!.keyBytes.length !== 32) {
     throw new C2spTlogVerificationError('stream bundle signature key is not uniquely trusted');
   }
-  const key = candidates[0]!;
+  if (!bundleSignatureVerifies(bundle, candidates[0]!)) throw new C2spTlogVerificationError('invalid stream bundle signature');
+}
+
+function assertBundleKeysIndependent(keys: SignedNoteKey[], checkpointKeys: SignedNoteKey[]): void {
+  const checkpointPublicKeys = new Set(checkpointKeys.map(key => Buffer.from(key.keyBytes).toString('hex')));
+  if (keys.some(key => checkpointPublicKeys.has(Buffer.from(key.keyBytes).toString('hex')))) {
+    throw new C2spTlogVerificationError('stream bundle signer must be independent of checkpoint policy keys');
+  }
+}
+
+function bundleSignatureVerifies(bundle: C2spStreamBundle, key: SignedNoteKey): boolean {
   try {
     const publicKey = createPublicKey({
       key: Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), Buffer.from(key.keyBytes)]),
       format: 'der',
       type: 'spki',
     });
-    if (!verifySignature(null, Buffer.from(bundle.signedBytes), publicKey, Buffer.from(bundle.signature.value))) {
-      throw new C2spTlogVerificationError('invalid stream bundle signature');
-    }
-  } catch (cause) {
-    if (cause instanceof C2spTlogVerificationError) throw cause;
-    throw new C2spTlogVerificationError('invalid stream bundle signature');
+    return verifySignature(null, Buffer.from(bundle.signedBytes), publicKey, Buffer.from(bundle.signature.value));
+  } catch {
+    return false;
   }
 }
 

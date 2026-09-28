@@ -530,7 +530,7 @@ describe('C2SP stream bundles', () => {
       ['wrong state', value => { (value.object.state as Record<string, unknown>).logged_state = 'REVOKED'; }, 'state does not match'],
       ['expired', value => { value.object.expires = 1_782_345_700; }, 'expired'],
       ['untrusted signer', value => { value.options.bundleKeys = []; }, 'not uniquely trusted'],
-      ['ambiguous signer', value => { value.options.bundleKeys.push(value.options.bundleKeys[0]!); }, 'not uniquely trusted'],
+      ['ambiguous signer', value => { value.options.bundleKeys!.push(value.options.bundleKeys![0]!); }, 'not uniquely trusted'],
       ['checkpoint key overlap', value => {
         const logKey = new TextDecoder().decode(value.options.policyBytes).split(/\s+/)[1]!;
         value.options.bundleKeys = [parseSignedNoteVerifierKey(logKey)];

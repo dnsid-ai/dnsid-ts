@@ -1,7 +1,8 @@
 import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRef, type LogSignerRole } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 import { parseC2spEventEntry, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
-import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';
+import { enforceCheckpointPolicy, type C2spTlogPolicy, type CheckpointPolicyOptions } from './policy.ts';
+import type { C2spTlogTrustEpoch } from './trust-profile.ts';
 import { createDefaultC2spBoundedResourceFetcher, DEFAULT_C2SP_REQUEST_TIMEOUT_MS, ScanStreamSource, validateC2spResourceFetcher, type C2spBoundedResourceFetcher, type StreamEvidence, type StreamSource } from './stream-source.ts';
 import { leafHash, merkleRootFromEntries } from './merkle.ts';
 import { stitchVerifiedMigrationHistory, stitchVerifiedMigrationReferences, verifyStreamLifecycle, verifyLifecycle, type VerifiedLifecycleEvent, type MigrationVerificationResult, type StreamVerifierOptions } from './stream-verifier.ts';
@@ -27,8 +28,12 @@ import {
 
 /** Independently trusted inputs and limits for preferred stream-bundle reads. */
 export interface C2spStreamBundleReaderOptions {
-  policyDocument: Uint8Array;
-  bundleKeys: SignedNoteKey[];
+  /** Trusted policy bytes bound by `policy_hash`. Required with `bundleKeys`; mutually exclusive with `trustEpochs`. */
+  policyDocument?: Uint8Array;
+  /** Trusted bundle signer keys. Required with `policyDocument`. */
+  bundleKeys?: SignedNoteKey[];
+  /** Trust epochs of a version 2 trust profile, in place of `policyDocument` and `bundleKeys`. */
+  trustEpochs?: C2spTlogTrustEpoch[];
   maxBundleLifetimeMs: number;
   checkpointFreshnessMs: number;
   maxBundleBytes?: number;
@@ -55,7 +60,11 @@ export interface C2spTlogReaderOptions {
   entityKey?: DnsIdJWK;
   /** Accepted timestamp clock skew in milliseconds (default zero). */
   allowedClockSkew?: number;
-  /** Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`. */
+  /**
+   * Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
+   * With an epoch policy (`policy.epochs`) it is also part of epoch
+   * acceptance for every checkpoint the reader verifies.
+   */
   checkpointMaxAge?: number;
   maxTreeSize?: number;
   maxCheckpointBytes?: number;
@@ -113,7 +122,7 @@ export class C2spTlogReader implements LogReader {
     if (this.resourceFetcher) validateC2spResourceFetcher(this.resourceFetcher);
     this.source = options.streamSource ?? new ScanStreamSource({
       authenticateCheckpoint: (checkpoint) => {
-        enforceCheckpointPolicy(checkpoint, this.parsed.origin, options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
+        enforceCheckpointPolicy(checkpoint, this.parsed.origin, options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
       },
       maxTreeSize: options.maxTreeSize,
       maxCheckpointBytes: options.maxCheckpointBytes,
@@ -221,10 +230,10 @@ export class C2spTlogReader implements LogReader {
     const evidence = await this.loadEvidence(parsed.logPrefix, signal);
     const entry = evidence.entries.find((e) => e.index === parsed.entryIndex);
     if (!entry) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
-    const verifiedProof = verifyC2spTlogProof(entry.bytes, proof, this.options.policy, parsed.origin, parsed.scope, Date.now(), this.allowedClockSkew());
+    const verifiedProof = verifyC2spTlogProof(entry.bytes, proof, this.options.policy, parsed.origin, parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
     if (verifiedProof.index !== parsed.entryIndex) throw new VerificationError('C2SP proof index mismatch', { code: VerificationCode.LogError });
     const event = await parseC2spEventEntry(entry.bytes, this.context(parsed));
-    const proofPolicyResult = enforceCheckpointPolicy(verifiedProof.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
+    const proofPolicyResult = enforceCheckpointPolicy(verifiedProof.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
     if (!proofPolicyResult.checkpointWitnessTime) throw new VerificationError('C2SP proof timestamp requires an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
     if (event.timestamp.getTime() > proofPolicyResult.checkpointWitnessTime.getTime() + this.allowedClockSkew()) {
       throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
@@ -238,7 +247,7 @@ export class C2spTlogReader implements LogReader {
       }
     }
     if (!evidence.complete) throw new VerificationError('C2SP readEvent requires complete lifecycle evidence for event authorization', { code: VerificationCode.LogError, errorCategory: 'INCOMPLETE_STREAM' });
-    const policyResult = enforceCheckpointPolicy(evidence.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
+    const policyResult = enforceCheckpointPolicy(evidence.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
     if (!policyResult.checkpointWitnessTime) throw new VerificationError('C2SP event timestamp requires an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
     assertCompleteScan(evidence);
     await advanceTrustedC2spCheckpoint(this.checkpointStore, parsed, evidence.checkpoint, policyResult.checkpointWitnessTime, {
@@ -291,7 +300,7 @@ export class C2spTlogReader implements LogReader {
     if (bundled) return bundled;
     const evidence = await this.loadEvidence(this.parsed.logPrefix, signal);
     if (!evidence.complete) throw new VerificationError('C2SP stream source is incomplete for current-state verification', { code: VerificationCode.LogError, errorCategory: 'INCOMPLETE_STREAM' });
-    const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
+    const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
     if (!policyResult.checkpointWitnessTime) throw new VerificationError('C2SP lifecycle timestamps require an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
     assertCompleteScan(evidence);
     await advanceTrustedC2spCheckpoint(this.checkpointStore, this.parsed, evidence.checkpoint, policyResult.checkpointWitnessTime, {
@@ -353,6 +362,7 @@ export class C2spTlogReader implements LogReader {
       expectedLogReference: this.lr,
       policyBytes: config.policyDocument,
       bundleKeys: config.bundleKeys,
+      trustEpochs: config.trustEpochs,
       entityKey: trustedEntityKey,
       maxBundleBytes: maximum,
       maxEvents: config.maxEvents ?? DEFAULT_C2SP_MAX_STREAM_BUNDLE_EVENTS,
@@ -372,7 +382,7 @@ export class C2spTlogReader implements LogReader {
       if (config.required || !(cause instanceof MissingC2spConsistencyEvidenceError)) throw cause;
       const evidence = await this.loadEvidence(this.parsed.logPrefix, signal);
       if (!evidence.complete) throw new C2spTlogVerificationError('C2SP consistency fallback requires a complete raw scan', 'INCOMPLETE_STREAM');
-      const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
+      const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew(), this.checkpointPolicyOptions());
       if (!policyResult.checkpointWitnessTime) throw new C2spTlogVerificationError('C2SP consistency fallback requires an accepted timestamped witness quorum');
       assertCompleteScan(evidence);
       await advanceTrustedC2spCheckpoint(this.checkpointStore, verified.bundle.reference, verified.bundle.checkpoint, verified.checkpointWitnessTime, {
@@ -422,7 +432,10 @@ export class C2spTlogReader implements LogReader {
       throw new VerificationError('checkpointMaxAge must be a positive safe integer', { code: VerificationCode.LogError });
     }
     const bundle = this.options.streamBundle;
-    if (bundle && (!(bundle.policyDocument instanceof Uint8Array) || !Array.isArray(bundle.bundleKeys) || bundle.bundleKeys.length === 0
+    const bundleTrustValid = bundle && (bundle.trustEpochs !== undefined
+      ? Array.isArray(bundle.trustEpochs) && bundle.trustEpochs.length > 0 && bundle.policyDocument === undefined && bundle.bundleKeys === undefined
+      : bundle.policyDocument instanceof Uint8Array && Array.isArray(bundle.bundleKeys) && bundle.bundleKeys.length > 0);
+    if (bundle && (!bundleTrustValid
       || !Number.isSafeInteger(bundle.maxBundleLifetimeMs) || bundle.maxBundleLifetimeMs < 1
       || !Number.isSafeInteger(bundle.checkpointFreshnessMs) || bundle.checkpointFreshnessMs < 1
       || (bundle.maxBundleBytes !== undefined && (!Number.isSafeInteger(bundle.maxBundleBytes) || bundle.maxBundleBytes < 1))
@@ -433,6 +446,13 @@ export class C2spTlogReader implements LogReader {
 
   private allowedClockSkew(): number {
     return this.options.allowedClockSkew ?? 0;
+  }
+
+  /** Epoch policies make freshness part of epoch acceptance; single policies keep their checks unchanged. */
+  private checkpointPolicyOptions(): CheckpointPolicyOptions {
+    return this.options.policy.epochs !== undefined && this.options.checkpointMaxAge !== undefined
+      ? { maxCheckpointAgeMs: this.options.checkpointMaxAge }
+      : {};
   }
 
   private assertFresh(checkpointWitnessTime: Date): void {

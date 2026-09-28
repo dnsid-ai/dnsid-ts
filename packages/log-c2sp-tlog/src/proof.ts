@@ -2,7 +2,7 @@ import { fromB64 } from './base64.ts';
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import { verifyInclusion } from './merkle.ts';
 import { C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';
-import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';
+import { enforceCheckpointPolicy, type C2spTlogPolicy, type CheckpointPolicyOptions } from './policy.ts';
 
 /** Parsed C2SP tlog-proof@v1: entry index, inclusion proof hashes, and the checkpoint the proof leads to. */
 export interface TlogProofV1 { index: number; hashes: Uint8Array[]; checkpoint: Checkpoint; extra?: string[] }
@@ -48,13 +48,14 @@ export function parseTlogProofV1(text: string): TlogProofV1 {
  * against the checkpoint root.
  *
  * @param proof Parsed proof or raw tlog-proof@v1 text.
+ * @param options Optional checks passed to {@link enforceCheckpointPolicy}.
  * @returns The parsed, verified proof.
  * @throws C2spTlogParseError when a textual proof is malformed.
  * @throws C2spTlogVerificationError when policy enforcement or the inclusion proof fails.
  */
-export function verifyC2spTlogProof(entryBytes: Uint8Array, proof: TlogProofV1 | string, policy: C2spTlogPolicy, origin?: string, scope = 'testnet', nowMs = Date.now(), maxClockSkewMs = 0): TlogProofV1 {
+export function verifyC2spTlogProof(entryBytes: Uint8Array, proof: TlogProofV1 | string, policy: C2spTlogPolicy, origin?: string, scope = 'testnet', nowMs = Date.now(), maxClockSkewMs = 0, options: CheckpointPolicyOptions = {}): TlogProofV1 {
   const p = typeof proof === 'string' ? parseTlogProofV1(proof) : proof;
-  enforceCheckpointPolicy(p.checkpoint, origin ?? p.checkpoint.origin, policy, scope, nowMs, maxClockSkewMs);
+  enforceCheckpointPolicy(p.checkpoint, origin ?? p.checkpoint.origin, policy, scope, nowMs, maxClockSkewMs, options);
   if (!verifyInclusion(entryBytes, p.index, p.checkpoint.treeSize, p.checkpoint.rootHash, p.hashes)) {
     throw new C2spTlogVerificationError('invalid C2SP inclusion proof');
   }

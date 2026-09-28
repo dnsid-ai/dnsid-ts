@@ -489,7 +489,7 @@ Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:22](https://github.com/dn
 
 ### C2spStreamBundle
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L53)
 
 Parsed `dnsid-c2sp-stream-bundle` (v1): self-contained, offline-verifiable
 evidence for one agent's lifecycle stream — a witnessed checkpoint, the
@@ -506,7 +506,7 @@ producer's signature.
 bytes: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L66)
 
 <a id="checkpoint"></a>
 
@@ -516,7 +516,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:65](https://github.com/
 checkpoint: Checkpoint;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L55)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L56)
 
 <a id="checkpointbytes"></a>
 
@@ -526,7 +526,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:55](https://github.com/
 checkpointBytes: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L57)
 
 <a id="completenessmode"></a>
 
@@ -536,7 +536,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:56](https://github.com/
 completenessMode: "trusted-index";
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L59)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L60)
 
 <a id="completethroughsize"></a>
 
@@ -546,7 +546,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:59](https://github.com/
 completeThroughSize: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L58)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L59)
 
 <a id="events"></a>
 
@@ -556,7 +556,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:58](https://github.com/
 events: C2spStreamBundleEvent[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L61)
 
 <a id="expires"></a>
 
@@ -566,7 +566,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:60](https://github.com/
 expires: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L63)
 
 <a id="fqdn"></a>
 
@@ -576,7 +576,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:62](https://github.com/
 fqdn: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L53)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L54)
 
 <a id="policyhash"></a>
 
@@ -586,7 +586,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:53](https://github.com/
 policyHash: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L58)
 
 <a id="reference"></a>
 
@@ -596,7 +596,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:57](https://github.com/
 reference: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L55)
 
 <a id="signature"></a>
 
@@ -606,7 +606,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:54](https://github.com/
 signature: C2spStreamBundleSignature;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L64)
 
 <a id="signedbytes"></a>
 
@@ -616,7 +616,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:63](https://github.com/
 signedBytes: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L64)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L65)
 
 <a id="state"></a>
 
@@ -626,7 +626,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:64](https://github.com/
 state: C2spStreamBundleState;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L62)
 
 ***
 
@@ -634,7 +634,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:61](https://github.com/
 
 ### C2spStreamBundleEvent
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L26)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L27)
 
 One bundled lifecycle event: log index, raw entry bytes, and its inclusion proof path.
 
@@ -648,7 +648,7 @@ One bundled lifecycle event: log index, raw entry bytes, and its inclusion proof
 entryBytes: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L28)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L29)
 
 <a id="index"></a>
 
@@ -658,7 +658,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:28](https://github.com/
 index: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L27)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L28)
 
 <a id="proof"></a>
 
@@ -668,7 +668,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:27](https://github.com/
 proof: Uint8Array<ArrayBufferLike>[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L29)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L30)
 
 ***
 
@@ -676,7 +676,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:29](https://github.com/
 
 ### C2spStreamBundleReaderOptions
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L29)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L30)
 
 Independently trusted inputs and limits for preferred stream-bundle reads.
 
@@ -684,13 +684,15 @@ Independently trusted inputs and limits for preferred stream-bundle reads.
 
 <a id="bundlekeys"></a>
 
-##### bundleKeys
+##### bundleKeys?
 
 ```ts
-bundleKeys: SignedNoteKey[];
+optional bundleKeys?: SignedNoteKey[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L31)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L34)
+
+Trusted bundle signer keys. Required with `policyDocument`.
 
 <a id="checkpointfreshnessms"></a>
 
@@ -700,7 +702,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:31](https://github.com/dnsid-a
 checkpointFreshnessMs: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L33)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L38)
 
 <a id="maxbundlebytes"></a>
 
@@ -710,7 +712,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:33](https://github.com/dnsid-a
 optional maxBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L34)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L39)
 
 <a id="maxbundlelifetimems"></a>
 
@@ -720,7 +722,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:34](https://github.com/dnsid-a
 maxBundleLifetimeMs: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L32)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L37)
 
 <a id="maxevents"></a>
 
@@ -730,17 +732,19 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:32](https://github.com/dnsid-a
 optional maxEvents?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L35)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L40)
 
 <a id="policydocument"></a>
 
-##### policyDocument
+##### policyDocument?
 
 ```ts
-policyDocument: Uint8Array;
+optional policyDocument?: Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L30)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L32)
+
+Trusted policy bytes bound by `policy_hash`. Required with `bundleKeys`; mutually exclusive with `trustEpochs`.
 
 <a id="required"></a>
 
@@ -750,9 +754,21 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:30](https://github.com/dnsid-a
 optional required?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L37)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L42)
 
 Disables raw-scan fallback when the bundle endpoint is unavailable.
+
+<a id="trustepochs"></a>
+
+##### trustEpochs?
+
+```ts
+optional trustEpochs?: C2spTlogTrustEpoch[];
+```
+
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L36)
+
+Trust epochs of a version 2 trust profile, in place of `policyDocument` and `bundleKeys`.
 
 ***
 
@@ -760,7 +776,7 @@ Disables raw-scan fallback when the bundle endpoint is unavailable.
 
 ### C2spStreamBundleSignature
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L40)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L41)
 
 Bundle producer's Ed25519 signature over the bundle's signed bytes.
 
@@ -774,7 +790,7 @@ Bundle producer's Ed25519 signature over the bundle's signed bytes.
 alg: "EdDSA";
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L42)
 
 <a id="kid-1"></a>
 
@@ -784,7 +800,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:41](https://github.com/
 kid: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L42)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L43)
 
 <a id="value"></a>
 
@@ -794,7 +810,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:42](https://github.com/
 value: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L43)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L44)
 
 ***
 
@@ -802,7 +818,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:43](https://github.com/
 
 ### C2spStreamBundleState
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L33)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L34)
 
 Bundle-asserted lifecycle summary, checked against the verified history.
 
@@ -816,7 +832,7 @@ Bundle-asserted lifecycle summary, checked against the verified history.
 eventCount: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L34)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L35)
 
 <a id="lasteventtype"></a>
 
@@ -826,7 +842,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:34](https://github.com/
 lastEventType: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L35)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L36)
 
 <a id="loggedstate"></a>
 
@@ -836,7 +852,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:35](https://github.com/
 loggedState: "UNKNOWN" | "ACTIVE" | "RETIRED" | "REVOKED";
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L36)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L37)
 
 ***
 
@@ -1000,7 +1016,7 @@ Required for non-genesis events to validate authoritative prior stream state.
 
 ### C2spTlogOriginPolicy
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L15)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L18)
 
 Local trust configuration for one checkpoint origin. Keys may be parsed or in signed-note verifier-key text form.
 
@@ -1014,7 +1030,7 @@ Local trust configuration for one checkpoint origin. Keys may be parsed or in si
 logKeys: (string | SignedNoteKey)[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L17)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L20)
 
 Accepted log signing keys; each key name must equal the origin.
 
@@ -1026,7 +1042,7 @@ Accepted log signing keys; each key name must equal the origin.
 optional quorum?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L21)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L24)
 
 Flat witness quorum count; superseded by `quorumRule` when both are set.
 
@@ -1038,7 +1054,7 @@ Flat witness quorum count; superseded by `quorumRule` when both are set.
 optional quorumRule?: C2spTlogQuorumRule;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L22)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L25)
 
 <a id="unchained"></a>
 
@@ -1048,7 +1064,7 @@ Defined in: [packages/log-c2sp-tlog/src/policy.ts:22](https://github.com/dnsid-a
 optional unchained?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L27)
 
 ###### Deprecated
 
@@ -1062,7 +1078,7 @@ Ignored: every scope requires a logical predecessor chain.
 optional witnessKeys?: (string | SignedNoteKey)[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L19)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L22)
 
 Witness cosignature keys used by the flat `quorum` count when no `quorumRule` is given.
 
@@ -1072,11 +1088,27 @@ Witness cosignature keys used by the flat `quorum` count when no `quorumRule` is
 
 ### C2spTlogPolicy
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L28)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L52)
 
 Local C2SP tlog trust policy: per-origin rules, optionally pinned to one lr scope.
 
+When `epochs` is set, `origins` is ignored and a checkpoint is accepted only
+when it satisfies one epoch completely: that epoch's log signature, tree-size
+bounds and witness quorum. Signatures are never combined across epochs.
+
 #### Properties
+
+<a id="epochs"></a>
+
+##### epochs?
+
+```ts
+optional epochs?: C2spTlogPolicyEpoch[];
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L56)
+
+Ordered trust epochs; build them with `createC2spTlogEpochPolicy`.
 
 <a id="origins"></a>
 
@@ -1086,7 +1118,7 @@ Local C2SP tlog trust policy: per-origin rules, optionally pinned to one lr scop
 origins: Record<string, C2spTlogOriginPolicy>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L30)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L54)
 
 <a id="scope-1"></a>
 
@@ -1096,7 +1128,68 @@ Defined in: [packages/log-c2sp-tlog/src/policy.ts:30](https://github.com/dnsid-a
 optional scope?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L29)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L53)
+
+***
+
+<a id="c2sptlogpolicyepoch"></a>
+
+### C2spTlogPolicyEpoch
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L34)
+
+One trust epoch of an epoch policy: a single-log policy for the origin and
+optional inclusive checkpoint tree-size bounds.
+
+#### Properties
+
+<a id="id"></a>
+
+##### id
+
+```ts
+id: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L36)
+
+Epoch id reported in [CheckpointPolicyResult.trustEpoch](#trustepoch).
+
+<a id="maxtreesize-1"></a>
+
+##### maxTreeSize?
+
+```ts
+optional maxTreeSize?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L42)
+
+Largest accepted checkpoint tree size (inclusive).
+
+<a id="mintreesize"></a>
+
+##### minTreeSize?
+
+```ts
+optional minTreeSize?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L40)
+
+Smallest accepted checkpoint tree size (inclusive).
+
+<a id="policy"></a>
+
+##### policy
+
+```ts
+policy: C2spTlogPolicy;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L38)
+
+The epoch's own policy, holding exactly one log key for the origin.
 
 ***
 
@@ -1104,7 +1197,7 @@ Defined in: [packages/log-c2sp-tlog/src/policy.ts:29](https://github.com/dnsid-a
 
 ### C2spTlogReaderOptions
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L46)
 
 Configuration for [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader); only `policy` is required.
 
@@ -1118,7 +1211,7 @@ Configuration for [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-
 optional allowedClockSkew?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L62)
 
 Accepted timestamp clock skew in milliseconds (default zero).
 
@@ -1130,9 +1223,11 @@ Accepted timestamp clock skew in milliseconds (default zero).
 optional checkpointMaxAge?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L59)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
 
 Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
+With an epoch policy (`policy.epochs`) it is also part of epoch
+acceptance for every checkpoint the reader verifies.
 
 <a id="consistencyproofsource"></a>
 
@@ -1142,7 +1237,7 @@ Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
 optional consistencyProofSource?: C2spConsistencyProofSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L77)
 
 <a id="entitykey-1"></a>
 
@@ -1152,7 +1247,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-a
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L55)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L60)
 
 Trusted accountable-entity key for lifecycle verification.
 
@@ -1164,7 +1259,7 @@ Trusted accountable-entity key for lifecycle verification.
 optional maxCheckpointBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L70)
 
 <a id="maxentrybundlebytes-1"></a>
 
@@ -1174,7 +1269,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:61](https://github.com/dnsid-a
 optional maxEntryBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L71)
 
 <a id="maxtotalentrybytes-1"></a>
 
@@ -1184,9 +1279,9 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:62](https://github.com/dnsid-a
 optional maxTotalEntryBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L72)
 
-<a id="maxtreesize-1"></a>
+<a id="maxtreesize-2"></a>
 
 ##### maxTreeSize?
 
@@ -1194,9 +1289,9 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-a
 optional maxTreeSize?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L69)
 
-<a id="policy"></a>
+<a id="policy-1"></a>
 
 ##### policy
 
@@ -1204,7 +1299,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:60](https://github.com/dnsid-a
 policy: C2spTlogPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L43)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L48)
 
 Local trust policy: accepted log keys and witness quorum per origin.
 
@@ -1216,7 +1311,7 @@ Local trust policy: accepted log keys and witness quorum per origin.
 optional proofs?: Record<string, string | TlogProofV1>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L51)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L56)
 
 Inclusion proofs by entry index, required by `readEvent` for historical refs.
 
@@ -1228,7 +1323,7 @@ Inclusion proofs by entry index, required by `readEvent` for historical refs.
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L64)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L73)
 
 <a id="resourcefetcher"></a>
 
@@ -1238,7 +1333,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:64](https://github.com/dnsid-a
 optional resourceFetcher?: C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L45)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L50)
 
 Bounded resource fetcher for the default [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#scanstreamsource) and stream-bundle reads.
 
@@ -1250,7 +1345,7 @@ Bounded resource fetcher for the default [ScanStreamSource](https://docs.dnsid.a
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L74)
 
 <a id="streambundle"></a>
 
@@ -1260,7 +1355,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-a
 optional streamBundle?: C2spStreamBundleReaderOptions;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L49)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L54)
 
 Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence.
 
@@ -1272,7 +1367,7 @@ Preferred verified per-domain bundle source. Raw scans are the bounded fallback 
 optional streamSource?: StreamSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L47)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L52)
 
 Alternative raw evidence source; defaults to a complete tlog-tiles scan.
 
@@ -1284,7 +1379,7 @@ Alternative raw evidence source; defaults to a complete tlog-tiles scan.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L76)
 
 <a id="unchained-1"></a>
 
@@ -1294,7 +1389,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-a
 optional unchained?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L53)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L58)
 
 ###### Deprecated
 
@@ -1308,7 +1403,7 @@ Ignored: all scopes require logical predecessor chains.
 optional verifyMigration?: (event, options?) => Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L66)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L75)
 
 ###### Parameters
 
@@ -1326,13 +1421,19 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-a
 
 ***
 
-<a id="c2sptlogtrustprofile"></a>
+<a id="c2sptlogtrustepoch"></a>
 
-### C2spTlogTrustProfile
+### C2spTlogTrustEpoch
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L12)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L42)
 
-Independently distributed trust for one exact DNSid C2SP log.
+One complete trust epoch of a version 2 trust profile: a tlog-policy
+document with exactly one log key, the stream-bundle signers bound to it,
+and optional inclusive checkpoint tree-size bounds.
+
+`policyDocument` must be byte-identical to the policy the epoch's log server
+renders, because stream bundles bind its SHA-256 as `policy_hash`. An absent
+bound is open.
 
 #### Properties
 
@@ -1344,17 +1445,43 @@ Independently distributed trust for one exact DNSid C2SP log.
 bundleVerifierKeys: SignedNoteKey[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L17)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L46)
 
-<a id="logprefix"></a>
+<a id="id-1"></a>
 
-##### logPrefix
+##### id
 
 ```ts
-logPrefix: string;
+id: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L15)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L44)
+
+Epoch id: 1-64 characters of `A-Z a-z 0-9 . _ -`, or `''` for a version 1 profile.
+
+<a id="maxtreesize-3"></a>
+
+##### maxTreeSize?
+
+```ts
+optional maxTreeSize?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L50)
+
+Largest accepted checkpoint tree size (inclusive), 1 to 2^53-1.
+
+<a id="mintreesize-1"></a>
+
+##### minTreeSize?
+
+```ts
+optional minTreeSize?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L48)
+
+Smallest accepted checkpoint tree size (inclusive), 1 to 2^53-1.
 
 <a id="policydocument-1"></a>
 
@@ -1364,7 +1491,50 @@ Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:15](https://github.com/
 policyDocument: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L16)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L45)
+
+***
+
+<a id="c2sptlogtrustprofilev1"></a>
+
+### C2spTlogTrustProfileV1
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L25)
+
+Version 1 trust profile: one C2SP tlog-policy document and the stream-bundle
+signers bound to it, for one exact DNSid C2SP log.
+
+#### Properties
+
+<a id="bundleverifierkeys-1"></a>
+
+##### bundleVerifierKeys
+
+```ts
+bundleVerifierKeys: SignedNoteKey[];
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L30)
+
+<a id="logprefix"></a>
+
+##### logPrefix
+
+```ts
+logPrefix: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L28)
+
+<a id="policydocument-2"></a>
+
+##### policyDocument
+
+```ts
+policyDocument: Uint8Array;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L29)
 
 <a id="scope-2"></a>
 
@@ -1374,7 +1544,7 @@ Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:16](https://github.com/
 scope: C2spTlogScope;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L14)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L27)
 
 <a id="version"></a>
 
@@ -1384,7 +1554,62 @@ Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:14](https://github.com/
 version: 1;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L13)
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L26)
+
+***
+
+<a id="c2sptlogtrustprofilev2"></a>
+
+### C2spTlogTrustProfileV2
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L59)
+
+Version 2 trust profile: an ordered list of complete trust epochs for one
+log, used to rotate its log, witness and bundle keys together. A checkpoint
+or stream bundle is accepted only when it satisfies one epoch completely;
+signatures are never combined across epochs.
+
+#### Properties
+
+<a id="epochs-1"></a>
+
+##### epochs
+
+```ts
+epochs: C2spTlogTrustEpoch[];
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L63)
+
+<a id="logprefix-1"></a>
+
+##### logPrefix
+
+```ts
+logPrefix: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L62)
+
+<a id="scope-3"></a>
+
+##### scope
+
+```ts
+scope: C2spTlogScope;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L61)
+
+<a id="version-1"></a>
+
+##### version
+
+```ts
+version: 2;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L60)
 
 ***
 
@@ -1407,11 +1632,11 @@ Options for [createC2spTlogVerificationRegistry](https://docs.dnsid.ai/reference
 optional allowedClockSkew?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L75)
 
 Accepted timestamp clock skew in milliseconds (default zero).
 
-<a id="bundleverifierkeys-1"></a>
+<a id="bundleverifierkeys-2"></a>
 
 ##### bundleVerifierKeys?
 
@@ -1419,7 +1644,7 @@ Accepted timestamp clock skew in milliseconds (default zero).
 optional bundleVerifierKeys?: SignedNoteKey[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L60)
 
 Independently trusted stream-bundle signer keys. Mutually exclusive with `trustProfile`.
 
@@ -1431,7 +1656,7 @@ Independently trusted stream-bundle signer keys. Mutually exclusive with `trustP
 optional checkpointMaxAge?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L73)
 
 Maximum accepted checkpoint age in milliseconds for fresh logged-state and
 non-revocation checks. Omission intentionally makes those operations fail closed.
@@ -1444,7 +1669,7 @@ non-revocation checks. Omission intentionally makes those operations fail closed
 optional maxBundleLifetimeMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L58)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L62)
 
 Maximum bundle expiry distance from its witnessed checkpoint. Required with bundle verifier keys.
 
@@ -1456,7 +1681,7 @@ Maximum bundle expiry distance from its witnessed checkpoint. Required with bund
 optional maxPolicyBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L75)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L79)
 
 Maximum policy size in bytes (default 1,048,576).
 
@@ -1468,7 +1693,7 @@ Maximum policy size in bytes (default 1,048,576).
 optional maxStreamBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L64)
 
 Maximum decoded stream-bundle response size (default 8 MiB).
 
@@ -1480,11 +1705,11 @@ Maximum decoded stream-bundle response size (default 8 MiB).
 optional maxStreamBundleEvents?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L66)
 
 Maximum lifecycle events in one stream bundle (default 10,000).
 
-<a id="policydocument-2"></a>
+<a id="policydocument-3"></a>
 
 ##### policyDocument?
 
@@ -1492,7 +1717,7 @@ Maximum lifecycle events in one stream bundle (default 10,000).
 optional policyDocument?: Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L42)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L46)
 
 Independently trusted C2SP `tlog-policy` bytes, parsed locally.
 
@@ -1504,7 +1729,7 @@ Independently trusted C2SP `tlog-policy` bytes, parsed locally.
 optional policyUrl?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L44)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L48)
 
 Independently trusted absolute HTTPS URL of a C2SP `tlog-policy` document.
 
@@ -1516,7 +1741,7 @@ Independently trusted absolute HTTPS URL of a C2SP `tlog-policy` document.
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L77)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L81)
 
 Finite timeout for each policy/log resource request (default 10 seconds).
 
@@ -1528,7 +1753,7 @@ Finite timeout for each policy/log resource request (default 10 seconds).
 optional requireStreamBundle?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L64)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L68)
 
 Fail instead of using the bounded raw scanner when the bundle endpoint is unavailable.
 
@@ -1540,7 +1765,7 @@ Fail instead of using the bounded raw scanner when the bundle endpoint is unavai
 optional resourceFetcher?: C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L46)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L50)
 
 Bounded transport used for both policy and standard log resources.
 
@@ -1552,7 +1777,7 @@ Bounded transport used for both policy and standard log resources.
 optional scanLimits?: C2spScanLimits;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L58)
 
 Optional overrides for the built-in complete scanner's secure limits.
 
@@ -1564,7 +1789,7 @@ Optional overrides for the built-in complete scanner's secure limits.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L79)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L83)
 
 Cancels policy retrieval and later reads made by readers from this registry.
 
@@ -1576,7 +1801,7 @@ Cancels policy retrieval and later reads made by readers from this registry.
 optional transport?: TransportConfig;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L56)
 
 DNS server, CA bundle, and private-address exceptions for the default resource fetcher; pass
 the same `DnsidConfig.transport` given to the IdentityManager when verifying against a private
@@ -1590,7 +1815,7 @@ registry such as `dnsid local`. Mutually exclusive with `resourceFetcher`.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L77)
 
 Persistence for accepted checkpoints. The default is process-lifetime only.
 
@@ -1602,9 +1827,11 @@ Persistence for accepted checkpoints. The default is process-lifetime only.
 optional trustProfile?: C2spTlogTrustProfile;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L40)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L44)
 
-Independently distributed trust profile for one exact log.
+Independently distributed trust profile for one exact log. A version 2
+profile binds a list of trust epochs: checkpoints and stream bundles must
+then satisfy one epoch completely.
 
 ***
 
@@ -1670,11 +1897,37 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:7](https://github.com/dnsi
 
 ***
 
+<a id="checkpointpolicyoptions"></a>
+
+### CheckpointPolicyOptions
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L85)
+
+Optional checks applied by [enforceCheckpointPolicy](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#enforcecheckpointpolicy).
+
+#### Properties
+
+<a id="maxcheckpointagems"></a>
+
+##### maxCheckpointAgeMs?
+
+```ts
+optional maxCheckpointAgeMs?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L91)
+
+Maximum age in milliseconds of the accepted witness time. When set, a
+checkpoint without an accepted timestamp, or with an older one, is
+rejected; with epochs, an epoch that fails freshness does not accept.
+
+***
+
 <a id="checkpointpolicyresult"></a>
 
 ### CheckpointPolicyResult
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L49)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L75)
 
 Outcome of checkpoint policy enforcement.
 
@@ -1688,7 +1941,7 @@ Outcome of checkpoint policy enforcement.
 acceptedWitnessTimestamps: number[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L51)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L77)
 
 Epoch-second timestamps of the accepted witness cosignatures.
 
@@ -1700,9 +1953,21 @@ Epoch-second timestamps of the accepted witness cosignatures.
 optional checkpointWitnessTime?: Date;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L53)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L79)
 
 Earliest accepted witness timestamp; undefined when the quorum rule required no witnesses.
+
+<a id="trustepoch"></a>
+
+##### trustEpoch
+
+```ts
+trustEpoch: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L81)
+
+Id of the trust epoch that accepted the checkpoint; `''` for a policy without epochs.
 
 ***
 
@@ -1710,7 +1975,7 @@ Earliest accepted witness timestamp; undefined when the quorum rule required no 
 
 ### DnsidManagedVerificationOptions
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L38)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L43)
 
 Shared infrastructure for [createDnsidManagedVerificationRegistry](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#creatednsidmanagedverificationregistry).
 
@@ -1724,7 +1989,7 @@ Shared infrastructure for [createDnsidManagedVerificationRegistry](https://docs.
 optional resourceFetcher?: C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L40)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L45)
 
 Bounded transport shared by every managed log reader.
 
@@ -1736,7 +2001,7 @@ Bounded transport shared by every managed log reader.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L44)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L49)
 
 Cancels reads made by readers from this registry.
 
@@ -1748,7 +2013,7 @@ Cancels reads made by readers from this registry.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L42)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L47)
 
 Persistence shared by every managed log reader. The default is restart-ephemeral.
 
@@ -1902,7 +2167,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:5](https://github.com/dnsi
 
 ### ParseC2spStreamBundleOptions
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L70)
 
 Size limits applied while parsing an untrusted stream bundle.
 
@@ -1920,7 +2185,7 @@ Size limits applied while parsing an untrusted stream bundle.
 maxBundleBytes: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L71)
 
 <a id="maxevents-1"></a>
 
@@ -1930,7 +2195,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:70](https://github.com/
 maxEvents: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L72)
 
 ***
 
@@ -1954,7 +2219,7 @@ optional entryIndex?: number;
 
 Defined in: [packages/log-c2sp-tlog/src/lr.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L16)
 
-<a id="logprefix-1"></a>
+<a id="logprefix-2"></a>
 
 ##### logPrefix
 
@@ -1996,7 +2261,7 @@ origin: string;
 
 Defined in: [packages/log-c2sp-tlog/src/lr.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L13)
 
-<a id="scope-3"></a>
+<a id="scope-4"></a>
 
 ##### scope
 
@@ -2217,7 +2482,7 @@ optional maxTotalEntryBytes?: number;
 
 Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L49)
 
-<a id="maxtreesize-2"></a>
+<a id="maxtreesize-4"></a>
 
 ##### maxTreeSize?
 
@@ -2583,7 +2848,7 @@ Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:18](https://github.com/dn
 
 [`C2spEventContext`](#c2speventcontext).[`prevStateHash`](#prevstatehash)
 
-<a id="scope-4"></a>
+<a id="scope-5"></a>
 
 ##### scope?
 
@@ -2895,7 +3160,7 @@ Returns the currently trusted checkpoint for `origin`, if any.
 
 ### VerifiedC2spStreamBundle
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L102)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L114)
 
 Result of successful stream bundle verification.
 
@@ -2909,7 +3174,7 @@ Result of successful stream bundle verification.
 activeOperationalKeyThumbprint: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L110)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L122)
 
 Thumbprint of the agent's operational key after the last verified event.
 
@@ -2921,7 +3186,7 @@ Thumbprint of the agent's operational key after the last verified event.
 bundle: C2spStreamBundle;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L103)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L115)
 
 <a id="checkpointwitnesstime-1"></a>
 
@@ -2931,7 +3196,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:103](https://github.com
 checkpointWitnessTime: Date;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L111)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L123)
 
 <a id="events-1"></a>
 
@@ -2941,7 +3206,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:111](https://github.com
 events: VerifiedLifecycleEvent[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L104)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L116)
 
 <a id="historyreferences"></a>
 
@@ -2951,7 +3216,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:104](https://github.com
 optional historyReferences?: string[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L108)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L120)
 
 Verified log reference aligned with each stitched lifecycle event, when prior migration boundaries were supplied.
 
@@ -2963,9 +3228,21 @@ Verified log reference aligned with each stitched lifecycle event, when prior mi
 lifecycle: LogEvent[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L106)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L118)
 
 The verified lifecycle events in log order.
+
+<a id="trustepoch-1"></a>
+
+##### trustEpoch
+
+```ts
+trustEpoch: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L125)
+
+Id of the trust epoch that accepted the bundle; `''` without `trustEpochs`.
 
 ***
 
@@ -3025,7 +3302,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:11](https://github.co
 
 ### VerifyC2spStreamBundleOptions
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L75)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L76)
 
 Trusted inputs and freshness limits for verifying a stream bundle.
 
@@ -3037,15 +3314,15 @@ Trusted inputs and freshness limits for verifying a stream bundle.
 
 <a id="bundlekeys-1"></a>
 
-##### bundleKeys
+##### bundleKeys?
 
 ```ts
-bundleKeys: SignedNoteKey[];
+optional bundleKeys?: SignedNoteKey[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L83)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L87)
 
-Trusted bundle-producer keys (with key IDs) accepted for the bundle signature.
+Trusted bundle-producer keys (with key IDs) accepted for the bundle signature. Required with `policyBytes`.
 
 <a id="checkpointfreshnessms-1"></a>
 
@@ -3055,7 +3332,7 @@ Trusted bundle-producer keys (with key IDs) accepted for the bundle signature.
 checkpointFreshnessMs: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L89)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L101)
 
 Maximum accepted checkpoint age relative to now.
 
@@ -3067,7 +3344,7 @@ Maximum accepted checkpoint age relative to now.
 optional consistencyProofSource?: C2spConsistencyProofSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L96)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L108)
 
 <a id="entitykey-5"></a>
 
@@ -3077,7 +3354,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:96](https://github.com/
 entityKey: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L85)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L97)
 
 Trusted accountable-entity key for the identity record.
 
@@ -3089,7 +3366,7 @@ Trusted accountable-entity key for the identity record.
 expectedFqdn: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L77)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L78)
 
 DNS name of the agent the bundle must describe.
 
@@ -3101,7 +3378,7 @@ DNS name of the agent the bundle must describe.
 expectedLogReference: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L79)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L80)
 
 Canonical bound c2sp-tlog lr the bundle must reference.
 
@@ -3113,7 +3390,7 @@ Canonical bound c2sp-tlog lr the bundle must reference.
 maxBundleBytes: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L71)
 
 ###### Inherited from
 
@@ -3127,7 +3404,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:70](https://github.com/
 maxBundleLifetimeMs: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L87)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L99)
 
 Maximum allowed distance between checkpoint witness time and bundle expiry.
 
@@ -3139,7 +3416,7 @@ Maximum allowed distance between checkpoint witness time and bundle expiry.
 optional maxClockSkewMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L92)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L104)
 
 <a id="maxevents-2"></a>
 
@@ -3149,13 +3426,13 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:92](https://github.com/
 maxEvents: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L72)
 
 ###### Inherited from
 
 [`ParseC2spStreamBundleOptions`](#parsec2spstreambundleoptions).[`maxEvents`](#maxevents-1)
 
-<a id="maxtreesize-3"></a>
+<a id="maxtreesize-5"></a>
 
 ##### maxTreeSize?
 
@@ -3163,7 +3440,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:71](https://github.com/
 optional maxTreeSize?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L91)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L103)
 
 Maximum accepted checkpoint tree size (default 1,000,000).
 
@@ -3175,19 +3452,20 @@ Maximum accepted checkpoint tree size (default 1,000,000).
 optional nowMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L93)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L105)
 
 <a id="policybytes"></a>
 
-##### policyBytes
+##### policyBytes?
 
 ```ts
-policyBytes: Uint8Array;
+optional policyBytes?: Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L81)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L85)
 
 Local C2SP policy file bytes; their hash must match the bundle's `policy_hash`.
+Required with `bundleKeys`; mutually exclusive with `trustEpochs`.
 
 <a id="signal-6"></a>
 
@@ -3227,7 +3505,23 @@ Overall invocation budget, including all discovery and evidence. Default: 30 sec
 trustedCheckpointStore: TrustedC2spCheckpointStore;
 ```
 
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L107)
+
+<a id="trustepochs-1"></a>
+
+##### trustEpochs?
+
+```ts
+optional trustEpochs?: C2spTlogTrustEpoch[];
+```
+
 Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L95)
+
+Trust epochs (from a version 2 trust profile) in place of `policyBytes` and
+`bundleKeys`. The bundle's `sig.kid` selects the epochs that hold that
+signer, `policy_hash` must be the SHA-256 of one of their policy
+documents, and the embedded checkpoint must satisfy that epoch alone,
+including its tree-size bounds.
 
 <a id="verifymigration-2"></a>
 
@@ -3237,7 +3531,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:95](https://github.com/
 optional verifyMigration?: (event, options?) => Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L94)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L106)
 
 ###### Parameters
 

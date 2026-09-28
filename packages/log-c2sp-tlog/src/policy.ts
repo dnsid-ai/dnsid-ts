@@ -1,6 +1,9 @@
 import { C2spTlogVerificationError } from './errors.ts';
 import type { Checkpoint } from './checkpoint.ts';
-import { parseSignedNoteVerifierKey, verifiedCosignatureTimestamp, verifyCheckpointSignature, type SignedNoteKey } from './signed-note.ts';
+import { parseSignedNoteVerifierKey, verifiedCosignatureTimestamp, verifyCheckpointSignature, verifyNoteSignature, type SignedNoteKey } from './signed-note.ts';
+
+/** Signed notes carry at most this many signature lines (c2sp.org/signed-note verifiers may stop at 100). */
+const MAX_CHECKPOINT_SIGNATURES = 100;
 
 /**
  * Witness-quorum requirement for accepting a checkpoint: no witnesses, a single
@@ -24,10 +27,33 @@ export interface C2spTlogOriginPolicy {
   unchained?: boolean;
 }
 
-/** Local C2SP tlog trust policy: per-origin rules, optionally pinned to one lr scope. */
+/**
+ * One trust epoch of an epoch policy: a single-log policy for the origin and
+ * optional inclusive checkpoint tree-size bounds.
+ */
+export interface C2spTlogPolicyEpoch {
+  /** Epoch id reported in {@link CheckpointPolicyResult.trustEpoch}. */
+  id: string;
+  /** The epoch's own policy, holding exactly one log key for the origin. */
+  policy: C2spTlogPolicy;
+  /** Smallest accepted checkpoint tree size (inclusive). */
+  minTreeSize?: number;
+  /** Largest accepted checkpoint tree size (inclusive). */
+  maxTreeSize?: number;
+}
+
+/**
+ * Local C2SP tlog trust policy: per-origin rules, optionally pinned to one lr scope.
+ *
+ * When `epochs` is set, `origins` is ignored and a checkpoint is accepted only
+ * when it satisfies one epoch completely: that epoch's log signature, tree-size
+ * bounds and witness quorum. Signatures are never combined across epochs.
+ */
 export interface C2spTlogPolicy {
   scope?: string;
   origins: Record<string, C2spTlogOriginPolicy>;
+  /** Ordered trust epochs; build them with `createC2spTlogEpochPolicy`. */
+  epochs?: C2spTlogPolicyEpoch[];
 }
 
 /** Origin policy after key parsing and quorum-rule validation. */
@@ -51,6 +77,18 @@ export interface CheckpointPolicyResult {
   acceptedWitnessTimestamps: number[];
   /** Earliest accepted witness timestamp; undefined when the quorum rule required no witnesses. */
   checkpointWitnessTime?: Date;
+  /** Id of the trust epoch that accepted the checkpoint; `''` for a policy without epochs. */
+  trustEpoch: string;
+}
+
+/** Optional checks applied by {@link enforceCheckpointPolicy}. */
+export interface CheckpointPolicyOptions {
+  /**
+   * Maximum age in milliseconds of the accepted witness time. When set, a
+   * checkpoint without an accepted timestamp, or with an older one, is
+   * rejected; with epochs, an epoch that fails freshness does not accept.
+   */
+  maxCheckpointAgeMs?: number;
 }
 
 /**
@@ -108,21 +146,107 @@ export function normalizedOriginPolicy(policy: C2spTlogPolicy, origin: string): 
  * quorum of timestamped cosignatures no further than `maxClockSkewMs` in the
  * future. Public scope additionally requires a non-empty quorum rule.
  *
- * @returns The accepted witness timestamps and derived checkpoint witness time.
+ * With `policy.epochs`, epochs are tried in order. An epoch is relevant when
+ * the checkpoint carries a signature line under its log key name and key hash.
+ * A relevant epoch checks, in order, its log signature, its tree-size bounds,
+ * its own witness quorum (by witness name and key hash) and, when
+ * `options.maxCheckpointAgeMs` is set, freshness. The first epoch passing every
+ * check accepts. Otherwise the error is that of the first relevant epoch, or a
+ * missing log signature when no epoch is relevant.
+ *
+ * @returns The accepted witness timestamps, derived checkpoint witness time and accepting epoch.
  * @throws C2spTlogVerificationError when any requirement is not met.
  */
-export function enforceCheckpointPolicy(checkpoint: Checkpoint, origin: string, policy: C2spTlogPolicy, scope: string, nowMs = Date.now(), maxClockSkewMs = 0): CheckpointPolicyResult {
+export function enforceCheckpointPolicy(
+  checkpoint: Checkpoint,
+  origin: string,
+  policy: C2spTlogPolicy,
+  scope: string,
+  nowMs = Date.now(),
+  maxClockSkewMs = 0,
+  options: CheckpointPolicyOptions = {},
+): CheckpointPolicyResult {
   if (!Number.isSafeInteger(maxClockSkewMs) || maxClockSkewMs < 0) throw new C2spTlogVerificationError('maximum clock skew must be a non-negative integer');
+  const maxCheckpointAgeMs = options.maxCheckpointAgeMs;
+  if (maxCheckpointAgeMs !== undefined && (!Number.isSafeInteger(maxCheckpointAgeMs) || maxCheckpointAgeMs < 1)) {
+    throw new C2spTlogVerificationError('maximum checkpoint age must be a positive integer');
+  }
   if (policy.scope !== undefined && policy.scope !== scope) throw new C2spTlogVerificationError(`C2SP policy scope ${policy.scope} does not match ${scope}`);
   if (checkpoint.origin !== origin) throw new C2spTlogVerificationError(`checkpoint origin mismatch: ${checkpoint.origin}`);
+  if (policy.epochs === undefined) return enforceSinglePolicy(checkpoint, origin, policy, scope, nowMs, maxClockSkewMs, maxCheckpointAgeMs, undefined);
+  if (!Array.isArray(policy.epochs) || policy.epochs.length === 0) throw new C2spTlogVerificationError('C2SP epoch policy requires at least one epoch');
+  let reported: unknown;
+  for (const epoch of policy.epochs) {
+    if (!epochLogKeySigned(checkpoint, origin, epoch)) continue;
+    try {
+      return enforceSinglePolicy(checkpoint, origin, epoch.policy, scope, nowMs, maxClockSkewMs, maxCheckpointAgeMs, epoch);
+    } catch (cause) {
+      reported ??= cause;
+    }
+  }
+  if (reported !== undefined) throw reported;
+  throw new C2spTlogVerificationError('checkpoint missing accepted log signature: no trust epoch log key signed the checkpoint');
+}
+
+/** Reports whether the checkpoint carries a signature line under the epoch's log key name and key hash; the signature is verified later. */
+function epochLogKeySigned(checkpoint: Checkpoint, origin: string, epoch: C2spTlogPolicyEpoch): boolean {
+  const originPolicy = epoch.policy?.origins?.[origin];
+  if (!originPolicy) return false;
+  return originPolicy.logKeys.map(asKey).some(key => key.keyId !== undefined && checkpoint.signatures.some(sig =>
+    sig.name === key.name && sig.keyHash !== undefined && Buffer.from(sig.keyHash).equals(Buffer.from(key.keyId!))));
+}
+
+/**
+ * Signed-note verification under one epoch's keys (c2sp.org/signed-note):
+ * the first signature line under each of the epoch's keys (name and key hash)
+ * must verify, and later lines under the same key are ignored. Lines under
+ * other keys, including other epochs' keys, are ignored.
+ */
+function assertEpochSignaturesValid(checkpoint: Checkpoint, keys: SignedNoteKey[]): void {
+  if (checkpoint.signatures.length > MAX_CHECKPOINT_SIGNATURES) throw new C2spTlogVerificationError('checkpoint missing accepted log signature: too many signature lines');
+  const seen = new Set<string>();
+  for (const sig of checkpoint.signatures) {
+    if (!sig.keyHash) continue;
+    const id = `${sig.name}+${Buffer.from(sig.keyHash).toString('hex')}`;
+    const key = keys.find(candidate => candidate.keyId !== undefined && `${candidate.name}+${Buffer.from(candidate.keyId).toString('hex')}` === id);
+    if (!key || seen.has(id)) continue;
+    seen.add(id);
+    if (!verifyNoteSignature(checkpoint.signedText, sig, key)) {
+      throw new C2spTlogVerificationError(`checkpoint missing accepted log signature: invalid signature by trusted key ${id}`);
+    }
+  }
+}
+
+function enforceSinglePolicy(
+  checkpoint: Checkpoint,
+  origin: string,
+  policy: C2spTlogPolicy,
+  scope: string,
+  nowMs: number,
+  maxClockSkewMs: number,
+  maxCheckpointAgeMs: number | undefined,
+  epoch: C2spTlogPolicyEpoch | undefined,
+): CheckpointPolicyResult {
   const p = normalizedOriginPolicy(policy, origin);
   const acceptedLogKeys = scope === 'public' ? p.logKeys.filter((key) => key.signatureType?.[0] === 0x01) : p.logKeys;
+  if (epoch) assertEpochSignaturesValid(checkpoint, [...p.logKeys, ...(policy.origins[origin]!.witnessKeys ?? []).map(asKey), ...p.witnessKeys]);
   if (!acceptedLogKeys.some((k) => verifyCheckpointSignature(checkpoint, k))) throw new C2spTlogVerificationError('checkpoint missing accepted log signature');
+  if (epoch?.maxTreeSize !== undefined && checkpoint.treeSize > epoch.maxTreeSize) {
+    throw new C2spTlogVerificationError(`checkpoint tree size ${checkpoint.treeSize} is above trust epoch ${JSON.stringify(epoch.id)} max_tree_size ${epoch.maxTreeSize}`);
+  }
+  if (epoch?.minTreeSize !== undefined && checkpoint.treeSize < epoch.minTreeSize) {
+    throw new C2spTlogVerificationError(`checkpoint tree size ${checkpoint.treeSize} is below trust epoch ${JSON.stringify(epoch.id)} min_tree_size ${epoch.minTreeSize}`);
+  }
   if (scope === 'public' && p.quorumRule.kind === 'none') throw new C2spTlogVerificationError('public C2SP policy requires a non-zero witness quorum');
   const acceptedWitnessTimestamps = evaluateQuorum(p.quorumRule, checkpoint, nowMs, maxClockSkewMs);
   if (!acceptedWitnessTimestamps) throw new C2spTlogVerificationError('checkpoint witness quorum not satisfied by valid timestamped cosignatures');
   const witnessSeconds = acceptedWitnessTimestamps.length > 0 ? Math.min(...acceptedWitnessTimestamps) : undefined;
-  return { acceptedWitnessTimestamps, checkpointWitnessTime: witnessSeconds === undefined ? undefined : new Date(witnessSeconds * 1000) };
+  const checkpointWitnessTime = witnessSeconds === undefined ? undefined : new Date(witnessSeconds * 1000);
+  if (maxCheckpointAgeMs !== undefined) {
+    if (!checkpointWitnessTime) throw new C2spTlogVerificationError('C2SP checkpoint freshness requires an accepted timestamped witness quorum');
+    if (nowMs - checkpointWitnessTime.getTime() > maxCheckpointAgeMs) throw new C2spTlogVerificationError('C2SP checkpoint is stale');
+  }
+  return { acceptedWitnessTimestamps, checkpointWitnessTime, trustEpoch: epoch?.id ?? '' };
 }
 
 /**

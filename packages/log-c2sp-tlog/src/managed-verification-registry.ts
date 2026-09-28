@@ -19,6 +19,11 @@ const DEVELOPMENT_TRUST_PROFILE = new TextEncoder().encode(`{
     "dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0"
   ]
 }`);
+// TODO(Identity-Digital/dnsid-infra#418): the production entry stays a version 1
+// profile until the successor log, witness and bundle keys for log.dnsid.ai are
+// final. It then becomes a version 2 profile whose first epoch is exactly the
+// policy and bundle key below, followed by the successor epoch. No successor key
+// is pinned here yet, deliberately.
 const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
   "version": 1,
   "scope": "public",
