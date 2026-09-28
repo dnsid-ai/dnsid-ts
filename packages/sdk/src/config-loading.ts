@@ -39,9 +39,12 @@ export interface LogTrust {
   /** `true` selects the embedded DNSid-managed catalog. */
   managed?: boolean;
   /**
-   * DNSid C2SP trust-profile document, version 1 or 2 (parsed JSON). It is re-serialized before
-   * parsing, so number tokens are normalized: pass the raw bytes to `parseC2spTlogTrustProfile`
-   * directly when the exact token form of epoch tree-size bounds must be checked.
+   * DNSid C2SP trust-profile document, version 1 or 2 (parsed JSON). A profile loaded from
+   * `DNSID_LOG_TRUST_PROFILE_FILE` is parsed from the file's exact bytes, so number tokens such as
+   * epoch tree-size bounds are checked as written. An object supplied in code, or read from a
+   * deployment file's `logTrust.profile`, is re-serialized before parsing, which normalizes number
+   * tokens (`5.0` becomes `5`); pass raw bytes to `parseC2spTlogTrustProfile` when the exact token
+   * form must be checked.
    */
   profile?: Record<string, unknown>;
   /** Trusted C2SP `tlog-policy` bytes. */
@@ -120,7 +123,7 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
   const logTrust = compact({
     policyUrl: get('DNSID_LOG_POLICY_URL'),
     policyDocument: policyFile === undefined ? undefined : new Uint8Array(await fs.readFile(policyFile)),
-    profile: profileFile === undefined ? undefined : jsonObject(await fs.readFile(profileFile), profileFile),
+    profile: profileFile === undefined ? undefined : profileFromFileBytes(new Uint8Array(await fs.readFile(profileFile)), profileFile),
   });
 
   return top({
@@ -324,7 +327,7 @@ async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig 
     return createDnsidManagedVerificationRegistry();
   }
   return createC2spTlogVerificationRegistry({
-    trustProfile: trust.profile && parseC2spTlogTrustProfile(new TextEncoder().encode(JSON.stringify(trust.profile))),
+    trustProfile: trust.profile && parseC2spTlogTrustProfile(trustProfileBytes(trust.profile)),
     policyDocument: trust.policyDocument,
     policyUrl: trust.policyUrl,
     transport,
@@ -332,6 +335,26 @@ async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig 
     maxBundleLifetimeMs: trust.profile ? MANAGED_DEFAULTS_MS : undefined,
     allowedClockSkew: 0,
   });
+}
+
+/**
+ * Exact file bytes of profiles loaded from DNSID_LOG_TRUST_PROFILE_FILE, keyed by the parsed object,
+ * so construction parses what the file says rather than a re-serialization of it.
+ */
+const PROFILE_FILE_BYTES = new WeakMap<object, Uint8Array>();
+
+function profileFromFileBytes(bytes: Uint8Array, source: string): Record<string, unknown> {
+  const profile = jsonObject(bytes, source);
+  PROFILE_FILE_BYTES.set(profile, bytes);
+  return profile;
+}
+
+/** The file bytes when the profile object is still exactly what was read; otherwise its re-serialization. */
+function trustProfileBytes(profile: Record<string, unknown>): Uint8Array {
+  const serialized = JSON.stringify(profile);
+  const fileBytes = PROFILE_FILE_BYTES.get(profile);
+  if (fileBytes && JSON.stringify(parseJsonNoDuplicateMembers(fileBytes)) === serialized) return fileBytes;
+  return new TextEncoder().encode(serialized);
 }
 
 /** `cliDirectory` wins over `keyStorePath`; neither leaves `deps.keyProvider` absent for the constructor to reject. */

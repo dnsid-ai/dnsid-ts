@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -235,6 +236,20 @@ describe('constructIdentityManager() and convenience constructors', () => {
     await writeFile(join(root, 'profile.json'), JSON.stringify(TRUST_PROFILE));
     const idm = await createNodeIdentityManagerFromEnvironment({ DNSID_LOG_TRUST_PROFILE_FILE: join(root, 'profile.json') }, undefined, deps);
     expect(idm.config.identity).toBeUndefined();
+  }));
+
+  it('DNSID_LOG_TRUST_PROFILE_FILE is parsed from the exact file bytes, so non-digit bounds are rejected', () => withTemp(async root => {
+    // A version 2 profile from the shared epochs vector, with max_tree_size written as the token 5.
+    const vectors = JSON.parse(readFileSync(new URL('./fixtures/c2sp-trust-profile-epochs-v1.json', import.meta.url), 'utf8')) as { profiles: Record<string, string> };
+    const capped = vectors.profiles['v2-legacy-capped']!;
+    expect(capped).toMatch(/"max_tree_size": 5\n/);
+    await writeFile(join(root, 'ok.json'), capped);
+    await expect(createNodeIdentityManagerFromEnvironment({ DNSID_LOG_TRUST_PROFILE_FILE: join(root, 'ok.json') }, undefined, deps)).resolves.toBeDefined();
+    for (const token of ['5.0', '5e0', '0.5E1']) {
+      const file = join(root, `bound-${token}.json`);
+      await writeFile(file, capped.replace('"max_tree_size": 5\n', `"max_tree_size": ${token}\n`));
+      await expect(createNodeIdentityManagerFromEnvironment({ DNSID_LOG_TRUST_PROFILE_FILE: file }, undefined, deps)).rejects.toThrow(/max_tree_size/);
+    }
   }));
 
   it('deps.logRegistry wins over loaded logTrust', async () => {
