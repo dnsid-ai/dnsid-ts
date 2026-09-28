@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,7 +7,9 @@ import {
   c2spTlogTrustProfilePolicy,
   createC2spTlogEpochPolicy,
   createC2spTlogVerificationRegistry,
+  enforceCheckpointPolicy,
   parseC2spTlogTrustProfile,
+  parseCheckpoint,
   parseSignedNoteVerifierKey,
 } from '@dnsid-ai/log-c2sp-tlog';
 
@@ -149,6 +152,16 @@ describe('C2SP tlog trust profile version 2 limits', () => {
       .toThrow(/exactly one log key, named for the log origin/);
   });
 
+  it('rejects a version 1 profile that also carries epochs, as a document and programmatically', async () => {
+    expect(() => parseC2spTlogTrustProfile(bytes(profile({ epochs: [] })))).toThrow(/unsupported or missing members/);
+    const trust = parseC2spTlogTrustProfile(bytes(profile()));
+    const epochs = c2spTlogTrustEpochs(parseC2spTlogTrustProfile(v2([epoch('a')])));
+    await expect(createC2spTlogVerificationRegistry({
+      trustProfile: { ...trust, epochs } as never,
+      maxBundleLifetimeMs: 60_000,
+    })).rejects.toThrow('invalid C2SP tlog trust profile');
+  });
+
   it('rejects a version 2 profile that also carries top-level single-policy fields programmatically', async () => {
     const trust = parseC2spTlogTrustProfile(v2([epoch('a')]));
     await expect(createC2spTlogVerificationRegistry({
@@ -156,4 +169,39 @@ describe('C2SP tlog trust profile version 2 limits', () => {
       maxBundleLifetimeMs: 60_000,
     })).rejects.toThrow(/in epochs/);
   });
+});
+
+describe('C2SP tlog epoch signed-note verification', () => {
+  // An accepted successor checkpoint from the shared epochs vector.
+  const vectors = JSON.parse(readFileSync(new URL('./fixtures/c2sp-trust-profile-epochs-v1.json', import.meta.url), 'utf8')) as {
+    parameters: { now: number; checkpoint_max_age_seconds: number };
+    profiles: Record<string, string>;
+    checkpoint_cases: Array<{ name: string; profile: string; checkpoint: string }>;
+  };
+  const accepted = vectors.checkpoint_cases.find(testCase => testCase.name === 't7-6-successor-above-n')!;
+  const policy = c2spTlogTrustProfilePolicy(parseC2spTlogTrustProfile(new TextEncoder().encode(vectors.profiles[accepted.profile]!)));
+  const verify = (text: string) => enforceCheckpointPolicy(parseCheckpoint(text), 'log.example', policy, 'public',
+    vectors.parameters.now * 1000, 0, { maxCheckpointAgeMs: vectors.parameters.checkpoint_max_age_seconds * 1000 });
+
+  /** Puts a copy of the line signed by `name`, with its last signature byte flipped, ahead of the valid line. */
+  function withCorruptedLineFirst(text: string, name: string): string {
+    const lines = text.split('\n');
+    const index = lines.findIndex(line => line.startsWith(`— ${name} `));
+    expect(index).toBeGreaterThan(0);
+    const bytes = Buffer.from(lines[index]!.slice(`— ${name} `.length), 'base64');
+    bytes[bytes.length - 1]! ^= 0x01;
+    lines.splice(index, 0, `— ${name} ${bytes.toString('base64')}`);
+    return lines.join('\n');
+  }
+
+  it('accepts the unmodified checkpoint under the successor epoch', () => {
+    expect(verify(accepted.checkpoint).trustEpoch).toBe('successor');
+  });
+
+  it.each([['log', 'log.example'], ['witness', 'witness.example/w1']])(
+    'rejects an invalid %s line ahead of the valid line for the same key, as signed-note verifiers do',
+    (_kind, name) => {
+      expect(() => verify(withCorruptedLineFirst(accepted.checkpoint, name))).toThrow(/invalid signature by trusted key/);
+    },
+  );
 });
