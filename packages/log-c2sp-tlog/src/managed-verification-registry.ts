@@ -23,9 +23,9 @@ const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
   "version": 1,
   "scope": "public",
   "log_prefix": "https://log.dnsid.ai",
-  "tlog_policy": "log log.dnsid.ai+c4683585+AWZYC4OLE9KeRnpaI9xaHWwHUKoxgp/24ukzgVYlDwIt\\nwitness dnsid-witness-1 witness.dnsid.ai/w1+b5ea211e+BH0nGTkjF4tYpkefsQhHNg0YagPvQ6H96Y3UBbXo7a/b\\nquorum dnsid-witness-1\\n",
+  "tlog_policy": "log log.dnsid.ai+f10a26bc+Aeo6u4o1XvQlcRczgY462ZdIGpm/ejBC2G3vSbyYYqqY\\nwitness dnsid-witness-1 witness.dnsid.ai/w1+706fd4fb+BLqX21Sx9xG5+5vK7kSK5omcu9+2il20PLdfpOp8lQOJ\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+ee2b26d2+AWGLBe4LhJKumyDpH8VJ0vyATB081i1HseVeETu4TONR"
+    "dnsid-stream-bundle+2e77a3f1+AbKj/zrAfK04/NM07Zj7kxP2YXbM5neT8ym6juXC2PXG"
   ]
 }`);
 
