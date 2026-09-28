@@ -222,7 +222,7 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 | `DNSID_PRIVATE_HOSTS` | `dnsid.transport.privateAddressHosts` | Comma-separated; entries trimmed, empties dropped. |
 | `DNSID_LOG_POLICY_URL` | `logTrust.policyUrl` | Trusted C2SP `tlog-policy` URL; `dnsid local env` exports one. |
 | `DNSID_LOG_POLICY_FILE` | `logTrust.policyDocument` | Path; the loader reads the bytes. |
-| `DNSID_LOG_TRUST_PROFILE_FILE` | `logTrust.profile` | Path to a DNSid C2SP trust-profile document (version 1, or version 2 with epochs). The file's exact bytes are parsed, so epoch tree-size bounds must be digits-only tokens. A `logTrust.profile` object supplied in code or in a deployment file is re-serialized first, which normalizes number tokens (`5.0` becomes `5`). |
+| `DNSID_LOG_TRUST_PROFILE_FILE` | `logTrust.profile` | Path to a DNSid C2SP trust-profile document (version 1, or version 2 with epochs). The file's exact bytes are parsed, so epoch tree-size bounds must be digits-only tokens. That holds while the loaded object is used unchanged: an edited loaded profile, a copy of it (`structuredClone`, spread, JSON round trip), and a `logTrust.profile` object supplied in code or in a deployment file are re-serialized first, which normalizes number tokens (`5.0` becomes `5`). |
 | `DNSID_REGISTRY_URL` | `registry.registryUrl` | `RegistryClient` defaults to `http://127.0.0.1:7755` when absent. |
 | `DNSID_API_KEY` | `createRegistryClientFromEnvironment()` only | Owner API key for registry workflows; not loaded configuration. |
 | `DNSID_CONFIG_DIR` | `keySource.cliDirectory` | DNSid CLI identity directory; supplies the operational key provider. |

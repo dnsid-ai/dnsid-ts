@@ -41,10 +41,11 @@ export interface LogTrust {
   /**
    * DNSid C2SP trust-profile document, version 1 or 2 (parsed JSON). A profile loaded from
    * `DNSID_LOG_TRUST_PROFILE_FILE` is parsed from the file's exact bytes, so number tokens such as
-   * epoch tree-size bounds are checked as written. An object supplied in code, or read from a
-   * deployment file's `logTrust.profile`, is re-serialized before parsing, which normalizes number
-   * tokens (`5.0` becomes `5`); pass raw bytes to `parseC2spTlogTrustProfile` when the exact token
-   * form must be checked.
+   * epoch tree-size bounds are checked as written, as long as the loaded object is used unchanged.
+   * An edited object, a copy of it (`structuredClone`, spread, JSON round trip), an object supplied
+   * in code, or one read from a deployment file's `logTrust.profile` is re-serialized before
+   * parsing, which normalizes number tokens (`5.0` becomes `5`); pass raw bytes to
+   * `parseC2spTlogTrustProfile` when the exact token form must be checked.
    */
   profile?: Record<string, unknown>;
   /** Trusted C2SP `tlog-policy` bytes. */
