@@ -104,6 +104,25 @@ describe('C2SP tlog trust profile version 2 limits', () => {
     expect(() => parseC2spTlogTrustProfile(v2(distinct(9)))).toThrow(/between 1 and 8 epochs/);
   });
 
+  it('rejects exact duplicate and case-variant members at the top level and in an epoch', () => {
+    const text = new TextDecoder().decode(v2([epoch('a', { max_tree_size: 5 })]));
+    const duplicates = [
+      text.replace('"version":2', '"version":2,"version":2'),
+      text.replace('"max_tree_size":5', '"max_tree_size":5,"max_tree_size":9'),
+      text.replace('"id":"a"', '"id":"a","id":"b"'),
+    ];
+    for (const document of duplicates) {
+      expect(() => parseC2spTlogTrustProfile(new TextEncoder().encode(document))).toThrow(/duplicate JSON member/);
+    }
+    for (const document of [
+      text.replace('"max_tree_size":5', '"max_tree_size":5,"MAX_TREE_SIZE":9'),
+      text.replace('"scope"', '"Scope"'),
+      text.replace('"tlog_policy"', '"Tlog_Policy"'),
+    ]) {
+      expect(() => parseC2spTlogTrustProfile(new TextEncoder().encode(document))).toThrow(/unsupported or missing members/);
+    }
+  });
+
   it('bounds epoch ids at 64 characters', () => {
     expect(() => parseC2spTlogTrustProfile(v2([epoch('a'.repeat(64))]))).not.toThrow();
     expect(() => parseC2spTlogTrustProfile(v2([epoch('a'.repeat(65))]))).toThrow(/epoch id/);

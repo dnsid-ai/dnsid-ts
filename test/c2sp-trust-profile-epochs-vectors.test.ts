@@ -28,8 +28,8 @@ import {
 } from '@dnsid-ai/log-c2sp-tlog';
 
 const FIXTURE_URL = new URL('./fixtures/c2sp-trust-profile-epochs-v1.json', import.meta.url);
-/** sha256 of dnsid-go 09bf3dc05b97d3d3acb8b7a97d3de821865a3a22:log/c2sptlog/testdata/c2sp-trust-profile-epochs-v1.json */
-const FIXTURE_SHA256 = '40e7971d97b2747241bf08c9a6fe15935133ea4a16d7abd9a98dd20845015f39';
+/** sha256 of dnsid-go a52596f3bdc5132f8b6f37ddf77836a5e9133921:log/c2sptlog/testdata/c2sp-trust-profile-epochs-v1.json */
+const FIXTURE_SHA256 = '9ee8e63a394aaa3abc55c6c0900783a444ac8ab259032a08db828ebf1abb5fdf';
 const FIXTURE_BYTES = readFileSync(FIXTURE_URL);
 
 type Expect = { result: 'accept' | 'reject'; reason?: string; epoch?: string };
@@ -151,7 +151,7 @@ describe('C2SP trust profile v2 (epochs) shared vectors', () => {
     expect(createHash('sha256').update(FIXTURE_BYTES).digest('hex')).toBe(FIXTURE_SHA256);
     expect(vectors.format).toBe('dnsid-c2sp-trust-profile-epochs@v1');
     const cases = vectors.profile_cases.length + vectors.checkpoint_cases.length + vectors.bundle_cases.length + vectors.continuity_cases.length;
-    expect(cases).toBe(73);
+    expect(cases).toBe(79);
     const reasons = [
       ...vectors.profile_cases, ...vectors.checkpoint_cases, ...vectors.bundle_cases,
       ...vectors.continuity_cases.flatMap(testCase => testCase.steps),

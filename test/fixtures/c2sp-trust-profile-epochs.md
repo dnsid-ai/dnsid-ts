@@ -58,7 +58,14 @@ Every case runs with `checkpoint_max_age_seconds`, `max_bundle_lifetime_seconds`
    one. `JSON.parse` in JavaScript and `json.loads` in Python cannot see the token, so check it
    from the raw text (a JSON reviver with source access, or a raw-token check in TypeScript; in
    Python, `parse_int`/`parse_float` hooks plus rejecting `bool`). No two epochs may share both a bundle key ID and a `tlog_policy`.
-   Unknown members are rejected.
+   Member names match **exactly, including case**, at the top level and in every epoch. Version 1
+   allows exactly `version`, `scope`, `log_prefix`, `tlog_policy`, `bundle_verifier_keys`; version
+   2 allows exactly `version`, `scope`, `log_prefix`, `epochs`; an epoch allows exactly `id`,
+   `tlog_policy`, `bundle_verifier_keys`, `min_tree_size`, `max_tree_size`. Any other member,
+   including a case variant such as `Scope` or `Max_Tree_Size`, is rejected, and so is a document
+   that pairs a member with its case variant (`member-case-*` cases). Decoders that match field
+   names case-insensitively (Go `encoding/json`, some Python and TS schema libraries) must check the
+   raw member names separately.
 2. **Checkpoint.** Verify each epoch separately, using only that epoch's log and witness keys, in
    profile order. An epoch is *relevant* when the note carries at least one signature line whose
    name and key hash equal that epoch's log key, **whether or not the signature bytes verify**. For
