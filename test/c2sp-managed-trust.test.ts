@@ -5,6 +5,9 @@ import {
   InMemoryTrustedC2spCheckpointStore,
   ScanStreamSource,
   createDnsidManagedVerificationRegistry,
+  enforceCheckpointPolicy,
+  parseC2spPolicyFile,
+  parseCheckpoint,
   parseSignedNoteVerifierKey,
   requiredC2spResourceFetchGuarantees,
   type C2spBoundedResourceFetcher,
@@ -50,6 +53,12 @@ type ReaderInternals = {
 };
 
 const internals = (reader: C2spTlogReader): ReaderInternals => reader as unknown as ReaderInternals;
+
+const PARTNERS_POLICY = `log log.partners.dnsid.ai+52d6a7c3+ASsAuEkXpM63Qh2yh0q7DvueHqITfWGvcpWCOQfaDz5m
+witness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4
+quorum dnsid-witness-1
+`;
+const PARTNERS_BUNDLE_KEY = 'dnsid-stream-bundle+b12677d8+AWOB3PQPuFoGK66bqsFRcNh4n4q2DaAcauBijHymUUWH';
 
 describe('DNSid-managed C2SP trust', () => {
   it('implements the managed trust selection conformance vectors', async () => {
@@ -104,5 +113,49 @@ describe('DNSid-managed C2SP trust', () => {
       checkpointFreshnessMs: 600_000,
       required: undefined,
     });
+  });
+
+  it('selects the exact partners profile with the managed defaults', async () => {
+    const fetcher: C2spBoundedResourceFetcher = {
+      fetchBounded: vi.fn(async () => { throw new Error('not called during catalog construction'); }),
+      securityGuarantees: requiredC2spResourceFetchGuarantees,
+    };
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const registry = await createDnsidManagedVerificationRegistry({
+      resourceFetcher: fetcher,
+      trustedCheckpointStore: store,
+    });
+    const partners = internals(registry.newReader(
+      'c2sp-tlog:public:https://log.partners.dnsid.ai#EREREREREREREREREREREQ',
+    ) as C2spTlogReader);
+
+    expect(partners.checkpointStore).toBe(store);
+    expect(partners.source.resourceFetcher).toBe(fetcher);
+    expect(partners.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
+    expect(partners.options.streamBundle).toMatchObject({
+      policyDocument: new TextEncoder().encode(PARTNERS_POLICY),
+      bundleKeys: [parseSignedNoteVerifierKey(PARTNERS_BUNDLE_KEY)],
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      required: undefined,
+    });
+  });
+
+  // The fixture is the size-1 checkpoint https://log.partners.dnsid.ai served
+  // on 2026-09-28. The pinned keys must be the ones the partner log and its
+  // witness actually sign with.
+  it('verifies the partner log checkpoint under the pinned partners policy', () => {
+    const checkpoint = parseCheckpoint(readFileSync(
+      new URL('./vectors/c2sp-partners-checkpoint-size1.txt', import.meta.url),
+      'utf8',
+    ));
+    const result = enforceCheckpointPolicy(
+      checkpoint,
+      'log.partners.dnsid.ai',
+      parseC2spPolicyFile(PARTNERS_POLICY),
+      'public',
+    );
+    expect(checkpoint.treeSize).toBe(1);
+    expect(result.acceptedWitnessTimestamps).toHaveLength(1);
   });
 });
