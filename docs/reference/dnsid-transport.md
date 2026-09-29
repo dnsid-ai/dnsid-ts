@@ -57,10 +57,9 @@ requests through a custom DNS server and/or CA bundle. Built on Node
 built-ins (`node:dns`, `node:https`, `node:tls`, `node:net`) plus undici;
 this package is Node-only and not usable in browsers.
 
-IMPORTANT limitation: the resolvers here use the system DNS APIs, which
-cannot determine DNSSEC validation state. TXT lookups report
-`DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) — this package is not a
-production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
+IMPORTANT limitation: these resolvers cannot determine DNSSEC validation
+state. TXT lookups report `DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) —
+this package is not a production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
 
 ## Interfaces
 
@@ -327,7 +326,7 @@ Minimal WHATWG-fetch-compatible function signature returned by the fetch factori
 function createDefaultDnsResolver(config): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L166)
+Defined in: [transport/src/index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L167)
 
 Creates the DNS resolver used to fetch DNSid identity records (TXT).
 
@@ -436,7 +435,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:259](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L259)
+Defined in: [transport/src/index.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L251)
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -509,7 +508,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:222](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L222)
+Defined in: [transport/src/index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L214)
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -557,7 +556,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L244)
+Defined in: [transport/src/index.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L236)
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -585,7 +584,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:388](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L388)
+Defined in: [transport/src/index.ts:380](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L380)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -617,7 +616,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:233](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L233)
+Defined in: [transport/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L225)
 
 Splits a DNS server string into host and optional port.
 
