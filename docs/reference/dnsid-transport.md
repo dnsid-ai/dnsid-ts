@@ -44,7 +44,7 @@ const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER 
 
 Most Node applications should use this through `@dnsid-ai/sdk/node` or profile defaults.
 
-Node's TXT lookup API exposes neither remaining TTLs nor DNSSEC validation state. Both system and configured-server resolvers therefore return TTL `0` and `DNSSECState.UNKNOWN`: fresh verification works in `auto` mode, but SDK identity caching is disabled and `validated`/`required` modes reject the unknown DNSSEC state. To enable caching, inject a `DNSResolver` that supplies real remaining TTLs; the published zone TTL is not a safe substitute for a recursive resolver's remaining TTL.
+The default resolver queries the DNS servers returned by Node's `dns.getServers()` in order, using UDP with TCP fallback to capture the recursive server's remaining TXT TTL (capped at one day). `dnsServer` can override this list. On failures or empty answers it falls back to Node's native TXT lookup with TTL `0`, disabling identity caching for that result. Node's server list may omit macOS scoped/split-DNS routing, so even positive wire answers are not guaranteed to match the platform resolver in those setups. Neither path validates DNSSEC (`UNKNOWN`); SERVFAIL is a resolution error. `validated`/`required` DNSSEC modes still need an injected validating resolver. Cached verification still re-fetches status unless `verification.statusCheckInterval` is set.
 
 `createSsrfSafeFetch()` enforces unsafe-address rejection in the lookup used by the outgoing socket and returns redirects without following them automatically. Trusted test/private deployments may pass `privateAddressHosts`: exact hostnames or leading-dot suffixes such as `.test` (label-bounded, case-insensitive); only RFC 1918/ULA private and loopback results are then accepted for matching hosts, while link-local, mixed public/private, and IP-literal URLs remain blocked. Nothing is allowed by default, not even `.test`; a local `dnsid` stack needs `privateAddressHosts: ['.test']` (or `DNSID_PRIVATE_HOSTS=.test` through `loadEnvironment`). Profile packages that accept a custom `fetch` cannot force equivalent behavior on arbitrary implementations, so custom fetch injection remains trusted infrastructure.
 
@@ -57,9 +57,8 @@ requests through a custom DNS server and/or CA bundle. Built on Node
 built-ins (`node:dns`, `node:https`, `node:tls`, `node:net`) plus undici;
 this package is Node-only and not usable in browsers.
 
-IMPORTANT limitation: the resolvers here use the system DNS APIs, which
-cannot determine DNSSEC validation state. TXT lookups report
-`DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) — this package is not a
+IMPORTANT limitation: these resolvers cannot determine DNSSEC validation
+state. TXT lookups report `DNSSECState.UNKNOWN`; this package is not a
 production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
 
 ## Interfaces
@@ -327,14 +326,13 @@ Minimal WHATWG-fetch-compatible function signature returned by the fetch factori
 function createDefaultDnsResolver(config): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L166)
+Defined in: [transport/src/index.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L165)
 
 Creates the DNS resolver used to fetch DNSid identity records (TXT).
 
-Uses the configured DNS server when present, otherwise the system resolver.
-Either way the underlying lookup cannot observe DNSSEC validation, so
-results carry `DNSSECState.UNKNOWN` (or `FAILED` when the query SERVFAILs).
-Node's TXT API omits TTLs, so results use TTL 0 to disable SDK caching.
+Uses the configured server, or queries Node's system DNS server list in order.
+Wire replies supply remaining TXT TTLs; if those servers cannot answer, the
+system TXT API is the fallback (TTL 0). DNSSEC state is always `UNKNOWN`.
 
 #### Parameters
 
@@ -403,16 +401,15 @@ const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example.com')
 function createDnsResolverFromServer(server): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:182](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L182)
+Defined in: [transport/src/index.ts:198](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L198)
 
 Creates a [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsresolver) that queries a specific DNS server.
 
 Accepts `host`, `host:port`, or `[ipv6]:port`. A hostname (rather than an
 IP literal) is resolved once via the system resolver on first use, then
-cached for the resolver's lifetime. TXT answers are returned with TTL 0
-(no SDK caching) and `DNSSECState.UNKNOWN`; `ENODATA`/`ENOTFOUND` yield an empty
-record set, `ESERVFAIL` yields `DNSSECState.FAILED`, and other DNS errors
-are rethrown as-is.
+cached for the resolver's lifetime. TXT answers carry the remaining TTL
+(capped at one day) and `DNSSECState.UNKNOWN`; NXDOMAIN/NODATA yield an empty
+record set, and other errors (including SERVFAIL) reject.
 
 #### Parameters
 
@@ -436,7 +433,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:259](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L259)
+Defined in: [transport/src/index.ts:267](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L267)
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -509,7 +506,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:222](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L222)
+Defined in: [transport/src/index.ts:230](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L230)
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -557,7 +554,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L244)
+Defined in: [transport/src/index.ts:252](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L252)
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -585,7 +582,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:388](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L388)
+Defined in: [transport/src/index.ts:396](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L396)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -617,7 +614,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:233](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L233)
+Defined in: [transport/src/index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L241)
 
 Splits a DNS server string into host and optional port.
 

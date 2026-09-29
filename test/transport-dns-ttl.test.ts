@@ -9,10 +9,16 @@ vi.mock('node:dns/promises', async importOriginal => ({
   ...await importOriginal<typeof import('node:dns/promises')>(),
   resolveTxt: vi.fn(),
   lookup: vi.fn(),
+  getServers: vi.fn().mockReturnValue([]),
 }));
 afterEach(() => vi.restoreAllMocks());
 
-it.each([undefined, '127.0.0.1:5353', 'resolver.example:5353'])('does not cache unknown TXT TTLs via %s', async dnsServer => {
+it('treats system SERVFAIL as a resolution error, not DNSSEC validation failure', async () => {
+  vi.mocked(dns.resolveTxt).mockRejectedValue(Object.assign(new Error('upstream failed'), { code: 'ESERVFAIL' }));
+  await expect(createDefaultDnsResolver({}).fetchTXT('_dnsid.example.com')).rejects.toThrow('upstream failed');
+});
+
+it('falls back to TTL 0 when no system DNS servers are available', async () => {
   const domain = 'agent.example.com';
   const pair = generateKeyPairSync('ed25519');
   const key = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'op', alg: 'EdDSA' } as DnsIdJWK;
@@ -20,9 +26,7 @@ it.each([undefined, '127.0.0.1:5353', 'resolver.example:5353'])('does not cache 
   const raw = fixture.record.serialize();
   const strings = [raw.slice(0, 100), raw.slice(100)];
   vi.mocked(dns.resolveTxt).mockResolvedValue([strings]);
-  vi.mocked(dns.lookup).mockResolvedValue({ address: '127.0.0.1', family: 4 });
-  vi.spyOn(dns.Resolver.prototype, 'resolveTxt').mockResolvedValue([strings]);
-  const resolver = createDefaultDnsResolver({ dnsServer });
+  const resolver = createDefaultDnsResolver({});
   await expect(resolver.fetchTXT(`_dnsid.${domain}`)).resolves.toEqual([
     [{ strings, ttl: 0 }], DNSSECState.UNKNOWN,
   ]);
