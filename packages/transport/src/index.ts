@@ -9,8 +9,8 @@
  * this package is Node-only and not usable in browsers.
  *
  * IMPORTANT limitation: these resolvers cannot determine DNSSEC validation
- * state. TXT lookups report `DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) —
- * this package is not a production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
+ * state. TXT lookups report `DNSSECState.UNKNOWN`; this package is not a
+ * production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
  *
  * @packageDocumentation
  */
@@ -23,7 +23,7 @@ import { Agent, fetch as undiciFetch } from 'undici';
 import type { Dispatcher } from 'undici';
 
 import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@dnsid-ai/protocol';
-import { DNSSECState, VerificationCode, VerificationError, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
+import { ArgumentError, DNSSECState, VerificationCode, VerificationError, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
 import { resolveTxtWithTtl } from './txt-wire.ts';
 
 /** Minimal WHATWG-fetch-compatible function signature returned by the fetch factories. */
@@ -160,7 +160,7 @@ function createFetchWithDispatcher(dispatcher: Dispatcher): FetchLike {
  *
  * Uses the configured DNS server when present, otherwise the system resolver.
  * Either way the underlying lookup cannot observe DNSSEC validation, so
- * results carry `DNSSECState.UNKNOWN` (or `FAILED` when the query SERVFAILs).
+ * results carry `DNSSECState.UNKNOWN`. DNS failures (including SERVFAIL) reject.
  * The system resolver uses TTL 0; configured-server queries return remaining
  * wire TTLs so the SDK can cache verified identities.
  */
@@ -175,15 +175,15 @@ export function createDefaultDnsResolver(config: Pick<TransportConfig, 'dnsServe
  * IP literal) is resolved once via the system resolver on first use, then
  * cached for the resolver's lifetime. TXT answers carry the remaining TTL
  * (capped at one day) and `DNSSECState.UNKNOWN`; NXDOMAIN/NODATA yield an empty
- * record set, SERVFAIL yields `DNSSECState.FAILED`, and other errors reject.
+ * record set, and other errors (including SERVFAIL) reject.
  *
  * @param server - DNS server address, optionally with port.
  */
 export function createDnsResolverFromServer(server: string): DNSResolver {
   const parsed = parseDnsServer(server);
-  if (!parsed) throw new Error('invalid DNS server');
+  if (!parsed) throw new ArgumentError('invalid DNS server');
   const port = Number(parsed.port ?? 53);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`invalid DNS server port: ${parsed.port}`);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new ArgumentError(`invalid DNS server port: ${parsed.port}`);
   let hostPromise: Promise<string> | undefined;
   return {
     async fetchTXT(name: string, options?: { signal?: AbortSignal }): Promise<[TXTRecord[], DNSSECState]> {
@@ -533,8 +533,8 @@ function createSystemDnsResolver(resolver: Pick<typeof dnsPromises, 'resolveTxt'
  * Fetches TXT records for a name without inventing a cache lifetime.
  *
  * The system DNS API exposes no DNSSEC information, so the state is always
- * `UNKNOWN` except on SERVFAIL, which maps to `FAILED`. Missing names/records
- * (`ENODATA`/`ENOTFOUND`) yield an empty set; other DNS errors are rethrown.
+ * `UNKNOWN`. Missing names/records (`ENODATA`/`ENOTFOUND`) yield an empty
+ * set; other DNS errors (including SERVFAIL) are rethrown.
  */
 async function fetchTxtViaSystem(
   name: string,
@@ -550,8 +550,6 @@ async function fetchTxtViaSystem(
       case 'ENODATA':
       case 'ENOTFOUND':
         return [[], DNSSECState.UNKNOWN];
-      case 'ESERVFAIL':
-        return [[], DNSSECState.FAILED];
       default:
         throw err;
     }

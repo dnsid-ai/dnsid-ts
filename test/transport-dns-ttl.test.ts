@@ -12,6 +12,11 @@ vi.mock('node:dns/promises', async importOriginal => ({
 }));
 afterEach(() => vi.restoreAllMocks());
 
+it('treats system SERVFAIL as a resolution error, not DNSSEC validation failure', async () => {
+  vi.mocked(dns.resolveTxt).mockRejectedValue(Object.assign(new Error('upstream failed'), { code: 'ESERVFAIL' }));
+  await expect(createDefaultDnsResolver({}).fetchTXT('_dnsid.example.com')).rejects.toThrow('upstream failed');
+});
+
 it('does not cache unknown TXT TTLs via the system resolver', async () => {
   const domain = 'agent.example.com';
   const pair = generateKeyPairSync('ed25519');

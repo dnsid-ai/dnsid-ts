@@ -22,7 +22,7 @@ export async function resolveTxtWithTtl(name: string, host: string, port: number
     const queried = owner;
     const response = await query(owner, host, port, deadline);
     if (response.rcode === 'NXDOMAIN') return [[], DNSSECState.UNKNOWN];
-    if (response.rcode === 'SERVFAIL') return [[], DNSSECState.FAILED];
+    // SERVFAIL can be an ordinary upstream failure; it does not prove DNSSEC validation failed.
     if (response.rcode !== 'NOERROR') throw new Error(`DNS query failed: ${response.rcode}`);
 
     const answers = response.answers ?? [];

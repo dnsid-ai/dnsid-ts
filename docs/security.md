@@ -107,7 +107,7 @@ The core retry helper `retryTransientVerification()` defaults to 3 total attempt
 
 ### DNS lookup, DNSSEC, and caching
 
-`IdentityManager.verifyDomain()` looks up `_dnsid.<agent-fqdn>` TXT records through the injected `DNSResolver`. Missing TXT records produce a DNS-resolution verification failure. The Node system resolver returns empty records for `ENODATA`/`ENOTFOUND`; the configured-server resolver returns empty records for NXDOMAIN/NODATA. Both map SERVFAIL to DNSSEC `FAILED` and otherwise report `UNKNOWN`: neither validates DNSSEC.
+`IdentityManager.verifyDomain()` looks up `_dnsid.<agent-fqdn>` TXT records through the injected `DNSResolver`. Missing TXT records produce a DNS-resolution verification failure. The Node system resolver returns empty records for `ENODATA`/`ENOTFOUND`; the configured-server resolver returns empty records for NXDOMAIN/NODATA. Both report DNSSEC `UNKNOWN` for answers and treat SERVFAIL as a DNS-resolution error: neither validates DNSSEC.
 
 DNSSEC modes are:
 

@@ -3,7 +3,7 @@ import * as net from 'node:net';
 import { generateKeyPairSync } from 'node:crypto';
 import packet from 'dns-packet';
 import { expect, it } from 'vitest';
-import { DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
+import { ArgumentError, DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
 import { createDnsResolverFromServer } from '@dnsid-ai/transport';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
@@ -46,6 +46,10 @@ async function server(
     await new Promise<void>(resolve => tcp.close(() => resolve()));
   } };
 }
+
+it('rejects an invalid configured server port before any lookup', () => {
+  expect(() => createDnsResolverFromServer('127.0.0.1:0')).toThrow(ArgumentError);
+});
 
 it('returns remaining TXT TTLs, preserving record and chunk boundaries', async () => {
   const fake = await server(q => reply(q, [txt(name, 90, 'first', 'chunk'), txt(name, 60, 'other')]));
@@ -119,17 +123,19 @@ it('rejects spoofed replies and aborts unanswered queries', async () => {
   } finally { await fake.close(); }
 });
 
-it('treats invalid high-bit TTL as zero and maps DNS error codes', async () => {
+it('treats invalid high-bit TTL as zero and does not mistake SERVFAIL for DNSSEC failure', async () => {
   const fake = await server(q => reply(q, [txt(name, 0x80000000, 'value')]));
   try {
     await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).resolves.toEqual([
       [{ strings: ['value'], ttl: 0 }], DNSSECState.UNKNOWN,
     ]);
   } finally { await fake.close(); }
-  for (const [code, state] of [[3, DNSSECState.UNKNOWN], [2, DNSSECState.FAILED]] as const) {
-    const errorServer = await server(q => reply(q, [], code));
-    try {
-      await expect(createDnsResolverFromServer(`127.0.0.1:${errorServer.port}`).fetchTXT(name)).resolves.toEqual([[], state]);
-    } finally { await errorServer.close(); }
-  }
+  const missing = await server(q => reply(q, [], 3));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${missing.port}`).fetchTXT(name)).resolves.toEqual([[], DNSSECState.UNKNOWN]);
+  } finally { await missing.close(); }
+  const failing = await server(q => reply(q, [], 2));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${failing.port}`).fetchTXT(name)).rejects.toThrow('SERVFAIL');
+  } finally { await failing.close(); }
 });
