@@ -1,4 +1,24 @@
 
+## [0.24.1] - 2026-09-29
+
+### Bug Fixes
+
+- fix: use a dns resolver that provides ttl ([#52](https://github.com/dnsid-ai/dnsid-ts/pull/52))
+
+### Chores
+
+- chore(deps): bump structured-headers from 2.0.3 to 2.1.0 ([#29](https://github.com/dnsid-ai/dnsid-ts/pull/29))
+- chore(deps): bump ip-address from 10.4.0 to 10.7.2 ([#51](https://github.com/dnsid-ai/dnsid-ts/pull/51))
+- chore(deps): bump @aws-sdk/client-kms from 3.1124.0 to 3.1137.0 ([#33](https://github.com/dnsid-ai/dnsid-ts/pull/33))
+- chore(deps): bump github/codeql-action/analyze ([#36](https://github.com/dnsid-ai/dnsid-ts/pull/36))
+- chore(deps): bump github/codeql-action/init ([#34](https://github.com/dnsid-ai/dnsid-ts/pull/34))
+- chore(deps): bump anchore/sbom-action ([#37](https://github.com/dnsid-ai/dnsid-ts/pull/37))
+- chore(deps): bump taiki-e/install-action from 2.87.8 to 2.87.13 ([#38](https://github.com/dnsid-ai/dnsid-ts/pull/38))
+- chore(deps): bump github/codeql-action/autobuild ([#35](https://github.com/dnsid-ai/dnsid-ts/pull/35))
+- chore(deps-dev): bump typedoc-plugin-markdown from 4.12.0 to 4.13.0 ([#31](https://github.com/dnsid-ai/dnsid-ts/pull/31))
+- chore(deps-dev): bump @types/node from 26.5.0 to 26.6.2 ([#32](https://github.com/dnsid-ai/dnsid-ts/pull/32))
+
+
 ## [0.24.0] - 2026-09-28
 
 ### Features
