@@ -723,7 +723,8 @@ const idm = await createNodeIdentityManager({ identity, verification }, { keyPro
 function createNodeIdentityManagerFromDnsid(
    dnsidDir?, 
    overlay?, 
-deps?): Promise<IdentityManager>;
+   deps?
+): Promise<IdentityManager>;
 ```
 
 Defined in: [packages/sdk/src/config-loading.ts:361](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L361)
@@ -756,7 +757,8 @@ Defined in: [packages/sdk/src/config-loading.ts:361](https://github.com/dnsid-ai
 function createNodeIdentityManagerFromEnvironment(
    env?, 
    overlay?, 
-deps?): Promise<IdentityManager>;
+   deps?
+): Promise<IdentityManager>;
 ```
 
 Defined in: [packages/sdk/src/config-loading.ts:357](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L357)
@@ -789,7 +791,8 @@ Defined in: [packages/sdk/src/config-loading.ts:357](https://github.com/dnsid-ai
 function createNodeIdentityManagerFromFile(
    filePath, 
    overlay?, 
-deps?): Promise<IdentityManager>;
+   deps?
+): Promise<IdentityManager>;
 ```
 
 Defined in: [packages/sdk/src/config-loading.ts:365](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L365)
