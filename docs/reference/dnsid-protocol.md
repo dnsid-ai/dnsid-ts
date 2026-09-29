@@ -662,7 +662,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1082](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1082)
+Defined in: [packages/protocol/src/identity-manager.ts:1095](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1095)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1270,7 +1270,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1119)
+Defined in: [packages/protocol/src/identity-manager.ts:1132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1132)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial

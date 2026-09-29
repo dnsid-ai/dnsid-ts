@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1051](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1051)
+Defined in: [packages/protocol/src/identity-manager.ts:1064](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1064)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1037](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1037)
+Defined in: [packages/protocol/src/identity-manager.ts:1050](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1050)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
