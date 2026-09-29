@@ -320,7 +320,8 @@ signPreparedEvent(
    prepared, 
    role, 
    keyProvider, 
-options?): Promise<PreparedC2spTlogEvent>;
+   options?
+): Promise<PreparedC2spTlogEvent>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:506](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L506)
@@ -355,7 +356,8 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:506](https://github.com/dnsid-
 verifyBilateralBinding(
    record, 
    entityKey, 
-   operationalKey): Promise<{
+   operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -432,7 +434,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    domain, 
    initialOperationalThumbprint, 
-currentOperationalThumbprint): Promise<void>;
+   currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L172)
@@ -825,7 +828,8 @@ signPreparedEvent(
    prepared, 
    role, 
    keyProvider, 
-options?): Promise<PreparedC2spTlogEvent>;
+   options?
+): Promise<PreparedC2spTlogEvent>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:506](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L506)
@@ -864,7 +868,8 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:506](https://github.com/dnsid-
 verifyBilateralBinding(
    record, 
    entityKey, 
-   operationalKey): Promise<{
+   operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -941,7 +946,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    domain, 
    initialOperationalThumbprint, 
-currentOperationalThumbprint): Promise<void>;
+   currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L172)
@@ -1947,7 +1953,8 @@ returned.
 verifyBilateralBinding(
    record, 
    entityKey, 
-   operationalKey): Promise<{
+   operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -2024,7 +2031,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    domain, 
    initialOperationalThumbprint, 
-currentOperationalThumbprint): Promise<void>;
+   currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L172)
@@ -2434,7 +2442,8 @@ compareAndSwap(
    origin, 
    expected, 
    candidate, 
-signal?): Promise<boolean>;
+   signal?
+): Promise<boolean>;
 ```
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L50)

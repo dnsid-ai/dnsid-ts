@@ -1187,7 +1187,8 @@ signEventWithProvider(
    event, 
    role, 
    keyProvider, 
-logBinding?): Promise<LogEvent>;
+   logBinding?
+): Promise<LogEvent>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:422](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L422)
@@ -1222,7 +1223,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:422](https://github.com/d
 verifyDomain(
    domain, 
    peerCert?, 
-options?): Promise<VerifiedDomain>;
+   options?
+): Promise<VerifiedDomain>;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:590](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L590)
@@ -1883,7 +1885,8 @@ returned.
 verifyBilateralBinding(
    _record, 
    _entityKey, 
-   _operationalKey): Promise<{
+   _operationalKey
+): Promise<{
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
@@ -1960,7 +1963,8 @@ Returns the accepted proof boundary.
 verifyOperationalContinuity(
    _domain, 
    _initialOperationalThumbprint, 
-_currentOperationalThumbprint): Promise<void>;
+   _currentOperationalThumbprint
+): Promise<void>;
 ```
 
 Defined in: [packages/protocol/src/log-registry.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L80)
