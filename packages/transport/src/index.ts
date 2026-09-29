@@ -158,14 +158,30 @@ function createFetchWithDispatcher(dispatcher: Dispatcher): FetchLike {
 /**
  * Creates the DNS resolver used to fetch DNSid identity records (TXT).
  *
- * Uses the configured DNS server when present, otherwise the system resolver.
- * Either way the underlying lookup cannot observe DNSSEC validation, so
- * results carry `DNSSECState.UNKNOWN`. DNS failures (including SERVFAIL) reject.
- * The system resolver uses TTL 0; configured-server queries return remaining
- * wire TTLs so the SDK can cache verified identities.
+ * Uses the configured server, or queries Node's system DNS server list in order.
+ * Wire replies supply remaining TXT TTLs; if those servers cannot answer, the
+ * system TXT API is the fallback (TTL 0). DNSSEC state is always `UNKNOWN`.
  */
 export function createDefaultDnsResolver(config: Pick<TransportConfig, 'dnsServer'>): DNSResolver {
-  return config.dnsServer ? createDnsResolverFromServer(config.dnsServer) : createSystemDnsResolver();
+  if (config.dnsServer) return createDnsResolverFromServer(config.dnsServer);
+  const system = createSystemDnsResolver();
+  return {
+    async fetchTXT(name, options) {
+      for (const server of dnsPromises.getServers()) {
+        options?.signal?.throwIfAborted();
+        try {
+          const result = await createDnsResolverFromServer(server).fetchTXT(name, options);
+          if (result[0].length) return result;
+          break; // NXDOMAIN/NODATA: let the native resolver check scoped DNS routes.
+        } catch (error) {
+          if (options?.signal?.aborted) throw error;
+        }
+      }
+      options?.signal?.throwIfAborted();
+      // ponytail: getServers() can omit scoped/split DNS; use native TXT with TTL 0 when wire lookup fails.
+      return system.fetchTXT(name, options);
+    },
+  };
 }
 
 /**

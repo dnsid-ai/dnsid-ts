@@ -73,7 +73,7 @@ A non-`ACTIVE` status response is a revocation signal for SDK verification. On a
 - when `statusCheckInterval > 0`, a cached result may be reused without a status fetch until that interval elapses;
 - if status refresh returns a non-`ACTIVE` state, the cache entry is evicted and verification fails.
 
-Identity cache entries also expire at the earliest of the DNS TXT TTL, the TLS certificate expiry, or the `ka` maximum key age when present. The Node system resolver cannot observe TXT TTLs and reports TTL 0, so its identity evidence is not cached. Configure `transport.dnsServer` to use its remaining wire TTLs (capped at one day), or inject a TTL-aware `DNSResolver`. Explicitly call `evictDomain(domain)` after emergency rotation or revocation if you need a local process to drop a cached identity immediately.
+Identity cache entries also expire at the earliest of the DNS TXT TTL, the TLS certificate expiry, or the `ka` maximum key age when present. The Node default resolver queries the system DNS server list for remaining wire TXT TTLs (capped at one day), so no explicit server is needed on ordinary setups. When wire lookup cannot answer, it falls back to the native resolver with TTL 0 (no caching); scoped/split DNS may need an explicitly configured or injected resolver. Explicitly call `evictDomain(domain)` after emergency rotation or revocation if you need a local process to drop a cached identity immediately.
 
 ### Provider-specific notes
 
@@ -107,7 +107,7 @@ The core retry helper `retryTransientVerification()` defaults to 3 total attempt
 
 ### DNS lookup, DNSSEC, and caching
 
-`IdentityManager.verifyDomain()` looks up `_dnsid.<agent-fqdn>` TXT records through the injected `DNSResolver`. Missing TXT records produce a DNS-resolution verification failure. The Node system resolver returns empty records for `ENODATA`/`ENOTFOUND`; the configured-server resolver returns empty records for NXDOMAIN/NODATA. Both report DNSSEC `UNKNOWN` for answers and treat SERVFAIL as a DNS-resolution error: neither validates DNSSEC.
+`IdentityManager.verifyDomain()` looks up `_dnsid.<agent-fqdn>` TXT records through the injected `DNSResolver`. Missing TXT records produce a DNS-resolution verification failure. The native Node resolver returns empty records for `ENODATA`/`ENOTFOUND`; the wire resolver returns empty records for NXDOMAIN/NODATA. The default also checks native resolution on empty wire answers. Both report DNSSEC `UNKNOWN` for answers and treat SERVFAIL as a DNS-resolution error: neither validates DNSSEC.
 
 DNSSEC modes are:
 
@@ -117,7 +117,7 @@ DNSSEC modes are:
 
 The default `InMemoryIdentityCache` is per manager/process. It caches successful `VerifiedDomain` results until `VerifiedDomain.expiry()`, which is the earliest DNS TTL, TLS certificate expiry, or `ka` key-age deadline. It does not negative-cache failed lookups. Custom caches must evict expired entries and be safe for concurrent use.
 
-`createDnsResolverFromServer()` accepts a DNS server host, `host:port`, or `[ipv6]:port`. If the DNS server is provided as a hostname, that hostname is resolved once and cached for the resolver lifetime. System TXT answers carry TTL 0; configured-server answers use the remaining wire TTL (capped at one day) for SDK identity caching.
+`createDnsResolverFromServer()` accepts a DNS server host, `host:port`, or `[ipv6]:port`. If the DNS server is provided as a hostname, that hostname is resolved once and cached for the resolver lifetime. Wire TXT answers from either the system-listed or configured DNS server carry their remaining TTL (capped at one day); native fallback answers carry TTL 0.
 
 ### Concurrency, async model, and lifecycle
 

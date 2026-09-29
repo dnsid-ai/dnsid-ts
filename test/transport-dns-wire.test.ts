@@ -1,11 +1,19 @@
 import * as dgram from 'node:dgram';
 import * as net from 'node:net';
+import * as dns from 'node:dns/promises';
 import { generateKeyPairSync } from 'node:crypto';
 import packet from 'dns-packet';
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { ArgumentError, DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
-import { createDnsResolverFromServer } from '@dnsid-ai/transport';
+import { createDefaultDnsResolver, createDnsResolverFromServer } from '@dnsid-ai/transport';
 import { currentProfileFixture } from './helpers/current-profile.ts';
+
+vi.mock('node:dns/promises', async importOriginal => ({
+  ...await importOriginal<typeof import('node:dns/promises')>(),
+  getServers: vi.fn(),
+  resolveTxt: vi.fn(),
+}));
+afterEach(() => { vi.mocked(dns.getServers).mockReset(); vi.mocked(dns.resolveTxt).mockReset(); });
 
 const name = '_dnsid.example.com';
 const reply = (query: packet.Packet, answers: packet.Answer[] = [], flags = 0): Buffer =>
@@ -69,16 +77,40 @@ it('lets the SDK cache a verified identity until the remaining TTL expires', asy
   const strings = raw.match(/.{1,200}/g)!;
   let queries = 0;
   const fake = await server(q => { queries++; return reply(q, [txt(`_dnsid.${domain}`, 120, ...strings)]); });
+  vi.mocked(dns.getServers).mockReturnValue([`127.0.0.1:${fake.port}`]);
   try {
     const manager = new IdentityManager({ verification: { statusCheckInterval: 30 } }, {
       logRegistry: fixture.logRegistry, fetchJson: fixture.fetchJson,
-      dnsResolver: createDnsResolverFromServer(`127.0.0.1:${fake.port}`), cache: new InMemoryIdentityCache(),
+      dnsResolver: createDefaultDnsResolver({}), cache: new InMemoryIdentityCache(),
     });
     const first = await manager.verifyDomain(domain);
     const second = await manager.verifyDomain(domain);
     expect(first.dnsTTL).toBe(120);
     expect(second).toBe(first);
     expect(queries).toBe(1);
+  } finally { await fake.close(); }
+});
+
+it('fails over between system DNS servers in order without a public default', async () => {
+  const failing = await server(q => reply(q, [], 2)); // SERVFAIL
+  const working = await server(q => reply(q, [txt(name, 42, 'found')]));
+  vi.mocked(dns.getServers).mockReturnValue([`127.0.0.1:${failing.port}`, `127.0.0.1:${working.port}`]);
+  try {
+    await expect(createDefaultDnsResolver({}).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['found'], ttl: 42 }], DNSSECState.UNKNOWN,
+    ]);
+  } finally { await failing.close(); await working.close(); }
+});
+
+it.each([2, 3])('falls back to native TXT with TTL 0 after wire error code %i', async code => {
+  const fake = await server(q => reply(q, [], code));
+  vi.mocked(dns.getServers).mockReturnValue([`127.0.0.1:${fake.port}`]);
+  vi.mocked(dns.resolveTxt).mockResolvedValue([['native']]);
+  try {
+    await expect(createDefaultDnsResolver({}).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['native'], ttl: 0 }], DNSSECState.UNKNOWN,
+    ]);
+    expect(dns.resolveTxt).toHaveBeenCalledWith(name);
   } finally { await fake.close(); }
 });
 

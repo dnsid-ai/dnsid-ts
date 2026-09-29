@@ -9,6 +9,7 @@ vi.mock('node:dns/promises', async importOriginal => ({
   ...await importOriginal<typeof import('node:dns/promises')>(),
   resolveTxt: vi.fn(),
   lookup: vi.fn(),
+  getServers: vi.fn().mockReturnValue([]),
 }));
 afterEach(() => vi.restoreAllMocks());
 
@@ -17,7 +18,7 @@ it('treats system SERVFAIL as a resolution error, not DNSSEC validation failure'
   await expect(createDefaultDnsResolver({}).fetchTXT('_dnsid.example.com')).rejects.toThrow('upstream failed');
 });
 
-it('does not cache unknown TXT TTLs via the system resolver', async () => {
+it('falls back to TTL 0 when no system DNS servers are available', async () => {
   const domain = 'agent.example.com';
   const pair = generateKeyPairSync('ed25519');
   const key = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'op', alg: 'EdDSA' } as DnsIdJWK;
