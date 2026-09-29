@@ -132,6 +132,39 @@ describe('IdentityManager.verifyDomain()', () => {
     expect(continuity).toHaveBeenCalledOnce();
   });
 
+  it('overlaps authenticated history preload with ku and still requires binding', async () => {
+    const { fixture } = await setup();
+    const ku = deferred();
+    const history = deferred();
+    const preload = vi.fn(async () => { await history.promise; });
+    fixture.logReader.preloadLifecycleHistory = preload;
+    const binding = vi.spyOn(fixture.logReader, 'verifyBilateralBinding');
+    const kuStarted = vi.fn();
+    const fetchJson = async (url: string, opts?: object) => {
+      if (url === fixture.record.ku) { kuStarted(); await ku.promise; }
+      return fixture.fetchJson(url, opts);
+    };
+    const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson });
+    const verification = manager.verifyDomain('agent.example.com');
+    await vi.waitFor(() => { expect(preload).toHaveBeenCalledOnce(); expect(kuStarted).toHaveBeenCalledOnce(); });
+    expect(binding).not.toHaveBeenCalled();
+    ku.resolve();
+    expect(binding).not.toHaveBeenCalled();
+    history.resolve();
+    await verification;
+    expect(binding).toHaveBeenCalledOnce();
+    expect(preload).toHaveBeenCalledWith('agent.example.com', fixture.entityKey);
+  });
+
+  it('propagates preload failures rather than accepting an unbound history', async () => {
+    const { fixture } = await setup();
+    fixture.logReader.preloadLifecycleHistory = vi.fn().mockRejectedValue(new Error('history failed'));
+    const binding = vi.spyOn(fixture.logReader, 'verifyBilateralBinding');
+    const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson: fixture.fetchJson });
+    await expect(manager.verifyDomain('agent.example.com')).rejects.toThrow('history failed');
+    expect(binding).not.toHaveBeenCalled();
+  });
+
   it('accepts delegated cross-domain governance with verified ISSUANCE evidence', async () => {
     const domain = 'agent.contractor.test';
     const fixture = await currentProfileFixture(domain, operationalKey);

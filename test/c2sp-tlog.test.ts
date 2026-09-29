@@ -1211,7 +1211,9 @@ quorum W1
     record.agentFQDN = issuanceEvent.domain;
     record.gi = issuanceEvent.governanceId;
 
+    const preloaded = reader.preloadLifecycleHistory(issuanceEvent.domain, entity.publicJwk);
     const binding = await reader.verifyBilateralBinding(record, entity.publicJwk, operational.publicJwk);
+    await preloaded;
     await expect(reader.verifyOperationalContinuity(issuanceEvent.domain, binding.initialOperationalThumbprint, issuanceEvent.initialOperationalThumbprint))
       .resolves.toBeUndefined();
     await expect(reader.keyTimestamp(issuanceEvent.domain, issuanceEvent.initialOperationalThumbprint))

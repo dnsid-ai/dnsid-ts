@@ -143,6 +143,10 @@ export class C2spTlogReader implements LogReader {
     throw new VerificationError('key thumbprint not found in C2SP lifecycle history', { code: VerificationCode.LogError });
   }
 
+  async preloadLifecycleHistory(domain: string, entityKey: DnsIdJWK): Promise<void> {
+    await this.loadCompleteHistory(domain, entityKey);
+  }
+
   async verifyBilateralBinding(record: unknown, entityKey: unknown, operationalKey: unknown): Promise<{ initialOperationalThumbprint: string; initialEntityThumbprint: string; timestamp: Date }> {
     const dnsRecord = record as Partial<DnsIdTxtRecord> & { domain?: string; fqdn?: string };
     const domain = dnsRecord.domain ?? dnsRecord.fqdn ?? dnsRecord.agentFQDN;
