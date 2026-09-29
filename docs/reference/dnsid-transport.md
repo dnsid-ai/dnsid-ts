@@ -44,7 +44,7 @@ const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER 
 
 Most Node applications should use this through `@dnsid-ai/sdk/node` or profile defaults.
 
-Node's TXT lookup API exposes neither remaining TTLs nor DNSSEC validation state. Both system and configured-server resolvers therefore return TTL `0` and `DNSSECState.UNKNOWN`: fresh verification works in `auto` mode, but SDK identity caching is disabled and `validated`/`required` modes reject the unknown DNSSEC state. To enable caching, inject a `DNSResolver` that supplies real remaining TTLs; the published zone TTL is not a safe substitute for a recursive resolver's remaining TTL.
+Node's system TXT lookup API exposes no remaining TTLs, so the system resolver returns TTL `0` and disables SDK identity caching. With `dnsServer` configured, TXT queries use UDP (with TCP fallback on truncation) and return the recursive server's remaining TTL, capped at one day. Both paths report `DNSSECState.UNKNOWN` (`FAILED` on SERVFAIL); `validated`/`required` DNSSEC modes still require an injected validating resolver. Cached verification still re-fetches status unless `verification.statusCheckInterval` is set.
 
 `createSsrfSafeFetch()` enforces unsafe-address rejection in the lookup used by the outgoing socket and returns redirects without following them automatically. Trusted test/private deployments may pass `privateAddressHosts`: exact hostnames or leading-dot suffixes such as `.test` (label-bounded, case-insensitive); only RFC 1918/ULA private and loopback results are then accepted for matching hosts, while link-local, mixed public/private, and IP-literal URLs remain blocked. Nothing is allowed by default, not even `.test`; a local `dnsid` stack needs `privateAddressHosts: ['.test']` (or `DNSID_PRIVATE_HOSTS=.test` through `loadEnvironment`). Profile packages that accept a custom `fetch` cannot force equivalent behavior on arbitrary implementations, so custom fetch injection remains trusted infrastructure.
 
@@ -334,7 +334,8 @@ Creates the DNS resolver used to fetch DNSid identity records (TXT).
 Uses the configured DNS server when present, otherwise the system resolver.
 Either way the underlying lookup cannot observe DNSSEC validation, so
 results carry `DNSSECState.UNKNOWN` (or `FAILED` when the query SERVFAILs).
-Node's TXT API omits TTLs, so results use TTL 0 to disable SDK caching.
+The system resolver uses TTL 0; configured-server queries return remaining
+wire TTLs so the SDK can cache verified identities.
 
 #### Parameters
 
@@ -409,10 +410,9 @@ Creates a [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dns
 
 Accepts `host`, `host:port`, or `[ipv6]:port`. A hostname (rather than an
 IP literal) is resolved once via the system resolver on first use, then
-cached for the resolver's lifetime. TXT answers are returned with TTL 0
-(no SDK caching) and `DNSSECState.UNKNOWN`; `ENODATA`/`ENOTFOUND` yield an empty
-record set, `ESERVFAIL` yields `DNSSECState.FAILED`, and other DNS errors
-are rethrown as-is.
+cached for the resolver's lifetime. TXT answers carry the remaining TTL
+(capped at one day) and `DNSSECState.UNKNOWN`; NXDOMAIN/NODATA yield an empty
+record set, SERVFAIL yields `DNSSECState.FAILED`, and other errors reject.
 
 #### Parameters
 

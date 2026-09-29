@@ -12,7 +12,7 @@ vi.mock('node:dns/promises', async importOriginal => ({
 }));
 afterEach(() => vi.restoreAllMocks());
 
-it.each([undefined, '127.0.0.1:5353', 'resolver.example:5353'])('does not cache unknown TXT TTLs via %s', async dnsServer => {
+it('does not cache unknown TXT TTLs via the system resolver', async () => {
   const domain = 'agent.example.com';
   const pair = generateKeyPairSync('ed25519');
   const key = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'op', alg: 'EdDSA' } as DnsIdJWK;
@@ -20,9 +20,7 @@ it.each([undefined, '127.0.0.1:5353', 'resolver.example:5353'])('does not cache 
   const raw = fixture.record.serialize();
   const strings = [raw.slice(0, 100), raw.slice(100)];
   vi.mocked(dns.resolveTxt).mockResolvedValue([strings]);
-  vi.mocked(dns.lookup).mockResolvedValue({ address: '127.0.0.1', family: 4 });
-  vi.spyOn(dns.Resolver.prototype, 'resolveTxt').mockResolvedValue([strings]);
-  const resolver = createDefaultDnsResolver({ dnsServer });
+  const resolver = createDefaultDnsResolver({});
   await expect(resolver.fetchTXT(`_dnsid.${domain}`)).resolves.toEqual([
     [{ strings, ttl: 0 }], DNSSECState.UNKNOWN,
   ]);

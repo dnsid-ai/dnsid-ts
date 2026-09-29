@@ -8,10 +8,9 @@
  * built-ins (`node:dns`, `node:https`, `node:tls`, `node:net`) plus undici;
  * this package is Node-only and not usable in browsers.
  *
- * IMPORTANT limitation: the resolvers here use the system DNS APIs, which
- * cannot determine DNSSEC validation state. TXT lookups report
- * `DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) — this package is not a
- * production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
+ * IMPORTANT limitation: these resolvers cannot determine DNSSEC validation
+ * state. TXT lookups report `DNSSECState.UNKNOWN` (or `FAILED` on SERVFAIL) —
+ * this package is not a production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
  *
  * @packageDocumentation
  */
@@ -25,6 +24,7 @@ import type { Dispatcher } from 'undici';
 
 import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@dnsid-ai/protocol';
 import { DNSSECState, VerificationCode, VerificationError, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
+import { resolveTxtWithTtl } from './txt-wire.ts';
 
 /** Minimal WHATWG-fetch-compatible function signature returned by the fetch factories. */
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -161,7 +161,8 @@ function createFetchWithDispatcher(dispatcher: Dispatcher): FetchLike {
  * Uses the configured DNS server when present, otherwise the system resolver.
  * Either way the underlying lookup cannot observe DNSSEC validation, so
  * results carry `DNSSECState.UNKNOWN` (or `FAILED` when the query SERVFAILs).
- * Node's TXT API omits TTLs, so results use TTL 0 to disable SDK caching.
+ * The system resolver uses TTL 0; configured-server queries return remaining
+ * wire TTLs so the SDK can cache verified identities.
  */
 export function createDefaultDnsResolver(config: Pick<TransportConfig, 'dnsServer'>): DNSResolver {
   return config.dnsServer ? createDnsResolverFromServer(config.dnsServer) : createSystemDnsResolver();
@@ -172,31 +173,22 @@ export function createDefaultDnsResolver(config: Pick<TransportConfig, 'dnsServe
  *
  * Accepts `host`, `host:port`, or `[ipv6]:port`. A hostname (rather than an
  * IP literal) is resolved once via the system resolver on first use, then
- * cached for the resolver's lifetime. TXT answers are returned with TTL 0
- * (no SDK caching) and `DNSSECState.UNKNOWN`; `ENODATA`/`ENOTFOUND` yield an empty
- * record set, `ESERVFAIL` yields `DNSSECState.FAILED`, and other DNS errors
- * are rethrown as-is.
+ * cached for the resolver's lifetime. TXT answers carry the remaining TTL
+ * (capped at one day) and `DNSSECState.UNKNOWN`; NXDOMAIN/NODATA yield an empty
+ * record set, SERVFAIL yields `DNSSECState.FAILED`, and other errors reject.
  *
  * @param server - DNS server address, optionally with port.
  */
 export function createDnsResolverFromServer(server: string): DNSResolver {
   const parsed = parseDnsServer(server);
-  if (!parsed || net.isIP(parsed.host)) {
-    const resolver = new dnsPromises.Resolver();
-    resolver.setServers([server]);
-    return createSystemDnsResolver(resolver);
-  }
-
-  let resolverPromise: Promise<dnsPromises.Resolver> | null = null;
+  if (!parsed) throw new Error('invalid DNS server');
+  const port = Number(parsed.port ?? 53);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`invalid DNS server port: ${parsed.port}`);
+  let hostPromise: Promise<string> | undefined;
   return {
-    async fetchTXT(name: string): Promise<[TXTRecord[], DNSSECState]> {
-      resolverPromise ??= (async () => {
-        const { address } = await dnsPromises.lookup(parsed.host);
-        const resolver = new dnsPromises.Resolver();
-        resolver.setServers([formatDnsServer(address, parsed.port)]);
-        return resolver;
-      })();
-      return fetchTxtViaSystem(name, await resolverPromise);
+    async fetchTXT(name: string, options?: { signal?: AbortSignal }): Promise<[TXTRecord[], DNSSECState]> {
+      hostPromise ??= net.isIP(parsed.host) ? Promise.resolve(parsed.host) : dnsPromises.lookup(parsed.host).then(({ address }) => address);
+      return resolveTxtWithTtl(name, await hostPromise, port, options?.signal);
     },
   };
 }

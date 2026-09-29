@@ -1,0 +1,135 @@
+import * as dgram from 'node:dgram';
+import * as net from 'node:net';
+import { generateKeyPairSync } from 'node:crypto';
+import packet from 'dns-packet';
+import { expect, it } from 'vitest';
+import { DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
+import { createDnsResolverFromServer } from '@dnsid-ai/transport';
+import { currentProfileFixture } from './helpers/current-profile.ts';
+
+const name = '_dnsid.example.com';
+const reply = (query: packet.Packet, answers: packet.Answer[] = [], flags = 0): Buffer =>
+  packet.encode({ type: 'response', id: query.id, flags, questions: query.questions, answers });
+const txt = (owner: string, ttl: number, ...strings: string[]): packet.TxtAnswer =>
+  ({ type: 'TXT', name: owner, class: 'IN', ttl, data: strings.map(s => Buffer.from(s)) });
+
+async function server(
+  udpReply: (query: packet.Packet) => Buffer | undefined,
+  tcpReply?: (query: packet.Packet) => Buffer,
+): Promise<{ port: number; close: () => Promise<void> }> {
+  const udp = dgram.createSocket('udp4');
+  await new Promise<void>(resolve => udp.bind(0, '127.0.0.1', resolve));
+  const port = (udp.address() as net.AddressInfo).port;
+  udp.on('message', (data, remote) => {
+    const response = udpReply(packet.decode(data));
+    if (response) udp.send(response, remote.port, remote.address);
+  });
+  const tcp = net.createServer(sock => {
+    let data = Buffer.alloc(0);
+    sock.on('data', chunk => {
+      if (!Buffer.isBuffer(chunk)) return;
+      data = Buffer.concat([data, chunk]);
+      if (data.length >= 2 && data.length >= 2 + data.readUInt16BE(0)) {
+        if (!tcpReply) return sock.end();
+        const response = tcpReply(packet.streamDecode(data)!);
+        const framed = Buffer.alloc(response.length + 2);
+        framed.writeUInt16BE(response.length);
+        response.copy(framed, 2);
+        for (const byte of framed) sock.write(Buffer.from([byte])); // exercise split TCP reads
+        sock.end();
+      }
+    });
+  });
+  await new Promise<void>(resolve => tcp.listen(port, '127.0.0.1', resolve));
+  return { port, close: async () => {
+    udp.close();
+    await new Promise<void>(resolve => tcp.close(() => resolve()));
+  } };
+}
+
+it('returns remaining TXT TTLs, preserving record and chunk boundaries', async () => {
+  const fake = await server(q => reply(q, [txt(name, 90, 'first', 'chunk'), txt(name, 60, 'other')]));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['first', 'chunk'], ttl: 60 }, { strings: ['other'], ttl: 60 }], DNSSECState.UNKNOWN,
+    ]);
+  } finally { await fake.close(); }
+});
+
+it('lets the SDK cache a verified identity until the remaining TTL expires', async () => {
+  const domain = 'agent.example.com';
+  const pair = generateKeyPairSync('ed25519');
+  const key = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'op', alg: 'EdDSA' } as DnsIdJWK;
+  const fixture = await currentProfileFixture(domain, key);
+  const raw = fixture.record.serialize();
+  const strings = raw.match(/.{1,200}/g)!;
+  let queries = 0;
+  const fake = await server(q => { queries++; return reply(q, [txt(`_dnsid.${domain}`, 120, ...strings)]); });
+  try {
+    const manager = new IdentityManager({ verification: { statusCheckInterval: 30 } }, {
+      logRegistry: fixture.logRegistry, fetchJson: fixture.fetchJson,
+      dnsResolver: createDnsResolverFromServer(`127.0.0.1:${fake.port}`), cache: new InMemoryIdentityCache(),
+    });
+    const first = await manager.verifyDomain(domain);
+    const second = await manager.verifyDomain(domain);
+    expect(first.dnsTTL).toBe(120);
+    expect(second).toBe(first);
+    expect(queries).toBe(1);
+  } finally { await fake.close(); }
+});
+
+it('retries truncation over TCP, follows CNAMEs, and uses the minimum TTL', async () => {
+  const alias = '_dnsid.other.example.com';
+  const fake = await server(q => reply(q, [], packet.TRUNCATED_RESPONSE), q => reply(q, [
+    { type: 'CNAME', name, class: 'IN', ttl: 15, data: alias }, txt(alias, 45, 'value'),
+  ]));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['value'], ttl: 15 }], DNSSECState.UNKNOWN,
+    ]);
+  } finally { await fake.close(); }
+});
+
+it('rejects a TCP connection closed before its reply', async () => {
+  const fake = await server(q => reply(q, [], packet.TRUNCATED_RESPONSE));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).rejects.toThrow('invalid DNS TXT response');
+  } finally { await fake.close(); }
+});
+
+it('queries a CNAME target omitted from the answer and keeps the alias TTL', async () => {
+  const alias = '_dnsid.other.example.com';
+  const fake = await server(q => q.questions![0]!.name === name
+    ? reply(q, [{ type: 'CNAME', name, class: 'IN', ttl: 9, data: alias }])
+    : reply(q, [txt(alias, 100, 'target')]));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['target'], ttl: 9 }], DNSSECState.UNKNOWN,
+    ]);
+  } finally { await fake.close(); }
+});
+
+it('rejects spoofed replies and aborts unanswered queries', async () => {
+  const fake = await server(q => reply({ ...q, id: (q.id! + 1) % 65536 }, [txt(name, 120, 'spoof')]));
+  try {
+    const controller = new AbortController();
+    const result = createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name, { signal: controller.signal });
+    setTimeout(() => controller.abort(new Error('cancelled')), 30);
+    await expect(result).rejects.toThrow('cancelled');
+  } finally { await fake.close(); }
+});
+
+it('treats invalid high-bit TTL as zero and maps DNS error codes', async () => {
+  const fake = await server(q => reply(q, [txt(name, 0x80000000, 'value')]));
+  try {
+    await expect(createDnsResolverFromServer(`127.0.0.1:${fake.port}`).fetchTXT(name)).resolves.toEqual([
+      [{ strings: ['value'], ttl: 0 }], DNSSECState.UNKNOWN,
+    ]);
+  } finally { await fake.close(); }
+  for (const [code, state] of [[3, DNSSECState.UNKNOWN], [2, DNSSECState.FAILED]] as const) {
+    const errorServer = await server(q => reply(q, [], code));
+    try {
+      await expect(createDnsResolverFromServer(`127.0.0.1:${errorServer.port}`).fetchTXT(name)).resolves.toEqual([[], state]);
+    } finally { await errorServer.close(); }
+  }
+});
