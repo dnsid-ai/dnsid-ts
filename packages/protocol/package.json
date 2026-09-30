@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
-    "jose": "^6.2.7"
+    "jose": "^6.2.12"
   },
   "publishConfig": {
     "access": "public"

@@ -39,7 +39,7 @@
   "dependencies": {
     "@dnsid-ai/protocol": "^0.24.2",
     "@dnsid-ai/transport": "^0.24.2",
-    "jose": "^6.2.10"
+    "jose": "^6.2.12"
   },
   "publishConfig": {
     "access": "public"
