@@ -37,8 +37,8 @@ const keyProvider = {
   generateKey: vi.fn(), activate: vi.fn(), supersede: vi.fn(), purge: vi.fn(),
 } as unknown as KeyProvider;
 
-async function setup(selector?: string) {
-  const fixture = await currentProfileFixture('agent.example.com', operationalKey, undefined, selector);
+async function setup(selector?: string, domain = 'agent.example.com') {
+  const fixture = await currentProfileFixture(domain, operationalKey, undefined, selector);
   const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson: fixture.fetchJson });
   return { fixture, manager };
 }
@@ -50,10 +50,13 @@ function deferred(): { promise: Promise<void>; resolve: () => void } {
 }
 
 describe('IdentityManager.verifyDomain()', () => {
-  it.each(selectors)('verifies %s with frozen draft-01 behavior', async selector => {
-    const { manager } = await setup(selector);
-    const vd = await manager.verifyDomain('agent.example.com');
-    expect(vd.domain).toBe('agent.example.com');
+  it.each([
+    [DNSID_DRAFT01_VERSION, 'example.com'],
+    [DNSID_VERSION, 'agent.example.com'],
+  ])('verifies %s for %s with frozen draft-01 behavior', async (selector, domain) => {
+    const { manager } = await setup(selector, domain);
+    const vd = await manager.verifyDomain(domain);
+    expect(vd.domain).toBe(domain);
     expect(vd.record.v).toBe(selector);
     expect(vd.signingKey.kid).toBe('entity-key');
     expect(vd.jwks.keys).toEqual([operationalKey]);

@@ -92,9 +92,9 @@ describe('JoseProfile.createJWT()', () => {
 
   it('sets aud to the normalized audience', async () => {
     const profile = new JoseProfile({ domain: ISSUER_CONFIG.domain, keyProvider: makeKeyProvider(), identityResolver: resolverStub });
-    const jwt = await profile.createJWT({ audience: 'Verifier.Example.Com' });
+    const jwt = await profile.createJWT({ audience: 'Verifier.Example' });
     const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(jwt.split('.')[1]!)));
-    expect(payload.aud).toBe('verifier.example.com');
+    expect(payload.aud).toBe('verifier.example');
   });
 
   it('sets exp to iat + default 900 seconds when no expiry given', async () => {
