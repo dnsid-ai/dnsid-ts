@@ -387,8 +387,8 @@ const config = { dnsServer: '1.1.1.1' };
 const fetchImpl = createDnsidFetch(config);
 const dnsResolver = createDefaultDnsResolver(config);
 
-const res = await fetchImpl('https://agent.example.com/.well-known/jwks.json');
-const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example.com');
+const res = await fetchImpl('https://agent.example/.well-known/jwks.json');
+const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example');
 ```
 
 ***

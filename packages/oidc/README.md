@@ -66,10 +66,10 @@ Applications with private JWK material can use `privateJwk` directly:
 import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const token = await mintOIDCToken({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   privateJwk,
-  issuer: 'https://oidc.dnsid.example',
-  audience: 'https://gateway.example.com',
+  issuer: 'https://oidc.example',
+  audience: 'https://gateway.example',
 });
 ```
 

@@ -30,7 +30,7 @@ import { IdentityManager } from '@dnsid-ai/protocol';
 const idm = new IdentityManager(
   {
     identity,                                  // omit for a verification-only manager
-    verification: { dnssecMode: 'required', trustedEntities: [{ governanceId: 'acme.example' }] },
+    verification: { dnssecMode: 'required', trustedEntities: [{ governanceId: 'agent.example' }] },
   },
   { keyProvider, entityKeyProvider, logRegistry, dnsResolver, cache, fetchJson },
 );
@@ -75,7 +75,7 @@ perform a current non-revocation check before relying on the identity for an
 operation it classifies as high value or irreversible:
 
 ```ts
-const verified = await idm.verifyDomain('agent.example.com');
+const verified = await idm.verifyDomain('agent.example');
 if (verified.requiresLogCheck()) {
   const evidence = await verified.verifyNonRevocation();
   console.log(evidence.logReference, evidence.freshnessTime);

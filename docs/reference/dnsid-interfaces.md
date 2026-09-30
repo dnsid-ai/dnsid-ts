@@ -744,7 +744,7 @@ Fetches TXT records for the given DNS owner name.
 
 `string`
 
-Normalized FQDN without trailing dot (e.g. "_dnsid.agent.example.com").
+Normalized FQDN without trailing dot (e.g. "_dnsid.agent.example").
             MUST be treated as an absolute name — no search-domain expansion.
 
 ###### options?

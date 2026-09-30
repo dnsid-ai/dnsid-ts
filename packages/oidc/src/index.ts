@@ -405,10 +405,10 @@ export async function createOIDCTokenMinter(opts: CreateOIDCTokenMinterOptions):
  *
  * const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
  * const token = await mintOIDCToken({
- *   domain: 'agent.example.com',
+ *   domain: 'agent.example',
  *   keyProvider,
- *   issuer: 'https://issuer.example.com',
- *   audience: 'https://api.example.com',
+ *   issuer: 'https://issuer.example',
+ *   audience: 'https://api.example',
  *   scopes: ['openid', 'dnsid'],
  * });
  * console.log(token.accessToken);
@@ -656,13 +656,13 @@ export class OIDCProfile {
  * import { createOIDCProfile } from '@dnsid-ai/oidc';
  *
  * const profile = createOIDCProfile({
- *   domain: 'agent.example.com',
+ *   domain: 'agent.example',
  *   keyProvider: await LocalKeyProvider.load('.dnsid/keys.json', true),
- *   oidc: { allowedIssuers: ['https://issuer.example.com'] },
+ *   oidc: { allowedIssuers: ['https://issuer.example'] },
  * });
  * const token = await profile.getOIDCToken({
- *   issuer: 'https://issuer.example.com',
- *   audience: 'https://api.example.com',
+ *   issuer: 'https://issuer.example',
+ *   audience: 'https://api.example',
  * });
  * ```
  */

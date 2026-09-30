@@ -41,10 +41,10 @@ For verification-only use, no local identity configuration or key provider is ne
 import { createIdentityVerifier } from '@dnsid-ai/sdk';
 
 const verifier = createIdentityVerifier(
-  { verification: { trustedEntities: [{ governanceId: 'acme.example' }] } },
+  { verification: { trustedEntities: [{ governanceId: 'agent.example' }] } },
   { dnsResolver, fetchJson, logRegistry },
 );
-const verified = await verifier.verifyDomain('agent.example.com');
+const verified = await verifier.verifyDomain('agent.example');
 ```
 
 JOSE, HTTP Message Signature, and OIDC profiles may use this verifier as their

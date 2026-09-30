@@ -71,10 +71,10 @@ Applications with private JWK material can use `privateJwk` directly:
 import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const token = await mintOIDCToken({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   privateJwk,
-  issuer: 'https://oidc.dnsid.example',
-  audience: 'https://gateway.example.com',
+  issuer: 'https://oidc.example',
+  audience: 'https://gateway.example',
 });
 ```
 
@@ -2240,13 +2240,13 @@ import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { createOIDCProfile } from '@dnsid-ai/oidc';
 
 const profile = createOIDCProfile({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider: await LocalKeyProvider.load('.dnsid/keys.json', true),
-  oidc: { allowedIssuers: ['https://issuer.example.com'] },
+  oidc: { allowedIssuers: ['https://issuer.example'] },
 });
 const token = await profile.getOIDCToken({
-  issuer: 'https://issuer.example.com',
-  audience: 'https://api.example.com',
+  issuer: 'https://issuer.example',
+  audience: 'https://api.example',
 });
 ```
 
@@ -2347,10 +2347,10 @@ import { mintOIDCToken } from '@dnsid-ai/oidc';
 
 const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
 const token = await mintOIDCToken({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider,
-  issuer: 'https://issuer.example.com',
-  audience: 'https://api.example.com',
+  issuer: 'https://issuer.example',
+  audience: 'https://api.example',
   scopes: ['openid', 'dnsid'],
 });
 console.log(token.accessToken);
