@@ -1,6 +1,6 @@
 {
   "name": "@dnsid-ai/monorepo",
-  "version": "0.24.1",
+  "version": "0.24.2",
   "type": "module",
   "workspaces": [
     "packages/*",
