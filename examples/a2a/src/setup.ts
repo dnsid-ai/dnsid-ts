@@ -1,6 +1,6 @@
 import { echoExecutor } from './agent.ts';
 import { EchoAgent } from './server.ts';
-import { constructIdentityManager, loadEnvironment, mergeLoadedConfig } from '@dnsid-ai/sdk/node';
+import { constructIdentityManager, loadEnvironment, mergeLoadedConfig, type LoadedConfig } from '@dnsid-ai/sdk/node';
 import {
   awaitRegistryManagedPublication,
   RegistryClient,
@@ -17,10 +17,11 @@ export interface RunningEchoAgent {
 }
 
 export async function startEchoAgent(): Promise<RunningEchoAgent> {
-  const idm = await createIdentity();
-  // Core has no default transport; the testnet DNS/CA settings are consumed
-  // here and handed to every HTTP client the example builds.
-  const transport = idm.config.transport;
+  const loaded = await loadEnvironment();
+  const idm = await createIdentity(loaded);
+  // The Node factory consumes and clears idm.config.transport. Reuse the
+  // loaded DNS/CA settings for the registry and outbound A2A clients.
+  const transport = loaded.dnsid?.transport ?? {};
   const agent = await createAndStartAgent(idm, transport);
 
   await ensurePublished(idm, transport);
@@ -46,13 +47,12 @@ export async function poll(label: string, fn: () => Promise<void>): Promise<void
   throw new Error(`${label} failed: ${String(lastError)}`);
 }
 
-/** `dnsid testnet run` exports the DNSID_* environment: identity, DNSID_CONFIG_DIR (keys), DNSID_LOG_POLICY_URL (trust), and transport. */
-async function createIdentity(): Promise<IdentityManager> {
-  const loaded = await loadEnvironment();
+/** `dnsid local run` exports the DNSID_* environment: identity, DNSID_CONFIG_DIR (keys), DNSID_LOG_POLICY_URL (trust), and transport. */
+async function createIdentity(loaded: LoadedConfig): Promise<IdentityManager> {
   const kuUrl = loaded.dnsid?.identity?.kuUrl;
-  if (!kuUrl) throw new Error('DNSID_KU_URL is required; run with `dnsid testnet run`');
-  if (!loaded.keySource?.cliDirectory) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid testnet run`');
-  if (!loaded.logTrust) throw new Error('DNSID_LOG_POLICY_URL is required; run with `dnsid testnet run`');
+  if (!kuUrl) throw new Error('DNSID_KU_URL is required; run with `dnsid local run`');
+  if (!loaded.keySource?.cliDirectory) throw new Error('DNSID_CONFIG_DIR is required; run with `dnsid local run`');
+  if (!loaded.logTrust) throw new Error('DNSID_LOG_POLICY_URL is required; run with `dnsid local run`');
   // Not SDK configuration: the example derives its agent card URL from the public URL the testnet exports.
   const publicUrl = process.env.DNSID_PUBLIC_URL ?? new URL(kuUrl).origin;
   const overlay = { dnsid: { identity: { capabilitiesUrl: `${publicUrl}/.well-known/agent-card.json` } } };

@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "bob": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run bob --port 3002 -- node --import tsx examples/a2a/src/index.ts",
-    "alice": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts bob.dev.dnsid.test",
-    "dashboard": "cd ../.. && ${DNSID_CLI:-dnsid} testnet run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts",
+    "bob": "cd ../.. && ${DNSID_CLI:-dnsid} local run bob --port 3002 -- node --import tsx examples/a2a/src/index.ts",
+    "alice": "cd ../.. && ${DNSID_CLI:-dnsid} local run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts bob.test",
+    "dashboard": "cd ../.. && ${DNSID_CLI:-dnsid} local run alice --port 3001 -- node --import tsx examples/a2a/src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
