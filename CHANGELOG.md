@@ -1,4 +1,11 @@
 
+## [0.24.2] - 2026-09-30
+
+### Bug Fixes
+
+- fix: run A2A example with short local .test domains ([#64](https://github.com/dnsid-ai/dnsid-ts/pull/64))
+
+
 ## [0.24.1] - 2026-09-29
 
 ### Bug Fixes
