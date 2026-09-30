@@ -120,7 +120,7 @@ export type CreateIdentityManagerDependencies =
  *   dnsResolver,       // DNSSEC-aware resolver
  *   fetchJson,
  * });
- * const verified = await idm.verifyDomain('agent.example.com');
+ * const verified = await idm.verifyDomain('agent.example');
  * ```
  */
 export function createIdentityManager(config: DnsidConfig, deps: CreateIdentityManagerDependencies): IdentityManager {

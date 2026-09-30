@@ -20,7 +20,7 @@ Sign an outbound request:
 import { createWebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
 
 const profile = createWebBotAuthProfile({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider, // Ed25519 operational key
 });
 

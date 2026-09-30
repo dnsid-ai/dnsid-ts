@@ -9,7 +9,7 @@ It always runs an **offline** flow:
 1. Generates an operational key with `LocalKeyProvider` (from
    `@dnsid-ai/sdk/node`).
 2. Creates an `OIDCTokenMinter` and mints a signed RFC 7523 JWT bearer
-   client assertion (`iss`/`sub`/`fqdn` = agent domain, `aud` = issuer).
+   client assertion (`iss`/`sub`/`fqdn` = `agent.example`, `aud` = issuer).
 3. Decodes the assertion's header and claims with `decodeOIDCClaims` and
    prints them.
 
@@ -28,14 +28,16 @@ Set both env vars to also exchange the assertion for an access token at a
 real OIDC issuer's token endpoint (network access required):
 
 ```sh
-DNSID_OIDC_ISSUER=https://issuer.example.com \
-DNSID_OIDC_AUDIENCE=https://api.example.com \
+DNSID_OIDC_ISSUER=https://issuer.example \
+DNSID_OIDC_AUDIENCE=https://api.example \
 npm run start -w @dnsid-ai/example-oidc
 ```
 
-The issuer must be an exact HTTPS issuer root (no path, query, or trailing
-slash), and its DNSid operational key must match the assertion's signing key
-for the exchange to succeed.
+Replace the `.example` URLs with your real issuer and service audience. The issuer
+must be an exact HTTPS issuer root (no path, query, or trailing slash). Live exchange
+also requires the agent domain and generated operational key to be published as a
+DNSid identity accepted by that issuer; setting the URLs alone is insufficient.
+The offline example does not provision that identity.
 
 ## Note
 

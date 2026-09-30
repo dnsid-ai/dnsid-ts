@@ -64,7 +64,7 @@ export interface WebBotAuthConfig {
 
 /** Constructor options for {@link WebBotAuthProfile}. */
 export interface WebBotAuthProfileOptions {
-  /** Agent FQDN the profile signs for (e.g. `agent.example.com`). Normalized on construction. */
+  /** Agent FQDN the profile signs for (e.g. `agent.example`). Normalized on construction. */
   domain: string;
   /** Key provider holding the agent's Ed25519 operational key. */
   keyProvider: KeyProvider;
@@ -92,12 +92,12 @@ export interface WebBotAuthSigningOptions {
  * @example
  * ```ts
  * const profile = createWebBotAuthProfile({
- *   domain: 'agent.example.com',
+ *   domain: 'agent.example',
  *   keyProvider: myEd25519KeyProvider,
  * });
  *
  * const signed = await profile.createWebBotAuthSignedRequest(
- *   new Request('https://api.example.net/v1/items', { method: 'GET' }),
+ *   new Request('https://api.example/v1/items', { method: 'GET' }),
  * );
  * await fetch(signed);
  * ```
@@ -244,11 +244,11 @@ export class WebBotAuthProfile {
  * @example
  * ```ts
  * const profile = createWebBotAuthProfile({
- *   domain: 'agent.example.com',
+ *   domain: 'agent.example',
  *   keyProvider: myEd25519KeyProvider,
  * });
  * const signed = await profile.createWebBotAuthSignedRequest(
- *   new Request('https://api.example.net/v1/items'),
+ *   new Request('https://api.example/v1/items'),
  * );
  * await fetch(signed);
  * ```

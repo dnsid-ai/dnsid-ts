@@ -9,7 +9,7 @@ import {
 
 // The agent domain the profile signs for. Purely illustrative: everything in
 // this example runs offline, so the domain never has to resolve.
-const agentDomain = 'bot.example.com';
+const agentDomain = 'bot.example';
 
 // Load the Ed25519 key store next to this example (created on first run).
 // Web Bot Auth requires an Ed25519 / EdDSA operational key, which is exactly

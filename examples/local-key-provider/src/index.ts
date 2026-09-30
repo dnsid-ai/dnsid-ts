@@ -1,10 +1,10 @@
-import type { IdentityResolver, KeyProvider } from '@dnsid-ai/sdk';
+import type { IdentityResolver } from '@dnsid-ai/sdk';
 import { createJoseProfile, fromBase64Url } from '@dnsid-ai/sdk';
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 
 // Load from existing local key store if it exists, otherwise create
 const keyStorePath = 'keys.json';
-const keyProvider: KeyProvider = await LocalKeyProvider.load(keyStorePath, true);
+const keyProvider = await LocalKeyProvider.load(keyStorePath, true);
 console.log('loaded active key:', await keyProvider.signingKey());
 console.log('visible key ids:', await keyProvider.listKeyIds());
 
@@ -39,14 +39,14 @@ await keyProvider.purge(initialSigningKid)
 // Create a jose profile (provides: createJWT, verifyJWT, createJWS, verifyJWS)
 const joseProfile = createJoseProfile({
   keyProvider,
-  domain: 'alice.example.com',
+  domain: 'alice.example',
   identityResolver: getDummyIdResolver(),
 })
 
 // Create a signed JWT, uses keyProvider passed in joseProfile creation
 // Allows overriding parameters
 const jwt = await joseProfile.createJWT({
-  audience: 'bob.example.com',
+  audience: 'bob.example',
   additionalClaims: { example: 'local-key-provider' },
 });
 console.log('\nsigned JWT:', jwt);

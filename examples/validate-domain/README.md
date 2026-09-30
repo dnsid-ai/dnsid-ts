@@ -25,16 +25,19 @@ From the repo root:
 
 ```sh
 npm install
-npm run start -w @dnsid-ai/example-validate-domain -- your-agent.example.com
+npm run start -w @dnsid-ai/example-validate-domain -- your-agent.example
 ```
 
-Replace `your-agent.example.com` with a domain whose lifecycle log uses DNSid's public test C2SP log.
+Replace `your-agent.example` with a published domain whose lifecycle log uses DNSid's public test C2SP log.
 
-The example is `constructIdentityManager(mergeLoadedConfig(fallbackTrust, await loadEnvironment()))`. Against the local registry, evaluate `dnsid local env` first; it exports `DNSID_LOG_POLICY_URL`, `DNSID_DNS_SERVER`, `DNSID_CA_BUNDLE`, and `DNSID_PRIVATE_HOSTS=.test`, which `loadEnvironment()` picks up and the constructor wires into both the policy fetch and DNS/HTTPS defaults:
+The example is `constructIdentityManager(mergeLoadedConfig(fallbackTrust, await loadEnvironment()))`. Against the local registry, provision `bob.test` and its ISSUANCE, then evaluate `dnsid local env bob`. The agent-specific form includes the identity and key paths as well as `DNSID_LOG_POLICY_URL`, `DNSID_DNS_SERVER`, `DNSID_CA_BUNDLE`, and `DNSID_PRIVATE_HOSTS=.test`, which `loadEnvironment()` picks up and the constructor wires into both the policy fetch and DNS/HTTPS defaults:
 
 ```sh
-eval "$(dnsid local env)"
-npm run start -w @dnsid-ai/example-validate-domain -- bob.dev.dnsid.test
+dnsid local up --zone test
+dnsid local agent ensure bob --upstream http://localhost:3002 -- \
+  dnsid log issue --domain bob.test
+eval "$(dnsid local env bob)"
+npm run start -w @dnsid-ai/example-validate-domain -- bob.test
 ```
 
 On success it prints the `VerifiedDomain` object: domain, agent status, verified key set, and the DNSSEC state the resolver reported.

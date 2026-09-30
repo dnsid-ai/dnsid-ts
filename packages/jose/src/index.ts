@@ -445,14 +445,14 @@ export class JoseProfile {
  * import { createJoseProfile } from '@dnsid-ai/jose';
  *
  * const joseProfile = createJoseProfile({
- *   domain: 'agent.example.com',
+ *   domain: 'agent.example',
  *   keyProvider,
  *   identityResolver,
  * });
  *
- * const jwt = await joseProfile.createJWT({ audience: 'peer.example.org' });
+ * const jwt = await joseProfile.createJWT({ audience: 'peer.example' });
  * const verifiedDomain = await peerProfile.verifyJWT(jwt);
- * console.log(verifiedDomain.domain); // 'agent.example.com'
+ * console.log(verifiedDomain.domain); // 'agent.example'
  * ```
  */
 export function createJoseProfile(opts: JoseProfileOptions): JoseProfile {

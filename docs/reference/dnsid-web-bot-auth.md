@@ -25,7 +25,7 @@ Sign an outbound request:
 import { createWebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
 
 const profile = createWebBotAuthProfile({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider, // Ed25519 operational key
 });
 
@@ -80,12 +80,12 @@ verifiers fetch to resolve the signature's key.
 
 ```ts
 const profile = createWebBotAuthProfile({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider: myEd25519KeyProvider,
 });
 
 const signed = await profile.createWebBotAuthSignedRequest(
-  new Request('https://api.example.net/v1/items', { method: 'GET' }),
+  new Request('https://api.example/v1/items', { method: 'GET' }),
 );
 await fetch(signed);
 ```
@@ -372,7 +372,7 @@ domain: string;
 
 Defined in: [index.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L68)
 
-Agent FQDN the profile signs for (e.g. `agent.example.com`). Normalized on construction.
+Agent FQDN the profile signs for (e.g. `agent.example`). Normalized on construction.
 
 <a id="keyprovider"></a>
 
@@ -586,11 +586,11 @@ Creates a [WebBotAuthProfile](#webbotauthprofile) for an agent domain.
 
 ```ts
 const profile = createWebBotAuthProfile({
-  domain: 'agent.example.com',
+  domain: 'agent.example',
   keyProvider: myEd25519KeyProvider,
 });
 const signed = await profile.createWebBotAuthSignedRequest(
-  new Request('https://api.example.net/v1/items'),
+  new Request('https://api.example/v1/items'),
 );
 await fetch(signed);
 ```

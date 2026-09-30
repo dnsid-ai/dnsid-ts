@@ -27,6 +27,9 @@ npm install @dnsid-ai/sdk @dnsid-ai/transport @dnsid-ai/log-c2sp-tlog
 
 ## Verify your first domain
 
+The `.example` domains below are placeholders; replace them with published
+DNSid identities for networked flows. Local CLI examples use the `.test` zone.
+
 ```ts
 import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
 import { createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
@@ -39,11 +42,11 @@ const logRegistry = await createC2spTlogVerificationRegistry({
 });
 // Optional: accept only these accountable entities (exact governance-ID match).
 const idm = await createNodeIdentityVerifier(
-  { verification: { trustedEntities: [{ governanceId: 'acme.example' }] } },
+  { verification: { trustedEntities: [{ governanceId: 'your-agent.example' }] } },
   { logRegistry },
 );
 
-const verified = await idm.verifyDomain('your-agent.example.com');
+const verified = await idm.verifyDomain('your-agent.example');
 console.log(verified.domain, verified.cachedState());
 
 // Before an operation your application has classified as high value or irreversible:
@@ -108,7 +111,7 @@ For verification without a local identity or signing keys:
 import { createIdentityVerifier } from '@dnsid-ai/sdk';
 
 const verifier = createIdentityVerifier({}, { dnsResolver, fetchJson, logRegistry });
-const verified = await verifier.verifyDomain('agent.example.com');
+const verified = await verifier.verifyDomain('agent.example');
 ```
 
 For OIDC minting (server-side only — private keys never belong in browser/client code):
@@ -179,7 +182,7 @@ The CLI loader maps the persisted publication fields as written. A `config.json`
 **Local (default).** The registry client talks to the local registry from `dnsid local up` unless told otherwise, and needs no credential to start:
 
 ```sh
-dnsid local up                             # local registry, DNS, and CA in Docker
+dnsid local up --zone test                 # local registry, DNS, and CA in Docker
 dnsid local run my-agent -- node app.js    # registers my-agent if needed, runs with DNSID_* set
 ```
 
@@ -209,7 +212,7 @@ Registration defaults to production: `registerSelfManagedAgent({ domain })` for 
 | Variable | Maps to | Notes |
 | --- | --- | --- |
 | `DNSID_DOMAIN` | `dnsid.identity.domain` | Agent FQDN. Omit for a verification-only manager. |
-| `DNSID_GOVERNANCE_ID` | `dnsid.identity.governanceId` | Governance identifier, usually the parent FQDN. |
+| `DNSID_GOVERNANCE_ID` | `dnsid.identity.governanceId` | Accountable entity's registrant domain (`gi`); these self-governed examples use the agent domain. |
 | `DNSID_STATUS_URL` | `dnsid.identity.statusUrl` | Required for a local identity; never derived from the registry URL. |
 | `DNSID_LOG_REF` | `dnsid.identity.logRef` | Required for a local identity; no placeholder is substituted. |
 | `DNSID_EK_URL` | `dnsid.identity.ekUrl` | Accountable-entity JWKS URL (draft-01 publishing). |
@@ -235,12 +238,12 @@ A deployment file (`loadFile`) is the JSON form of the same shape minus secrets 
 Minimal hosted-registry configuration (the local registry needs none of this — `dnsid local run` exports it):
 
 ```sh
-DNSID_DOMAIN=alice.example.com
-DNSID_GOVERNANCE_ID=example.com
-DNSID_STATUS_URL=https://api.dnsid.ai/api/v1/agent/alice.example.com/status
+DNSID_DOMAIN=alice.example
+DNSID_GOVERNANCE_ID=alice.example
+DNSID_STATUS_URL=https://api.dnsid.ai/api/v1/agent/alice.example/status
 DNSID_LOG_REF=c2sp-tlog:public:https://log.dnsid.ai#...
-DNSID_EK_URL=https://example.com/.well-known/entity-jwks.json
-DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
+DNSID_EK_URL=https://alice.example/.well-known/entity-jwks.json
+DNSID_KU_URL=https://alice.example/.well-known/jwks.json
 DNSID_REGISTRY_URL=https://api.dnsid.ai
 DNSID_API_KEY=...
 ```
@@ -248,12 +251,12 @@ DNSID_API_KEY=...
 Minimal direct-status configuration:
 
 ```sh
-DNSID_DOMAIN=alice.example.com
-DNSID_GOVERNANCE_ID=example.com
+DNSID_DOMAIN=alice.example
+DNSID_GOVERNANCE_ID=alice.example
 DNSID_LOG_REF=c2sp-tlog:public:https://log.dnsid.ai#...
-DNSID_EK_URL=https://example.com/.well-known/entity-jwks.json
-DNSID_KU_URL=https://alice.example.com/.well-known/jwks.json
-DNSID_STATUS_URL=https://alice.example.com/.well-known/dnsid-status.json
+DNSID_EK_URL=https://alice.example/.well-known/entity-jwks.json
+DNSID_KU_URL=https://alice.example/.well-known/jwks.json
+DNSID_STATUS_URL=https://alice.example/.well-known/dnsid-status.json
 ```
 
 The `#...` above is a placeholder, not a stream ID. Use the registry-issued

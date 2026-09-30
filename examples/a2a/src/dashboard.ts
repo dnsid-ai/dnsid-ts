@@ -60,12 +60,12 @@ export const dashboardHtml = String.raw`<!doctype html>
 <main>
   <header><h1>DNSid <span>×</span> A2A</h1><p class="lede">Watch domain identity become authenticated agent traffic.</p></header>
   <section class="agents">
-    <div class="agent"><strong>Alice</strong><span>alice.dev.dnsid.test</span><small>DNSid identity ready</small></div>
+    <div class="agent"><strong>Alice</strong><span>alice.test</span><small>DNSid identity ready</small></div>
     <div class="arrow" aria-hidden="true"></div>
-    <div class="agent"><strong>Bob</strong><span>bob.dev.dnsid.test</span><small>DNSid identity ready</small></div>
+    <div class="agent"><strong>Bob</strong><span>bob.test</span><small>DNSid identity ready</small></div>
   </section>
   <form class="composer" id="form">
-    <input id="message" value="hello from alice.dev.dnsid.test" maxlength="2000" aria-label="Message">
+    <input id="message" value="hello from alice.test" maxlength="2000" aria-label="Message">
     <button id="send">Send signed A2A</button>
     <label class="tamper"><input type="checkbox" id="tamper"> Tamper with the payload after signing — Bob should reject it</label>
   </form>
@@ -124,7 +124,7 @@ function running(i) { const el=stepElements[i]; el.className='step running'; el.
 form.onsubmit = async event => {
   event.preventDefault(); reset(); button.disabled=true; running(0);
   try {
-    const response=await fetch('/demo/send',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({target:'bob.dev.dnsid.test',message:document.querySelector('#message').value,tamper:document.querySelector('#tamper').checked})});
+    const response=await fetch('/demo/send',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({target:'bob.test',message:document.querySelector('#message').value,tamper:document.querySelector('#tamper').checked})});
     const data=await response.json(); if(!response.ok) throw new Error(data.error || 'Demo request failed');
     finish(0,true,undefined,'VERIFIED');
     addNestedArtifacts(stepElements[0],'Open full DNSid verification',[

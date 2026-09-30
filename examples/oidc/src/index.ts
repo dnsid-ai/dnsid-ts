@@ -14,8 +14,8 @@
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { createOIDCTokenMinter, decodeOIDCClaims } from '@dnsid-ai/oidc';
 
-const domain = 'agent.example.com';
-const issuer = process.env.DNSID_OIDC_ISSUER ?? 'https://issuer.example.com';
+const domain = 'agent.example';
+const issuer = process.env.DNSID_OIDC_ISSUER ?? 'https://issuer.example';
 
 // In a real deployment, load a persisted key instead:
 //   const keyProvider = await LocalKeyProvider.load('.dnsid/keys.json', true);
