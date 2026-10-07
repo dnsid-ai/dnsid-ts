@@ -66,6 +66,8 @@ Never derive the policy URL from an unverified identity record or log reference.
 
 A runnable version lives in [`examples/validate-domain`](examples/validate-domain/README.md). The Node helpers use the system or configured resolver by default. It reports DNSSEC state `UNKNOWN`, which the default `auto` policy accepts and preserves; inject a DNSSEC-aware resolver for stricter policy.
 
+For key generation, sandbox registration, managed ISSUANCE, publication, and final verification with persisted recovery state, see [`examples/managed-registration`](examples/managed-registration/README.md).
+
 ## Packages
 
 | Package | Purpose |
