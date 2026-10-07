@@ -11,6 +11,8 @@ import { ArgumentError, jwkThumbprint, toBase64Url } from '@dnsid-ai/protocol';
 import type { IdentityConfig, IdentityManager, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { DRAFT01_UNSIGNED_CANONICAL } from './fixtures/draft01-record-vectors.ts';
 
+import { creation } from './helpers/registration.ts';
+
 const VALID_CANONICAL = DRAFT01_UNSIGNED_CANONICAL;
 const PRODUCT_CANONICAL = VALID_CANONICAL.replace(
   'gi=example.com;',
@@ -26,6 +28,10 @@ async function sha256Hex(value: Uint8Array): Promise<string> {
 function client(fetchMock: typeof fetch = fetch): RegistryClient {
   const withRegistration = (async (url: string, init?: RequestInit) => {
     const response = await fetchMock(url, init);
+    if (url.endsWith('/api/v1/agent') && response.status === 201) {
+      const raw = await response.json();
+      return new Response(JSON.stringify({ ...creation(raw.domain), ...raw }), { status: 201 });
+    }
     if (!url.endsWith('/status')) return response;
     if (response.status === 404) {
       return new Response(JSON.stringify({ id: 'agent-1', domain: 'agent.example.com', status: 'READY', managed: 'self', dns_published: false }));
@@ -954,7 +960,7 @@ describe('RegistryClient', () => {
         managed: false,
         environment: 'production',
       });
-      return new Response(JSON.stringify({ domain: 'agent.example.com', status: 'PENDING' }), { status: 201 });
+      return new Response(JSON.stringify({ ...creation('agent.example.com'), status: 'PENDING' }), { status: 201 });
     }) as unknown as typeof fetch;
 
     const registry = new RegistryClient({
@@ -1010,11 +1016,11 @@ describe('RegistryClient', () => {
 
   it.each([
     [{ domain: 'agent.example.com', zoneId: 'zone-1', environment: 'production' as const }, 'domain and zoneId'],
-    [{ managed: true }, 'managed registration requires zoneId'],
-    [{ managed: true, environment: 'production' as const }, 'managed registration requires zoneId'],
-    [{}, 'requires a domain'],
-    [{ environment: 'production' as const }, 'requires a domain'],
-    [{ managed: false, environment: 'production' as const }, 'requires a domain'],
+    [{ managed: true }, 'requires publicKeyJwk'],
+    [{ managed: true, environment: 'production' as const }, 'requires publicKeyJwk'],
+    [{}, 'requires publicKeyJwk'],
+    [{ environment: 'production' as const }, 'requires publicKeyJwk'],
+    [{ managed: false, environment: 'production' as const }, 'requires publicKeyJwk'],
     [{ tier: 'live' as never }, 'use registerLiveAgent'],
     [{ environment: 'staging' as never }, 'must be "production"'],
     [{ environment: 'development' as never }, 'must be "production"'],
@@ -1036,7 +1042,7 @@ describe('RegistryClient', () => {
     }) as unknown as typeof fetch;
     const registry = client(fetchMock);
 
-    await expect(registry.registerAgent({ managed: false, zoneId: 'zone-1', idempotencyKey: 'registration-2' }))
+    await expect(registry.registerAgent({ managed: false, environment: 'production', zoneId: 'zone-1', publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-2' }))
       .resolves.toMatchObject({ publicationAuthority: 'registry' });
     expect(requests).toEqual([
       expect.objectContaining({ environment: 'production', managed: true, zone_id: 'zone-1' }),
@@ -1072,7 +1078,7 @@ describe('RegistryClient', () => {
 
   it.each([
     ['zone-managed with key', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-1' })],
-    ['zone-managed', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', idempotencyKey: 'registration-1' })],
+    ['zone-managed', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', publicKeyJwk: TEST_JWK, idempotencyKey: 'registration-1' })],
   ])('defaults %s registration to production', async (_label, register) => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/status')) {

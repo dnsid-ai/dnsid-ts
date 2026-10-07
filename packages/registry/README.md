@@ -34,19 +34,36 @@ Registry workflow status is kept separate from protocol `AgentStatus`. Client-co
 
 The client supports self-managed, zone-explicit, and Live registration workflows, authenticated/custom requests, verification/challenge helpers, typed preparation of C2SP issuance and key rotation, record signing, revoke, cancel, unregister, and retire helpers. `registerLiveAgent()` sets `tier: "live"` and `managed: true` internally, requires a separate idempotency key, and returns a distinct proof challenge rather than a normal registration. While `challenge_pending`, the response includes the assigned domain and validated challenge transcript. Sign the exact bytes decoded from the latest `challengeMessage`; a reissued challenge supersedes every earlier challenge and message. Preparation returns untrusted exact bytes and their bound log reference; it does not submit or append them. Registry-managed lifecycle operations are single-owner workflows: callers submit through the registry and must not append a duplicate local lifecycle event.
 
-### Registration retries (breaking API change)
+### Unified registration and recovery
 
-`registerAgent()`, `registerSelfManagedAgent()`, and `registerInZone()` now require `input.idempotencyKey`. Generate and persist the
+`registerAgent({ publicKeyJwk }, idempotencyKey?)` requests an assigned name under
+the registry's sandbox root without injecting legacy defaults. Optional
+`domain`, `rootDomain`, and `governanceDomain` select an exact FQDN, caller-owned
+active root, and expected accountable GI. `domain` and `rootDomain` are mutually
+exclusive. Assigned names require a public key; the registry decides hosting,
+ownership, admission, and whether an exact-domain request requires a key.
+
+The client validates the creation response's immutable `id`, domain, and required
+`publication_config`, then reads authenticated management status to obtain
+`publicationAuthority`. The returned `publicationConfig` and `oidcIssuerUrl` are
+creation snapshots, not values inferred from selectors or replaced by later
+status defaults. Persist them; they do not grant counterparty trust.
+
+Ordinary registration permits an omitted key. For retry safety, generate and persist the
 key **and registration input before the first attempt**, then reuse both for
-reconciliation. Do not generate a fresh key on each retry: the POST may have
+reconciliation. Existing `input.idempotencyKey` remains supported. Do not generate a fresh key on each retry: the POST may have
 created an agent even when its response or the subsequent status GET fails.
 Matching ordinary registration replays still require HTTP 201.
 
 Request/response failures throw `RegistrationError` with `idempotencyKey`, the
-original `cause`, and `domain` when the creation response supplied it. If the
-domain is known, call `getRegistration(error.domain)` to recover status without
-another POST; otherwise replay the original registration with the same key and
-input. An error does not prove creation succeeded or failed. No automatic
+original `input` and `cause`, `httpStatus` and registry `code` when available,
+and `creation` containing any decoded creation facts (including ID, domain,
+publication configuration, and OIDC issuer). These facts remain untrusted if
+validation failed. `domain` is also exposed when parsed. If the domain is known,
+call `getRegistration(error.domain)` to recover status without another POST;
+otherwise replay only with the original key and complete input. Do not retry an
+unknown creation outcome without a key. Governance-unavailable or input-mismatch
+errors do not trigger fallback roots, replacement creation, or anonymous reads. An error does not prove creation succeeded or failed. No automatic
 retries are performed; resolve permanent request errors rather than blindly
 retrying them. Replay safety depends on the registry's idempotency retention
 policy; reconcile with the registry before retrying beyond that window.
@@ -55,10 +72,12 @@ Key-rotation preparation requires owner credentials: a session cookie or organiz
 
 Registry status semantics are still expected to align with ongoing registry server status work before this API is considered stable.
 
-`registerAgent()` takes either `domain`, for a name you control (self-managed),
-or `zoneId`, for a registry-assigned name in a delegated zone (managed). The two
-are mutually exclusive, and `managed` requires `zoneId`. `environment` may be
-left unset. Private JWK members are rejected before any request is sent. Client-controlled
+Legacy selectors `environment`, `managed`, and `zoneId` remain supported;
+explicit GI/root selectors are sent unchanged for server resolution.
+`registerSelfManagedAgent({ domain })` and
+`registerInZone({ zoneId, publicKeyJwk })` retain their production environment
+default. An exact domain does not guarantee client-controlled publication.
+Private JWK members and JWKS-shaped keys are rejected before any request is sent. Client-controlled
 publication validates every known TXT tag against
 the effective publication configuration. `config.maxKeyAge` controls the `ka`
 tag; when omitted, the helper expects `ka` to be omitted. Legacy callers may

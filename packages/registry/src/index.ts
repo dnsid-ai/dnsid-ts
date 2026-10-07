@@ -38,31 +38,47 @@ export type PublicationAuthority = 'client' | 'registry';
 
 export interface AgentRegistrationInput {
   domain?: string;
+  /** Expected accountable GI; without a domain, selects an authorized root. */
+  governanceDomain?: string;
+  /** Caller-owned active delegated root for an assigned name, not a zone ID. */
+  rootDomain?: string;
   /** Optional product display name. Not published in the DNSid record. */
   name?: string;
   /** @deprecated The product registry has no arbitrary registration metadata field. */
   metadata?: Record<string, unknown>;
   publicKeyJwk?: DnsIdJWK;
-  /** Registry environment. Defaults to `production`. */
+  /** Legacy registry selector; omitted for unified registration. */
   environment?: 'production' | 'sandbox';
-  /** Registry-managed publication. Requires `zoneId`. */
+  /** Legacy registry-managed selector; hosting is resolved by the registry. */
   managed?: boolean;
   zoneId?: string;
   capabilitiesUrl?: string;
   /** Persist before registration; reuse with the same input when reconciling a failed attempt. */
-  idempotencyKey: string;
+  idempotencyKey?: string;
 }
 
 /** Registration may have succeeded; reconcile rather than retrying with a new key. */
 export class RegistrationError extends Error {
   constructor(
-    readonly idempotencyKey: string,
+    readonly idempotencyKey: string | undefined,
     /** Assigned domain, when the creation response was successfully parsed. */
     readonly domain: string | undefined,
     cause: unknown,
+    readonly input?: AgentRegistrationInput,
+    /** Decoded creation response, retained even if validation failed; not trust evidence. */
+    readonly creation?: Record<string, unknown>,
+    readonly httpStatus?: number,
+    readonly code?: string,
   ) {
-    super(`registry registration failed; retain the same input and idempotency key for recovery: ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
+    super(`registry registration failed; creation may have succeeded; retain the original input and any idempotency key for recovery: ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
     this.name = 'RegistrationError';
+  }
+}
+
+export class RegistryRequestError extends Error {
+  constructor(readonly httpStatus: number, readonly code: string | undefined, message: string) {
+    super(`registry request failed: HTTP ${httpStatus} ${code ?? ''} ${message}`);
+    this.name = 'RegistryRequestError';
   }
 }
 
@@ -112,25 +128,28 @@ export interface RegistryClientOptions {
   fetch?: typeof fetch;
 }
 
-function validateRegistrationInput(input: AgentRegistrationInput): { environment: 'production' | 'sandbox'; managed: boolean } {
-  const environment = input.environment ?? 'production';
-  if (environment !== 'production' && environment !== 'sandbox') {
+function validateRegistrationInput(input: AgentRegistrationInput): void {
+  if (input.environment !== undefined && input.environment !== 'production' && input.environment !== 'sandbox') {
     throw new ArgumentError('registration environment must be "production" or "sandbox"');
   }
-  if (input.domain && input.zoneId) {
-    throw new ArgumentError('domain and zoneId cannot both be supplied');
+  if (input.domain !== undefined && input.rootDomain !== undefined) throw new ArgumentError('domain and rootDomain cannot both be supplied');
+  if (input.domain !== undefined && input.zoneId !== undefined) throw new ArgumentError('domain and zoneId cannot both be supplied');
+  for (const field of ['domain', 'governanceDomain', 'rootDomain'] as const) {
+    if (input[field] !== undefined) input[field] = normalizeFQDN(input[field], field === 'domain');
   }
-  if (input.managed === true && !input.zoneId) {
-    throw new ArgumentError('managed registration requires zoneId');
+  if (!input.domain && !input.publicKeyJwk) throw new ArgumentError('assigned-name registration requires publicKeyJwk');
+  if (input.publicKeyJwk) assertPublicJwk(input.publicKeyJwk);
+  if (input.capabilitiesUrl !== undefined) validateRegistrationUrl(input.capabilitiesUrl);
+  if (input.name !== undefined) {
+    if (typeof input.name !== 'string' || [...input.name.trim()].length > 255) throw new ArgumentError('registration name must be at most 255 characters after trimming');
+    input.name = input.name.trim();
   }
-  const managed = input.managed === true || Boolean(input.zoneId);
-  if (managed && input.domain) {
-    throw new ArgumentError('domain must not be supplied for managed registrations; the registry assigns it');
-  }
-  if (!managed && !input.domain) {
-    throw new ArgumentError('self-managed registration requires a domain');
-  }
-  return { environment, managed };
+}
+
+function validateRegistrationUrl(value: string): void {
+  let url: URL;
+  try { url = new URL(value); } catch { throw new ArgumentError('capabilitiesUrl must be an HTTPS URL'); }
+  if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw new ArgumentError('capabilitiesUrl must be an HTTPS URL without userinfo');
 }
 
 export type IdentitySignatureAlgorithm = 'EdDSA' | 'ES256';
@@ -298,35 +317,64 @@ export class RegistryClient {
     this.credentials = options.credentials;
   }
 
-  async registerAgent(input: AgentRegistrationInput): Promise<AgentRegistration> {
+  /** Unified creation. Persist input and an optional replay key before calling; no automatic retries. */
+  async registerAgent(input: AgentRegistrationInput, idempotencyKey = input.idempotencyKey): Promise<AgentRegistration> {
     if ('tier' in input) throw new ArgumentError('use registerLiveAgent for Live registration');
-    const { environment, managed } = validateRegistrationInput(input);
-    if (input.publicKeyJwk) assertPublicJwk(input.publicKeyJwk);
-    const idempotencyKey = input.idempotencyKey;
-    validateIdempotencyKey(idempotencyKey);
+    if (input.idempotencyKey !== undefined && input.idempotencyKey !== idempotencyKey) throw new ArgumentError('conflicting idempotencyKey values');
+    const originalInput = structuredClone(input);
+    input = { ...originalInput };
+    validateRegistrationInput(input);
+    if (idempotencyKey !== undefined) validateIdempotencyKey(idempotencyKey);
     let domain: string | undefined;
+    let creation: Record<string, unknown> | undefined;
+    let httpStatus: number | undefined;
+    let code: string | undefined;
     try {
-      const resp = await this.post('/api/v1/agent', {
+      const resp = await this.postRawResponse('/api/v1/agent', JSON.stringify({
         domain: input.domain,
+        governance_domain: input.governanceDomain,
+        root_domain: input.rootDomain,
         name: input.name,
         public_key: input.publicKeyJwk,
-        environment,
-        managed,
+        environment: input.environment,
+        managed: input.zoneId ? true : input.managed,
         zone_id: input.zoneId,
         capabilities_url: input.capabilitiesUrl,
-      }, idempotencyKey);
+      }), idempotencyKey);
+      httpStatus = resp.status;
+      if (!resp.ok) {
+        const error = await readErrorResponse(resp);
+        code = error.code;
+        throw new Error(`registry registration failed: HTTP ${resp.status} ${code ?? ''} ${error.message ?? ''}`);
+      }
       if (resp.status !== 201) throw new Error(`invalid registry registration response: expected HTTP 201, received ${resp.status}`);
-      const raw = await readJsonObject(resp, 'registry register response');
-      domain = requiredString(raw, 'domain', 'registry register response');
+      creation = await readJsonObject(resp, 'registry register response');
+      domain = requiredString(creation, 'domain', 'registry register response');
+      const id = requiredString(creation, 'id', 'registry register response');
+      const normalizedDomain = normalizeFQDN(domain, true);
+      if (domain !== normalizedDomain || (input.domain && domain !== input.domain) || (input.rootDomain && !domain.endsWith(`.${input.rootDomain}`))) {
+        throw new Error('registry returned a domain that does not match the requested domain/rootDomain');
+      }
+      const publicationConfig = publicationConfigFromResponse(creation['publication_config']);
+      if (!publicationConfig) throw new Error('registry register response requires publication_config');
+      validatePublicationConfig(publicationConfig, domain);
+      if (input.governanceDomain && publicationConfig.governanceId !== input.governanceDomain) throw new Error('registry returned a different governanceDomain');
       const registration = await this.getRegistration(domain);
       if (!registration) throw new Error(`registry did not return the newly registered agent ${domain}`);
-      return { ...registration, oidcIssuerUrl: optionalString(raw, 'oidc_issuer_url') };
+      if (registration.id !== id || registration.domain !== domain) throw new Error('registry detail does not match the created identity');
+      return { ...registration, id, domain, publicationConfig, oidcIssuerUrl: optionalString(creation, 'oidc_issuer_url') };
     } catch (cause) {
-      throw new RegistrationError(idempotencyKey, domain, cause);
+      throw new RegistrationError(idempotencyKey, domain, cause, originalInput, creation,
+        cause instanceof RegistryRequestError ? cause.httpStatus : httpStatus,
+        cause instanceof RegistryRequestError ? cause.code : code);
     }
   }
 
   async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string): Promise<LiveProvisioningResponse> {
+    for (const field of ['domain', 'zoneId', 'governanceDomain', 'rootDomain', 'tier', 'managed']) {
+      if (field in input) throw new ArgumentError(`Live registration forbids ${field}`);
+    }
+    if (input.capabilitiesUrl !== undefined) validateRegistrationUrl(input.capabilitiesUrl);
     if (!input.publicKeyJwk) throw new ArgumentError('live registration requires publicKeyJwk');
     if (input.environment !== undefined && input.environment !== 'production') throw new ArgumentError('live registration environment must be "production" or omitted');
     validateIdempotencyKey(idempotencyKey);
@@ -358,11 +406,11 @@ export class RegistryClient {
   }
 
   async registerSelfManagedAgent(input: Omit<AgentRegistrationInput, 'managed' | 'zoneId'> & { domain: string }): Promise<AgentRegistration> {
-    return this.registerAgent({ ...input, managed: false });
+    return this.registerAgent({ ...input, environment: input.environment ?? 'production', managed: false });
   }
 
   async registerInZone(input: Omit<AgentRegistrationInput, 'domain' | 'managed'> & { zoneId: string }): Promise<AgentRegistration> {
-    return this.registerAgent({ ...input, managed: true });
+    return this.registerAgent({ ...input, environment: input.environment ?? 'production', managed: true });
   }
 
   async verifyAgent(domain: string): Promise<AgentRegistration> {
@@ -513,7 +561,10 @@ export class RegistryClient {
   async getRegistration(domain: string): Promise<AgentRegistration | undefined> {
     const resp = await this.request(`/api/v1/agent/${encodeURIComponent(domain)}/status`, { method: 'GET' });
     if (resp.status === 404) return undefined;
-    if (!resp.ok) throw new Error(`registry status failed: HTTP ${await responseDetail(resp)}`);
+    if (!resp.ok) {
+      const error = await readErrorResponse(resp);
+      throw new RegistryRequestError(resp.status, error.code, error.message ?? resp.statusText);
+    }
     const raw = await readJsonObject(resp, 'registry status response');
     const managed = requiredString(raw, 'managed', 'registry status response');
     const publicationAuthority = managed === 'dnsid' ? 'registry' : managed === 'self' ? 'client' : undefined;
@@ -964,6 +1015,9 @@ function optionalString(raw: Record<string, unknown>, field: string): string | u
 function publicationConfigFromResponse(value: unknown): PublicationConfig | undefined {
   if (value === undefined) return undefined;
   if (!isObject(value)) throw new Error('invalid registry status response: publication_config must be an object');
+  for (const field of ['capabilities_url', 'max_key_age']) {
+    if (value[field] !== undefined) requiredString(value, field, 'registry publication_config');
+  }
   const maxKeyAge = optionalString(value, 'max_key_age');
   if (maxKeyAge !== undefined && !['24h', '7d', '30d', '90d'].includes(maxKeyAge)) {
     throw new Error('invalid registry status response: publication_config.max_key_age is unsupported');
@@ -979,6 +1033,17 @@ function publicationConfigFromResponse(value: unknown): PublicationConfig | unde
     maxKeyAge: maxKeyAge as IdentityConfig['maxKeyAge'],
   };
 }
+function validatePublicationConfig(config: PublicationConfig, domain: string): void {
+  if (!SUPPORTED_PUBLISH_PROFILES.includes(config.publishProfile as typeof SUPPORTED_PUBLISH_PROFILES[number])) throw new Error(`unsupported DNSid publish profile: ${config.publishProfile}`);
+  const record = new DnsIdTxtRecord();
+  Object.assign(record, {
+    agentFQDN: domain, v: config.publishProfile, gi: config.governanceId,
+    ku: config.kuUrl, ek: config.ekUrl, lr: config.logRef, su: config.statusUrl,
+    cu: config.capabilitiesUrl, ka: config.maxKeyAge,
+  });
+  DnsIdTxtRecord.parseUnsignedCanonical(record.canonical(), domain);
+}
+
 function requiredNumber(raw: Record<string, unknown>, field: string, label: string): number {
   const value = raw[field];
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`invalid ${label}: ${field} must be a finite number`);

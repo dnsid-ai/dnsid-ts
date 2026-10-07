@@ -1,6 +1,9 @@
 import { expect, it, vi } from 'vitest';
 import { RegistrationError, RegistryClient } from '@dnsid-ai/registry';
 
+import { creation } from './helpers/registration.ts';
+
+const publicKeyJwk = { kid: 'key-1', kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA', x: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' };
 const domain = 'assigned.example.com';
 const idempotencyKey = 'persisted-registration-1';
 const methods = ['registerAgent', 'registerSelfManagedAgent', 'registerInZone'] as const;
@@ -8,9 +11,10 @@ const methods = ['registerAgent', 'registerSelfManagedAgent', 'registerInZone'] 
 it.each(methods)('%s rejects invalid replay keys before fetch', async method => {
   const fetchMock = vi.fn();
   const registry = new RegistryClient({ fetch: fetchMock });
-  for (const key of [undefined, null, 123, '', ' ', ' padded', 'a\nb', 'a\u0000b', 'x'.repeat(201), 'é'.repeat(101)]) {
+  for (const key of [null, 123, '', ' ', ' padded', 'a\nb', 'a\u0000b', 'x'.repeat(201), 'é'.repeat(101)]) {
     await expect(registry[method]({
       idempotencyKey: key,
+      publicKeyJwk,
       ...(method === 'registerAgent' || method === 'registerSelfManagedAgent' ? { domain } : {}),
       ...(method === 'registerInZone' ? { zoneId: 'zone-1' } : {}),
     } as never)).rejects.toThrow('idempotencyKey');
@@ -26,7 +30,7 @@ it.each(['lost POST response', 'invalid POST body', 'GET network error', 'GET 50
     if (init?.method === 'POST') {
       posts.push({ key: new Headers(init.headers).get('Idempotency-Key'), body: String(init.body) });
       if (fail && failure === 'lost POST response') throw networkError;
-      return new Response(fail && failure === 'invalid POST body' ? '{' : JSON.stringify({ domain }), { status: 201 });
+      return new Response(fail && failure === 'invalid POST body' ? '{' : JSON.stringify(creation(domain)), { status: 201 });
     }
     if (fail) {
       if (failure === 'GET network error') throw networkError;
@@ -37,7 +41,7 @@ it.each(['lost POST response', 'invalid POST body', 'GET network error', 'GET 50
     return new Response(JSON.stringify({ id: 'agent-1', domain, status: 'PENDING', managed: 'dnsid' }));
   });
   const registry = new RegistryClient({ fetch: fetchMock });
-  const input = { name: 'My agent', zoneId: 'zone-1', idempotencyKey };
+  const input = { name: 'My agent', zoneId: 'zone-1', publicKeyJwk, idempotencyKey };
   const error = await registry.registerInZone(input).catch((error: unknown) => error) as RegistrationError;
   expect(error).toBeInstanceOf(RegistrationError);
   expect(error.idempotencyKey).toBe(idempotencyKey);
