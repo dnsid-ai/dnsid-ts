@@ -314,6 +314,15 @@ describe('constructIdentityManager() and convenience constructors', () => {
 });
 
 describe('createRegistryClientFromEnvironment()', () => {
+  it('preserves explicit client options over environment values', async () => {
+    const fetch = vi.fn();
+    const client = await createRegistryClientFromEnvironment({ DNSID_REGISTRY_URL: 'https://api.dnsid.ai', DNSID_API_KEY: 'environment-token' }, {
+      baseUrl: 'https://api.dev.dnsid.ai', token: 'explicit-token', fetch,
+    });
+    expect(client as unknown as { baseUrl: string; token: string; fetchImpl: unknown }).toMatchObject({
+      baseUrl: 'https://api.dev.dnsid.ai', token: 'explicit-token', fetchImpl: fetch,
+    });
+  });
   it('needs no identity variables and lets the constructor default the URL', async () => {
     const local = await createRegistryClientFromEnvironment({});
     expect((local as unknown as { baseUrl: string }).baseUrl).toBe('http://127.0.0.1:7755');

@@ -27,7 +27,7 @@ import {
   createDnsidManagedVerificationRegistry,
   parseC2spTlogTrustProfile,
 } from '@dnsid-ai/log-c2sp-tlog';
-import { RegistryClient } from '@dnsid-ai/registry';
+import { RegistryClient, type RegistryClientOptions } from '@dnsid-ai/registry';
 
 import { LocalKeyProvider } from './local-key-provider.ts';
 import { createNodeIdentityManager } from './node-identity-manager.ts';
@@ -366,11 +366,11 @@ export function createNodeIdentityManagerFromFile(filePath: string, overlay?: Lo
   return loadFile(filePath).then(loaded => constructIdentityManager(mergeLoadedConfig(loaded, top({ dnsid: overlay })), deps));
 }
 
-/** `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry. */
-export async function createRegistryClientFromEnvironment(env?: EnvironmentSource): Promise<RegistryClient> {
+/** `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry. */
+export async function createRegistryClientFromEnvironment(env?: EnvironmentSource, options: RegistryClientOptions = {}): Promise<RegistryClient> {
   const source = env ?? process.env;
   const loaded = await loadEnvironment(source);
-  return new RegistryClient(compact({ baseUrl: loaded.registry?.registryUrl, token: source.DNSID_API_KEY?.trim() || undefined }));
+  return new RegistryClient({ baseUrl: loaded.registry?.registryUrl, token: source.DNSID_API_KEY?.trim() || undefined, ...options });
 }
 
 // ---------------------------------------------------------------------------------------------
