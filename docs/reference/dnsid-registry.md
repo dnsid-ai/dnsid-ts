@@ -39,19 +39,36 @@ Registry workflow status is kept separate from protocol `AgentStatus`. Client-co
 
 The client supports self-managed, zone-explicit, and Live registration workflows, authenticated/custom requests, verification/challenge helpers, typed preparation of C2SP issuance and key rotation, record signing, revoke, cancel, unregister, and retire helpers. `registerLiveAgent()` sets `tier: "live"` and `managed: true` internally, requires a separate idempotency key, and returns a distinct proof challenge rather than a normal registration. While `challenge_pending`, the response includes the assigned domain and validated challenge transcript. Sign the exact bytes decoded from the latest `challengeMessage`; a reissued challenge supersedes every earlier challenge and message. Preparation returns untrusted exact bytes and their bound log reference; it does not submit or append them. Registry-managed lifecycle operations are single-owner workflows: callers submit through the registry and must not append a duplicate local lifecycle event.
 
-### Registration retries (breaking API change)
+### Unified registration and recovery
 
-`registerAgent()`, `registerSelfManagedAgent()`, and `registerInZone()` now require `input.idempotencyKey`. Generate and persist the
+`registerAgent({ publicKeyJwk }, idempotencyKey?)` requests an assigned name under
+the registry's sandbox root without injecting legacy defaults. Optional
+`domain`, `rootDomain`, and `governanceDomain` select an exact FQDN, caller-owned
+active root, and expected accountable GI. `domain` and `rootDomain` are mutually
+exclusive. Assigned names require a public key; the registry decides hosting,
+ownership, admission, and whether an exact-domain request requires a key.
+
+The client validates the creation response's immutable `id`, domain, and required
+`publication_config`, then reads authenticated management status to obtain
+`publicationAuthority`. The returned `publicationConfig` and `oidcIssuerUrl` are
+creation snapshots, not values inferred from selectors or replaced by later
+status defaults. Persist them; they do not grant counterparty trust.
+
+Ordinary registration permits an omitted key. For retry safety, generate and persist the
 key **and registration input before the first attempt**, then reuse both for
-reconciliation. Do not generate a fresh key on each retry: the POST may have
+reconciliation. Existing `input.idempotencyKey` remains supported. Do not generate a fresh key on each retry: the POST may have
 created an agent even when its response or the subsequent status GET fails.
 Matching ordinary registration replays still require HTTP 201.
 
 Request/response failures throw `RegistrationError` with `idempotencyKey`, the
-original `cause`, and `domain` when the creation response supplied it. If the
-domain is known, call `getRegistration(error.domain)` to recover status without
-another POST; otherwise replay the original registration with the same key and
-input. An error does not prove creation succeeded or failed. No automatic
+original `input` and `cause`, `httpStatus` and registry `code` when available,
+and `creation` containing any decoded creation facts (including ID, domain,
+publication configuration, and OIDC issuer). These facts remain untrusted if
+validation failed. `domain` is also exposed when parsed. If the domain is known,
+call `getRegistration(error.domain)` to recover status without another POST;
+otherwise replay only with the original key and complete input. Do not retry an
+unknown creation outcome without a key. Governance-unavailable or input-mismatch
+errors do not trigger fallback roots, replacement creation, or anonymous reads. An error does not prove creation succeeded or failed. No automatic
 retries are performed; resolve permanent request errors rather than blindly
 retrying them. Replay safety depends on the registry's idempotency retention
 policy; reconcile with the registry before retrying beyond that window.
@@ -60,10 +77,12 @@ Key-rotation preparation requires owner credentials: a session cookie or organiz
 
 Registry status semantics are still expected to align with ongoing registry server status work before this API is considered stable.
 
-`registerAgent()` takes either `domain`, for a name you control (self-managed),
-or `zoneId`, for a registry-assigned name in a delegated zone (managed). The two
-are mutually exclusive, and `managed` requires `zoneId`. `environment` may be
-left unset. Private JWK members are rejected before any request is sent. Client-controlled
+Legacy selectors `environment`, `managed`, and `zoneId` remain supported;
+explicit GI/root selectors are sent unchanged for server resolution.
+`registerSelfManagedAgent({ domain })` and
+`registerInZone({ zoneId, publicKeyJwk })` retain their production environment
+default. An exact domain does not guarantee client-controlled publication.
+Private JWK members and JWKS-shaped keys are rejected before any request is sent. Client-controlled
 publication validates every known TXT tag against
 the effective publication configuration. `config.maxKeyAge` controls the `ka`
 tag; when omitted, the helper expects `ka` to be omitted. Legacy callers may
@@ -93,7 +112,7 @@ separate from the protocol-strict agent status types in
 
 ### PreparedEventSubmissionError
 
-Defined in: [packages/registry/src/index.ts:255](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L255)
+Defined in: [packages/registry/src/index.ts:274](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L274)
 
 Structured product error from exact-byte C2SP submission.
 
@@ -114,7 +133,7 @@ idempotency key and byte sequence is safe and required for reconciliation.
 new PreparedEventSubmissionError(options): PreparedEventSubmissionError;
 ```
 
-Defined in: [packages/registry/src/index.ts:262](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L262)
+Defined in: [packages/registry/src/index.ts:281](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L281)
 
 ###### Parameters
 
@@ -180,7 +199,7 @@ Error.cause
 readonly code: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L256)
+Defined in: [packages/registry/src/index.ts:275](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L275)
 
 <a id="httpstatus"></a>
 
@@ -190,7 +209,7 @@ Defined in: [packages/registry/src/index.ts:256](https://github.com/dnsid-ai/dns
 readonly httpStatus: number;
 ```
 
-Defined in: [packages/registry/src/index.ts:257](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L257)
+Defined in: [packages/registry/src/index.ts:276](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L276)
 
 <a id="message"></a>
 
@@ -232,7 +251,7 @@ Error.name
 readonly retryable: boolean;
 ```
 
-Defined in: [packages/registry/src/index.ts:259](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L259)
+Defined in: [packages/registry/src/index.ts:278](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L278)
 
 <a id="retrywithsamebytes"></a>
 
@@ -242,7 +261,7 @@ Defined in: [packages/registry/src/index.ts:259](https://github.com/dnsid-ai/dns
 readonly retryWithSameBytes: boolean;
 ```
 
-Defined in: [packages/registry/src/index.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L260)
+Defined in: [packages/registry/src/index.ts:279](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L279)
 
 <a id="stack"></a>
 
@@ -268,7 +287,7 @@ Error.stack
 readonly state: PreparedEventSubmissionErrorState;
 ```
 
-Defined in: [packages/registry/src/index.ts:258](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L258)
+Defined in: [packages/registry/src/index.ts:277](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L277)
 
 <a id="stacktracelimit"></a>
 
@@ -412,7 +431,7 @@ Error.prepareStackTrace
 
 ### RegistrationError
 
-Defined in: [packages/registry/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L57)
+Defined in: [packages/registry/src/index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L61)
 
 Registration may have succeeded; reconcile rather than retrying with a new key.
 
@@ -430,17 +449,21 @@ Registration may have succeeded; reconcile rather than retrying with a new key.
 new RegistrationError(
    idempotencyKey, 
    domain, 
-   cause
+   cause, 
+   input?, 
+   creation?, 
+   httpStatus?, 
+   code?
 ): RegistrationError;
 ```
 
-Defined in: [packages/registry/src/index.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L58)
+Defined in: [packages/registry/src/index.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L62)
 
 ###### Parameters
 
 ###### idempotencyKey
 
-`string`
+`string` \| `undefined`
 
 ###### domain
 
@@ -451,6 +474,24 @@ Assigned domain, when the creation response was successfully parsed.
 ###### cause
 
 `unknown`
+
+###### input?
+
+[`AgentRegistrationInput`](#agentregistrationinput)
+
+###### creation?
+
+`Record`\<`string`, `unknown`\>
+
+Decoded creation response, retained even if validation failed; not trust evidence.
+
+###### httpStatus?
+
+`number`
+
+###### code?
+
+`string`
 
 ###### Returns
 
@@ -480,6 +521,28 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 Error.cause
 ```
 
+<a id="code-1"></a>
+
+##### code?
+
+```ts
+readonly optional code?: string;
+```
+
+Defined in: [packages/registry/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L71)
+
+<a id="creation"></a>
+
+##### creation?
+
+```ts
+readonly optional creation?: Record<string, unknown>;
+```
+
+Defined in: [packages/registry/src/index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L69)
+
+Decoded creation response, retained even if validation failed; not trust evidence.
+
 <a id="domain"></a>
 
 ##### domain
@@ -488,19 +551,39 @@ Error.cause
 readonly domain: string | undefined;
 ```
 
-Defined in: [packages/registry/src/index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L61)
+Defined in: [packages/registry/src/index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L65)
 
 Assigned domain, when the creation response was successfully parsed.
+
+<a id="httpstatus-1"></a>
+
+##### httpStatus?
+
+```ts
+readonly optional httpStatus?: number;
+```
+
+Defined in: [packages/registry/src/index.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L70)
 
 <a id="idempotencykey"></a>
 
 ##### idempotencyKey
 
 ```ts
-readonly idempotencyKey: string;
+readonly idempotencyKey: string | undefined;
 ```
 
-Defined in: [packages/registry/src/index.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L59)
+Defined in: [packages/registry/src/index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L63)
+
+<a id="input"></a>
+
+##### input?
+
+```ts
+readonly optional input?: AgentRegistrationInput;
+```
+
+Defined in: [packages/registry/src/index.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L67)
 
 <a id="message-1"></a>
 
@@ -692,7 +775,7 @@ Error.prepareStackTrace
 
 ### RegistryClient
 
-Defined in: [packages/registry/src/index.ts:286](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L286)
+Defined in: [packages/registry/src/index.ts:305](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L305)
 
 #### Constructors
 
@@ -704,7 +787,7 @@ Defined in: [packages/registry/src/index.ts:286](https://github.com/dnsid-ai/dns
 new RegistryClient(options?): RegistryClient;
 ```
 
-Defined in: [packages/registry/src/index.ts:293](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L293)
+Defined in: [packages/registry/src/index.ts:312](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L312)
 
 ###### Parameters
 
@@ -726,7 +809,7 @@ Defined in: [packages/registry/src/index.ts:293](https://github.com/dnsid-ai/dns
 cancelAgent(domain): Promise<LifecycleResult>;
 ```
 
-Defined in: [packages/registry/src/index.ts:633](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L633)
+Defined in: [packages/registry/src/index.ts:684](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L684)
 
 ###### Parameters
 
@@ -746,7 +829,7 @@ Defined in: [packages/registry/src/index.ts:633](https://github.com/dnsid-ai/dns
 canonicalRecordContent(domain, signingKid): Promise<CanonicalRecordContentResponse>;
 ```
 
-Defined in: [packages/registry/src/index.ts:500](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L500)
+Defined in: [packages/registry/src/index.ts:548](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L548)
 
 ###### Parameters
 
@@ -770,7 +853,7 @@ Defined in: [packages/registry/src/index.ts:500](https://github.com/dnsid-ai/dns
 getAgent(domain): Promise<AgentRegistration | undefined>;
 ```
 
-Defined in: [packages/registry/src/index.ts:433](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L433)
+Defined in: [packages/registry/src/index.ts:481](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L481)
 
 ###### Parameters
 
@@ -790,7 +873,7 @@ Defined in: [packages/registry/src/index.ts:433](https://github.com/dnsid-ai/dns
 getAgentStatus(domain): Promise<AgentRegistration | undefined>;
 ```
 
-Defined in: [packages/registry/src/index.ts:536](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L536)
+Defined in: [packages/registry/src/index.ts:587](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L587)
 
 ###### Parameters
 
@@ -818,7 +901,7 @@ getIdentityRecordToSign(
 ): Promise<IdentityRecordToSign>;
 ```
 
-Defined in: [packages/registry/src/index.ts:470](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L470)
+Defined in: [packages/registry/src/index.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L518)
 
 ###### Parameters
 
@@ -846,7 +929,7 @@ Defined in: [packages/registry/src/index.ts:470](https://github.com/dnsid-ai/dns
 getRegistration(domain): Promise<AgentRegistration | undefined>;
 ```
 
-Defined in: [packages/registry/src/index.ts:513](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L513)
+Defined in: [packages/registry/src/index.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L561)
 
 ###### Parameters
 
@@ -866,7 +949,7 @@ Defined in: [packages/registry/src/index.ts:513](https://github.com/dnsid-ai/dns
 prepareIssuance(domain, idempotencyKey): Promise<PreparedRegistryEvent>;
 ```
 
-Defined in: [packages/registry/src/index.ts:540](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L540)
+Defined in: [packages/registry/src/index.ts:591](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L591)
 
 ###### Parameters
 
@@ -894,7 +977,7 @@ prepareKeyRotation(
 ): Promise<PreparedRegistryEvent>;
 ```
 
-Defined in: [packages/registry/src/index.ts:554](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L554)
+Defined in: [packages/registry/src/index.ts:605](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L605)
 
 Requires owner credentials (session or API key); an agent bearer token is not accepted.
 
@@ -928,7 +1011,7 @@ publishTxtRecordWithSigner(
 ): Promise<PublishedRecord>;
 ```
 
-Defined in: [packages/registry/src/index.ts:455](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L455)
+Defined in: [packages/registry/src/index.ts:503](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L503)
 
 ###### Parameters
 
@@ -953,16 +1036,22 @@ Defined in: [packages/registry/src/index.ts:455](https://github.com/dnsid-ai/dns
 ##### registerAgent()
 
 ```ts
-registerAgent(input): Promise<AgentRegistration>;
+registerAgent(input, idempotencyKey?): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:301](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L301)
+Defined in: [packages/registry/src/index.ts:321](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L321)
+
+Unified creation. Persist input and an optional replay key before calling; no automatic retries.
 
 ###### Parameters
 
 ###### input
 
 [`AgentRegistrationInput`](#agentregistrationinput)
+
+###### idempotencyKey?
+
+`string` \| `undefined`
 
 ###### Returns
 
@@ -976,7 +1065,7 @@ Defined in: [packages/registry/src/index.ts:301](https://github.com/dnsid-ai/dns
 registerInZone(input): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:364](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L364)
+Defined in: [packages/registry/src/index.ts:412](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L412)
 
 ###### Parameters
 
@@ -996,7 +1085,7 @@ Defined in: [packages/registry/src/index.ts:364](https://github.com/dnsid-ai/dns
 registerLiveAgent(input, idempotencyKey): Promise<LiveProvisioningResponse>;
 ```
 
-Defined in: [packages/registry/src/index.ts:329](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L329)
+Defined in: [packages/registry/src/index.ts:373](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L373)
 
 ###### Parameters
 
@@ -1020,13 +1109,13 @@ Defined in: [packages/registry/src/index.ts:329](https://github.com/dnsid-ai/dns
 registerSelfManagedAgent(input): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:360](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L360)
+Defined in: [packages/registry/src/index.ts:408](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L408)
 
 ###### Parameters
 
 ###### input
 
-`Omit`\<[`AgentRegistrationInput`](#agentregistrationinput), `"managed"` \| `"zoneId"`\> & `object`
+`Omit`\<[`AgentRegistrationInput`](#agentregistrationinput), `"zoneId"` \| `"managed"`\> & `object`
 
 ###### Returns
 
@@ -1044,7 +1133,7 @@ reissueLiveProof(
 ): Promise<LiveProofReissueResponse>;
 ```
 
-Defined in: [packages/registry/src/index.ts:408](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L408)
+Defined in: [packages/registry/src/index.ts:456](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L456)
 
 ###### Parameters
 
@@ -1072,7 +1161,7 @@ Defined in: [packages/registry/src/index.ts:408](https://github.com/dnsid-ai/dns
 retireAgent(domain, agentId): Promise<LifecycleResult>;
 ```
 
-Defined in: [packages/registry/src/index.ts:627](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L627)
+Defined in: [packages/registry/src/index.ts:678](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L678)
 
 ###### Parameters
 
@@ -1100,7 +1189,7 @@ revokeAgent(
 ): Promise<LifecycleResult>;
 ```
 
-Defined in: [packages/registry/src/index.ts:613](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L613)
+Defined in: [packages/registry/src/index.ts:664](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L664)
 
 ###### Parameters
 
@@ -1128,7 +1217,7 @@ Defined in: [packages/registry/src/index.ts:613](https://github.com/dnsid-ai/dns
 submitChallengeSignature(domain, input): Promise<LifecycleResult>;
 ```
 
-Defined in: [packages/registry/src/index.ts:379](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L379)
+Defined in: [packages/registry/src/index.ts:427](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L427)
 
 ###### Parameters
 
@@ -1152,7 +1241,7 @@ Defined in: [packages/registry/src/index.ts:379](https://github.com/dnsid-ai/dns
 submitIdentityRecordSignature(domain, input): Promise<PublishedRecord>;
 ```
 
-Defined in: [packages/registry/src/index.ts:505](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L505)
+Defined in: [packages/registry/src/index.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L553)
 
 ###### Parameters
 
@@ -1176,7 +1265,7 @@ Defined in: [packages/registry/src/index.ts:505](https://github.com/dnsid-ai/dns
 submitLiveProof(domain, input): Promise<LiveProofResponse>;
 ```
 
-Defined in: [packages/registry/src/index.ts:387](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L387)
+Defined in: [packages/registry/src/index.ts:435](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L435)
 
 ###### Parameters
 
@@ -1204,7 +1293,7 @@ submitPreparedEvent(
 ): Promise<SubmissionResult>;
 ```
 
-Defined in: [packages/registry/src/index.ts:571](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L571)
+Defined in: [packages/registry/src/index.ts:622](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L622)
 
 ###### Parameters
 
@@ -1232,7 +1321,7 @@ Defined in: [packages/registry/src/index.ts:571](https://github.com/dnsid-ai/dns
 triggerVerification(domain): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:372](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L372)
+Defined in: [packages/registry/src/index.ts:420](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L420)
 
 ###### Parameters
 
@@ -1252,7 +1341,7 @@ Defined in: [packages/registry/src/index.ts:372](https://github.com/dnsid-ai/dns
 unregisterAgent(domain): Promise<void>;
 ```
 
-Defined in: [packages/registry/src/index.ts:639](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L639)
+Defined in: [packages/registry/src/index.ts:690](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L690)
 
 Best-effort unregister; unsupported and already-absent agents are successful no-ops.
 
@@ -1274,7 +1363,7 @@ Best-effort unregister; unsupported and already-absent agents are successful no-
 verifyAgent(domain): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:368](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L368)
+Defined in: [packages/registry/src/index.ts:416](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L416)
 
 ###### Parameters
 
@@ -1298,7 +1387,7 @@ waitForStatus(
 ): Promise<AgentRegistration>;
 ```
 
-Defined in: [packages/registry/src/index.ts:437](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L437)
+Defined in: [packages/registry/src/index.ts:485](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L485)
 
 ###### Parameters
 
@@ -1326,11 +1415,11 @@ Defined in: [packages/registry/src/index.ts:437](https://github.com/dnsid-ai/dns
 
 ***
 
-<a id="registryworkflowerror"></a>
+<a id="registryrequesterror"></a>
 
-### RegistryWorkflowError
+### RegistryRequestError
 
-Defined in: [packages/registry/src/index.ts:748](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L748)
+Defined in: [packages/registry/src/index.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L78)
 
 #### Extends
 
@@ -1343,24 +1432,32 @@ Defined in: [packages/registry/src/index.ts:748](https://github.com/dnsid-ai/dns
 ##### Constructor
 
 ```ts
-new RegistryWorkflowError(message, registration): RegistryWorkflowError;
+new RegistryRequestError(
+   httpStatus, 
+   code, 
+   message
+): RegistryRequestError;
 ```
 
-Defined in: [packages/registry/src/index.ts:751](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L751)
+Defined in: [packages/registry/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L79)
 
 ###### Parameters
+
+###### httpStatus
+
+`number`
+
+###### code
+
+`string` \| `undefined`
 
 ###### message
 
 `string`
 
-###### registration
-
-[`AgentRegistration`](#agentregistration)
-
 ###### Returns
 
-[`RegistryWorkflowError`](#registryworkflowerror)
+[`RegistryRequestError`](#registryrequesterror)
 
 ###### Overrides
 
@@ -1385,6 +1482,26 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 ```ts
 Error.cause
 ```
+
+<a id="code-2"></a>
+
+##### code
+
+```ts
+readonly code: string | undefined;
+```
+
+Defined in: [packages/registry/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L79)
+
+<a id="httpstatus-2"></a>
+
+##### httpStatus
+
+```ts
+readonly httpStatus: number;
+```
+
+Defined in: [packages/registry/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L79)
 
 <a id="message-2"></a>
 
@@ -1417,16 +1534,6 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 ```ts
 Error.name
 ```
-
-<a id="registration"></a>
-
-##### registration
-
-```ts
-readonly registration: AgentRegistration;
-```
-
-Defined in: [packages/registry/src/index.ts:749](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L749)
 
 <a id="stack-2"></a>
 
@@ -1580,13 +1687,269 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 Error.prepareStackTrace
 ```
 
+***
+
+<a id="registryworkflowerror"></a>
+
+### RegistryWorkflowError
+
+Defined in: [packages/registry/src/index.ts:799](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L799)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+<a id="constructor-4"></a>
+
+##### Constructor
+
+```ts
+new RegistryWorkflowError(message, registration): RegistryWorkflowError;
+```
+
+Defined in: [packages/registry/src/index.ts:802](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L802)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### registration
+
+[`AgentRegistration`](#agentregistration)
+
+###### Returns
+
+[`RegistryWorkflowError`](#registryworkflowerror)
+
+###### Overrides
+
+```ts
+Error.constructor
+```
+
+#### Properties
+
+<a id="cause-3"></a>
+
+##### cause?
+
+```ts
+optional cause?: unknown;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
+
+###### Inherited from
+
+```ts
+Error.cause
+```
+
+<a id="message-3"></a>
+
+##### message
+
+```ts
+message: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
+
+###### Inherited from
+
+```ts
+Error.message
+```
+
+<a id="name-3"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
+
+###### Inherited from
+
+```ts
+Error.name
+```
+
+<a id="registration"></a>
+
+##### registration
+
+```ts
+readonly registration: AgentRegistration;
+```
+
+Defined in: [packages/registry/src/index.ts:800](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L800)
+
+<a id="stack-3"></a>
+
+##### stack?
+
+```ts
+optional stack?: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
+
+###### Inherited from
+
+```ts
+Error.stack
+```
+
+<a id="stacktracelimit-3"></a>
+
+##### stackTraceLimit
+
+```ts
+static stackTraceLimit: number;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:67
+
+The `Error.stackTraceLimit` property specifies the number of stack frames
+collected by a stack trace (whether generated by `new Error().stack` or
+`Error.captureStackTrace(obj)`).
+
+The default value is `10` but may be set to any valid JavaScript number. Changes
+will affect any stack trace captured _after_ the value has been changed.
+
+If set to a non-number value, or set to a negative number, stack traces will
+not capture any frames.
+
+###### Inherited from
+
+```ts
+Error.stackTraceLimit
+```
+
+#### Methods
+
+<a id="capturestacktrace-3"></a>
+
+##### captureStackTrace()
+
+```ts
+static captureStackTrace(targetObject, constructorOpt?): void;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:51
+
+Creates a `.stack` property on `targetObject`, which when accessed returns
+a string representing the location in the code at which
+`Error.captureStackTrace()` was called.
+
+```js
+const myObject = {};
+Error.captureStackTrace(myObject);
+myObject.stack;  // Similar to `new Error().stack`
+```
+
+The first line of the trace will be prefixed with
+`${myObject.name}: ${myObject.message}`.
+
+The optional `constructorOpt` argument accepts a function. If given, all frames
+above `constructorOpt`, including `constructorOpt`, will be omitted from the
+generated stack trace.
+
+The `constructorOpt` argument is useful for hiding implementation
+details of error generation from the user. For instance:
+
+```js
+function a() {
+  b();
+}
+
+function b() {
+  c();
+}
+
+function c() {
+  // Create an error without stack trace to avoid calculating the stack trace twice.
+  const { stackTraceLimit } = Error;
+  Error.stackTraceLimit = 0;
+  const error = new Error();
+  Error.stackTraceLimit = stackTraceLimit;
+
+  // Capture the stack trace above function b
+  Error.captureStackTrace(error, b); // Neither function c, nor b is included in the stack trace
+  throw error;
+}
+
+a();
+```
+
+###### Parameters
+
+###### targetObject
+
+`object`
+
+###### constructorOpt?
+
+`Function`
+
+###### Returns
+
+`void`
+
+###### Inherited from
+
+```ts
+Error.captureStackTrace
+```
+
+<a id="preparestacktrace-3"></a>
+
+##### prepareStackTrace()
+
+```ts
+static prepareStackTrace(err, stackTraces): any;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:55
+
+###### Parameters
+
+###### err
+
+`Error`
+
+###### stackTraces
+
+`CallSite`[]
+
+###### Returns
+
+`any`
+
+###### See
+
+https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+
+###### Inherited from
+
+```ts
+Error.prepareStackTrace
+```
+
 ## Interfaces
 
 <a id="agentregistration"></a>
 
 ### AgentRegistration
 
-Defined in: [packages/registry/src/index.ts:189](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L189)
+Defined in: [packages/registry/src/index.ts:208](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L208)
 
 #### Properties
 
@@ -1598,7 +1961,7 @@ Defined in: [packages/registry/src/index.ts:189](https://github.com/dnsid-ai/dns
 optional dnsPublished?: boolean;
 ```
 
-Defined in: [packages/registry/src/index.ts:194](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L194)
+Defined in: [packages/registry/src/index.ts:213](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L213)
 
 <a id="domain-1"></a>
 
@@ -1608,7 +1971,7 @@ Defined in: [packages/registry/src/index.ts:194](https://github.com/dnsid-ai/dns
 domain: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:191](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L191)
+Defined in: [packages/registry/src/index.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L210)
 
 <a id="id"></a>
 
@@ -1618,7 +1981,7 @@ Defined in: [packages/registry/src/index.ts:191](https://github.com/dnsid-ai/dns
 id: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:190](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L190)
+Defined in: [packages/registry/src/index.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L209)
 
 <a id="oidcissuerurl"></a>
 
@@ -1628,7 +1991,7 @@ Defined in: [packages/registry/src/index.ts:190](https://github.com/dnsid-ai/dns
 optional oidcIssuerUrl?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L197)
+Defined in: [packages/registry/src/index.ts:216](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L216)
 
 <a id="protocolstatus"></a>
 
@@ -1638,7 +2001,7 @@ Defined in: [packages/registry/src/index.ts:197](https://github.com/dnsid-ai/dns
 optional protocolStatus?: AgentStatus;
 ```
 
-Defined in: [packages/registry/src/index.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L195)
+Defined in: [packages/registry/src/index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L214)
 
 <a id="publicationauthority"></a>
 
@@ -1648,7 +2011,7 @@ Defined in: [packages/registry/src/index.ts:195](https://github.com/dnsid-ai/dns
 publicationAuthority: PublicationAuthority;
 ```
 
-Defined in: [packages/registry/src/index.ts:192](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L192)
+Defined in: [packages/registry/src/index.ts:211](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L211)
 
 <a id="publicationconfig"></a>
 
@@ -1658,7 +2021,7 @@ Defined in: [packages/registry/src/index.ts:192](https://github.com/dnsid-ai/dns
 optional publicationConfig?: PublicationConfig;
 ```
 
-Defined in: [packages/registry/src/index.ts:198](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L198)
+Defined in: [packages/registry/src/index.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L217)
 
 <a id="raw"></a>
 
@@ -1668,7 +2031,7 @@ Defined in: [packages/registry/src/index.ts:198](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L199)
+Defined in: [packages/registry/src/index.ts:218](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L218)
 
 <a id="registrystatus"></a>
 
@@ -1678,7 +2041,7 @@ Defined in: [packages/registry/src/index.ts:199](https://github.com/dnsid-ai/dns
 registryStatus: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:193](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L193)
+Defined in: [packages/registry/src/index.ts:212](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L212)
 
 <a id="registryurl"></a>
 
@@ -1688,7 +2051,7 @@ Defined in: [packages/registry/src/index.ts:193](https://github.com/dnsid-ai/dns
 registryUrl: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:196](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L196)
+Defined in: [packages/registry/src/index.ts:215](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L215)
 
 ***
 
@@ -1708,7 +2071,7 @@ Defined in: [packages/registry/src/index.ts:39](https://github.com/dnsid-ai/dnsi
 optional capabilitiesUrl?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L51)
+Defined in: [packages/registry/src/index.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L55)
 
 <a id="domain-2"></a>
 
@@ -1728,19 +2091,31 @@ Defined in: [packages/registry/src/index.ts:40](https://github.com/dnsid-ai/dnsi
 optional environment?: "production" | "sandbox";
 ```
 
-Defined in: [packages/registry/src/index.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L47)
+Defined in: [packages/registry/src/index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L51)
 
-Registry environment. Defaults to `production`.
+Legacy registry selector; omitted for unified registration.
+
+<a id="governancedomain"></a>
+
+##### governanceDomain?
+
+```ts
+optional governanceDomain?: string;
+```
+
+Defined in: [packages/registry/src/index.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L42)
+
+Expected accountable GI; without a domain, selects an authorized root.
 
 <a id="idempotencykey-1"></a>
 
-##### idempotencyKey
+##### idempotencyKey?
 
 ```ts
-idempotencyKey: string;
+optional idempotencyKey?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L53)
+Defined in: [packages/registry/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L57)
 
 Persist before registration; reuse with the same input when reconciling a failed attempt.
 
@@ -1752,9 +2127,9 @@ Persist before registration; reuse with the same input when reconciling a failed
 optional managed?: boolean;
 ```
 
-Defined in: [packages/registry/src/index.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L49)
+Defined in: [packages/registry/src/index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L53)
 
-Registry-managed publication. Requires `zoneId`.
+Legacy registry-managed selector; hosting is resolved by the registry.
 
 <a id="metadata"></a>
 
@@ -1764,13 +2139,13 @@ Registry-managed publication. Requires `zoneId`.
 optional metadata?: Record<string, unknown>;
 ```
 
-Defined in: [packages/registry/src/index.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L44)
+Defined in: [packages/registry/src/index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L48)
 
 ###### Deprecated
 
 The product registry has no arbitrary registration metadata field.
 
-<a id="name-3"></a>
+<a id="name-4"></a>
 
 ##### name?
 
@@ -1778,7 +2153,7 @@ The product registry has no arbitrary registration metadata field.
 optional name?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L42)
+Defined in: [packages/registry/src/index.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L46)
 
 Optional product display name. Not published in the DNSid record.
 
@@ -1790,7 +2165,19 @@ Optional product display name. Not published in the DNSid record.
 optional publicKeyJwk?: DnsIdJWK;
 ```
 
-Defined in: [packages/registry/src/index.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L45)
+Defined in: [packages/registry/src/index.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L49)
+
+<a id="rootdomain"></a>
+
+##### rootDomain?
+
+```ts
+optional rootDomain?: string;
+```
+
+Defined in: [packages/registry/src/index.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L44)
+
+Caller-owned active delegated root for an assigned name, not a zone ID.
 
 <a id="zoneid"></a>
 
@@ -1800,7 +2187,7 @@ Defined in: [packages/registry/src/index.ts:45](https://github.com/dnsid-ai/dnsi
 optional zoneId?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L50)
+Defined in: [packages/registry/src/index.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L54)
 
 ***
 
@@ -1808,7 +2195,7 @@ Defined in: [packages/registry/src/index.ts:50](https://github.com/dnsid-ai/dnsi
 
 ### AwaitRegistryManagedPublicationOptions
 
-Defined in: [packages/registry/src/index.ts:738](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L738)
+Defined in: [packages/registry/src/index.ts:789](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L789)
 
 #### Properties
 
@@ -1820,7 +2207,7 @@ Defined in: [packages/registry/src/index.ts:738](https://github.com/dnsid-ai/dns
 domain: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:739](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L739)
+Defined in: [packages/registry/src/index.ts:790](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L790)
 
 <a id="identitymanager"></a>
 
@@ -1830,7 +2217,7 @@ Defined in: [packages/registry/src/index.ts:739](https://github.com/dnsid-ai/dns
 identityManager: IdentityManager;
 ```
 
-Defined in: [packages/registry/src/index.ts:742](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L742)
+Defined in: [packages/registry/src/index.ts:793](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L793)
 
 The local identity's manager; its protocol evidence (not acceptance) confirms publication.
 
@@ -1842,7 +2229,7 @@ The local identity's manager; its protocol evidence (not acceptance) confirms pu
 optional intervalMs?: number;
 ```
 
-Defined in: [packages/registry/src/index.ts:744](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L744)
+Defined in: [packages/registry/src/index.ts:795](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L795)
 
 <a id="publishprofile"></a>
 
@@ -1852,7 +2239,7 @@ Defined in: [packages/registry/src/index.ts:744](https://github.com/dnsid-ai/dns
 optional publishProfile?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:743](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L743)
+Defined in: [packages/registry/src/index.ts:794](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L794)
 
 <a id="registryclient-1"></a>
 
@@ -1862,7 +2249,7 @@ Defined in: [packages/registry/src/index.ts:743](https://github.com/dnsid-ai/dns
 registryClient: RegistryClient;
 ```
 
-Defined in: [packages/registry/src/index.ts:740](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L740)
+Defined in: [packages/registry/src/index.ts:791](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L791)
 
 <a id="timeoutms"></a>
 
@@ -1872,7 +2259,7 @@ Defined in: [packages/registry/src/index.ts:740](https://github.com/dnsid-ai/dns
 optional timeoutMs?: number;
 ```
 
-Defined in: [packages/registry/src/index.ts:745](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L745)
+Defined in: [packages/registry/src/index.ts:796](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L796)
 
 ***
 
@@ -1880,7 +2267,7 @@ Defined in: [packages/registry/src/index.ts:745](https://github.com/dnsid-ai/dns
 
 ### CanonicalRecordContentResponse
 
-Defined in: [packages/registry/src/index.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L138)
+Defined in: [packages/registry/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L157)
 
 #### Properties
 
@@ -1892,7 +2279,7 @@ Defined in: [packages/registry/src/index.ts:138](https://github.com/dnsid-ai/dns
 canonical: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L139)
+Defined in: [packages/registry/src/index.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L158)
 
 <a id="signingkid"></a>
 
@@ -1902,7 +2289,7 @@ Defined in: [packages/registry/src/index.ts:139](https://github.com/dnsid-ai/dns
 signingKid: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L140)
+Defined in: [packages/registry/src/index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L159)
 
 ***
 
@@ -1910,7 +2297,7 @@ Defined in: [packages/registry/src/index.ts:140](https://github.com/dnsid-ai/dns
 
 ### ChallengeSignatureInput
 
-Defined in: [packages/registry/src/index.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L156)
+Defined in: [packages/registry/src/index.ts:175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L175)
 
 #### Properties
 
@@ -1922,7 +2309,7 @@ Defined in: [packages/registry/src/index.ts:156](https://github.com/dnsid-ai/dns
 nonce: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L157)
+Defined in: [packages/registry/src/index.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L176)
 
 <a id="signature"></a>
 
@@ -1932,7 +2319,7 @@ Defined in: [packages/registry/src/index.ts:157](https://github.com/dnsid-ai/dns
 signature: string | Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/registry/src/index.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L158)
+Defined in: [packages/registry/src/index.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L177)
 
 ***
 
@@ -1940,7 +2327,7 @@ Defined in: [packages/registry/src/index.ts:158](https://github.com/dnsid-ai/dns
 
 ### IdentityRecordToSign
 
-Defined in: [packages/registry/src/index.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L143)
+Defined in: [packages/registry/src/index.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L162)
 
 #### Properties
 
@@ -1952,7 +2339,7 @@ Defined in: [packages/registry/src/index.ts:143](https://github.com/dnsid-ai/dns
 canonicalContent: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L145)
+Defined in: [packages/registry/src/index.ts:164](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L164)
 
 <a id="domain-4"></a>
 
@@ -1962,7 +2349,7 @@ Defined in: [packages/registry/src/index.ts:145](https://github.com/dnsid-ai/dns
 domain: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L144)
+Defined in: [packages/registry/src/index.ts:163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L163)
 
 <a id="expiresat"></a>
 
@@ -1972,7 +2359,7 @@ Defined in: [packages/registry/src/index.ts:144](https://github.com/dnsid-ai/dns
 optional expiresAt?: Date;
 ```
 
-Defined in: [packages/registry/src/index.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L148)
+Defined in: [packages/registry/src/index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L167)
 
 <a id="raw-1"></a>
 
@@ -1982,7 +2369,7 @@ Defined in: [packages/registry/src/index.ts:148](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L149)
+Defined in: [packages/registry/src/index.ts:168](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L168)
 
 <a id="signingkid-1"></a>
 
@@ -1992,7 +2379,7 @@ Defined in: [packages/registry/src/index.ts:149](https://github.com/dnsid-ai/dns
 signingKid: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:146](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L146)
+Defined in: [packages/registry/src/index.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L165)
 
 <a id="tags"></a>
 
@@ -2002,7 +2389,7 @@ Defined in: [packages/registry/src/index.ts:146](https://github.com/dnsid-ai/dns
 optional tags?: Record<string, string>;
 ```
 
-Defined in: [packages/registry/src/index.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L147)
+Defined in: [packages/registry/src/index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L166)
 
 ***
 
@@ -2010,7 +2397,7 @@ Defined in: [packages/registry/src/index.ts:147](https://github.com/dnsid-ai/dns
 
 ### KeyRotationPreparationRequest
 
-Defined in: [packages/registry/src/index.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L229)
+Defined in: [packages/registry/src/index.ts:248](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L248)
 
 #### Properties
 
@@ -2022,7 +2409,7 @@ Defined in: [packages/registry/src/index.ts:229](https://github.com/dnsid-ai/dns
 previousKeyId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:230](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L230)
+Defined in: [packages/registry/src/index.ts:249](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L249)
 
 <a id="publickey"></a>
 
@@ -2032,7 +2419,7 @@ Defined in: [packages/registry/src/index.ts:230](https://github.com/dnsid-ai/dns
 publicKey: DnsIdJWK;
 ```
 
-Defined in: [packages/registry/src/index.ts:231](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L231)
+Defined in: [packages/registry/src/index.ts:250](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L250)
 
 ***
 
@@ -2040,7 +2427,7 @@ Defined in: [packages/registry/src/index.ts:231](https://github.com/dnsid-ai/dns
 
 ### LifecycleResult
 
-Defined in: [packages/registry/src/index.ts:182](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L182)
+Defined in: [packages/registry/src/index.ts:201](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L201)
 
 #### Properties
 
@@ -2052,7 +2439,7 @@ Defined in: [packages/registry/src/index.ts:182](https://github.com/dnsid-ai/dns
 id: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L183)
+Defined in: [packages/registry/src/index.ts:202](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L202)
 
 <a id="raw-2"></a>
 
@@ -2062,7 +2449,7 @@ Defined in: [packages/registry/src/index.ts:183](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:186](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L186)
+Defined in: [packages/registry/src/index.ts:205](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L205)
 
 <a id="registrystatus-1"></a>
 
@@ -2072,7 +2459,7 @@ Defined in: [packages/registry/src/index.ts:186](https://github.com/dnsid-ai/dns
 registryStatus: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:184](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L184)
+Defined in: [packages/registry/src/index.ts:203](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L203)
 
 <a id="statusnote"></a>
 
@@ -2082,7 +2469,7 @@ Defined in: [packages/registry/src/index.ts:184](https://github.com/dnsid-ai/dns
 optional statusNote?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:185](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L185)
+Defined in: [packages/registry/src/index.ts:204](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L204)
 
 ***
 
@@ -2090,7 +2477,7 @@ Defined in: [packages/registry/src/index.ts:185](https://github.com/dnsid-ai/dns
 
 ### LiveAgentRegistrationInput
 
-Defined in: [packages/registry/src/index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L69)
+Defined in: [packages/registry/src/index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L85)
 
 #### Properties
 
@@ -2102,7 +2489,7 @@ Defined in: [packages/registry/src/index.ts:69](https://github.com/dnsid-ai/dnsi
 optional capabilitiesUrl?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L73)
+Defined in: [packages/registry/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L89)
 
 <a id="environment-1"></a>
 
@@ -2112,9 +2499,9 @@ Defined in: [packages/registry/src/index.ts:73](https://github.com/dnsid-ai/dnsi
 optional environment?: "production";
 ```
 
-Defined in: [packages/registry/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L71)
+Defined in: [packages/registry/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L87)
 
-<a id="name-4"></a>
+<a id="name-5"></a>
 
 ##### name?
 
@@ -2122,7 +2509,7 @@ Defined in: [packages/registry/src/index.ts:71](https://github.com/dnsid-ai/dnsi
 optional name?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L72)
+Defined in: [packages/registry/src/index.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L88)
 
 <a id="publickeyjwk-1"></a>
 
@@ -2132,7 +2519,7 @@ Defined in: [packages/registry/src/index.ts:72](https://github.com/dnsid-ai/dnsi
 publicKeyJwk: DnsIdJWK;
 ```
 
-Defined in: [packages/registry/src/index.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L70)
+Defined in: [packages/registry/src/index.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L86)
 
 ***
 
@@ -2140,7 +2527,7 @@ Defined in: [packages/registry/src/index.ts:70](https://github.com/dnsid-ai/dnsi
 
 ### LiveChallengeTranscript
 
-Defined in: [packages/registry/src/index.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L76)
+Defined in: [packages/registry/src/index.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L92)
 
 #### Properties
 
@@ -2152,7 +2539,7 @@ Defined in: [packages/registry/src/index.ts:76](https://github.com/dnsid-ai/dnsi
 agentId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L79)
+Defined in: [packages/registry/src/index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L95)
 
 <a id="expiresat-1"></a>
 
@@ -2162,7 +2549,7 @@ Defined in: [packages/registry/src/index.ts:79](https://github.com/dnsid-ai/dnsi
 expiresAt: Date;
 ```
 
-Defined in: [packages/registry/src/index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L83)
+Defined in: [packages/registry/src/index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L99)
 
 <a id="fqdn"></a>
 
@@ -2172,7 +2559,7 @@ Defined in: [packages/registry/src/index.ts:83](https://github.com/dnsid-ai/dnsi
 fqdn: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L80)
+Defined in: [packages/registry/src/index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L96)
 
 <a id="keyid"></a>
 
@@ -2182,7 +2569,7 @@ Defined in: [packages/registry/src/index.ts:80](https://github.com/dnsid-ai/dnsi
 keyId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L81)
+Defined in: [packages/registry/src/index.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L97)
 
 <a id="nonce-1"></a>
 
@@ -2192,7 +2579,7 @@ Defined in: [packages/registry/src/index.ts:81](https://github.com/dnsid-ai/dnsi
 nonce: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L82)
+Defined in: [packages/registry/src/index.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L98)
 
 <a id="orgid"></a>
 
@@ -2202,7 +2589,7 @@ Defined in: [packages/registry/src/index.ts:82](https://github.com/dnsid-ai/dnsi
 orgId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L78)
+Defined in: [packages/registry/src/index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L94)
 
 <a id="protocol"></a>
 
@@ -2212,7 +2599,7 @@ Defined in: [packages/registry/src/index.ts:78](https://github.com/dnsid-ai/dnsi
 protocol: "dnsid-live-provisioning-pop/v1";
 ```
 
-Defined in: [packages/registry/src/index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L77)
+Defined in: [packages/registry/src/index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L93)
 
 ***
 
@@ -2220,7 +2607,7 @@ Defined in: [packages/registry/src/index.ts:77](https://github.com/dnsid-ai/dnsi
 
 ### LiveProofInput
 
-Defined in: [packages/registry/src/index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L161)
+Defined in: [packages/registry/src/index.ts:180](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L180)
 
 #### Properties
 
@@ -2232,7 +2619,7 @@ Defined in: [packages/registry/src/index.ts:161](https://github.com/dnsid-ai/dns
 challenge: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L163)
+Defined in: [packages/registry/src/index.ts:182](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L182)
 
 <a id="publickeyjwk-2"></a>
 
@@ -2242,7 +2629,7 @@ Defined in: [packages/registry/src/index.ts:163](https://github.com/dnsid-ai/dns
 publicKeyJwk: DnsIdJWK;
 ```
 
-Defined in: [packages/registry/src/index.ts:164](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L164)
+Defined in: [packages/registry/src/index.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L183)
 
 <a id="requestid"></a>
 
@@ -2252,7 +2639,7 @@ Defined in: [packages/registry/src/index.ts:164](https://github.com/dnsid-ai/dns
 requestId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L162)
+Defined in: [packages/registry/src/index.ts:181](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L181)
 
 <a id="signature-1"></a>
 
@@ -2262,7 +2649,7 @@ Defined in: [packages/registry/src/index.ts:162](https://github.com/dnsid-ai/dns
 signature: string | Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/registry/src/index.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L165)
+Defined in: [packages/registry/src/index.ts:184](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L184)
 
 ***
 
@@ -2270,7 +2657,7 @@ Defined in: [packages/registry/src/index.ts:165](https://github.com/dnsid-ai/dns
 
 ### LiveProofReissueResponse
 
-Defined in: [packages/registry/src/index.ts:175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L175)
+Defined in: [packages/registry/src/index.ts:194](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L194)
 
 #### Extends
 
@@ -2286,7 +2673,7 @@ Defined in: [packages/registry/src/index.ts:175](https://github.com/dnsid-ai/dns
 agentId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L170)
+Defined in: [packages/registry/src/index.ts:189](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L189)
 
 ###### Inherited from
 
@@ -2300,7 +2687,7 @@ Defined in: [packages/registry/src/index.ts:170](https://github.com/dnsid-ai/dns
 challenge: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L176)
+Defined in: [packages/registry/src/index.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L195)
 
 <a id="challengemessage"></a>
 
@@ -2310,7 +2697,7 @@ Defined in: [packages/registry/src/index.ts:176](https://github.com/dnsid-ai/dns
 challengeMessage: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L177)
+Defined in: [packages/registry/src/index.ts:196](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L196)
 
 <a id="challengetranscript"></a>
 
@@ -2320,7 +2707,7 @@ Defined in: [packages/registry/src/index.ts:177](https://github.com/dnsid-ai/dns
 challengeTranscript: LiveChallengeTranscript;
 ```
 
-Defined in: [packages/registry/src/index.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L179)
+Defined in: [packages/registry/src/index.ts:198](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L198)
 
 <a id="domain-5"></a>
 
@@ -2330,7 +2717,7 @@ Defined in: [packages/registry/src/index.ts:179](https://github.com/dnsid-ai/dns
 domain: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:178](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L178)
+Defined in: [packages/registry/src/index.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L197)
 
 <a id="raw-3"></a>
 
@@ -2340,7 +2727,7 @@ Defined in: [packages/registry/src/index.ts:178](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L172)
+Defined in: [packages/registry/src/index.ts:191](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L191)
 
 ###### Inherited from
 
@@ -2354,7 +2741,7 @@ Defined in: [packages/registry/src/index.ts:172](https://github.com/dnsid-ai/dns
 requestId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:169](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L169)
+Defined in: [packages/registry/src/index.ts:188](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L188)
 
 ###### Inherited from
 
@@ -2368,7 +2755,7 @@ Defined in: [packages/registry/src/index.ts:169](https://github.com/dnsid-ai/dns
 status: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L171)
+Defined in: [packages/registry/src/index.ts:190](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L190)
 
 ###### Inherited from
 
@@ -2380,7 +2767,7 @@ Defined in: [packages/registry/src/index.ts:171](https://github.com/dnsid-ai/dns
 
 ### LiveProofResponse
 
-Defined in: [packages/registry/src/index.ts:168](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L168)
+Defined in: [packages/registry/src/index.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L187)
 
 #### Extended by
 
@@ -2396,7 +2783,7 @@ Defined in: [packages/registry/src/index.ts:168](https://github.com/dnsid-ai/dns
 agentId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L170)
+Defined in: [packages/registry/src/index.ts:189](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L189)
 
 <a id="raw-4"></a>
 
@@ -2406,7 +2793,7 @@ Defined in: [packages/registry/src/index.ts:170](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L172)
+Defined in: [packages/registry/src/index.ts:191](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L191)
 
 <a id="requestid-2"></a>
 
@@ -2416,7 +2803,7 @@ Defined in: [packages/registry/src/index.ts:172](https://github.com/dnsid-ai/dns
 requestId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:169](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L169)
+Defined in: [packages/registry/src/index.ts:188](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L188)
 
 <a id="status-1"></a>
 
@@ -2426,7 +2813,7 @@ Defined in: [packages/registry/src/index.ts:169](https://github.com/dnsid-ai/dns
 status: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L171)
+Defined in: [packages/registry/src/index.ts:190](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L190)
 
 ***
 
@@ -2434,7 +2821,7 @@ Defined in: [packages/registry/src/index.ts:171](https://github.com/dnsid-ai/dns
 
 ### LiveProvisioningResponse
 
-Defined in: [packages/registry/src/index.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L86)
+Defined in: [packages/registry/src/index.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L102)
 
 #### Properties
 
@@ -2446,7 +2833,7 @@ Defined in: [packages/registry/src/index.ts:86](https://github.com/dnsid-ai/dnsi
 agentId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L88)
+Defined in: [packages/registry/src/index.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L104)
 
 <a id="challenge-2"></a>
 
@@ -2456,7 +2843,7 @@ Defined in: [packages/registry/src/index.ts:88](https://github.com/dnsid-ai/dnsi
 challenge: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L90)
+Defined in: [packages/registry/src/index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L106)
 
 <a id="challengemessage-1"></a>
 
@@ -2466,7 +2853,7 @@ Defined in: [packages/registry/src/index.ts:90](https://github.com/dnsid-ai/dnsi
 challengeMessage: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L91)
+Defined in: [packages/registry/src/index.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L107)
 
 <a id="challengetranscript-1"></a>
 
@@ -2476,7 +2863,7 @@ Defined in: [packages/registry/src/index.ts:91](https://github.com/dnsid-ai/dnsi
 optional challengeTranscript?: LiveChallengeTranscript;
 ```
 
-Defined in: [packages/registry/src/index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L94)
+Defined in: [packages/registry/src/index.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L110)
 
 <a id="domain-6"></a>
 
@@ -2486,7 +2873,7 @@ Defined in: [packages/registry/src/index.ts:94](https://github.com/dnsid-ai/dnsi
 optional domain?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L93)
+Defined in: [packages/registry/src/index.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L109)
 
 Assigned domain, derived from a validated challenge transcript while challenge_pending.
 
@@ -2498,7 +2885,7 @@ Assigned domain, derived from a validated challenge transcript while challenge_p
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L95)
+Defined in: [packages/registry/src/index.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L111)
 
 <a id="requestid-3"></a>
 
@@ -2508,7 +2895,7 @@ Defined in: [packages/registry/src/index.ts:95](https://github.com/dnsid-ai/dnsi
 requestId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L87)
+Defined in: [packages/registry/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L103)
 
 <a id="status-2"></a>
 
@@ -2518,7 +2905,7 @@ Defined in: [packages/registry/src/index.ts:87](https://github.com/dnsid-ai/dnsi
 status: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L89)
+Defined in: [packages/registry/src/index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L105)
 
 ***
 
@@ -2526,7 +2913,7 @@ Defined in: [packages/registry/src/index.ts:89](https://github.com/dnsid-ai/dnsi
 
 ### PreparedRegistryEvent
 
-Defined in: [packages/registry/src/index.ts:224](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L224)
+Defined in: [packages/registry/src/index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L243)
 
 #### Properties
 
@@ -2538,7 +2925,7 @@ Defined in: [packages/registry/src/index.ts:224](https://github.com/dnsid-ai/dns
 entryBytes: Uint8Array;
 ```
 
-Defined in: [packages/registry/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L225)
+Defined in: [packages/registry/src/index.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L244)
 
 <a id="logreference"></a>
 
@@ -2548,7 +2935,7 @@ Defined in: [packages/registry/src/index.ts:225](https://github.com/dnsid-ai/dns
 logReference: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:226](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L226)
+Defined in: [packages/registry/src/index.ts:245](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L245)
 
 ***
 
@@ -2556,7 +2943,7 @@ Defined in: [packages/registry/src/index.ts:226](https://github.com/dnsid-ai/dns
 
 ### PublicationConfig
 
-Defined in: [packages/registry/src/index.ts:203](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L203)
+Defined in: [packages/registry/src/index.ts:222](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L222)
 
 Authoritative profile-known values used by the registry to prepare an identity record.
 
@@ -2570,7 +2957,7 @@ Authoritative profile-known values used by the registry to prepare an identity r
 optional capabilitiesUrl?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L210)
+Defined in: [packages/registry/src/index.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L229)
 
 <a id="ekurl"></a>
 
@@ -2580,7 +2967,7 @@ Defined in: [packages/registry/src/index.ts:210](https://github.com/dnsid-ai/dns
 ekUrl: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:207](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L207)
+Defined in: [packages/registry/src/index.ts:226](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L226)
 
 <a id="governanceid"></a>
 
@@ -2590,7 +2977,7 @@ Defined in: [packages/registry/src/index.ts:207](https://github.com/dnsid-ai/dns
 governanceId: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:205](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L205)
+Defined in: [packages/registry/src/index.ts:224](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L224)
 
 <a id="kuurl"></a>
 
@@ -2600,7 +2987,7 @@ Defined in: [packages/registry/src/index.ts:205](https://github.com/dnsid-ai/dns
 kuUrl: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:206](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L206)
+Defined in: [packages/registry/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L225)
 
 <a id="logref"></a>
 
@@ -2610,7 +2997,7 @@ Defined in: [packages/registry/src/index.ts:206](https://github.com/dnsid-ai/dns
 logRef: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:208](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L208)
+Defined in: [packages/registry/src/index.ts:227](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L227)
 
 <a id="maxkeyage"></a>
 
@@ -2620,7 +3007,7 @@ Defined in: [packages/registry/src/index.ts:208](https://github.com/dnsid-ai/dns
 optional maxKeyAge?: MaxKeyAge;
 ```
 
-Defined in: [packages/registry/src/index.ts:211](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L211)
+Defined in: [packages/registry/src/index.ts:230](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L230)
 
 <a id="publishprofile-1"></a>
 
@@ -2630,7 +3017,7 @@ Defined in: [packages/registry/src/index.ts:211](https://github.com/dnsid-ai/dns
 publishProfile: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:204](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L204)
+Defined in: [packages/registry/src/index.ts:223](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L223)
 
 <a id="statusurl"></a>
 
@@ -2640,7 +3027,7 @@ Defined in: [packages/registry/src/index.ts:204](https://github.com/dnsid-ai/dns
 statusUrl: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L209)
+Defined in: [packages/registry/src/index.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L228)
 
 ***
 
@@ -2648,7 +3035,7 @@ Defined in: [packages/registry/src/index.ts:209](https://github.com/dnsid-ai/dns
 
 ### PublishClientControlledRecordOptions
 
-Defined in: [packages/registry/src/index.ts:713](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L713)
+Defined in: [packages/registry/src/index.ts:764](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L764)
 
 #### Properties
 
@@ -2660,7 +3047,7 @@ Defined in: [packages/registry/src/index.ts:713](https://github.com/dnsid-ai/dns
 config: IdentityConfig;
 ```
 
-Defined in: [packages/registry/src/index.ts:714](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L714)
+Defined in: [packages/registry/src/index.ts:765](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L765)
 
 <a id="effectivemaxkeyage"></a>
 
@@ -2670,7 +3057,7 @@ Defined in: [packages/registry/src/index.ts:714](https://github.com/dnsid-ai/dns
 optional effectiveMaxKeyAge?: MaxKeyAge | null;
 ```
 
-Defined in: [packages/registry/src/index.ts:718](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L718)
+Defined in: [packages/registry/src/index.ts:769](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L769)
 
 Explicit legacy `ka` override. No value is inferred when the authoritative config omits `maxKeyAge`.
 
@@ -2682,7 +3069,7 @@ Explicit legacy `ka` override. No value is inferred when the authoritative confi
 entityKeyProvider: KeyProvider;
 ```
 
-Defined in: [packages/registry/src/index.ts:715](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L715)
+Defined in: [packages/registry/src/index.ts:766](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L766)
 
 <a id="registryclient-2"></a>
 
@@ -2692,7 +3079,7 @@ Defined in: [packages/registry/src/index.ts:715](https://github.com/dnsid-ai/dns
 registryClient: RegistryClient;
 ```
 
-Defined in: [packages/registry/src/index.ts:716](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L716)
+Defined in: [packages/registry/src/index.ts:767](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L767)
 
 ***
 
@@ -2700,7 +3087,7 @@ Defined in: [packages/registry/src/index.ts:716](https://github.com/dnsid-ai/dns
 
 ### PublishedRecord
 
-Defined in: [packages/registry/src/index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L214)
+Defined in: [packages/registry/src/index.ts:233](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L233)
 
 #### Properties
 
@@ -2712,7 +3099,7 @@ Defined in: [packages/registry/src/index.ts:214](https://github.com/dnsid-ai/dns
 domain: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:215](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L215)
+Defined in: [packages/registry/src/index.ts:234](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L234)
 
 <a id="ownername"></a>
 
@@ -2722,7 +3109,7 @@ Defined in: [packages/registry/src/index.ts:215](https://github.com/dnsid-ai/dns
 ownerName: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:216](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L216)
+Defined in: [packages/registry/src/index.ts:235](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L235)
 
 <a id="protocolstatus-1"></a>
 
@@ -2732,7 +3119,7 @@ Defined in: [packages/registry/src/index.ts:216](https://github.com/dnsid-ai/dns
 optional protocolStatus?: AgentStatus;
 ```
 
-Defined in: [packages/registry/src/index.ts:220](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L220)
+Defined in: [packages/registry/src/index.ts:239](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L239)
 
 <a id="publicationstatus"></a>
 
@@ -2742,7 +3129,7 @@ Defined in: [packages/registry/src/index.ts:220](https://github.com/dnsid-ai/dns
 publicationStatus: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L219)
+Defined in: [packages/registry/src/index.ts:238](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L238)
 
 <a id="raw-6"></a>
 
@@ -2752,7 +3139,7 @@ Defined in: [packages/registry/src/index.ts:219](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:221](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L221)
+Defined in: [packages/registry/src/index.ts:240](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L240)
 
 <a id="ttl"></a>
 
@@ -2762,7 +3149,7 @@ Defined in: [packages/registry/src/index.ts:221](https://github.com/dnsid-ai/dns
 ttl: number;
 ```
 
-Defined in: [packages/registry/src/index.ts:218](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L218)
+Defined in: [packages/registry/src/index.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L237)
 
 <a id="txtrecord"></a>
 
@@ -2772,7 +3159,7 @@ Defined in: [packages/registry/src/index.ts:218](https://github.com/dnsid-ai/dns
 txtRecord: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L217)
+Defined in: [packages/registry/src/index.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L236)
 
 ***
 
@@ -2780,7 +3167,7 @@ Defined in: [packages/registry/src/index.ts:217](https://github.com/dnsid-ai/dns
 
 ### PublishTxtRecordValidationOptions
 
-Defined in: [packages/registry/src/index.ts:280](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L280)
+Defined in: [packages/registry/src/index.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L299)
 
 #### Properties
 
@@ -2792,7 +3179,7 @@ Defined in: [packages/registry/src/index.ts:280](https://github.com/dnsid-ai/dns
 optional agentFQDN?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:282](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L282)
+Defined in: [packages/registry/src/index.ts:301](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L301)
 
 <a id="expectedcanonicalcontent"></a>
 
@@ -2802,7 +3189,7 @@ Defined in: [packages/registry/src/index.ts:282](https://github.com/dnsid-ai/dns
 expectedCanonicalContent: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:281](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L281)
+Defined in: [packages/registry/src/index.ts:300](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L300)
 
 <a id="signingkid-2"></a>
 
@@ -2812,7 +3199,7 @@ Defined in: [packages/registry/src/index.ts:281](https://github.com/dnsid-ai/dns
 signingKid: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:283](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L283)
+Defined in: [packages/registry/src/index.ts:302](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L302)
 
 ***
 
@@ -2820,7 +3207,7 @@ Defined in: [packages/registry/src/index.ts:283](https://github.com/dnsid-ai/dns
 
 ### RegistryClientOptions
 
-Defined in: [packages/registry/src/index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L105)
+Defined in: [packages/registry/src/index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L121)
 
 #### Properties
 
@@ -2832,7 +3219,7 @@ Defined in: [packages/registry/src/index.ts:105](https://github.com/dnsid-ai/dns
 optional baseUrl?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L107)
+Defined in: [packages/registry/src/index.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L123)
 
 Registry API base URL: HTTPS, or HTTP on loopback. Defaults to [DEFAULT\_REGISTRY\_URL](#default_registry_url).
 
@@ -2844,7 +3231,7 @@ Registry API base URL: HTTPS, or HTTP on loopback. Defaults to [DEFAULT\_REGISTR
 optional credentials?: RequestCredentials;
 ```
 
-Defined in: [packages/registry/src/index.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L111)
+Defined in: [packages/registry/src/index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L127)
 
 <a id="fetch"></a>
 
@@ -2857,7 +3244,7 @@ optional fetch?: {
 };
 ```
 
-Defined in: [packages/registry/src/index.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L112)
+Defined in: [packages/registry/src/index.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L128)
 
 ###### Call Signature
 
@@ -2911,7 +3298,7 @@ Defined in: [packages/registry/src/index.ts:112](https://github.com/dnsid-ai/dns
 optional headers?: HeadersInit;
 ```
 
-Defined in: [packages/registry/src/index.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L110)
+Defined in: [packages/registry/src/index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L126)
 
 <a id="token"></a>
 
@@ -2921,7 +3308,7 @@ Defined in: [packages/registry/src/index.ts:110](https://github.com/dnsid-ai/dns
 optional token?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L109)
+Defined in: [packages/registry/src/index.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L125)
 
 Owner API key or session token, sent as `Authorization: Bearer`.
 
@@ -2931,7 +3318,7 @@ Owner API key or session token, sent as `Authorization: Bearer`.
 
 ### SubmissionResult
 
-Defined in: [packages/registry/src/index.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L237)
+Defined in: [packages/registry/src/index.ts:256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L256)
 
 #### Properties
 
@@ -2943,7 +3330,7 @@ Defined in: [packages/registry/src/index.ts:237](https://github.com/dnsid-ai/dns
 entryHash: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:239](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L239)
+Defined in: [packages/registry/src/index.ts:258](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L258)
 
 <a id="errorcode"></a>
 
@@ -2953,7 +3340,7 @@ Defined in: [packages/registry/src/index.ts:239](https://github.com/dnsid-ai/dns
 optional errorCode?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:242](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L242)
+Defined in: [packages/registry/src/index.ts:261](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L261)
 
 <a id="index"></a>
 
@@ -2963,7 +3350,7 @@ Defined in: [packages/registry/src/index.ts:242](https://github.com/dnsid-ai/dns
 optional index?: number;
 ```
 
-Defined in: [packages/registry/src/index.ts:240](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L240)
+Defined in: [packages/registry/src/index.ts:259](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L259)
 
 <a id="keyid-1"></a>
 
@@ -2973,7 +3360,7 @@ Defined in: [packages/registry/src/index.ts:240](https://github.com/dnsid-ai/dns
 optional keyId?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L243)
+Defined in: [packages/registry/src/index.ts:262](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L262)
 
 <a id="logref-1"></a>
 
@@ -2983,7 +3370,7 @@ Defined in: [packages/registry/src/index.ts:243](https://github.com/dnsid-ai/dns
 optional logRef?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L241)
+Defined in: [packages/registry/src/index.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L260)
 
 <a id="raw-7"></a>
 
@@ -2993,7 +3380,7 @@ Defined in: [packages/registry/src/index.ts:241](https://github.com/dnsid-ai/dns
 optional raw?: unknown;
 ```
 
-Defined in: [packages/registry/src/index.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L244)
+Defined in: [packages/registry/src/index.ts:263](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L263)
 
 <a id="state-1"></a>
 
@@ -3003,7 +3390,7 @@ Defined in: [packages/registry/src/index.ts:244](https://github.com/dnsid-ai/dns
 state: "rejected" | "pending" | "accepted";
 ```
 
-Defined in: [packages/registry/src/index.ts:238](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L238)
+Defined in: [packages/registry/src/index.ts:257](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L257)
 
 ***
 
@@ -3011,7 +3398,7 @@ Defined in: [packages/registry/src/index.ts:238](https://github.com/dnsid-ai/dns
 
 ### SubmitIdentityRecordSignatureInput
 
-Defined in: [packages/registry/src/index.ts:152](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L152)
+Defined in: [packages/registry/src/index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L171)
 
 #### Properties
 
@@ -3023,7 +3410,7 @@ Defined in: [packages/registry/src/index.ts:152](https://github.com/dnsid-ai/dns
 signature: string | Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/registry/src/index.ts:153](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L153)
+Defined in: [packages/registry/src/index.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L172)
 
 ## Type Aliases
 
@@ -3035,7 +3422,7 @@ Defined in: [packages/registry/src/index.ts:153](https://github.com/dnsid-ai/dns
 type IdentitySignatureAlgorithm = "EdDSA" | "ES256";
 ```
 
-Defined in: [packages/registry/src/index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L136)
+Defined in: [packages/registry/src/index.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L155)
 
 ***
 
@@ -3047,7 +3434,7 @@ Defined in: [packages/registry/src/index.ts:136](https://github.com/dnsid-ai/dns
 type PreparedEventSubmissionErrorState = "pending" | "rejected" | "indeterminate";
 ```
 
-Defined in: [packages/registry/src/index.ts:247](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L247)
+Defined in: [packages/registry/src/index.ts:266](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L266)
 
 ***
 
@@ -3071,7 +3458,7 @@ Defined in: [packages/registry/src/index.ts:37](https://github.com/dnsid-ai/dnsi
 type PublishToRegistryOptions = PublishClientControlledRecordOptions;
 ```
 
-Defined in: [packages/registry/src/index.ts:722](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L722)
+Defined in: [packages/registry/src/index.ts:773](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L773)
 
 #### Deprecated
 
@@ -3087,7 +3474,7 @@ Use PublishClientControlledRecordOptions.
 type RegistryRevocationReason = "owner_request" | "key_compromise";
 ```
 
-Defined in: [packages/registry/src/index.ts:235](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L235)
+Defined in: [packages/registry/src/index.ts:254](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L254)
 
 Owner-authorized reason codes accepted by the registry revoke API.
 
@@ -3101,7 +3488,7 @@ Owner-authorized reason codes accepted by the registry revoke API.
 const DEFAULT_REGISTRY_URL: "http://127.0.0.1:7755" = 'http://127.0.0.1:7755';
 ```
 
-Defined in: [packages/registry/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L103)
+Defined in: [packages/registry/src/index.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L119)
 
 Default registry base URL: the local registry started by `dnsid local up`.
 Hosted use requires an explicit `baseUrl` (see `createRegistryClientFromEnvironment()` in
@@ -3117,7 +3504,7 @@ Hosted use requires an explicit `baseUrl` (see `createRegistryClientFromEnvironm
 function awaitRegistryManagedPublication(options): Promise<PublishedRecord>;
 ```
 
-Defined in: [packages/registry/src/index.ts:794](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L794)
+Defined in: [packages/registry/src/index.ts:845](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L845)
 
 #### Parameters
 
@@ -3139,7 +3526,7 @@ Defined in: [packages/registry/src/index.ts:794](https://github.com/dnsid-ai/dns
 function publishClientControlledRecord(opts): Promise<PublishedRecord>;
 ```
 
-Defined in: [packages/registry/src/index.ts:758](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L758)
+Defined in: [packages/registry/src/index.ts:809](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L809)
 
 #### Parameters
 
@@ -3161,7 +3548,7 @@ Defined in: [packages/registry/src/index.ts:758](https://github.com/dnsid-ai/dns
 function publishToRegistry(opts): Promise<PublishedRecord>;
 ```
 
-Defined in: [packages/registry/src/index.ts:790](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L790)
+Defined in: [packages/registry/src/index.ts:841](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L841)
 
 #### Parameters
 
@@ -3187,7 +3574,7 @@ Use publishClientControlledRecord().
 function required(name, values): string;
 ```
 
-Defined in: [packages/registry/src/index.ts:987](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L987)
+Defined in: [packages/registry/src/index.ts:1052](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L1052)
 
 #### Parameters
 
@@ -3213,7 +3600,7 @@ Defined in: [packages/registry/src/index.ts:987](https://github.com/dnsid-ai/dns
 function requiredInt(name, values): number;
 ```
 
-Defined in: [packages/registry/src/index.ts:992](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L992)
+Defined in: [packages/registry/src/index.ts:1057](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L1057)
 
 #### Parameters
 
