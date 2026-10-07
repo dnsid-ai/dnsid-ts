@@ -8,8 +8,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.24.2",
-    "@dnsid-ai/web-bot-auth": "^0.24.2"
+    "@dnsid-ai/sdk": "^0.25.0",
+    "@dnsid-ai/web-bot-auth": "^0.25.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

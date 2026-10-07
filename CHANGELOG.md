@@ -1,4 +1,20 @@
 
+## [0.25.0] - 2026-10-07
+
+### Chores
+
+- chore(deps): bump brace-expansion from 5.0.9 to 5.0.12 ([#66](https://github.com/dnsid-ai/dnsid-ts/pull/66))
+- chore(deps): bump markdown-it from 14.3.0 to 14.3.2 ([#67](https://github.com/dnsid-ai/dnsid-ts/pull/67))
+- chore(deps): bump source-map-js from 1.2.1 to 1.2.2 ([#74](https://github.com/dnsid-ai/dnsid-ts/pull/74))
+- chore(deps): bump undici from 8.10.2 to 8.11.0 ([#60](https://github.com/dnsid-ai/dnsid-ts/pull/60))
+- chore(deps): bump jose from 6.2.10 to 6.2.12 ([#58](https://github.com/dnsid-ai/dnsid-ts/pull/58))
+- chore(deps-dev): bump tsx from 4.23.13 to 4.23.15 ([#57](https://github.com/dnsid-ai/dnsid-ts/pull/57))
+
+### Features
+
+- feat(registry): support unified registration and publication snapshots ([#72](https://github.com/dnsid-ai/dnsid-ts/pull/72))
+
+
 ## [0.24.2] - 2026-09-30
 
 ### Bug Fixes
