@@ -850,18 +850,22 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 ### createRegistryClientFromEnvironment()
 
 ```ts
-function createRegistryClientFromEnvironment(env?): Promise<RegistryClient>;
+function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
 Defined in: [packages/sdk/src/config-loading.ts:370](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L370)
 
-`RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; the constructor defaults to the local registry.
+`RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 
 #### Parameters
 
 ##### env?
 
 `Readonly`\<`Record`\<`string`, `string` \| `undefined`\>\>
+
+##### options?
+
+[`RegistryClientOptions`](https://docs.dnsid.ai/reference/ts/dnsid-registry/#registryclientoptions) = `{}`
 
 #### Returns
 
