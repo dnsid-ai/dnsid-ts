@@ -1,10 +1,10 @@
 # Managed registration
 
-Register one hosted **dev sandbox** identity, complete bilateral ISSUANCE, wait for registry-managed publication, and verify it independently through public DNS. No challenge server or DNS hosting is needed.
+Create one hosted dev sandbox identity, complete bilateral ISSUANCE, and verify public ACTIVE status and fresh lifecycle evidence. No challenge server or DNS hosting is needed.
 
 ## Run
 
-Requires Node.js 22+, public DNS/HTTPS access, and a dev organization API key. From the repository root:
+Requires Node.js 22+, public DNS/HTTPS access, a dev organization API key, and a local POSIX filesystem. From the repository root:
 
 ```sh
 npm install
@@ -14,51 +14,40 @@ npm run start --workspace @dnsid-ai/example-managed-registration -- \
   --state-dir "$HOME/.dnsid-examples/managed-registration-ts"
 ```
 
-Alternatively, omit `--api-key-file` and set `DNSID_API_KEY`. The credential file must contain one token; protect it with mode `600`. Credentials are not saved or printed.
+Alternatively, omit `--api-key-file` and set `DNSID_API_KEY`. Protect the credential file with mode `600`. Credentials are not saved or printed.
 
-**This creates a real sandbox identity and a permanent dev transparency-log entry.** It leaves the identity active. Use a dedicated directory outside the repository, and keep the private key backed up. Do not share recovery directories between SDKs.
+**This creates a real sandbox identity and a permanent dev transparency-log entry.** It leaves the identity active. Keep its private key backed up.
 
-## Common setup flow
+## Implementation
 
-1. Generate and persist an Ed25519 operational key through `LocalKeyProvider`.
-2. Save the complete sandbox registration request and replay key before registration. Retain the creation-time publication configuration; wait for automatic ownership verification.
-3. Fetch and validate the entity JWKS from the configured dev HTTPS endpoint. `issueManagedIdentity()` validates the prepared identity/key bindings and entity signature, countersigns, saves exact bytes before submission, and persists the outcome.
-4. Use `awaitRegistryManagedPublication()` to confirm registry publication and verify public evidence. Do not append separately to the log.
-5. Use a fresh, credential-free verifier with the configured governance ID and entity-key thumbprint. Check `ACTIVE` status, the assigned log reference, and fresh lifecycle evidence with `verifyNonRevocation()`.
+`src/registration.ts` loads SDK environment settings and calls `registerManagedIdentity()` with a `FileRegistrationStore`. The SDK owns key generation, durable replay, issuance, publication polling, and independent credential-free verification. The example only selects dev trust, requests a sandbox identity, and supplies the dev-specific adapter:
+
+- `GET /api/v1/org` returns the authenticated credential's owning organization ID.
+- Creation replay is scoped to organization/request key. The dev server's PostgreSQL idempotency store retains claims for 24 hours from storage, conservatively measured here from the first request. See the server's `internal/db/pgstore/idempotency.go`.
+- The replay clock uncertainty is one second. Run only where clock error across restarts stays within this bound; expired or uncertain creation outcomes require reconciliation, not a new request.
+
+SDK transport and verification settings such as `DNSID_DNS_SERVER`, `DNSID_DNSSEC_MODE`, and `DNSID_CA_BUNDLE` still apply. The example rejects a different `DNSID_REGISTRY_URL`, ignores existing identity/key-source settings, and explicitly selects managed log trust. System DNS does not provide authenticated DNSSEC; configure a DNSSEC-aware resolver and policy if required.
 
 Success prints:
 
 ```text
 Registered: <assigned-domain>.sandbox.dev.dnsid.ai
-Verified: <assigned-domain>.sandbox.dev.dnsid.ai status=ACTIVE DNSSEC=UNKNOWN
+Verified: <assigned-domain>.sandbox.dev.dnsid.ai status=ACTIVE
 ```
-
-`UNKNOWN` is not authenticated DNSSEC. Configure a DNSSEC-aware resolver and the appropriate verification policy when required.
-
-## Configuration
-
-The example uses `loadEnvironment()`, `mergeLoadedConfig()`, `constructIdentityManager()`, and `createRegistryClientFromEnvironment()`. SDK environment settings such as `DNSID_DNS_SERVER`, `DNSID_DNSSEC_MODE`, and `DNSID_CA_BUNDLE` are read by the SDK rather than duplicated here.
-
-The dev registry is the explicit default. A different `DNSID_REGISTRY_URL` is rejected: this example's governance ID, entity-key endpoint, and log prefix are dev-specific. Managed log trust is explicitly selected with `logTrust.managed`; trust is never taken from an unverified record. Setup owns the new identity and key, so existing `DNSID_DOMAIN` and key-source settings are not used. The assigned publication snapshot is overlaid after registration.
 
 ## Recovery
 
-Fresh runs create only:
+Use the **same directory** to resume. The SDK saves `setup.json` and the private `operational-key.json` with owner-only permissions and atomic, synced writes. Back up both. Do not edit recovery state, replace missing keys, or share the directory between SDKs.
 
-- `keys.json`: private operational key; keep secret and backed up.
-- `recovery.json`: original request, replay keys, creation snapshot, trusted entity key, exact signed bytes, and issuance outcome.
+The SDK locks the directory with `setup.lock`. After a process interruption, stop all writers, back up the directory, then remove that lock before resuming. Completed setup rechecks public evidence without creating another identity or resubmitting accepted issuance. Integrity, policy, and terminal-status failures stop.
 
-The directory is restricted to `700`; recovery files use `600`. Writes sync the temporary file, atomically rename it, and sync the directory. Use a local filesystem that supports these operations.
+Old `recovery.json` or separate request/issuance files are **not migrated**. The SDK refuses those directories instead of silently allocating a replacement identity. Preserve them and use the previous example version to finish the old operation. Use an empty directory only for an intentionally new identity.
 
-Rerun with the **same directory** after interruption. Do not delete recovery state, replace the key, edit signed bytes, or run concurrent processes against the directory. Accepted issuance is not resubmitted; rejected outcomes stop. Pending or unknown outcomes retain the same bytes and idempotency key. Only transient public-read failures and publication-DNS failures are retried; integrity and policy failures stop immediately.
-
-The original example's separate request, registration, entity-key, and issuance files are imported into `recovery.json` on first resume. Old files are left intact as backups; subsequent runs use `recovery.json`.
-
-Cleanup is explicit: retire the immutable identity through the registry before discarding its key. Production, Live challenges, and self-managed publication are outside this example.
+Retire the identity through the registry before discarding its key. Production, Live challenges, and self-managed publication are outside this example.
 
 ## Offline checks
 
 ```sh
 npm run typecheck --workspace @dnsid-ai/example-managed-registration
-npm test -- test/managed-registration-state.test.ts test/managed-registration-flow.test.ts test/managed-issuance.test.ts test/config-loading.test.ts
+npm test -- test/managed-registration-flow.test.ts test/managed-registration.test.ts
 ```

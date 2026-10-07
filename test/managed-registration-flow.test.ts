@@ -1,74 +1,63 @@
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import * as nodeSdk from '@dnsid-ai/sdk/node';
-import { jwkThumbprint, VerificationCode, VerificationError } from '@dnsid-ai/sdk';
 import { runRegistration } from '../examples/managed-registration/src/registration.ts';
-import { writeState } from '../examples/managed-registration/src/state.ts';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
-it.each([false, true])('resumes setup (legacy=%s), loads SDK config, and checks fresh evidence', async legacy => {
-  const directory = await mkdtemp(join(tmpdir(), 'dnsid-managed-flow-'));
+it('delegates sandbox setup and recovery to the SDK with explicit dev trust', async () => {
+  const setup = vi.spyOn(nodeSdk, 'registerManagedIdentity').mockResolvedValue({
+    registration: { domain: 'agent.sandbox.dev.dnsid.ai' },
+    loggedStateEvidence: { loggedState: 'ACTIVE' },
+  } as never);
+  const network = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ id: 'org-1' }));
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.stubEnv('DNSID_DOMAIN', 'old.example.com');
+  await runRegistration('/tmp/dnsid-example', 'owner-token');
+  const options = setup.mock.calls[0][0];
+  expect(options.store).toBeInstanceOf(nodeSdk.FileRegistrationStore);
+  expect(options.credential).toBe('owner-token');
+  expect(options.input).toEqual({ environment: 'sandbox' });
+  expect(options.loaded.dnsid?.identity).toBeUndefined();
+  expect(options.loaded.keySource).toBeUndefined();
+  expect(options.loaded.registry?.registryUrl).toBe('https://api.dev.dnsid.ai');
+  expect(options.loaded.registration).toEqual({
+    governanceId: 'dev.dnsid.ai', entityKeyUrl: 'https://dnsid.dev.dnsid.ai/.well-known/dnsid-ek.json',
+  });
+  expect(options.loaded.logTrust).toEqual({ managed: true });
+  const signal = new AbortController().signal;
+  await expect(options.adapter.resolveOrganization({} as never, signal)).resolves.toBe('org-1');
+  expect(network).toHaveBeenCalledWith('https://api.dev.dnsid.ai/api/v1/org', {
+    headers: { Authorization: 'Bearer owner-token' }, signal, redirect: 'error',
+  });
+  network.mockResolvedValueOnce(Response.json({ id: '' }));
+  await expect(options.adapter.resolveOrganization({} as never, signal)).rejects.toThrow('missing organization ID');
+  network.mockResolvedValueOnce(new Response(null, { status: 403 }));
+  await expect(options.adapter.resolveOrganization({} as never, signal)).rejects.toThrow('HTTP 403');
+  expect(() => options.fetch!('https://other.example/api/v1/agent')).toThrow('unexpected registry origin');
+});
+
+it('refuses legacy recovery files without generating a replacement identity', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'dnsid-example-'));
+  const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('unexpected network request'));
   try {
-    const keys = await nodeSdk.LocalKeyProvider.load(join(directory, 'keys.json'), true);
-    const entity = await nodeSdk.LocalKeyProvider.generate();
-    const entityKey = await entity.signingKey();
-    const operational = await keys.signingKey();
-    const domain = 'agent.sandbox.dev.dnsid.ai';
-    const logRef = 'c2sp-tlog:public:https://log.dev.dnsid.ai#agent-123';
-    const publicationConfig = {
-      governanceId: 'dev.dnsid.ai', logRef, publishProfile: 'dnsid-draft-01',
-      ekUrl: 'https://dnsid.dev.dnsid.ai/.well-known/dnsid-ek.json',
-      kuUrl: `https://${domain}/.well-known/dnsid-ku.json`,
-      statusUrl: `https://${domain}/.well-known/dnsid-status.json`,
-    };
-    const registration = { id: 'agent-123', domain, publicationAuthority: 'registry', registryStatus: 'READY', publicationConfig };
-    const state = {
-      request: { registryUrl: 'https://api.dev.dnsid.ai', input: { environment: 'sandbox', publicKeyJwk: operational }, idempotencyKey: 'register-1' },
-      registration, entityKey,
-      issuance: { domain, governanceId: 'dev.dnsid.ai', idempotencyKey: 'issue-1', activated: true,
-        entityKid: entityKey.kid, entityThumbprint: await jwkThumbprint(entityKey),
-        operationalKid: operational.kid, operationalThumbprint: await jwkThumbprint(operational) },
-    };
-    if (legacy) {
-      await writeState(directory, 'request.json', state.request);
-      await writeState(directory, 'registration.json', state.registration);
-      await writeState(directory, 'entity-key.json', state.entityKey);
-      await writeState(directory, 'issuance.json', state.issuance);
-    } else {
-      await writeState(directory, 'recovery.json', state);
-    }
-    const client = { registerAgent: vi.fn(), waitForStatus: vi.fn(async () => registration) };
-    const factory = vi.spyOn(nodeSdk, 'createRegistryClientFromEnvironment').mockResolvedValue(client as never);
-    const evidence = vi.fn(async () => ({}));
-    const verifier = { verifyDomain: vi.fn(async () => ({
-      domain, record: { lr: logRef }, registryStatus: { state: 'ACTIVE' }, dnssecState: 'UNKNOWN', verifyNonRevocation: evidence,
-    })) };
-    const construct = vi.spyOn(nodeSdk, 'constructIdentityManager').mockImplementation(async config => (
-      config.dnsid?.identity ? {} : verifier
-    ) as never);
-    vi.stubEnv('DNSID_DNS_SERVER', '8.8.8.8');
-    vi.stubEnv('DNSID_DOMAIN', 'old.example.com');
-    await runRegistration(directory, 'owner-token');
-    expect(client.registerAgent).not.toHaveBeenCalled();
-    expect(evidence).toHaveBeenCalledOnce();
-    expect(factory.mock.calls[0][0]?.DNSID_API_KEY).toBe('owner-token');
-    const config = construct.mock.calls.at(-1)![0];
-    expect(config.dnsid?.identity).toBeUndefined();
-    expect(config.keySource).toBeUndefined();
-    expect(config.dnsid?.transport?.dnsServer).toBe('8.8.8.8');
-    expect(config.logTrust).toEqual({ managed: true });
-    expect(config.dnsid?.verification?.trustedEntities?.[0].entityKeyThumbprints).toEqual([await jwkThumbprint(entityKey)]);
-    const files = await readdir(directory);
-    expect(files).toContain('recovery.json');
-    if (!legacy) expect(files.sort()).toEqual(['keys.json', 'recovery.json']);
-    const failure = new VerificationError('invalid signature', { code: VerificationCode.RecordInvalid, transient: false });
-    verifier.verifyDomain.mockRejectedValue(failure);
-    await expect(runRegistration(directory, 'owner-token')).rejects.toBe(failure);
-    expect(verifier.verifyDomain).toHaveBeenCalledTimes(2);
+    await writeFile(join(directory, 'recovery.json'), '{}', { mode: 0o600 });
+    await expect(runRegistration(directory, 'owner-token')).rejects.toMatchObject({ code: 'CORRUPT_STATE' });
+    expect(network).not.toHaveBeenCalled();
+    expect(await readdir(directory)).toEqual(['recovery.json']);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+it('rejects a different deployment before setup and preserves SDK failures', async () => {
+  const failure = new nodeSdk.ManagedRegistrationError('CORRUPT_STATE', 'storage', false);
+  const setup = vi.spyOn(nodeSdk, 'registerManagedIdentity').mockRejectedValue(failure);
+  vi.stubEnv('DNSID_REGISTRY_URL', 'https://other.example');
+  await expect(runRegistration('/tmp/dnsid-example', 'owner-token')).rejects.toThrow('only the dev registry');
+  expect(setup).not.toHaveBeenCalled();
+  vi.stubEnv('DNSID_REGISTRY_URL', 'https://api.dev.dnsid.ai');
+  await expect(runRegistration('/tmp/dnsid-example', 'owner-token')).rejects.toBe(failure);
 });
