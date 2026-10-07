@@ -9,8 +9,10 @@ try {
   const { values } = parseArgs({ options: {
     'state-dir': { type: 'string' },
     'api-key-file': { type: 'string' },
+    'server-contract-verified': { type: 'boolean' },
   } });
-  if (!values['state-dir']) throw new Error('usage: npm run start -- --state-dir <directory> [--api-key-file <file>]');
+  if (!values['state-dir']) throw new Error('usage: npm run start -- --server-contract-verified --state-dir <directory> [--api-key-file <file>]');
+  if (!values['server-contract-verified']) throw new Error('verify permanent registry-wide creation idempotency with server integration tests, then pass --server-contract-verified');
   directory = resolve(values['state-dir']);
   token = (values['api-key-file']
     ? await readFile(values['api-key-file'], 'utf8') : process.env.DNSID_API_KEY ?? '').trim();

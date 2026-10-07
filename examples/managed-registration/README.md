@@ -4,12 +4,17 @@ Create one hosted dev sandbox identity, complete bilateral ISSUANCE, and verify 
 
 ## Run
 
-Requires Node.js 22+, public DNS/HTTPS access, a dev organization API key, and a local POSIX filesystem. From the repository root:
+Requires Node.js 22+, public DNS/HTTPS access, a dev organization API key, and a local POSIX filesystem.
+
+**Do not run until the deployment's permanent registration-idempotency contract has been verified with server integration tests.** The revised SDK requires atomic, registry-wide keys that survive retirement and deletion and reject cross-organization reuse. Hosted dev support is not established here; the previous 24-hour, organization-scoped contract is insufficient. `--server-contract-verified` confirms this prerequisite; it does not test the server.
+
+After verification, from the repository root:
 
 ```sh
 npm install
 npm run build
 npm run start --workspace @dnsid-ai/example-managed-registration -- \
+  --server-contract-verified \
   --api-key-file "$HOME/.dev-dnsid-api-key" \
   --state-dir "$HOME/.dnsid-examples/managed-registration-ts"
 ```
@@ -20,11 +25,9 @@ Alternatively, omit `--api-key-file` and set `DNSID_API_KEY`. Protect the creden
 
 ## Implementation
 
-`src/registration.ts` loads SDK environment settings and calls `registerManagedIdentity()` with a `FileRegistrationStore`. The SDK owns key generation, durable replay, issuance, publication polling, and independent credential-free verification. The example only selects dev trust, requests a sandbox identity, and supplies the dev-specific adapter:
+`src/registration.ts` loads SDK environment settings and calls `registerManagedIdentity()` with a `FileRegistrationStore`. The SDK owns transport, key generation, durable replay, issuance, publication polling, and independent credential-free verification. The example only selects dev trust and requests a sandbox identity.
 
-- `GET /api/v1/org` returns the authenticated credential's owning organization ID.
-- Creation replay is scoped to organization/request key. The dev server's PostgreSQL idempotency store retains claims for 24 hours from storage, conservatively measured here from the first request. See the server's `internal/db/pgstore/idempotency.go`.
-- The replay clock uncertainty is one second. Run only where clock error across restarts stays within this bound; expired or uncertain creation outcomes require reconciliation, not a new request.
+The registry authenticates the organization and permanently binds the registration key to the original request and immutable identity. There is no organization lookup, consumer adapter, or replay-expiration policy. Unknown creation outcomes reuse the same request/key, even after long interruptions or clock changes; the invocation still has a finite deadline.
 
 SDK transport and verification settings such as `DNSID_DNS_SERVER`, `DNSID_DNSSEC_MODE`, and `DNSID_CA_BUNDLE` still apply. The example rejects a different `DNSID_REGISTRY_URL`, ignores existing identity/key-source settings, and explicitly selects managed log trust. System DNS does not provide authenticated DNSSEC; configure a DNSSEC-aware resolver and policy if required.
 
@@ -41,7 +44,7 @@ Use the **same directory** to resume. The SDK saves `setup.json` and the private
 
 The SDK locks the directory with `setup.lock`. After a process interruption, stop all writers, back up the directory, then remove that lock before resuming. Completed setup rechecks public evidence without creating another identity or resubmitting accepted issuance. Integrity, policy, and terminal-status failures stop.
 
-Old `recovery.json` or separate request/issuance files are **not migrated**. The SDK refuses those directories instead of silently allocating a replacement identity. Preserve them and use the previous example version to finish the old operation. Use an empty directory only for an intentionally new identity.
+Old version-1 `setup.json`, `recovery.json`, or separate request/issuance files are **not migrated**. The SDK refuses those directories instead of silently allocating a replacement identity. Preserve them and use the previous example version to finish the old operation. Use an empty directory only for an intentionally new identity.
 
 Retire the identity through the registry before discarding its key. Production, Live challenges, and self-managed publication are outside this example.
 

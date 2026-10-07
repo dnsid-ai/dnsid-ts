@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,9 +13,10 @@ it('delegates sandbox setup and recovery to the SDK with explicit dev trust', as
     registration: { domain: 'agent.sandbox.dev.dnsid.ai' },
     loggedStateEvidence: { loggedState: 'ACTIVE' },
   } as never);
-  const network = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ id: 'org-1' }));
+  const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('unexpected network request'));
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.stubEnv('DNSID_DOMAIN', 'old.example.com');
+  vi.stubEnv('DNSID_DNS_SERVER', '8.8.8.8');
   await runRegistration('/tmp/dnsid-example', 'owner-token');
   const options = setup.mock.calls[0][0];
   expect(options.store).toBeInstanceOf(nodeSdk.FileRegistrationStore);
@@ -27,16 +29,24 @@ it('delegates sandbox setup and recovery to the SDK with explicit dev trust', as
     governanceId: 'dev.dnsid.ai', entityKeyUrl: 'https://dnsid.dev.dnsid.ai/.well-known/dnsid-ek.json',
   });
   expect(options.loaded.logTrust).toEqual({ managed: true });
-  const signal = new AbortController().signal;
-  await expect(options.adapter.resolveOrganization({} as never, signal)).resolves.toBe('org-1');
-  expect(network).toHaveBeenCalledWith('https://api.dev.dnsid.ai/api/v1/org', {
-    headers: { Authorization: 'Bearer owner-token' }, signal, redirect: 'error',
-  });
-  network.mockResolvedValueOnce(Response.json({ id: '' }));
-  await expect(options.adapter.resolveOrganization({} as never, signal)).rejects.toThrow('missing organization ID');
-  network.mockResolvedValueOnce(new Response(null, { status: 403 }));
-  await expect(options.adapter.resolveOrganization({} as never, signal)).rejects.toThrow('HTTP 403');
-  expect(() => options.fetch!('https://other.example/api/v1/agent')).toThrow('unexpected registry origin');
+  expect(options.loaded.dnsid?.transport?.dnsServer).toBe('8.8.8.8');
+  expect(options).not.toHaveProperty('adapter');
+  expect(options.fetch).toBeUndefined();
+  expect(network).not.toHaveBeenCalled();
+});
+
+it('requires explicit server-contract confirmation before running the CLI', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'dnsid-example-cli-'));
+  try {
+    const result = spawnSync(process.execPath, ['--import', 'tsx',
+      'examples/managed-registration/src/index.ts', '--state-dir', directory], {
+      encoding: 'utf8', env: { ...process.env, DNSID_API_KEY: 'owner-token' }, timeout: 10_000,
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--server-contract-verified');
+    expect(result.stderr).not.toContain('owner-token');
+    expect(await readdir(directory)).toEqual([]);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
 it('refuses legacy recovery files without generating a replacement identity', async () => {
