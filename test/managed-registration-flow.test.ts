@@ -28,6 +28,7 @@ it('delegates sandbox registration to the SDK with explicit dev trust and the en
   } as never);
   await run('/tmp/dnsid-example');
   expect(setup).toHaveBeenCalledExactlyOnceWith({
+    name: 'example-agent',
     loaded: {
       registry: { registryUrl: 'https://api.dev.dnsid.ai' },
       registration: {
@@ -37,9 +38,11 @@ it('delegates sandbox registration to the SDK with explicit dev trust and the en
     },
     credential: 'owner-token',
     store: expect.any(sdk.FileRegistrationStore),
-    input: { environment: 'sandbox' },
   });
-  expect(setup.mock.calls[0][0].store.keyStorePath).toBe('/tmp/dnsid-example/operational-key.json');
+  const namedStore = setup.mock.calls[0][0].store.forIdentity({
+    registryUrl: 'https://api.dev.dnsid.ai', organizationId: 'org-1', name: 'example-agent',
+  });
+  expect(namedStore.keyStorePath).toMatch(/^\/tmp\/dnsid-example\/[0-9a-f]{64}\/operational-key\.json$/);
   expect(console.log).toHaveBeenCalledWith('Verified: agent.sandbox.dev.dnsid.ai status=ACTIVE');
 });
 

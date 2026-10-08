@@ -8,8 +8,9 @@ try {
   assert(token && !/\s/.test(token), 'set DNSID_API_KEY to one API token');
   assert(directory && process.argv.length === 3, 'usage: npm run start -- <state-directory>');
 
-  // Requires permanent server-side registration idempotency; see README.md.
+  // Requires server support for named recovery; see README.md.
   const { registration, loggedStateEvidence } = await registerManagedIdentity({
+    name: 'example-agent',
     loaded: {
       registry: { registryUrl: 'https://api.dev.dnsid.ai' },
       registration: {
@@ -20,7 +21,6 @@ try {
     },
     credential: token,
     store: new FileRegistrationStore(directory),
-    input: { environment: 'sandbox' },
   });
   console.log(`Registered: ${registration.domain}`);
   console.log(`Verified: ${registration.domain} status=${loggedStateEvidence.loggedState}`);
