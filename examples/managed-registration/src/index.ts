@@ -1,26 +1,32 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { parseArgs } from 'node:util';
-import { runRegistration } from './registration.ts';
+import assert from 'node:assert/strict';
+import { FileRegistrationStore, registerManagedIdentity } from '@dnsid-ai/sdk/node';
 
-let token = '';
-let directory = '';
+const token = (process.env.DNSID_API_KEY ?? '').trim();
+const directory = process.argv[2];
+
 try {
-  const { values } = parseArgs({ options: {
-    'state-dir': { type: 'string' },
-    'api-key-file': { type: 'string' },
-    'server-contract-verified': { type: 'boolean' },
-  } });
-  if (!values['state-dir']) throw new Error('usage: npm run start -- --server-contract-verified --state-dir <directory> [--api-key-file <file>]');
-  if (!values['server-contract-verified']) throw new Error('verify permanent registry-wide creation idempotency with server integration tests, then pass --server-contract-verified');
-  directory = resolve(values['state-dir']);
-  token = (values['api-key-file']
-    ? await readFile(values['api-key-file'], 'utf8') : process.env.DNSID_API_KEY ?? '').trim();
-  if (!token || /\s/.test(token)) throw new Error('provide one API token through DNSID_API_KEY or --api-key-file');
-  await runRegistration(directory, token);
+  assert(token && !/\s/.test(token), 'set DNSID_API_KEY to one API token');
+  assert(directory && process.argv.length === 3, 'usage: npm run start -- <state-directory>');
+
+  // Requires permanent server-side registration idempotency; see README.md.
+  const { registration, loggedStateEvidence } = await registerManagedIdentity({
+    loaded: {
+      registry: { registryUrl: 'https://api.dev.dnsid.ai' },
+      registration: {
+        governanceId: 'dev.dnsid.ai',
+        entityKeyUrl: 'https://dnsid.dev.dnsid.ai/.well-known/dnsid-ek.json',
+      },
+      logTrust: { managed: true },
+    },
+    credential: token,
+    store: new FileRegistrationStore(directory),
+    input: { environment: 'sandbox' },
+  });
+  console.log(`Registered: ${registration.domain}`);
+  console.log(`Verified: ${registration.domain} status=${loggedStateEvidence.loggedState}`);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(token ? message.replaceAll(token, '[REDACTED]') : message);
-  if (directory) console.error(`Keep the recovery files in ${directory}. Rerun with the same directory.`);
+  console.error('Keep your recovery files and rerun with the same directory.');
   process.exitCode = 1;
 }
