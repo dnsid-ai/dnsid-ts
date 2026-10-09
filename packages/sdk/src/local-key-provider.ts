@@ -105,6 +105,9 @@ export class LocalKeyProvider implements KeyProvider {
     return LocalKeyProvider.fromDirectory(path.join(dnsidDir, normalizeFQDN(domain, true)));
   }
 
+  /** Pending keys need the rotation coordinator, not initial registration recovery. */
+  hasPendingKeys(): boolean { return this.store.pending.length > 0; }
+
   async signingKey(): Promise<DnsIdJWK> {
     return toPublicJwk(this.store.active);
   }
