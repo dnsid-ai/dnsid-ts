@@ -1,0 +1,26 @@
+# Lint, test and security scanning on every pull request, from the shared
+# workflow in dnsid-ai/github-actions. Make "typescript / Summary" the one required
+# check on main.
+name: Security
+
+on:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: security-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    uses: dnsid-ai/github-actions/.github/workflows/security-typescript.yml@cacfffc9456cb52046a30c2f4d060808aca00784 # main, 2026-10-09
+    permissions:
+      contents: read # check out the code
+      security-events: write # required by the called workflow's jobs
+      actions: read # required by the called workflow's jobs
+      pull-requests: write # the Summary job posts a sticky typescript: summary comment with findings
+    with:
+      # No lint/format scripts -> auto-skipped; test + typecheck run.
+      upload-sarif: false
+      enforce-security: false
