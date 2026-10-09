@@ -164,12 +164,12 @@ describe('managed ISSUANCE coordination', () => {
       },
       persistIssuance: async state => {
         durable = structuredClone(state);
-        order.push(state.activated ? 'persist-complete' : state.entryBytes ? (state.submission ? 'persist-accepted' : 'persist-bytes') : 'persist-intent');
+        order.push(state.activated ? 'persist-complete' : state.entryBytes ? (state.submission ? 'persist-accepted' : 'persist-bytes') : state.preparedEntryBytes ? 'persist-preparation' : 'persist-intent');
       },
       activateAcceptedIssuance: activate,
     });
 
-    expect(order).toEqual(['create-intent', 'prepare', 'persist-bytes', 'submit', 'persist-accepted', 'activate', 'persist-complete']);
+    expect(order).toEqual(['create-intent', 'prepare', 'persist-preparation', 'persist-bytes', 'submit', 'persist-accepted', 'activate', 'persist-complete']);
     expect(result).toMatchObject({ activated: true, submission: { state: 'accepted', logRef: `${LR}@0` } });
     expect(prepare).toHaveBeenCalledOnce();
     expect(submit).toHaveBeenCalledOnce();

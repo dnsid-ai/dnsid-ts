@@ -18,6 +18,157 @@ and preserves that state, while stricter policies require a DNSSEC-aware resolve
 
 ## Classes
 
+<a id="fileregistrationstore"></a>
+
+### FileRegistrationStore
+
+Defined in: [packages/sdk/src/file-registration-store.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L12)
+
+Named operations are isolated by a digest of registry URL, organization ID, and name. Requires a local POSIX filesystem with atomic rename and directory fsync.
+Locks are never removed automatically: after an interrupted process, establish that no writer is
+running, back up the directory, then remove `setup.lock`. Back up the state AND key files;
+ephemeral/container-local disks do not survive host replacement.
+
+#### Implements
+
+- [`ManagedRegistrationStore`](#managedregistrationstore)
+
+#### Constructors
+
+<a id="constructor"></a>
+
+##### Constructor
+
+```ts
+new FileRegistrationStore(directory): FileRegistrationStore;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L19)
+
+###### Parameters
+
+###### directory
+
+`string`
+
+###### Returns
+
+[`FileRegistrationStore`](#fileregistrationstore)
+
+#### Properties
+
+<a id="keystorepath"></a>
+
+##### keyStorePath
+
+```ts
+readonly keyStorePath: string;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L13)
+
+Stable local-key locator, persisted before generation. Custom providers use providerReference.
+
+###### Implementation of
+
+[`ManagedRegistrationStore`](#managedregistrationstore).[`keyStorePath`](#keystorepath-2)
+
+#### Methods
+
+<a id="acquire"></a>
+
+##### acquire()
+
+```ts
+acquire(signal): Promise<() => Promise<void>>;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L38)
+
+###### Parameters
+
+###### signal
+
+`AbortSignal`
+
+###### Returns
+
+`Promise`\<() => `Promise`\<`void`\>\>
+
+###### Implementation of
+
+[`ManagedRegistrationStore`](#managedregistrationstore).[`acquire`](#acquire-1)
+
+<a id="foridentity"></a>
+
+##### forIdentity()
+
+```ts
+forIdentity(scope): FileRegistrationStore;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L25)
+
+Select tenant-isolated state before acquiring the operation lock.
+
+###### Parameters
+
+###### scope
+
+[`ManagedRegistrationScope`](#managedregistrationscope)
+
+###### Returns
+
+[`FileRegistrationStore`](#fileregistrationstore)
+
+###### Implementation of
+
+[`ManagedRegistrationStore`](#managedregistrationstore).[`forIdentity`](#foridentity-1)
+
+<a id="load"></a>
+
+##### load()
+
+```ts
+load(): Promise<ManagedRegistrationState | undefined>;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L71)
+
+###### Returns
+
+`Promise`\<[`ManagedRegistrationState`](#managedregistrationstate) \| `undefined`\>
+
+###### Implementation of
+
+[`ManagedRegistrationStore`](#managedregistrationstore).[`load`](#load-2)
+
+<a id="persist"></a>
+
+##### persist()
+
+```ts
+persist(state): Promise<void>;
+```
+
+Defined in: [packages/sdk/src/file-registration-store.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-registration-store.ts#L98)
+
+###### Parameters
+
+###### state
+
+[`ManagedRegistrationState`](#managedregistrationstate)
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`ManagedRegistrationStore`](#managedregistrationstore).[`persist`](#persist-1)
+
+***
+
 <a id="localkeyprovider"></a>
 
 ### LocalKeyProvider
@@ -47,7 +198,7 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L145)
+Defined in: [packages/sdk/src/local-key-provider.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L148)
 
 Promotes a pending key to active. The previously active key transitions to retained.
 
@@ -73,7 +224,7 @@ Promotes a pending key to active. The previously active key transitions to retai
 generateKey(): Promise<string>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
+Defined in: [packages/sdk/src/local-key-provider.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L140)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -86,6 +237,22 @@ Returns the new key's kid.
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`generateKey`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#generatekey)
 
+<a id="haspendingkeys"></a>
+
+##### hasPendingKeys()
+
+```ts
+hasPendingKeys(): boolean;
+```
+
+Defined in: [packages/sdk/src/local-key-provider.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L109)
+
+Pending keys need the rotation coordinator, not initial registration recovery.
+
+###### Returns
+
+`boolean`
+
 <a id="jwk"></a>
 
 ##### jwk()
@@ -94,7 +261,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L112)
+Defined in: [packages/sdk/src/local-key-provider.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L115)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -121,7 +288,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L121)
+Defined in: [packages/sdk/src/local-key-provider.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L124)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -142,7 +309,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L167)
+Defined in: [packages/sdk/src/local-key-provider.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L170)
 
 ###### Parameters
 
@@ -170,7 +337,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L125)
+Defined in: [packages/sdk/src/local-key-provider.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L128)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -197,7 +364,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L108)
+Defined in: [packages/sdk/src/local-key-provider.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L111)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -218,7 +385,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L129)
+Defined in: [packages/sdk/src/local-key-provider.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L132)
 
 Signs with a specified active or pending key.
 
@@ -248,7 +415,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
+Defined in: [packages/sdk/src/local-key-provider.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L158)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -352,7 +519,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:77](https://github.com/dnsid
 
 `Promise`\<[`LocalKeyProvider`](#localkeyprovider)\>
 
-<a id="load"></a>
+<a id="load-1"></a>
 
 ##### load()
 
@@ -384,7 +551,391 @@ Defined in: [packages/sdk/src/local-key-provider.ts:49](https://github.com/dnsid
 
 `Promise`\<[`LocalKeyProvider`](#localkeyprovider)\>
 
+***
+
+<a id="managedregistrationerror"></a>
+
+### ManagedRegistrationError
+
+Defined in: [packages/sdk/src/managed-registration.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L67)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+<a id="constructor-1"></a>
+
+##### Constructor
+
+```ts
+new ManagedRegistrationError(
+   code, 
+   phase, 
+   resumable, 
+   state?, 
+   cause?
+): ManagedRegistrationError;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L73)
+
+###### Parameters
+
+###### code
+
+`string`
+
+###### phase
+
+[`ManagedRegistrationPhase`](#managedregistrationphase)
+
+###### resumable
+
+`boolean`
+
+###### state?
+
+[`ManagedRegistrationState`](#managedregistrationstate)
+
+###### cause?
+
+`unknown`
+
+###### Returns
+
+[`ManagedRegistrationError`](#managedregistrationerror)
+
+###### Overrides
+
+```ts
+Error.constructor
+```
+
+#### Properties
+
+<a id="cause"></a>
+
+##### cause?
+
+```ts
+optional cause?: unknown;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
+
+###### Inherited from
+
+```ts
+Error.cause
+```
+
+<a id="code"></a>
+
+##### code
+
+```ts
+readonly code: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L74)
+
+<a id="domain"></a>
+
+##### domain?
+
+```ts
+readonly optional domain?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L68)
+
+<a id="issuancestate"></a>
+
+##### issuanceState?
+
+```ts
+readonly optional issuanceState?: "rejected" | "pending" | "accepted" | "indeterminate";
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L72)
+
+<a id="message"></a>
+
+##### message
+
+```ts
+message: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
+
+###### Inherited from
+
+```ts
+Error.message
+```
+
+<a id="name"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
+
+###### Inherited from
+
+```ts
+Error.name
+```
+
+<a id="phase"></a>
+
+##### phase
+
+```ts
+readonly phase: ManagedRegistrationPhase;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L75)
+
+<a id="registrationid"></a>
+
+##### registrationId?
+
+```ts
+readonly optional registrationId?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L69)
+
+<a id="registrystatus"></a>
+
+##### registryStatus?
+
+```ts
+readonly optional registryStatus?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L70)
+
+<a id="resumable"></a>
+
+##### resumable
+
+```ts
+readonly resumable: boolean;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L76)
+
+<a id="setupcompleted"></a>
+
+##### setupCompleted?
+
+```ts
+readonly optional setupCompleted?: boolean;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L71)
+
+<a id="stack"></a>
+
+##### stack?
+
+```ts
+optional stack?: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
+
+###### Inherited from
+
+```ts
+Error.stack
+```
+
+<a id="stacktracelimit"></a>
+
+##### stackTraceLimit
+
+```ts
+static stackTraceLimit: number;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:67
+
+The `Error.stackTraceLimit` property specifies the number of stack frames
+collected by a stack trace (whether generated by `new Error().stack` or
+`Error.captureStackTrace(obj)`).
+
+The default value is `10` but may be set to any valid JavaScript number. Changes
+will affect any stack trace captured _after_ the value has been changed.
+
+If set to a non-number value, or set to a negative number, stack traces will
+not capture any frames.
+
+###### Inherited from
+
+```ts
+Error.stackTraceLimit
+```
+
+#### Methods
+
+<a id="capturestacktrace"></a>
+
+##### captureStackTrace()
+
+```ts
+static captureStackTrace(targetObject, constructorOpt?): void;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:51
+
+Creates a `.stack` property on `targetObject`, which when accessed returns
+a string representing the location in the code at which
+`Error.captureStackTrace()` was called.
+
+```js
+const myObject = {};
+Error.captureStackTrace(myObject);
+myObject.stack;  // Similar to `new Error().stack`
+```
+
+The first line of the trace will be prefixed with
+`${myObject.name}: ${myObject.message}`.
+
+The optional `constructorOpt` argument accepts a function. If given, all frames
+above `constructorOpt`, including `constructorOpt`, will be omitted from the
+generated stack trace.
+
+The `constructorOpt` argument is useful for hiding implementation
+details of error generation from the user. For instance:
+
+```js
+function a() {
+  b();
+}
+
+function b() {
+  c();
+}
+
+function c() {
+  // Create an error without stack trace to avoid calculating the stack trace twice.
+  const { stackTraceLimit } = Error;
+  Error.stackTraceLimit = 0;
+  const error = new Error();
+  Error.stackTraceLimit = stackTraceLimit;
+
+  // Capture the stack trace above function b
+  Error.captureStackTrace(error, b); // Neither function c, nor b is included in the stack trace
+  throw error;
+}
+
+a();
+```
+
+###### Parameters
+
+###### targetObject
+
+`object`
+
+###### constructorOpt?
+
+`Function`
+
+###### Returns
+
+`void`
+
+###### Inherited from
+
+```ts
+Error.captureStackTrace
+```
+
+<a id="preparestacktrace"></a>
+
+##### prepareStackTrace()
+
+```ts
+static prepareStackTrace(err, stackTraces): any;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:55
+
+###### Parameters
+
+###### err
+
+`Error`
+
+###### stackTraces
+
+`CallSite`[]
+
+###### Returns
+
+`any`
+
+###### See
+
+https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+
+###### Inherited from
+
+```ts
+Error.prepareStackTrace
+```
+
 ## Interfaces
+
+<a id="acceptedregistrationissuance"></a>
+
+### AcceptedRegistrationIssuance
+
+Defined in: [packages/sdk/src/managed-registration.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L29)
+
+#### Properties
+
+<a id="entryhash"></a>
+
+##### entryHash
+
+```ts
+entryHash: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L30)
+
+<a id="index"></a>
+
+##### index
+
+```ts
+index: number;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L32)
+
+<a id="logref"></a>
+
+##### logRef
+
+```ts
+logRef: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L31)
+
+***
 
 <a id="keysource"></a>
 
@@ -454,7 +1005,7 @@ Defined in: [packages/sdk/src/config-loading.ts:52](https://github.com/dnsid-ai/
 
 Existing stable key reference; never combined with generation.
 
-<a id="keystorepath"></a>
+<a id="keystorepath-1"></a>
 
 ##### keyStorePath?
 
@@ -724,6 +1275,673 @@ optional organizationId?: string;
 
 Defined in: [packages/sdk/src/config-loading.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L65)
 
+***
+
+<a id="managedregistrationresult"></a>
+
+### ManagedRegistrationResult
+
+Defined in: [packages/sdk/src/managed-registration.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L111)
+
+#### Properties
+
+<a id="identitymanager"></a>
+
+##### identityManager
+
+```ts
+identityManager: IdentityManager;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L113)
+
+<a id="loggedstateevidence"></a>
+
+##### loggedStateEvidence
+
+```ts
+loggedStateEvidence: LoggedStateEvidence;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L115)
+
+<a id="publishedrecord"></a>
+
+##### publishedRecord
+
+```ts
+publishedRecord: PublishedRecord;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L114)
+
+<a id="registration-1"></a>
+
+##### registration
+
+```ts
+registration: AgentRegistration;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L112)
+
+***
+
+<a id="managedregistrationscope"></a>
+
+### ManagedRegistrationScope
+
+Defined in: [packages/sdk/src/managed-registration.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L23)
+
+#### Extended by
+
+- [`ManagedRegistrationState`](#managedregistrationstate)
+
+#### Properties
+
+<a id="name-1"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L26)
+
+<a id="organizationid-1"></a>
+
+##### organizationId
+
+```ts
+organizationId: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L25)
+
+<a id="registryurl-1"></a>
+
+##### registryUrl
+
+```ts
+registryUrl: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L24)
+
+***
+
+<a id="managedregistrationstate"></a>
+
+### ManagedRegistrationState
+
+Defined in: [packages/sdk/src/managed-registration.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L35)
+
+#### Extends
+
+- [`ManagedRegistrationScope`](#managedregistrationscope)
+
+#### Properties
+
+<a id="acceptedissuance"></a>
+
+##### acceptedIssuance?
+
+```ts
+optional acceptedIssuance?: AcceptedRegistrationIssuance;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L53)
+
+<a id="bindings"></a>
+
+##### bindings
+
+```ts
+bindings: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L38)
+
+<a id="completed"></a>
+
+##### completed
+
+```ts
+completed: boolean;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L54)
+
+<a id="creation"></a>
+
+##### creation?
+
+```ts
+optional creation?: object;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L47)
+
+###### domain?
+
+```ts
+optional domain?: string;
+```
+
+###### id?
+
+```ts
+optional id?: string;
+```
+
+###### response?
+
+```ts
+optional response?: Record<string, unknown>;
+```
+
+###### unsupportedWorkflow?
+
+```ts
+optional unsupportedWorkflow?: boolean;
+```
+
+<a id="creationfingerprint"></a>
+
+##### creationFingerprint
+
+```ts
+creationFingerprint: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L42)
+
+<a id="creationinput"></a>
+
+##### creationInput?
+
+```ts
+optional creationInput?: AgentRegistrationInput;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L41)
+
+Frozen extra input, removed atomically when validated identity facts are durable.
+
+<a id="entitykey"></a>
+
+##### entityKey?
+
+```ts
+optional entityKey?: DnsIdJWK;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L50)
+
+<a id="entitythumbprint"></a>
+
+##### entityThumbprint?
+
+```ts
+optional entityThumbprint?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L51)
+
+<a id="expectations"></a>
+
+##### expectations
+
+```ts
+expectations: ManagedRegistrationConfig & object;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L39)
+
+###### Type Declaration
+
+###### governanceId
+
+```ts
+governanceId: string;
+```
+
+###### organizationId
+
+```ts
+organizationId: string;
+```
+
+<a id="history"></a>
+
+##### history?
+
+```ts
+optional history?: ManagedRegistrationState[];
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L46)
+
+<a id="issuance"></a>
+
+##### issuance?
+
+```ts
+optional issuance?: ManagedIssuanceState;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L52)
+
+<a id="name-2"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L26)
+
+###### Inherited from
+
+[`ManagedRegistrationScope`](#managedregistrationscope).[`name`](#name-1)
+
+<a id="observedregistrystatus"></a>
+
+##### observedRegistryStatus?
+
+```ts
+optional observedRegistryStatus?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L49)
+
+<a id="operationalkey"></a>
+
+##### operationalKey?
+
+```ts
+optional operationalKey?: DnsIdJWK;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L44)
+
+<a id="organizationid-2"></a>
+
+##### organizationId
+
+```ts
+organizationId: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L25)
+
+###### Inherited from
+
+[`ManagedRegistrationScope`](#managedregistrationscope).[`organizationId`](#organizationid-1)
+
+<a id="phase-1"></a>
+
+##### phase
+
+```ts
+phase: ManagedRegistrationPhase;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L37)
+
+<a id="providerreference"></a>
+
+##### providerReference
+
+```ts
+providerReference: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L43)
+
+<a id="registration-2"></a>
+
+##### registration?
+
+```ts
+optional registration?: AgentRegistration;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L48)
+
+<a id="registryurl-2"></a>
+
+##### registryUrl
+
+```ts
+registryUrl: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L24)
+
+###### Inherited from
+
+[`ManagedRegistrationScope`](#managedregistrationscope).[`registryUrl`](#registryurl-1)
+
+<a id="usedkeythumbprints"></a>
+
+##### usedKeyThumbprints?
+
+```ts
+optional usedKeyThumbprints?: string[];
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L45)
+
+<a id="version"></a>
+
+##### version
+
+```ts
+version: 3;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L36)
+
+***
+
+<a id="managedregistrationstore"></a>
+
+### ManagedRegistrationStore
+
+Defined in: [packages/sdk/src/managed-registration.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L57)
+
+#### Properties
+
+<a id="keystorepath-2"></a>
+
+##### keyStorePath
+
+```ts
+readonly keyStorePath: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L61)
+
+Stable local-key locator, persisted before generation. Custom providers use providerReference.
+
+#### Methods
+
+<a id="acquire-1"></a>
+
+##### acquire()
+
+```ts
+acquire(signal): Promise<() => Promise<void>>;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L62)
+
+###### Parameters
+
+###### signal
+
+`AbortSignal`
+
+###### Returns
+
+`Promise`\<() => `Promise`\<`void`\>\>
+
+<a id="foridentity-1"></a>
+
+##### forIdentity()
+
+```ts
+forIdentity(scope): ManagedRegistrationStore;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L59)
+
+Select tenant-isolated state before acquiring the operation lock.
+
+###### Parameters
+
+###### scope
+
+[`ManagedRegistrationScope`](#managedregistrationscope)
+
+###### Returns
+
+[`ManagedRegistrationStore`](#managedregistrationstore)
+
+<a id="load-2"></a>
+
+##### load()
+
+```ts
+load(): Promise<ManagedRegistrationState | undefined>;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L63)
+
+###### Returns
+
+`Promise`\<[`ManagedRegistrationState`](#managedregistrationstate) \| `undefined`\>
+
+<a id="persist-1"></a>
+
+##### persist()
+
+```ts
+persist(state): Promise<void>;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L64)
+
+###### Parameters
+
+###### state
+
+[`ManagedRegistrationState`](#managedregistrationstate)
+
+###### Returns
+
+`Promise`\<`void`\>
+
+***
+
+<a id="registermanagedidentityoptions"></a>
+
+### RegisterManagedIdentityOptions
+
+Defined in: [packages/sdk/src/managed-registration.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L90)
+
+#### Properties
+
+<a id="credential"></a>
+
+##### credential
+
+```ts
+credential: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L95)
+
+<a id="deps"></a>
+
+##### deps?
+
+```ts
+optional deps?: IdentityManagerDependencies;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L98)
+
+<a id="fetch"></a>
+
+##### fetch?
+
+```ts
+optional fetch?: {
+  (input, init?): Promise<Response>;
+  (input, init?): Promise<Response>;
+};
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L104)
+
+Injected registry networking is caller-owned and must honor RequestInit.signal.
+
+###### Call Signature
+
+```ts
+(input, init?): Promise<Response>;
+```
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/fetch)
+
+###### Parameters
+
+###### input
+
+`URL` \| `RequestInfo`
+
+###### init?
+
+`RequestInit`
+
+###### Returns
+
+`Promise`\<`Response`\>
+
+###### Call Signature
+
+```ts
+(input, init?): Promise<Response>;
+```
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/fetch)
+
+###### Parameters
+
+###### input
+
+`string` \| `URL` \| `Request`
+
+###### init?
+
+`RequestInit`
+
+###### Returns
+
+`Promise`\<`Response`\>
+
+<a id="input"></a>
+
+##### input?
+
+```ts
+optional input?: AgentRegistrationInput;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L97)
+
+<a id="intervalms"></a>
+
+##### intervalMs?
+
+```ts
+optional intervalMs?: number;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L108)
+
+<a id="loaded"></a>
+
+##### loaded
+
+```ts
+loaded: LoadedConfig;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L94)
+
+<a id="logtrustreference"></a>
+
+##### logTrustReference?
+
+```ts
+optional logTrustReference?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L102)
+
+Stable independently configured trust selection when logRegistry is injected.
+
+<a id="name-3"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L91)
+
+<a id="providerreference-1"></a>
+
+##### providerReference?
+
+```ts
+optional providerReference?: string;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L100)
+
+Required with an injected provider; it must rediscover the same key and refuse pending rotations.
+
+<a id="replace"></a>
+
+##### replace?
+
+```ts
+optional replace?: boolean;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L93)
+
+Explicit fresh-key replacement after confirmed revocation/retirement; retains history.
+
+<a id="signal"></a>
+
+##### signal?
+
+```ts
+optional signal?: AbortSignal;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L105)
+
+<a id="store"></a>
+
+##### store
+
+```ts
+store: ManagedRegistrationStore;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L96)
+
+<a id="timeoutms"></a>
+
+##### timeoutMs?
+
+```ts
+optional timeoutMs?: number;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L107)
+
+Finite overall budget, default five minutes.
+
 ## Type Aliases
 
 <a id="environmentsource"></a>
@@ -747,6 +1965,28 @@ type LocalKeyAlgorithm = "EdDSA" | "ES256";
 ```
 
 Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L16)
+
+***
+
+<a id="managedregistrationphase"></a>
+
+### ManagedRegistrationPhase
+
+```ts
+type ManagedRegistrationPhase = 
+  | "storage"
+  | "organization"
+  | "key"
+  | "creation"
+  | "ownership"
+  | "entity"
+  | "issuance"
+  | "publication"
+  | "verification"
+  | "complete";
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L21)
 
 ## Functions
 
@@ -1083,6 +2323,33 @@ whole section when `overlay` sets any variant.
 #### Returns
 
 [`LoadedConfig`](#loadedconfig)
+
+***
+
+<a id="registermanagedidentity"></a>
+
+### registerManagedIdentity()
+
+```ts
+function registerManagedIdentity(options): Promise<ManagedRegistrationResult>;
+```
+
+Defined in: [packages/sdk/src/managed-registration.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-registration.ts#L124)
+
+Creates or resumes one durable managed identity; never discovers configuration sources.
+Requires permanent organization-scoped claims, atomic named opening, and server validation
+of derived organization/name/key bindings before allocation. Verify this server contract
+before use; an acknowledgement flag cannot establish support.
+
+#### Parameters
+
+##### options
+
+[`RegisterManagedIdentityOptions`](#registermanagedidentityoptions)
+
+#### Returns
+
+`Promise`\<[`ManagedRegistrationResult`](#managedregistrationresult)\>
 
 ## References
 
