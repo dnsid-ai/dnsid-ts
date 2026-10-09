@@ -114,6 +114,57 @@ if (sdk.STATUS_MAX_RESPONSE_BYTES !== 16 * 1024) throw new Error('expected root 
 if (c2spTlogVersion.C2SP_TLOG_PROFILE_VERSION !== 1) throw new Error('expected portable C2SP version export');
 `);
 
+const awsDeployment = JSON.parse(await readFile(path.join(root, 'examples/deployment-signing/deployment.aws-kms.json'), 'utf8'));
+awsDeployment.dnsid.identity.logRef = 'c2sp-tlog:public:https://log.dev.dnsid.ai#0123456789abcdefghijkl';
+awsDeployment.keySource.keyRef = 'arn:aws:kms:us-east-1:123456789012:key/00000000-0000-4000-8000-000000000001';
+await writeFile(path.join(consumerDir, 'aws-deployment.json'), JSON.stringify(awsDeployment));
+await writeFile(path.join(consumerDir, 'aws-loading.mjs'), `
+import assert from 'node:assert/strict';
+import { generateKeyPairSync } from 'node:crypto';
+import { KMSClient, GetPublicKeyCommand } from '@aws-sdk/client-kms';
+import { IdentityManager, JWKS, jwkThumbprint } from '@dnsid-ai/sdk';
+import { constructIdentityManager, loadFile } from '@dnsid-ai/sdk/node';
+
+const loaded = await loadFile('./aws-deployment.json');
+const keyRef = loaded.keySource.keyRef;
+const { publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+const publishedKey = { ...publicKey.export({ format: 'jwk' }), kid: keyRef, alg: 'ES256', use: 'sig' };
+const originalSend = KMSClient.prototype.send;
+const originalVerify = IdentityManager.prototype.verifyPublicationEvidence;
+let kmsReads = 0;
+let publicationChecks = 0;
+try {
+  // Only network boundaries are mocked; the packed SDK dynamically loads the real provider.
+  KMSClient.prototype.send = async function(command) {
+    assert(command instanceof GetPublicKeyCommand);
+    assert.equal(command.input.KeyId, keyRef);
+    assert.equal(await this.config.region(), 'us-east-1');
+    kmsReads++;
+    return {
+      KeyId: keyRef, KeyUsage: 'SIGN_VERIFY', KeySpec: 'ECC_NIST_P256',
+      SigningAlgorithms: ['ECDSA_SHA_256'],
+      PublicKey: publicKey.export({ format: 'der', type: 'spki' }),
+    };
+  };
+  IdentityManager.prototype.verifyPublicationEvidence = async function(domain) {
+    assert.equal(domain, loaded.dnsid.identity.domain);
+    publicationChecks++;
+    return { jwks: new JWKS([publishedKey]) };
+  };
+  const idm = await constructIdentityManager(loaded);
+  const selected = await idm.getKeyProvider().signingKey();
+  assert.equal(selected.kid, keyRef);
+  assert.equal(selected.alg, 'ES256');
+  assert.equal(await jwkThumbprint(selected), await jwkThumbprint(publishedKey));
+  assert.equal(kmsReads, 1);
+  assert.equal(publicationChecks, 1);
+  console.log('packed AWS deployment loading passed (real provider, mocked KMS network)');
+} finally {
+  KMSClient.prototype.send = originalSend;
+  IdentityManager.prototype.verifyPublicationEvidence = originalVerify;
+}
+`);
+
 await writeFile(path.join(consumerDir, 'browser.mjs'), `
 import {
   DomainLog,
@@ -134,6 +185,7 @@ globalThis.__dnsidBrowserExports = [
 
 run('node', ['esm.mjs'], { cwd: consumerDir });
 run('node', ['cjs.cjs'], { cwd: consumerDir });
+run('node', ['aws-loading.mjs'], { cwd: consumerDir });
 run(path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'), ['browser.mjs', '--bundle', '--platform=browser', '--format=esm', '--outfile=browser-bundle.mjs'], { cwd: consumerDir });
 
 const browserBundle = await readFile(path.join(consumerDir, 'browser-bundle.mjs'), 'utf8');

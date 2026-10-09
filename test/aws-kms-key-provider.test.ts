@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { verifyWithKey } from '@dnsid-ai/protocol';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade, validateAwsKmsSettings } from '@dnsid-ai/key-aws';
 import type {
   AwsKmsCreateSigningKeyInput,
   AwsKmsFacade,
@@ -10,6 +10,14 @@ import type {
   AwsKmsSignInput,
   AwsSdkKmsClient,
 } from '@dnsid-ai/key-aws';
+
+it('validates non-secret provider settings and supported algorithms before any KMS call', () => {
+  expect(() => validateAwsKmsSettings({ region: 'us-east-1', algorithm: 'EdDSA' })).not.toThrow();
+  expect(() => validateAwsKmsSettings({ algorithm: 'ES256' })).not.toThrow();
+  for (const settings of [{ region: '' }, { algorithm: 'RS256' }, { secretAccessKey: 'secret' }, { token: 'secret' }]) {
+    expect(() => validateAwsKmsSettings(settings)).toThrow();
+  }
+});
 
 class FakeAwsKms implements AwsKmsFacade {
   readonly createInputs: AwsKmsCreateSigningKeyInput[] = [];

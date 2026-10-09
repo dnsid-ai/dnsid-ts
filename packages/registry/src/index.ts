@@ -25,6 +25,7 @@ import {
   toBase64Url,
   validateAgentStatus,
   ValidationError,
+  waitForVerification,
 } from '@dnsid-ai/protocol';
 import type {
   AgentStatus,
@@ -128,7 +129,8 @@ export interface RegistryClientOptions {
   fetch?: typeof fetch;
 }
 
-function validateRegistrationInput(input: AgentRegistrationInput): void {
+/** Validates and normalizes a request in place; setup may supply its public key later. */
+export function validateAgentRegistrationInput(input: AgentRegistrationInput, requirePublicKey = true): void {
   if (input.environment !== undefined && input.environment !== 'production' && input.environment !== 'sandbox') {
     throw new ArgumentError('registration environment must be "production" or "sandbox"');
   }
@@ -137,7 +139,7 @@ function validateRegistrationInput(input: AgentRegistrationInput): void {
   for (const field of ['domain', 'governanceDomain', 'rootDomain'] as const) {
     if (input[field] !== undefined) input[field] = normalizeFQDN(input[field], field === 'domain');
   }
-  if (!input.domain && !input.publicKeyJwk) throw new ArgumentError('assigned-name registration requires publicKeyJwk');
+  if (requirePublicKey && !input.domain && !input.publicKeyJwk) throw new ArgumentError('assigned-name registration requires publicKeyJwk');
   if (input.publicKeyJwk) assertPublicJwk(input.publicKeyJwk);
   if (input.capabilitiesUrl !== undefined) validateRegistrationUrl(input.capabilitiesUrl);
   if (input.name !== undefined) {
@@ -203,6 +205,14 @@ export interface LifecycleResult {
   registryStatus: string;
   statusNote?: string;
   raw?: unknown;
+}
+
+/** Authenticated organization onboarding; readiness is validated by managed setup. */
+export interface OrganizationOnboardingResponse {
+  organizationId: string;
+  governanceId?: string;
+  gi?: { domain?: string; state?: string; gateAuthorized?: boolean };
+  entityKeyStatus?: string;
 }
 
 export interface AgentRegistration {
@@ -317,13 +327,19 @@ export class RegistryClient {
     this.credentials = options.credentials;
   }
 
-  /** Unified creation. Persist input and an optional replay key before calling; no automatic retries. */
+  /**
+   * Unified creation. Persist input and an optional replay key before calling; no automatic retries.
+   * Automatic managed recovery requires the server to permanently and atomically bind each
+   * organization-scoped key to the complete request and immutable registration. Named setup
+   * derives keys from organization/name/key thumbprint; the server must validate that binding
+   * before allocation. Retirement and deletion must not release claims.
+   */
   async registerAgent(input: AgentRegistrationInput, idempotencyKey = input.idempotencyKey): Promise<AgentRegistration> {
     if ('tier' in input) throw new ArgumentError('use registerLiveAgent for Live registration');
     if (input.idempotencyKey !== undefined && input.idempotencyKey !== idempotencyKey) throw new ArgumentError('conflicting idempotencyKey values');
     const originalInput = structuredClone(input);
     input = { ...originalInput };
-    validateRegistrationInput(input);
+    validateAgentRegistrationInput(input);
     if (idempotencyKey !== undefined) validateIdempotencyKey(idempotencyKey);
     let domain: string | undefined;
     let creation: Record<string, unknown> | undefined;
@@ -347,8 +363,9 @@ export class RegistryClient {
         code = error.code;
         throw new Error(`registry registration failed: HTTP ${resp.status} ${code ?? ''} ${error.message ?? ''}`);
       }
-      if (resp.status !== 201) throw new Error(`invalid registry registration response: expected HTTP 201, received ${resp.status}`);
       creation = await readJsonObject(resp, 'registry register response');
+      domain = optionalString(creation, 'domain');
+      if (resp.status !== 201) throw new Error(`invalid registry registration response: expected HTTP 201, received ${resp.status}`);
       domain = requiredString(creation, 'domain', 'registry register response');
       const id = requiredString(creation, 'id', 'registry register response');
       const normalizedDomain = normalizeFQDN(domain, true);
@@ -558,8 +575,32 @@ export class RegistryClient {
     return publishedRecordFromSignatureResponse(domain, sigRaw);
   }
 
-  async getRegistration(domain: string): Promise<AgentRegistration | undefined> {
-    const resp = await this.request(`/api/v1/agent/${encodeURIComponent(domain)}/status`, { method: 'GET' });
+  /** Reads existing authenticated onboarding without creating identities or retrying anonymously. */
+  async getOrganizationOnboarding(options: { signal?: AbortSignal } = {}): Promise<OrganizationOnboardingResponse> {
+    const response = await this.request('/api/v1/org/onboarding', { method: 'GET', signal: options.signal });
+    if (!response.ok) {
+      const error = await readErrorResponse(response);
+      throw new RegistryRequestError(response.status, error.code, error.message ?? response.statusText);
+    }
+    const raw = await readJsonObject(response, 'organization onboarding response');
+    const gi = raw.gi;
+    const ek = raw.ek;
+    if (gi !== undefined && (!gi || typeof gi !== 'object' || Array.isArray(gi))
+      || ek !== undefined && (!ek || typeof ek !== 'object' || Array.isArray(ek))) throw new ArgumentError('invalid organization onboarding proof');
+    const proof = gi as Record<string, unknown> | undefined;
+    return {
+      organizationId: requiredString(raw, 'org_id', 'organization onboarding response'),
+      governanceId: optionalString(raw, 'governance_domain'),
+      gi: proof && {
+        domain: optionalString(proof, 'domain'), state: optionalString(proof, 'state'),
+        gateAuthorized: proof.gate_authorized === true,
+      },
+      entityKeyStatus: ek && optionalString(ek as Record<string, unknown>, 'status'),
+    };
+  }
+
+  async getRegistration(domain: string, options: { signal?: AbortSignal } = {}): Promise<AgentRegistration | undefined> {
+    const resp = await this.request(`/api/v1/agent/${encodeURIComponent(domain)}/status`, { method: 'GET', signal: options.signal });
     if (resp.status === 404) return undefined;
     if (!resp.ok) {
       const error = await readErrorResponse(resp);
@@ -579,6 +620,7 @@ export class RegistryClient {
       protocolStatus: protocolStatusRaw === undefined ? undefined : validateAgentStatus(protocolStatusRaw),
       registryUrl: this.baseUrl,
       publicationConfig: publicationConfigFromResponse(raw['publication_config']),
+      oidcIssuerUrl: optionalString(raw, 'oidc_issuer_url'),
       raw,
     };
   }
@@ -631,34 +673,42 @@ export class RegistryClient {
       idempotencyKey,
     );
     if (!resp.ok) throw await preparedEventSubmissionError(resp);
-    const raw = await readJsonObject(resp, 'registry tlog submission response');
-    const state = requiredString(raw, 'state', 'registry tlog submission response');
-    if (state !== 'pending' && state !== 'accepted' && state !== 'rejected') {
-      throw new Error(`invalid registry tlog submission response: unsupported state ${state}`);
-    }
-    const index = typeof raw['index'] === 'number' ? raw['index'] : undefined;
-    if (index !== undefined && (!Number.isSafeInteger(index) || index < 0)) {
-      throw new Error('invalid registry tlog submission response: index must be a non-negative safe integer');
-    }
-    const entryHash = requiredString(raw, 'entry_hash', 'registry tlog submission response');
-    if (state === 'accepted') {
-      if (!/^[0-9a-f]{64}$/.test(entryHash)) {
-        throw new Error('invalid registry tlog submission response: accepted entry_hash must be lowercase SHA-256 hex');
+    try {
+      const raw = await readJsonObject(resp, 'registry tlog submission response');
+      const state = requiredString(raw, 'state', 'registry tlog submission response');
+      if (state !== 'pending' && state !== 'accepted' && state !== 'rejected') {
+        throw new Error(`invalid registry tlog submission response: unsupported state ${state}`);
       }
-      const expectedEntryHash = await sha256Hex(submittedEntry);
-      if (entryHash !== expectedEntryHash) {
-        throw new Error('registry accepted a different prepared-event entry_hash than the exact submitted bytes');
+      const index = typeof raw['index'] === 'number' ? raw['index'] : undefined;
+      if (index !== undefined && (!Number.isSafeInteger(index) || index < 0)) {
+        throw new Error('invalid registry tlog submission response: index must be a non-negative safe integer');
       }
+      const entryHash = requiredString(raw, 'entry_hash', 'registry tlog submission response');
+      if (state === 'accepted') {
+        if (!/^[0-9a-f]{64}$/.test(entryHash)) {
+          throw new Error('invalid registry tlog submission response: accepted entry_hash must be lowercase SHA-256 hex');
+        }
+        const expectedEntryHash = await sha256Hex(submittedEntry);
+        if (entryHash !== expectedEntryHash) {
+          throw new Error('registry accepted a different prepared-event entry_hash than the exact submitted bytes');
+        }
+      }
+      return {
+        state,
+        entryHash,
+        index,
+        logRef: optionalString(raw, 'lr'),
+        errorCode: optionalString(raw, 'error_code'),
+        keyId: optionalString(raw, 'key_id'),
+        raw,
+      };
+    } catch (cause) {
+      throw new PreparedEventSubmissionError({
+        code: 'TLOG_INVALID_RESPONSE', httpStatus: resp.status,
+        message: cause instanceof Error ? cause.message : 'invalid registry submission response',
+        state: 'indeterminate', retryable: false, retryWithSameBytes: false,
+      });
     }
-    return {
-      state,
-      entryHash,
-      index,
-      logRef: optionalString(raw, 'lr'),
-      errorCode: optionalString(raw, 'error_code'),
-      keyId: optionalString(raw, 'key_id'),
-      raw,
-    };
   }
 
   async revokeAgent(
@@ -779,7 +829,7 @@ export type PublishToRegistryOptions = PublishClientControlledRecordOptions;
  * control-plane operation, not an acceptance decision, and never a public API.
  */
 interface RegistryPublicationVerifier {
-  verifyPublicationEvidence(domain: string): Promise<{
+  verifyPublicationEvidence(domain: string, options?: { signal?: AbortSignal; timeoutMs?: number }): Promise<{
     record: { v: string; serialize(): string };
     dnsTTL: number;
     registryStatus: AgentStatus;
@@ -794,6 +844,11 @@ export interface AwaitRegistryManagedPublicationOptions {
   publishProfile?: string;
   intervalMs?: number;
   timeoutMs?: number;
+  signal?: AbortSignal;
+  /** Immutable creation facts to check on every authenticated observation. */
+  expectedRegistration?: AgentRegistration;
+  /** Progress observer shares the deadline. Callers must settle outstanding writes before releasing storage locks. */
+  onObservation?: (registration: AgentRegistration, signal: AbortSignal) => Promise<void>;
 }
 
 export class RegistryWorkflowError extends Error {
@@ -850,25 +905,44 @@ export async function awaitRegistryManagedPublication(
     throw new Error(`unsupported DNSid publish profile: ${expectedProfile}`);
   }
   const intervalMs = options.intervalMs ?? 1000;
-  const deadline = Date.now() + (options.timeoutMs ?? 60_000);
-  let registration = await options.registryClient.getRegistration(options.domain);
+  const timeoutMs = options.timeoutMs ?? 60_000;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isFinite(intervalMs) || intervalMs < 0) throw new ArgumentError('publication timeout must be positive and interval non-negative');
+  const signal = AbortSignal.any([AbortSignal.timeout(Math.ceil(timeoutMs)), ...(options.signal ? [options.signal] : [])]);
+  const deadline = Date.now() + timeoutMs;
+  signal.throwIfAborted();
+  let registration = await options.registryClient.getRegistration(options.domain, { signal });
   if (!registration) throw new Error(`registry has no registration for ${options.domain}`);
   if (registration.publicationAuthority !== 'registry') {
     throw new Error('client controls accountable-entity publication');
   }
 
+  const checkSnapshot = (value: AgentRegistration) => {
+    const expected = options.expectedRegistration;
+    if (!expected) return;
+    if (value.id !== expected.id || value.domain !== expected.domain || value.publicationAuthority !== expected.publicationAuthority
+      || value.oidcIssuerUrl !== expected.oidcIssuerUrl
+      || Object.keys(expected.publicationConfig ?? {}).some(key => value.publicationConfig?.[key as keyof PublicationConfig] !== expected.publicationConfig?.[key as keyof PublicationConfig])) {
+      throw new RegistryWorkflowError('registry publication binding changed', value);
+    }
+  };
+  checkSnapshot(registration);
+  if (options.onObservation) await waitForVerification(() => options.onObservation!(registration!, signal), signal);
   while (normalizeRegistryStatus(registration.registryStatus) !== 'READY' || registration.dnsPublished !== true) {
     if (isFailedRegistryStatus(registration.registryStatus)) {
       throw new RegistryWorkflowError(`registry publication failed with status ${registration.registryStatus}`, registration);
     }
     if (Date.now() >= deadline) throw new RegistryWorkflowError(`timed out waiting for registry publication for ${options.domain}`, registration);
-    await delay(intervalMs);
-    const next = await options.registryClient.getRegistration(options.domain);
+    await delay(intervalMs, signal);
+    signal.throwIfAborted();
+    const next = await options.registryClient.getRegistration(options.domain, { signal });
     if (!next) throw new RegistryWorkflowError(`registry registration disappeared for ${options.domain}`, registration);
+    checkSnapshot(next);
     registration = next;
+    if (options.onObservation) await waitForVerification(() => options.onObservation!(registration!, signal), signal);
   }
 
-  const verified = await (options.identityManager as unknown as RegistryPublicationVerifier).verifyPublicationEvidence(options.domain);
+  signal.throwIfAborted();
+  const verified = await (options.identityManager as unknown as RegistryPublicationVerifier).verifyPublicationEvidence(options.domain, { signal, timeoutMs: Math.max(1, deadline - Date.now()) });
   if (verified.record.v !== expectedProfile) {
     throw new Error(`published DNSid record uses unexpected profile ${verified.record.v}; expected ${expectedProfile}`);
   }
@@ -1012,7 +1086,8 @@ function optionalString(raw: Record<string, unknown>, field: string): string | u
   const value = raw[field];
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
-function publicationConfigFromResponse(value: unknown): PublicationConfig | undefined {
+/** Decodes the registry's profile-known publication snapshot, including retained creation errors. */
+export function publicationConfigFromResponse(value: unknown): PublicationConfig | undefined {
   if (value === undefined) return undefined;
   if (!isObject(value)) throw new Error('invalid registry status response: publication_config must be an object');
   for (const field of ['capabilities_url', 'max_key_age']) {
@@ -1143,8 +1218,13 @@ function assertManagedLivePublicJwk(jwk: DnsIdJWK): void {
     throw new ArgumentError('managed Live publicKeyJwk must be an OKP/Ed25519 key with alg="EdDSA"');
   }
 }
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    signal?.throwIfAborted();
+    const abort = () => { clearTimeout(timer); reject(signal!.reason); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); resolve(); }, ms);
+    signal?.addEventListener('abort', abort, { once: true });
+  });
 }
 async function responseDetail(resp: Response): Promise<string> {
   let detail = `${resp.status} ${resp.statusText}`;

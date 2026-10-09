@@ -65,8 +65,25 @@ otherwise replay only with the original key and complete input. Do not retry an
 unknown creation outcome without a key. Governance-unavailable or input-mismatch
 errors do not trigger fallback roots, replacement creation, or anonymous reads. An error does not prove creation succeeded or failed. No automatic
 retries are performed; resolve permanent request errors rather than blindly
-retrying them. Replay safety depends on the registry's idempotency retention
-policy; reconcile with the registry before retrying beyond that window.
+retrying them.
+
+Automatic managed recovery requires permanent **organization-scoped** replay claims. Identical
+low-level key strings in different organizations are independent. Named SDK setup derives keys
+from organization ID, normalized name, and the initial key thumbprint; the server must validate
+those bindings before allocation, claim one nonterminal identity per organization/name atomically,
+and reject conflicting keys/input without mutation or disclosure. Matching hosts open the same
+immutable identity. Claims survive retirement/deletion: old replay returns the old identity or
+a terminal error, never a replacement. Explicit replacement uses a fresh key, ID, domain, and
+log stream, preserving history and rejecting all previously used keys.
+
+`getOrganizationOnboarding()` reads the existing authenticated `/api/v1/org/onboarding` endpoint
+and exposes organization ID, GI proof/gate readiness, and entity-key delegation status. Managed
+setup validates readiness and all configured/saved bindings. Discovery does not return an entity
+JWKS URL and does not establish counterparty trust. Failed reads are never retried anonymously.
+
+These are required server contracts, not claims of deployed support. Verify them with real
+server persistence/integration tests before enabling named recovery; the existing expiring store
+is insufficient, and an acknowledgement flag cannot establish safety.
 
 Key-rotation preparation requires owner credentials: a session cookie or organization API key. An agent bearer token is not accepted.
 
