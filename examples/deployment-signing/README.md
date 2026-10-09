@@ -138,8 +138,13 @@ From the repository root:
 ```sh
 npm -w examples/deployment-signing run typecheck
 npx vitest run test/deployment-signing.test.ts
+npm run smoke:pack
 ```
 
 The focused test parses both templates, uses a test-only in-memory signer, checks
 the resulting HTTP signature without sending it, and checks that construction or
-self-verification failures prevent signing. It does not exercise live AWS KMS.
+self-verification failures prevent signing. The package smoke check installs packed
+SDK/provider tarballs in an isolated application and loads this AWS deployment
+through the SDK's real dynamic provider selection. It checks the key ARN, region,
+algorithm, and publication-binding call, mocking only KMS/publication network work.
+Neither check exercises live AWS KMS.
