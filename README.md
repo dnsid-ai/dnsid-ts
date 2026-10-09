@@ -289,6 +289,7 @@ Browser support should use injected browser-safe transport and key-provider impl
 - Generated API reference (this repo, one page per package): [`docs/reference/index.md`](docs/reference/index.md)
 - Security and production operations: [`docs/security.md`](docs/security.md)
 - Examples: [`examples/`](https://github.com/dnsid-ai/dnsid-ts/tree/main/examples)
+- Trust policy setup: [`examples/trust-policy`](examples/trust-policy/README.md) · [Full guide](https://docs.dnsid.ai/sdk-trust-policy/)
 - Deployment configuration and existing-key signing: [`examples/deployment-signing`](examples/deployment-signing/README.md)
 
 ## Current limitations
