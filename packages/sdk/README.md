@@ -217,7 +217,7 @@ not secrets in deployment/recovery files. Cloud generation without atomic discov
 supply an existing key reference. Google KMS and Azure factories are unavailable in this binding.
 Unavailable packages, invalid settings, and conflicting selection fail before account discovery
 or mutations, with no file fallback. Ordinary manager construction opens existing keys only.
-Configuration-selected AWS keys must match the current operational key of the verified published
+Configuration-selected file and AWS keys must match the current operational key of the verified published
 identity, including key ID, algorithm, and public material. Missing publication or unavailable
 verification fails construction. Managed setup injects its provider and owns these binding checks.
 Moving an established signer to another provider requires authorized, publicly verified rotation;

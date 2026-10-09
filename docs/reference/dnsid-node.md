@@ -1998,10 +1998,12 @@ Defined in: [packages/sdk/src/managed-registration.ts:21](https://github.com/dns
 function constructIdentityManager(loaded, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:345](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L345)
+Defined in: [packages/sdk/src/config-loading.ts:348](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L348)
 
 Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
 did not supply them, then calls [createNodeIdentityManager](#createnodeidentitymanager). Adds no configuration values.
+Configuration-selected operational keys must match verified local publication before return.
+Initial setup injects its provider and owns its binding checks; missing publication fails closed.
 
 #### Parameters
 
@@ -2075,7 +2077,7 @@ function createNodeIdentityManagerFromDnsid(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:459](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L459)
+Defined in: [packages/sdk/src/config-loading.ts:462](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L462)
 
 #### Parameters
 
@@ -2109,7 +2111,7 @@ function createNodeIdentityManagerFromEnvironment(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:455](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L455)
+Defined in: [packages/sdk/src/config-loading.ts:458](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L458)
 
 #### Parameters
 
@@ -2143,7 +2145,7 @@ function createNodeIdentityManagerFromFile(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:463](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L463)
+Defined in: [packages/sdk/src/config-loading.ts:466](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L466)
 
 #### Parameters
 
@@ -2201,7 +2203,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:468](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L468)
+Defined in: [packages/sdk/src/config-loading.ts:471](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L471)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 
@@ -2305,10 +2307,11 @@ values, and duplicate members are rejected; semantic `dnsid` validation stays wi
 function mergeLoadedConfig(base, overlay): LoadedConfig;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:305](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L305)
+Defined in: [packages/sdk/src/config-loading.ts:306](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L306)
 
 Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
-whole section when `overlay` sets any variant.
+whole section when `overlay` sets any variant. Operational key-source fields replace together;
+`entityKeyPath` merges independently.
 
 #### Parameters
 
