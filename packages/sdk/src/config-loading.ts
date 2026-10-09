@@ -13,6 +13,7 @@ import {
   ArgumentError,
   DNSSECMode,
   normalizeFQDN,
+  jwkThumbprint,
   parseJsonNoDuplicateMembers,
   validateDnsidConfig,
   type DnsidConfig,
@@ -21,6 +22,7 @@ import {
   type KeyProvider,
   type LogRegistry,
   type TransportConfig,
+  type VerifiedDomain,
 } from '@dnsid-ai/protocol';
 import {
   createC2spTlogVerificationRegistry,
@@ -306,8 +308,15 @@ export function mergeLoadedConfig(base: LoadedConfig, overlay: LoadedConfig): Lo
     logTrust: overlay.logTrust ?? base.logTrust,
     registry: mergeSection(base.registry, overlay.registry),
     registration: mergeSection(base.registration, overlay.registration),
-    keySource: mergeSection(base.keySource, overlay.keySource),
+    keySource: mergeKeySource(base.keySource, overlay.keySource),
   });
+}
+
+function mergeKeySource(base?: KeySource, overlay?: KeySource): KeySource | undefined {
+  if (!overlay) return base;
+  const replacesOperational = ['provider', 'keyRef', 'generation', 'settings', 'cliDirectory', 'keyStorePath']
+    .some(field => overlay[field as keyof KeySource] !== undefined);
+  return mergeSection(replacesOperational ? compact({ entityKeyPath: base?.entityKeyPath }) : base, overlay);
 }
 
 function mergeDnsid(base?: LoadedDnsidConfig, overlay?: LoadedDnsidConfig): LoadedDnsidConfig | undefined {
@@ -346,7 +355,20 @@ export async function constructIdentityManager(loaded: LoadedConfig, deps: Ident
       filled.entityKeyProvider = await LocalKeyProvider.fromFile(loaded.keySource.entityKeyPath);
     }
   }
-  return createNodeIdentityManager((loaded.dnsid ?? {}) as DnsidConfig, filled);
+  const manager = await createNodeIdentityManager((loaded.dnsid ?? {}) as DnsidConfig, filled);
+  // Injected providers are bound by their owning workflow; configuration-selected cloud keys are not.
+  if (identity && !deps.keyProvider && loaded.keySource?.provider === 'aws-kms') {
+    const verified = await (manager as unknown as {
+      verifyPublicationEvidence(domain: string): Promise<VerifiedDomain>;
+    }).verifyPublicationEvidence(manager.config.identity!.domain);
+    const selected = await filled.keyProvider!.signingKey();
+    const published = verified.jwks.currentOperationalSigningKey();
+    if (selected.kid !== published.kid || selected.alg !== published.alg
+      || await jwkThumbprint(selected) !== await jwkThumbprint(published)) {
+      throw new ArgumentError('configured operational key does not match the verified identity; use authorized key rotation');
+    }
+  }
+  return manager;
 }
 
 async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig | undefined): Promise<LogRegistry> {
@@ -376,6 +398,9 @@ export async function operationalKeyProvider(source: KeySource, domain: string):
   if (source.provider === 'aws-kms') {
     const { createAwsKmsKeyProvider } = await import('@dnsid-ai/key-aws');
     return createAwsKmsKeyProvider(source.keyRef!, source.settings);
+  }
+  if (source.keyRef !== undefined || source.cliDirectory !== undefined || source.keyStorePath !== undefined) {
+    console.warn('Local private-key files are unsuitable for production. Configure keySource.provider/keyRef for cloud custody.');
   }
   if (source.keyRef !== undefined) return LocalKeyProvider.load(source.keyRef);
   if (source.cliDirectory !== undefined) {

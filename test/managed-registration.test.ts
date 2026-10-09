@@ -31,6 +31,7 @@ async function fixture() {
   let initialOperational: DnsIdJWK | undefined;
   let registryStatus = 'VERIFIED';
   let protocolState = 'ACTIVE';
+  let issuerUrl: string | undefined = 'https://oidc.example';
   let pendingSubmissions = 0;
   let failCreation = 0;
   let failDetail = 0;
@@ -101,7 +102,7 @@ async function fixture() {
     }
     if (pathname.endsWith('/status')) {
       if (failDetail-- > 0) throw new TypeError('detail unavailable');
-      return Response.json({ id: replayId, domain: record.agentFQDN, managed: authority, status: registryStatus, dns_published: true, publication_config: config });
+      return Response.json({ id: replayId, domain: record.agentFQDN, managed: authority, status: registryStatus, dns_published: true, publication_config: config, oidc_issuer_url: issuerUrl });
     }
     if (pathname.endsWith('/tlog/issuance/prepare')) {
       const event: C2spIssuanceEvent = {
@@ -146,6 +147,7 @@ async function fixture() {
       record.sg = toBase64Url(await entity.sign(new TextEncoder().encode(record.canonical())));
     },
     setRegistryStatus: (value: string) => { registryStatus = value; },
+    setIssuerUrl: (value: string | undefined) => { issuerUrl = value; },
     setKuUrl: async (url: string) => {
       config.ku_url = url; record.ku = url;
       record.sg = toBase64Url(await entity.sign(new TextEncoder().encode(record.canonical())));
@@ -666,6 +668,43 @@ describe('durable managed registration', () => {
     expect(terminal.cause).toMatchObject({ code: VerificationCode.StatusNotActive, agentState: 'REVOKED' });
     await provider.generateKey();
     await expect(registerManagedIdentity(f.options)).rejects.toMatchObject({ code: 'ROTATION_RECOVERY_REQUIRED' });
+  });
+
+  it.each([false, true])('rejects a missing saved issuer (completed: %s)', async completed => {
+    const f = await fixture();
+    if (completed) await registerManagedIdentity(f.options);
+    f.setIssuerUrl(undefined);
+    await expect(registerManagedIdentity(f.options)).rejects.toMatchObject({ code: 'PUBLICATION_BINDING' });
+    expect(f.calls.filter(c => c.path === '/api/v1/agent')).toHaveLength(1);
+  });
+
+  it('settles the publication observer write before releasing storage after cancellation', async () => {
+    const f = await fixture();
+    const controller = new AbortController();
+    let finishWrite!: () => void;
+    let started!: () => void;
+    const writing = new Promise<void>(resolve => { started = resolve; });
+    const gate = new Promise<void>(resolve => { finishWrite = resolve; });
+    const persist = f.store.persist.bind(f.store);
+    vi.spyOn(f.store, 'persist').mockImplementation(async state => {
+      if (state.phase === 'publication') {
+        started();
+        controller.abort();
+        await gate;
+      }
+      await persist(state);
+    });
+    const run = registerManagedIdentity({ ...f.options, signal: controller.signal });
+    let settled = false;
+    const result = run.catch(error => { settled = true; return error; });
+    await writing;
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(settled).toBe(false);
+    await expect(f.store.acquire(new AbortController().signal)).rejects.toMatchObject({ code: 'STORE_BUSY' });
+    finishWrite();
+    expect(await result).toMatchObject({ code: 'CANCELLED_OR_DEADLINE' });
+    const release = await f.store.acquire(new AbortController().signal);
+    await release();
   });
 
   it('applies the overall deadline to log evidence reads and releases storage after cancellation', async () => {
