@@ -37,6 +37,18 @@ const jwk = await provider.signingKey();
 
 Persist `provider.stateSnapshot()` after `generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied `state` object, but persistence is the caller's job.
 
+## SDK configuration
+
+The Node SDK lazily selects this optional package for `keySource.provider: "aws-kms"`.
+Use an existing `keyRef` and non-secret `settings` with optional `region` and
+`algorithm` (`EdDSA`, the default, or `ES256`). Authentication uses ambient AWS credentials;
+raw secrets are rejected. `createAwsKmsKeyProvider(keyRef, settings)` provides the same factory
+for explicit composition.
+
+Configuration-driven cloud generation is not supported: use an existing stable reference
+because KMS creation lacks atomic named create-or-recover. Changing an alias to another key
+must satisfy the SDK's verified rotation bindings, not silently replace the signer.
+
 ## Supported KMS keys
 
 | DNSid/JWS alg | AWS signing algorithm | AWS key spec |

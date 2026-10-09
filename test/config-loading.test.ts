@@ -134,7 +134,11 @@ describe('loadFile()', () => {
     });
 
     await writeFile(file, JSON.stringify({ keySource: { cliDirectory: '/x' } }));
-    await expect(loadFile(file)).rejects.toThrow(/unknown member "keySource"/);
+    await expect(loadFile(file)).resolves.toEqual({ keySource: { cliDirectory: '/x' } });
+    await writeFile(file, JSON.stringify({ keySource: { generation: { locator: '/keys', algorithm: false } } }));
+    await expect(loadFile(file)).rejects.toThrow('generation.algorithm must be a string');
+    await writeFile(file, JSON.stringify({ keySource: { secret: 'forbidden' } }));
+    await expect(loadFile(file)).rejects.toThrow(/unknown member "secret"/);
     await writeFile(file, JSON.stringify({ logTrust: { policyDocument: 'x' } }));
     await expect(loadFile(file)).rejects.toThrow(/unknown member "policyDocument"/);
     await writeFile(file, JSON.stringify({ logTrust: { managed: 'yes' } }));

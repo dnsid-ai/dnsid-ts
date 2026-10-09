@@ -104,6 +104,21 @@ function keyProvider(jwk: DnsIdJWK = TEST_JWK, sig = new Uint8Array([1, 2, 3])):
 }
 
 describe('RegistryClient', () => {
+  it('reads authenticated onboarding, preserving readiness and structured errors without anonymous fallback', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: 'example.com',
+      gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'pending' } }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', token: 'owner-secret', fetch });
+    await expect(registry.getOrganizationOnboarding()).resolves.toEqual({ organizationId: 'org-1', governanceId: 'example.com',
+      gi: { domain: 'example.com', state: 'verified', gateAuthorized: true }, entityKeyStatus: 'pending' });
+    expect(fetch.mock.calls[0][0]).toBe('https://registry.example/api/v1/org/onboarding');
+    expect(new Headers(fetch.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer owner-secret');
+    fetch.mockResolvedValueOnce(Response.json({ error: 'FORBIDDEN' }, { status: 403 }));
+    await expect(registry.getOrganizationOnboarding()).rejects.toMatchObject({ httpStatus: 403, code: 'FORBIDDEN' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    fetch.mockResolvedValueOnce(Response.json({ org_id: '', gi: false }));
+    await expect(registry.getOrganizationOnboarding()).rejects.toThrow();
+  });
+
   it.each([
     'http://registry.example',
     'https://user:secret@registry.example',
@@ -679,7 +694,9 @@ describe('RegistryClient', () => {
       publicationStatus: 'READY',
       protocolStatus: { state: 'ACTIVE' },
     });
-    expect(identityManager.verifyPublicationEvidence).toHaveBeenCalledWith('agent.example.com');
+    expect(identityManager.verifyPublicationEvidence).toHaveBeenCalledWith('agent.example.com', {
+      signal: expect.any(AbortSignal), timeoutMs: expect.any(Number),
+    });
   });
 
   it('rejects a verified registry-managed record with a verification-only selector', async () => {

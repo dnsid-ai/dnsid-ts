@@ -124,6 +124,27 @@ The CLI loader maps persisted fields as written: a missing `status_url` or `log_
 
 DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
+## Registration and provider groundwork
+
+Deployment files support `registration.organizationId`, optional `governanceId`, and an
+independently selected `entityKeyUrl`. These are setup expectations, not registry-root selectors
+or counterparty acceptance defaults. `RegistryClient.getOrganizationOnboarding()` reads the
+existing authenticated endpoint and exposes organization/GI proof and delegation readiness;
+it does not supply an entity-JWKS URL or establish trust.
+
+`keySource` selects file custody or an optional existing AWS KMS key using `provider`, `keyRef`,
+and non-secret `settings` (`region` and EdDSA/ES256 `algorithm`). Injected providers win, and
+only the selected factory is loaded. AWS authentication uses ambient credential chains, not
+secrets in deployment files. Unavailable factories or invalid settings fail without file fallback.
+Ordinary manager construction opens existing keys only; generation requires workflow coordination.
+Google KMS and Azure factories are unavailable in this binding.
+
+This groundwork does not expose automatic managed registration or named recovery. Those require
+a separate SDK workflow and verified permanent server replay/name claims; the existing expiring
+store is insufficient. Existing low-level registration remains available without assuming those
+server capabilities. Moving custody to another provider requires authorized, publicly verified
+rotation, not configuration alone.
+
 ## Included surfaces
 
 `@dnsid-ai/sdk` re-exports the common core and profile surfaces and namespaces:

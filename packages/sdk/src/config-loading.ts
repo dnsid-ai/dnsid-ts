@@ -47,12 +47,24 @@ export interface LogTrust {
 }
 
 export interface KeySource {
+  provider?: 'file' | 'aws-kms' | 'google-kms' | 'azure-key-vault';
+  /** Existing stable key reference; never combined with generation. */
+  keyRef?: string;
+  /** File generation locator; cloud factories without atomic discovery require keyRef. */
+  generation?: { locator: string; algorithm: string };
+  settings?: Record<string, unknown>;
   /** DNSid CLI identity directory; key files are located under the effective identity domain. */
   cliDirectory?: string;
   /** Accountable-entity private JWK file. */
   entityKeyPath?: string;
   /** `LocalKeyProvider` key-store file; used only when `cliDirectory` is absent. */
   keyStorePath?: string;
+}
+
+export interface ManagedRegistrationConfig {
+  organizationId?: string;
+  governanceId?: string;
+  entityKeyUrl: string;
 }
 
 export interface LoadedRegistryConfig {
@@ -69,6 +81,8 @@ export interface LoadedConfig {
   dnsid?: LoadedDnsidConfig;
   logTrust?: LogTrust;
   registry?: LoadedRegistryConfig;
+  /** Setup expectations only; never identity or counterparty acceptance defaults. */
+  registration?: Partial<ManagedRegistrationConfig>;
   keySource?: KeySource;
 }
 
@@ -131,14 +145,14 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
 // Deployment file
 
 /**
- * Reads a JSON deployment file: `{ dnsid?, logTrust?, registry? }`. Unknown members, mistyped
+ * Reads a JSON deployment file: `{ dnsid?, logTrust?, registry?, registration? }`. Unknown members, mistyped
  * values, and duplicate members are rejected; semantic `dnsid` validation stays with the constructor.
  */
 export async function loadFile(filePath: string): Promise<LoadedConfig> {
   const root = jsonObject(await fs.readFile(filePath), filePath);
-  rejectUnknown(root, filePath, ['dnsid', 'logTrust', 'registry']);
+  rejectUnknown(root, filePath, ['dnsid', 'logTrust', 'registry', 'registration', 'keySource']);
   const loaded: LoadedConfig = {};
-  if (root.dnsid !== undefined) loaded.dnsid = loadedDnsid(root.dnsid, `${filePath}: dnsid`);
+  if (root.dnsid !== undefined) loaded.dnsid = validateLoadedDnsidConfig(root.dnsid, `${filePath}: dnsid`);
   if (root.logTrust !== undefined) {
     const trust = object(root.logTrust, `${filePath}: logTrust`);
     rejectUnknown(trust, `${filePath}: logTrust`, ['managed', 'profile', 'policyUrl']);
@@ -153,10 +167,34 @@ export async function loadFile(filePath: string): Promise<LoadedConfig> {
     rejectUnknown(registry, `${filePath}: registry`, ['registryUrl']);
     loaded.registry = compact({ registryUrl: optional(registry, 'registryUrl', 'string', `${filePath}: registry`) });
   }
+  if (root.registration !== undefined) {
+    const registration = object(root.registration, `${filePath}: registration`);
+    rejectUnknown(registration, `${filePath}: registration`, ['organizationId', 'governanceId', 'entityKeyUrl']);
+    loaded.registration = compact({
+      organizationId: optional(registration, 'organizationId', 'string', `${filePath}: registration`),
+      governanceId: optional(registration, 'governanceId', 'string', `${filePath}: registration`),
+      entityKeyUrl: optional(registration, 'entityKeyUrl', 'string', `${filePath}: registration`),
+    });
+  }
+  if (root.keySource !== undefined) {
+    const source = object(root.keySource, `${filePath}: keySource`);
+    rejectUnknown(source, 'keySource', ['provider', 'keyRef', 'generation', 'settings', 'cliDirectory', 'keyStorePath', 'entityKeyPath']);
+    for (const field of ['provider', 'keyRef', 'cliDirectory', 'keyStorePath', 'entityKeyPath']) optional(source, field, 'string', 'keySource');
+    if (source.settings !== undefined) object(source.settings, 'keySource.settings');
+    if (source.generation !== undefined) {
+      const generation = object(source.generation, 'keySource.generation');
+      rejectUnknown(generation, 'keySource.generation', ['locator', 'algorithm']);
+      for (const field of ['locator', 'algorithm']) {
+        if (typeof generation[field] !== 'string') throw new ArgumentError(`keySource.generation.${field} must be a string`);
+      }
+    }
+    loaded.keySource = source as KeySource;
+  }
   return loaded;
 }
 
-function loadedDnsid(value: unknown, source: string): LoadedDnsidConfig {
+/** Shared partial-source shape validation; full identity validation remains constructor-owned. */
+export function validateLoadedDnsidConfig(value: unknown, source = 'dnsid'): LoadedDnsidConfig {
   const raw = object(value, source);
   rejectUnknown(raw, source, ['identity', 'verification', 'transport']);
   if (raw.identity !== undefined) {
@@ -267,6 +305,7 @@ export function mergeLoadedConfig(base: LoadedConfig, overlay: LoadedConfig): Lo
     dnsid: mergeDnsid(base.dnsid, overlay.dnsid),
     logTrust: overlay.logTrust ?? base.logTrust,
     registry: mergeSection(base.registry, overlay.registry),
+    registration: mergeSection(base.registration, overlay.registration),
     keySource: mergeSection(base.keySource, overlay.keySource),
   });
 }
@@ -331,12 +370,46 @@ async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig 
 }
 
 /** `cliDirectory` wins over `keyStorePath`; neither leaves `deps.keyProvider` absent for the constructor to reject. */
-async function operationalKeyProvider(source: KeySource, domain: string): Promise<KeyProvider | undefined> {
+export async function operationalKeyProvider(source: KeySource, domain: string): Promise<KeyProvider | undefined> {
+  await validateKeySource(source);
+  if (source.generation) throw new ArgumentError('identity-manager construction opens existing keys only; use managed setup for generation');
+  if (source.provider === 'aws-kms') {
+    const { createAwsKmsKeyProvider } = await import('@dnsid-ai/key-aws');
+    return createAwsKmsKeyProvider(source.keyRef!, source.settings);
+  }
+  if (source.keyRef !== undefined) return LocalKeyProvider.load(source.keyRef);
   if (source.cliDirectory !== undefined) {
     return LocalKeyProvider.fromDirectory(await identityKeyDir(source.cliDirectory, domain));
   }
   if (source.keyStorePath !== undefined) return LocalKeyProvider.load(source.keyStorePath);
   return undefined;
+}
+
+/** Validate selected-only availability before discovery or mutation; injected providers bypass this. */
+export async function validateKeySource(source: KeySource = {}): Promise<void> {
+  const provider = source.provider ?? 'file';
+  if (!['file', 'aws-kms', 'google-kms', 'azure-key-vault'].includes(provider)) throw new ArgumentError(`unknown key provider: ${provider}`);
+  for (const field of ['keyRef', 'keyStorePath', 'cliDirectory', 'entityKeyPath'] as const) {
+    if (source[field] !== undefined && (typeof source[field] !== 'string' || !source[field]!.trim())) throw new ArgumentError(`keySource.${field} must be nonempty`);
+  }
+  if (source.keyRef && source.generation) throw new ArgumentError('keyRef and generation are mutually exclusive');
+  if ((source.cliDirectory || source.keyStorePath) && (provider !== 'file' || source.keyRef || source.generation)) throw new ArgumentError('CLI/keyStorePath cannot combine with cloud, keyRef, or generation');
+  if (source.generation && (typeof source.generation.locator !== 'string' || !source.generation.locator.trim()
+    || !['EdDSA', 'ES256'].includes(source.generation.algorithm))) throw new ArgumentError('generation requires a stable locator and supported EdDSA or ES256 algorithm');
+  if (provider === 'file') {
+    if (source.settings && Object.keys(source.settings).length) throw new ArgumentError('file provider has no settings');
+    return;
+  }
+  if (provider !== 'aws-kms') throw new ArgumentError(`${provider} is unavailable; install/link a supported provider package (Google KMS and Azure factories are not implemented)`);
+  if (!source.keyRef || source.generation) throw new ArgumentError('AWS KMS requires an existing keyRef; atomic generation discovery is not supported');
+  try {
+    const factory = await import('@dnsid-ai/key-aws');
+    if (typeof factory.createAwsKmsKeyProvider !== 'function' || typeof factory.validateAwsKmsSettings !== 'function') throw new Error('provider factory unavailable');
+    factory.validateAwsKmsSettings(source.settings);
+  } catch (cause) {
+    if (cause instanceof ArgumentError) throw cause;
+    throw new ArgumentError('aws-kms unavailable; install a compatible @dnsid-ai/key-aws and include it in the build');
+  }
 }
 
 async function identityKeyDir(dnsidDir: string, domain: string): Promise<string> {
@@ -379,7 +452,7 @@ function definedEntries<T extends object>(value: T): Partial<T> {
   return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
-function top(value: { [K in keyof LoadedConfig]: unknown }): LoadedConfig {
+function top(value: { [K in keyof LoadedConfig]?: unknown }): LoadedConfig {
   return definedEntries(value) as LoadedConfig;
 }
 
