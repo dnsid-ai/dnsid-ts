@@ -1,0 +1,19 @@
+{
+  "name": "@dnsid-ai/example-trust-policy",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --import tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@dnsid-ai/sdk": "^0.25.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.0"
+  }
+}
