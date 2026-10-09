@@ -300,7 +300,8 @@ export async function loadCliDirectory(dnsidDir = path.join(os.homedir(), '.dnsi
 
 /**
  * Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
- * whole section when `overlay` sets any variant.
+ * whole section when `overlay` sets any variant. Operational key-source fields replace together;
+ * `entityKeyPath` merges independently.
  */
 export function mergeLoadedConfig(base: LoadedConfig, overlay: LoadedConfig): LoadedConfig {
   return top({
@@ -341,6 +342,8 @@ const MANAGED_DEFAULTS_MS = 10 * 60 * 1000;
 /**
  * Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
  * did not supply them, then calls {@link createNodeIdentityManager}. Adds no configuration values.
+ * Configuration-selected operational keys must match verified local publication before return.
+ * Initial setup injects its provider and owns its binding checks; missing publication fails closed.
  */
 export async function constructIdentityManager(loaded: LoadedConfig, deps: IdentityManagerDependencies = {}) {
   validateDnsidConfig(loaded.dnsid ?? {}); // surface config errors before touching key files or policy URLs
@@ -356,8 +359,8 @@ export async function constructIdentityManager(loaded: LoadedConfig, deps: Ident
     }
   }
   const manager = await createNodeIdentityManager((loaded.dnsid ?? {}) as DnsidConfig, filled);
-  // Injected providers are bound by their owning workflow; configuration-selected cloud keys are not.
-  if (identity && !deps.keyProvider && loaded.keySource?.provider === 'aws-kms') {
+  // Injected providers are bound by their owning workflow; configuration-selected keys are not.
+  if (identity && !deps.keyProvider && filled.keyProvider) {
     const verified = await (manager as unknown as {
       verifyPublicationEvidence(domain: string): Promise<VerifiedDomain>;
     }).verifyPublicationEvidence(manager.config.identity!.domain);
