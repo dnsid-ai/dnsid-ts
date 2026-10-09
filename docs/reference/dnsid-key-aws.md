@@ -51,8 +51,10 @@ raw secrets are rejected. `createAwsKmsKeyProvider(keyRef, settings)` provides t
 for explicit composition.
 
 Configuration-driven cloud generation is not supported: use an existing stable reference
-because KMS creation lacks atomic named create-or-recover. Changing an alias to another key
-must satisfy the SDK's verified rotation bindings, not silently replace the signer.
+because KMS creation lacks atomic named create-or-recover. The SDK configuration constructor
+checks the resolved key against verified publication before returning a signing manager.
+Changing an alias to another key requires authorized rotation and updated publication.
+The standalone factory only opens the key; its caller owns identity binding checks.
 
 ## Supported KMS keys
 

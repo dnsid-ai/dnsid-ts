@@ -137,6 +137,10 @@ and non-secret `settings` (`region` and EdDSA/ES256 `algorithm`). Injected provi
 only the selected factory is loaded. AWS authentication uses ambient credential chains, not
 secrets in deployment files. Unavailable factories or invalid settings fail without file fallback.
 Ordinary manager construction opens existing keys only; generation requires workflow coordination.
+Configuration-selected AWS keys must match the current operational key of the verified published
+identity, including key ID, algorithm, and public material. Missing publication or unavailable
+verification fails construction. Initial setup supplies an injected provider and owns its binding
+checks. Selecting local files emits a production-safety warning.
 Google KMS and Azure factories are unavailable in this binding.
 
 This groundwork does not expose automatic managed registration or named recovery. Those require

@@ -699,6 +699,53 @@ describe('RegistryClient', () => {
     });
   });
 
+  it.each(['initial', 'poll'] as const)('rejects a missing saved issuer on the %s observation', async stage => {
+    const expected = { id: 'agent-1', domain: 'agent.example.com', publicationAuthority: 'registry' as const,
+      registryStatus: 'PENDING', dnsPublished: false, oidcIssuerUrl: 'https://issuer.example', registryUrl: 'https://registry.example' };
+    const observed = { ...expected, registryStatus: 'READY', dnsPublished: true, oidcIssuerUrl: undefined };
+    const getRegistration = vi.fn().mockResolvedValue(observed);
+    if (stage === 'poll') getRegistration.mockResolvedValueOnce(expected);
+    const verifyPublicationEvidence = vi.fn();
+    await expect(awaitRegistryManagedPublication({
+      domain: expected.domain, expectedRegistration: expected, intervalMs: 0,
+      registryClient: { getRegistration } as unknown as RegistryClient,
+      identityManager: { verifyPublicationEvidence } as unknown as IdentityManager,
+    })).rejects.toThrow('registry publication binding changed');
+    expect(verifyPublicationEvidence).not.toHaveBeenCalled();
+  });
+
+  it.each(['initial', 'poll'] as const)('bounds a stalled %s observer by the publication deadline', async stage => {
+    const pending = { id: 'agent-1', domain: 'agent.example.com', publicationAuthority: 'registry' as const,
+      registryStatus: 'PENDING', dnsPublished: false };
+    const getRegistration = vi.fn().mockResolvedValue(pending);
+    const onObservation = vi.fn((_registration: unknown, _signal: AbortSignal) => new Promise<void>(() => {}));
+    if (stage === 'poll') onObservation.mockResolvedValueOnce(undefined);
+    const verifyPublicationEvidence = vi.fn();
+    await expect(awaitRegistryManagedPublication({
+      domain: pending.domain, intervalMs: 0, timeoutMs: 30, onObservation,
+      registryClient: { getRegistration } as unknown as RegistryClient,
+      identityManager: { verifyPublicationEvidence } as unknown as IdentityManager,
+    })).rejects.toThrow(/deadline exceeded or canceled/);
+    expect(onObservation.mock.calls[stage === 'initial' ? 0 : 1][1].aborted).toBe(true);
+    expect(verifyPublicationEvidence).not.toHaveBeenCalled();
+  });
+
+  it('cancels a stalled observer with the caller signal', async () => {
+    const controller = new AbortController();
+    const registration = { id: 'agent-1', domain: 'agent.example.com', publicationAuthority: 'registry' as const,
+      registryStatus: 'READY', dnsPublished: true };
+    await expect(awaitRegistryManagedPublication({
+      domain: registration.domain, signal: controller.signal,
+      registryClient: { getRegistration: async () => registration } as unknown as RegistryClient,
+      identityManager: { verifyPublicationEvidence: vi.fn() } as unknown as IdentityManager,
+      onObservation: async (_registration, signal) => {
+        expect(signal.aborted).toBe(false);
+        controller.abort();
+        return new Promise<void>(() => {});
+      },
+    })).rejects.toThrow(/deadline exceeded or canceled/);
+  });
+
   it('rejects a verified registry-managed record with a verification-only selector', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({
       domain: 'agent.example.com', status: 'READY', managed: 'dnsid', dns_published: true,

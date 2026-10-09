@@ -2,7 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ArgumentError, DNSSECMode, DNSSECState, LogRegistry } from '@dnsid-ai/sdk';
+import { ArgumentError, DNSSECMode, DNSSECState, IdentityManager, JWKS, LogRegistry } from '@dnsid-ai/sdk';
+import { AwsKmsKeyProvider } from '@dnsid-ai/key-aws';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
 import {
   constructIdentityManager,
@@ -15,6 +16,7 @@ import {
   loadEnvironment,
   loadFile,
   mergeLoadedConfig,
+  LocalKeyProvider,
 } from '@dnsid-ai/sdk/node';
 import { withTemp, writeKeyPair } from './helpers/cli-directory.ts';
 
@@ -43,7 +45,7 @@ const TRUST_PROFILE = {
   ],
 };
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('loadEnvironment()', () => {
   it('returns only sourced fields; empty and whitespace values are absent', async () => {
@@ -195,6 +197,18 @@ describe('mergeLoadedConfig()', () => {
     expect(mergeLoadedConfig({}, { dnsid: { identity: base.dnsid.identity } }).dnsid).toEqual({ identity: base.dnsid.identity });
   });
 
+  it('replaces operational key fields together and merges entityKeyPath independently', () => {
+    const base = { keySource: { cliDirectory: '/cli', keyStorePath: '/old', entityKeyPath: '/entity' } };
+    const cloud = mergeLoadedConfig(base, { keySource: { provider: 'aws-kms', keyRef: 'arn:key', settings: { region: 'us-east-1' } } });
+    expect(cloud.keySource).toEqual({ provider: 'aws-kms', keyRef: 'arn:key', settings: { region: 'us-east-1' }, entityKeyPath: '/entity' });
+    expect(mergeLoadedConfig(cloud, { keySource: { keyStorePath: '/new' } }).keySource)
+      .toEqual({ keyStorePath: '/new', entityKeyPath: '/entity' });
+    expect(mergeLoadedConfig(cloud, { keySource: { entityKeyPath: '/other' } }).keySource)
+      .toEqual({ ...cloud.keySource, entityKeyPath: '/other' });
+    expect(mergeLoadedConfig(cloud, { keySource: { settings: {} } }).keySource)
+      .toEqual({ settings: {}, entityKeyPath: '/entity' });
+  });
+
   it('file logTrust.managed is replaced by environment DNSID_LOG_POLICY_URL', () => withTemp(async root => {
     const file = join(root, 'dnsid.json');
     await writeFile(file, JSON.stringify({ logTrust: { managed: true } }));
@@ -204,6 +218,49 @@ describe('mergeLoadedConfig()', () => {
 });
 
 describe('constructIdentityManager() and convenience constructors', () => {
+  it('binds configuration-selected cloud keys to verified publication and rejects alias changes', async () => {
+    const first = await LocalKeyProvider.generate();
+    const second = await LocalKeyProvider.generate();
+    const firstKey = await first.signingKey();
+    const secondKey = await second.signingKey();
+    const load = vi.spyOn(AwsKmsKeyProvider, 'load').mockResolvedValue(first as unknown as AwsKmsKeyProvider);
+    const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence')
+      .mockResolvedValue({ jwks: new JWKS([firstKey]) } as never);
+    const loaded = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), {
+      keySource: { provider: 'aws-kms', keyRef: 'alias/agent', settings: { region: 'us-east-1' } },
+    });
+    await expect(constructIdentityManager(loaded, deps)).resolves.toBeDefined();
+    expect(verify).toHaveBeenCalledWith('alice.example.com');
+    load.mockResolvedValue(second as unknown as AwsKmsKeyProvider);
+    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/authorized key rotation/);
+    verify.mockResolvedValue({ jwks: new JWKS([secondKey]) } as never);
+    await expect(constructIdentityManager(loaded, deps)).resolves.toBeDefined();
+    verify.mockRejectedValue(new Error('publication unavailable'));
+    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow('publication unavailable');
+  });
+
+  it('injected providers displace unavailable cloud settings without publication reads', async () => {
+    const keyProvider = await LocalKeyProvider.generate();
+    const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
+    const loaded = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), {
+      keySource: { provider: 'google-kms', settings: { invalid: true } },
+    });
+    await expect(constructIdentityManager(loaded, { ...deps, keyProvider })).resolves.toBeDefined();
+    expect(verify).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, 'file'] as const)('warns when selecting local custody (%s), but not when displaced', provider => withTemp(async root => {
+    const store = join(root, 'keys.json');
+    const keyProvider = await LocalKeyProvider.load(store, true);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const loaded = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), { keySource: { provider, keyStorePath: store } });
+    await constructIdentityManager(loaded, deps);
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/unsuitable for production.*cloud custody/));
+    warn.mockClear();
+    await constructIdentityManager(loaded, { ...deps, keyProvider });
+    expect(warn).not.toHaveBeenCalled();
+  }));
+
   it('only transport and verification variables yield a verification-only manager', async () => {
     const idm = await createNodeIdentityManagerFromEnvironment({ DNSID_DNSSEC_MODE: 'required', DNSID_DNS_SERVER: '10.0.0.1' }, undefined, { fetchJson });
     expect(idm.config.identity).toBeUndefined();
