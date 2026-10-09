@@ -159,6 +159,7 @@ export async function registerManagedIdentity(options: RegisterManagedIdentityOp
   let state: ManagedRegistrationState | undefined;
   let phase: ManagedRegistrationPhase = 'storage';
   let release: (() => Promise<void>) | undefined;
+  let observationWrite: Promise<void> | undefined;
   let failure: unknown;
   let store = options.store;
   try {
@@ -349,7 +350,7 @@ export async function registerManagedIdentity(options: RegisterManagedIdentityOp
       assertRegistration(registration, current, state, state.completed);
       state.observedRegistryStatus = current.registryStatus;
       if (terminal(current.registryStatus)) throw new ManagedRegistrationError('REGISTRY_TERMINAL', phase, false, state);
-      currentRegistration = { ...current, oidcIssuerUrl: registration.oidcIssuerUrl };
+      currentRegistration = current;
       identity = identityFromRegistration(currentRegistration, resolved);
     }
     const managerConfig = { ...loaded, dnsid: { ...loaded.dnsid, identity }, keySource: undefined };
@@ -421,7 +422,11 @@ export async function registerManagedIdentity(options: RegisterManagedIdentityOp
     const publishedRecord = await retry(() => awaitRegistryManagedPublication({ domain: registration.domain,
       registryClient: client, identityManager: publicationManager, expectedRegistration: currentRegistration,
       publishProfile: identity.publishProfile, intervalMs: interval, timeoutMs: remaining(), signal,
-      onObservation: async observed => { state!.observedRegistryStatus = observed.registryStatus; await persist(); },
+      onObservation: async observed => {
+        state!.observedRegistryStatus = observed.registryStatus;
+        observationWrite = persist();
+        await observationWrite;
+      },
     }));
     phase = 'verification';
     const observed = await retry(async () => {
@@ -454,6 +459,11 @@ export async function registerManagedIdentity(options: RegisterManagedIdentityOp
     remaining();
     return { registration, identityManager: manager, publishedRecord, loggedStateEvidence: observed };
   } catch (cause) {
+    // Publication cancellation must not release the store while its observer is still writing.
+    if (observationWrite) {
+      try { await observationWrite; }
+      catch (storageCause) { if (storageCause !== cause) cause = new AggregateError([cause, storageCause]); }
+    }
     failure = cause;
     if (cause instanceof ManagedRegistrationError) throw cause;
     if (state && cause instanceof RegistryWorkflowError) {
@@ -531,7 +541,7 @@ function assertReplacementIdentity(state: ManagedRegistrationState): void {
 }
 
 function assertRegistration(expected: AgentRegistration, observed: AgentRegistration, state: ManagedRegistrationState, allowRotation = false): void {
-  const snapshot = (r: AgentRegistration) => ({ id: r.id, domain: r.domain, publicationAuthority: r.publicationAuthority, publicationConfig: allowRotation && r.publicationConfig ? { ...r.publicationConfig, kuUrl: undefined } : r.publicationConfig, oidcIssuerUrl: observed.oidcIssuerUrl === undefined ? undefined : r.oidcIssuerUrl, registryUrl: r.registryUrl });
+  const snapshot = (r: AgentRegistration) => ({ id: r.id, domain: r.domain, publicationAuthority: r.publicationAuthority, publicationConfig: allowRotation && r.publicationConfig ? { ...r.publicationConfig, kuUrl: undefined } : r.publicationConfig, oidcIssuerUrl: r.oidcIssuerUrl, registryUrl: r.registryUrl });
   if (stable(snapshot(expected)) !== stable(snapshot(observed))) throw new ManagedRegistrationError('PUBLICATION_BINDING', 'ownership', false, state);
 }
 

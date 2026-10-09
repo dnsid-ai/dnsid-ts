@@ -25,6 +25,7 @@ import {
   toBase64Url,
   validateAgentStatus,
   ValidationError,
+  waitForVerification,
 } from '@dnsid-ai/protocol';
 import type {
   AgentStatus,
@@ -846,8 +847,8 @@ export interface AwaitRegistryManagedPublicationOptions {
   signal?: AbortSignal;
   /** Immutable creation facts to check on every authenticated observation. */
   expectedRegistration?: AgentRegistration;
-  /** Optional durable progress observer; does not control publication or activation. */
-  onObservation?: (registration: AgentRegistration) => Promise<void>;
+  /** Progress observer shares the deadline. Callers must settle outstanding writes before releasing storage locks. */
+  onObservation?: (registration: AgentRegistration, signal: AbortSignal) => Promise<void>;
 }
 
 export class RegistryWorkflowError extends Error {
@@ -919,13 +920,13 @@ export async function awaitRegistryManagedPublication(
     const expected = options.expectedRegistration;
     if (!expected) return;
     if (value.id !== expected.id || value.domain !== expected.domain || value.publicationAuthority !== expected.publicationAuthority
-      || value.oidcIssuerUrl !== undefined && value.oidcIssuerUrl !== expected.oidcIssuerUrl
+      || value.oidcIssuerUrl !== expected.oidcIssuerUrl
       || Object.keys(expected.publicationConfig ?? {}).some(key => value.publicationConfig?.[key as keyof PublicationConfig] !== expected.publicationConfig?.[key as keyof PublicationConfig])) {
       throw new RegistryWorkflowError('registry publication binding changed', value);
     }
   };
   checkSnapshot(registration);
-  await options.onObservation?.(registration);
+  if (options.onObservation) await waitForVerification(() => options.onObservation!(registration!, signal), signal);
   while (normalizeRegistryStatus(registration.registryStatus) !== 'READY' || registration.dnsPublished !== true) {
     if (isFailedRegistryStatus(registration.registryStatus)) {
       throw new RegistryWorkflowError(`registry publication failed with status ${registration.registryStatus}`, registration);
@@ -937,7 +938,7 @@ export async function awaitRegistryManagedPublication(
     if (!next) throw new RegistryWorkflowError(`registry registration disappeared for ${options.domain}`, registration);
     checkSnapshot(next);
     registration = next;
-    await options.onObservation?.(registration);
+    if (options.onObservation) await waitForVerification(() => options.onObservation!(registration!, signal), signal);
   }
 
   signal.throwIfAborted();

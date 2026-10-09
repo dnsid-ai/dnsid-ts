@@ -217,13 +217,17 @@ not secrets in deployment/recovery files. Cloud generation without atomic discov
 supply an existing key reference. Google KMS and Azure factories are unavailable in this binding.
 Unavailable packages, invalid settings, and conflicting selection fail before account discovery
 or mutations, with no file fallback. Ordinary manager construction opens existing keys only.
+Configuration-selected AWS keys must match the current operational key of the verified published
+identity, including key ID, algorithm, and public material. Missing publication or unavailable
+verification fails construction. Managed setup injects its provider and owns these binding checks.
 Moving an established signer to another provider requires authorized, publicly verified rotation;
 configuration alone cannot import or replace its private key.
 
 ### Errors and storage
 
 The finite overall deadline defaults to five minutes; use `timeoutMs` / `signal` to change it.
-Injected networking must honor cancellation. Errors preserve structured causes, failed phase,
+Injected networking must honor cancellation. In-flight durable writes must settle before the
+store lock is released, even after cancellation. Errors preserve structured causes, failed phase,
 resumability, known ID/domain, registry status, historical setup completion and issuance state.
 Registry READY is not success: public protocol ACTIVE and fresh complete log evidence are required.
 The returned manager retains the application's allowlist even when it excludes the setup entity.
