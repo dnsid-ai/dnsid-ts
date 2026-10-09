@@ -398,6 +398,25 @@ describe('C2SP stream bundles', () => {
     await expect(verifyC2spStreamBundle(value.resign(), value.options)).rejects.toThrow('inclusion proof');
   });
 
+  it('recovers exact issuance bytes only from verified inclusion and lifecycle evidence', async () => {
+    const value = fixture();
+    let bytes = value.bytes;
+    const options = {
+      policy: parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes)),
+      entityKey: value.options.entityKey,
+      resourceFetcher: { fetchBounded: async () => bytes, securityGuarantees: requiredC2spResourceFetchGuarantees },
+      streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys,
+        maxBundleLifetimeMs: 60000, checkpointFreshnessMs: 60000, required: true },
+    };
+    await expect(new C2spTlogReader(LR, options).readIssuance('agent.example')).resolves.toEqual({
+      entryBytes: new TextEncoder().encode(ISSUANCE_ENTRY), index: 0, logRef: `${LR}@0`,
+    });
+    const events = value.object.events as { entry: string }[];
+    events[0].entry = Buffer.from(ISSUANCE_ENTRY.replace('agent.example', 'other.example')).toString('base64url');
+    bytes = value.resign();
+    await expect(new C2spTlogReader(LR, options).readIssuance('agent.example')).rejects.toThrow('inclusion');
+  });
+
   it('verifies a canonical trusted-index bundle end to end', async () => {
     const value = fixture();
     const parsed = parseC2spStreamBundle(value.bytes, value.options);
