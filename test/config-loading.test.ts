@@ -47,6 +47,12 @@ const TRUST_PROFILE = {
 
 afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
+function matchingPublication() {
+  return vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence').mockImplementation(async function (this: IdentityManager) {
+    return { jwks: new JWKS([await this.getKeyProvider().signingKey()]) } as never;
+  });
+}
+
 describe('loadEnvironment()', () => {
   it('returns only sourced fields; empty and whitespace values are absent', async () => {
     expect(await loadEnvironment({})).toEqual({});
@@ -239,6 +245,18 @@ describe('constructIdentityManager() and convenience constructors', () => {
     await expect(constructIdentityManager(loaded, deps)).rejects.toThrow('publication unavailable');
   });
 
+  it('rejects configuration-only replacement of a file key', () => withTemp(async root => {
+    const first = await LocalKeyProvider.load(join(root, 'first.json'), true);
+    await LocalKeyProvider.load(join(root, 'second.json'), true);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence')
+      .mockResolvedValue({ jwks: new JWKS([await first.signingKey()]) } as never);
+    const loaded = await loadEnvironment(IDENTITY_ENV);
+    await expect(constructIdentityManager({ ...loaded, keySource: { keyRef: join(root, 'first.json') } }, deps)).resolves.toBeDefined();
+    await expect(constructIdentityManager({ ...loaded, keySource: { keyRef: join(root, 'second.json') } }, deps))
+      .rejects.toThrow(/authorized key rotation/);
+  }));
+
   it('injected providers displace unavailable cloud settings without publication reads', async () => {
     const keyProvider = await LocalKeyProvider.generate();
     const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
@@ -250,6 +268,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
   });
 
   it.each([undefined, 'file'] as const)('warns when selecting local custody (%s), but not when displaced', provider => withTemp(async root => {
+    matchingPublication();
     const store = join(root, 'keys.json');
     const keyProvider = await LocalKeyProvider.load(store, true);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -305,6 +324,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
   });
 
   it('cliDirectory wins over keyStorePath for the operational key', () => withTemp(async root => {
+    matchingPublication();
     await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'alice.example.com' }));
     await writeKeyPair(root, 'cli-key');
     const idm = await createNodeIdentityManagerFromEnvironment(
@@ -316,6 +336,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
   }));
 
   it('keyStorePath alone supplies the operational key; caller keyProvider wins', () => withTemp(async root => {
+    matchingPublication();
     const { LocalKeyProvider } = await import('@dnsid-ai/sdk/node');
     const store = join(root, 'keys.json');
     const created = await LocalKeyProvider.load(store, true);
@@ -338,6 +359,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
   }));
 
   it('convenience constructor and manual Load → Merge → Construct produce identical snapshots', () => withTemp(async root => {
+    matchingPublication();
     const dir = join(root, 'alice.example.com');
     await mkdir(dir);
     await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'alice.example.com' }));
