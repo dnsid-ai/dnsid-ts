@@ -29,7 +29,9 @@ export interface ManagedIssuanceState {
   readonly operationalThumbprint: string;
   /** Undefined only while the durable intent precedes remote preparation. */
   readonly logReference?: string;
-  /** Exact completed canonical bytes. Undefined only for an intent. */
+  /** Exact validated entity-signed preparation, persisted before local countersigning. */
+  readonly preparedEntryBytes?: Uint8Array;
+  /** Exact completed canonical bytes. Undefined before countersigning. */
   readonly entryBytes?: Uint8Array;
   /** SHA-256 of entryBytes, persisted before the first submission. */
   readonly entryHash?: string;
@@ -154,7 +156,10 @@ async function resumeManagedIssuanceState(
   operationalKey: DnsIdJWK,
 ): Promise<ManagedIssuanceState> {
   await assertPersistedKeys(issuance, entityKey, operationalKey);
-  if (issuance.activated) return issuance;
+  if (issuance.activated) {
+    await validateAcceptedManagedIssuance(issuance, entityKey, operationalKey);
+    return issuance;
+  }
   if (issuance.terminalFailure || issuance.submission?.state === 'rejected') {
     throw permanentLogError('cannot resume a terminally failed managed ISSUANCE');
   }
@@ -163,7 +168,9 @@ async function resumeManagedIssuanceState(
     await assertAcceptedBinding(issuance, issuance.submission);
     return activate(options, issuance);
   }
-  if (!issuance.entryBytes || !issuance.logReference) {
+  if (issuance.entryBytes && !issuance.logReference || !!issuance.entryBytes !== !!issuance.entryHash
+    || issuance.preparedEntryBytes && !issuance.logReference || issuance.submission && !issuance.entryBytes) throw permanentLogError('durable managed ISSUANCE has incomplete submission artifacts');
+  if (!issuance.entryBytes) {
     return prepareAndSubmit(options, issuance, entityKey, operationalKey);
   }
   return submit(options, issuance);
@@ -177,7 +184,9 @@ async function prepareAndSubmit(
 ): Promise<ManagedIssuanceState> {
   let raw: PreparedRegistryEvent;
   try {
-    raw = await options.registryClient.prepareIssuance(intent.domain, intent.idempotencyKey);
+    raw = intent.preparedEntryBytes && intent.logReference
+      ? { entryBytes: intent.preparedEntryBytes.slice(), logReference: intent.logReference }
+      : await options.registryClient.prepareIssuance(intent.domain, intent.idempotencyKey);
   } catch (cause) {
     if (isTerminalFailure(cause)) {
       const terminal = {
@@ -214,10 +223,12 @@ async function prepareAndSubmit(
     await options.persistIssuance(terminal);
     throw new ManagedIssuanceSubmissionError('managed ISSUANCE preparation failed trusted validation', terminal, false, false, cause);
   }
+  const retained = { ...intent, logReference: raw.logReference, preparedEntryBytes: raw.entryBytes.slice() };
+  if (!intent.preparedEntryBytes) await options.persistIssuance(retained);
   prepared = await signPreparedC2spTlogEvent(prepared, 'OperationalCountersignature', options.operationalKeyProvider, context);
   const entryBytes = await c2spTlogEntryBytes(prepared, context);
   const completed = {
-    ...intent,
+    ...retained,
     logReference: raw.logReference,
     entryBytes: entryBytes.slice(),
     entryHash: await sha256Hex(entryBytes),
@@ -320,6 +331,34 @@ async function assertPersistedKeys(state: ManagedIssuanceState, entityKey: DnsId
   }
 }
 
+/** Validates historical accepted issuance using public material only (including after rotation). */
+export async function validateAcceptedManagedIssuance(
+  state: ManagedIssuanceState,
+  entityKey: DnsIdJWK,
+  operationalKey: DnsIdJWK,
+): Promise<void> {
+  await validateCompletedManagedIssuance(state, entityKey, operationalKey);
+  if (state.terminalFailure || state.submission?.state !== 'accepted') throw permanentLogError('durable managed ISSUANCE is not accepted');
+  await assertAcceptedBinding(state, state.submission);
+}
+
+/** Validates saved entity-signed preparation without a private key. */
+export async function validatePreparedManagedIssuance(state: ManagedIssuanceState, entityKey: DnsIdJWK, operationalKey: DnsIdJWK): Promise<void> {
+  await assertPersistedKeys(state, entityKey, operationalKey);
+  if (!state.preparedEntryBytes || !state.logReference) throw permanentLogError('durable managed ISSUANCE is missing preparation bytes or log reference');
+  const prepared = await parsePreparedC2spTlogEvent(state.preparedEntryBytes, state.logReference, {
+    expectedFqdn: state.domain, expectedGovernanceId: state.governanceId, entityKey, operationalKey,
+  });
+  if (prepared.envelope.type !== 'ISSUANCE' || !(prepared.envelope.sigs as { ae?: unknown } | undefined)?.ae) throw permanentLogError('durable managed ISSUANCE preparation is missing its entity signature');
+}
+
+/** Validates saved completed bytes before any recovery mutation. Requires no private key. */
+export async function validateCompletedManagedIssuance(state: ManagedIssuanceState, entityKey: DnsIdJWK, operationalKey: DnsIdJWK): Promise<void> {
+  await assertPersistedKeys(state, entityKey, operationalKey);
+  await verifyPersistedCompletedIssuance(state, entityKey, operationalKey);
+  if (state.submission && state.submission.entryHash !== state.entryHash) throw permanentLogError('durable managed ISSUANCE outcome does not match its exact bytes');
+}
+
 async function verifyPersistedCompletedIssuance(
   state: ManagedIssuanceState,
   entityKey: DnsIdJWK,
@@ -338,6 +377,13 @@ async function verifyPersistedCompletedIssuance(
   };
   const prepared = await parsePreparedC2spTlogEvent(state.entryBytes, state.logReference, context);
   const canonical = await c2spTlogEntryBytes(prepared, context);
+  if (state.preparedEntryBytes) {
+    const original = await parsePreparedC2spTlogEvent(state.preparedEntryBytes, state.logReference, context);
+    if (!bytesEqual(original.signedBytes, prepared.signedBytes)
+      || JSON.stringify((original.envelope.sigs as { ae?: unknown }).ae) !== JSON.stringify((prepared.envelope.sigs as { ae?: unknown }).ae)) {
+      throw permanentLogError('durable managed ISSUANCE differs from its retained preparation');
+    }
+  }
   if (!bytesEqual(canonical, state.entryBytes)) throw permanentLogError('durable managed ISSUANCE bytes are not the canonical completed entry');
 }
 
@@ -362,12 +408,15 @@ async function assertAcceptedBinding(issuance: ManagedIssuanceState, submission:
 }
 
 function retryWithSameBytes(cause: unknown): boolean {
+  if (cause instanceof VerificationError && !cause.transient) return false;
   return !(cause && typeof cause === 'object' && 'retryWithSameBytes' in cause
     && (cause as { retryWithSameBytes?: unknown }).retryWithSameBytes === false);
 }
 
 function isTerminalFailure(cause: unknown): boolean {
+  if (cause instanceof VerificationError) return !cause.transient;
   if (!cause || typeof cause !== 'object') return false;
+  if ('httpStatus' in cause && typeof cause.httpStatus === 'number' && cause.httpStatus >= 400 && cause.httpStatus < 500 && cause.httpStatus !== 429) return true;
   if ('retryable' in cause && (cause as { retryable?: unknown }).retryable === false) return true;
   if ('state' in cause && (cause as { state?: unknown }).state === 'rejected') return true;
   return 'retryWithSameBytes' in cause && (cause as { retryWithSameBytes?: unknown }).retryWithSameBytes === false;

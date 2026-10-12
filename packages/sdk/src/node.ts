@@ -28,3 +28,10 @@ export {
   createRegistryClientFromEnvironment,
 } from './config-loading.ts';
 export type { EnvironmentSource, KeySource, LoadedConfig, LoadedDnsidConfig, LoadedRegistryConfig, LogTrust, ManagedRegistrationConfig } from './config-loading.ts';
+export { FileRegistrationStore } from './file-registration-store.ts';
+export { registerManagedIdentity, ManagedRegistrationError } from './managed-registration.ts';
+export type {
+  ManagedRegistrationPhase, ManagedRegistrationScope, AcceptedRegistrationIssuance,
+  ManagedRegistrationResult, ManagedRegistrationState, ManagedRegistrationStore,
+  RegisterManagedIdentityOptions,
+} from './managed-registration.ts';

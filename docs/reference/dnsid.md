@@ -12,7 +12,7 @@ The root `@dnsid-ai/sdk` entrypoint is runtime-neutral: callers inject DNS resol
 ## Package layout
 
 - **Root export (`@dnsid-ai/sdk`)** — runtime-neutral. No Node built-ins, `Buffer`, filesystem, or `undici` imports; you inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes. Its managed C2SP workflows use the portable writer-only binding entrypoint.
-- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, configuration loaders (`loadEnvironment`, `loadFile`, `loadCliDirectory`, `mergeLoadedConfig`, `constructIdentityManager`), `createNodeIdentityManager`, and the one-call `createNodeIdentityManagerFromEnvironment` / `FromDnsid` / `FromFile`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, configuration loaders (`loadEnvironment`, `loadFile`, `loadCliDirectory`, `mergeLoadedConfig`, `constructIdentityManager`), `createNodeIdentityManager`, and the one-call `createNodeIdentityManagerFromEnvironment` / `FromDnsid` / `FromFile`, plus durable managed registration with `registerManagedIdentity` and `FileRegistrationStore`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
 - **OIDC lives in `@dnsid-ai/oidc`** — deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs server-side. Import it directly.
 
 ## Install
@@ -129,30 +129,124 @@ The CLI loader maps persisted fields as written: a missing `status_url` or `log_
 
 DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
-## Registration and provider groundwork
+## Durable managed registration
 
-Deployment files support `registration.organizationId`, optional `governanceId`, and an
-independently selected `entityKeyUrl`. These are setup expectations, not registry-root selectors
-or counterparty acceptance defaults. `RegistryClient.getOrganizationOnboarding()` reads the
-existing authenticated endpoint and exposes organization/GI proof and delegation readiness;
-it does not supply an entity-JWKS URL or establish trust.
+`registerManagedIdentity()` creates or resumes a named registry-managed identity. The SDK owns
+account discovery, key selection, durable recovery, managed C2SP issuance, publication, and
+independent public verification. Live proof and client-controlled publication are separate flows.
+Setup does not change application counterparty acceptance.
 
-`keySource` selects file custody or an optional existing AWS KMS key using `provider`, `keyRef`,
-and non-secret `settings` (`region` and EdDSA/ES256 `algorithm`). Injected providers win, and
-only the selected factory is loaded. AWS authentication uses ambient credential chains, not
-secrets in deployment files. Unavailable factories or invalid settings fail without file fallback.
-Ordinary manager construction opens existing keys only; generation requires workflow coordination.
+```ts
+import { FileRegistrationStore, loadFile, registerManagedIdentity } from '@dnsid-ai/sdk/node';
+
+const result = await registerManagedIdentity({
+  name: 'billing-agent',
+  loaded: await loadFile('deployment.json'),
+  credential: registryCredential,
+  store: new FileRegistrationStore('.dnsid/setup'),
+  input: { governanceDomain: 'acme.example' },
+});
+```
+
+Names are trimmed, case-sensitive display handles with 1–255 Unicode code points, not domains
+or paths. Explicit `input.name` must match. The store selects a safe directory by a digest of
+the normalized registry URL, organization ID, and name; the same root can hold multiple identities.
+
+Configure explicit `logTrust` and `registration.entityKeyUrl`, an independently selected HTTPS
+entity-JWKS endpoint. Organization ID and expected GI come from `registration.organizationId` /
+`governanceId`, matching named state, or authenticated `GET /api/v1/org/onboarding`.
+Organization ID must be resolved before state selection. Discovery requires verified GI proof,
+gate authorization, and verified entity-key delegation, and compares configured/saved bindings.
+It cannot supply the entity endpoint. Fully configured accounts require no discovery call.
+
+Expected GI does not select a registry root: supply selectors through `input` explicitly.
+Omitted input sends only the name and public key. `registry.registryUrl` and `dnsid.transport`
+configure SDK-owned networking. Merge sources explicitly; setup never rereads the environment.
+
+### Replay and server prerequisites
+
+The SDK derives registration and issuance keys using JCS, SHA-256, and unpadded base64url.
+The registration key binds organization ID, normalized name, and the initial public key's
+RFC 7638 thumbprint; provider aliases, credentials, clocks, and generation counters do not enter it.
+Matching replicas must also share the same key and complete creation input.
+
+**Named recovery requires server work; these client changes do not establish deployed support.**
+The server must validate derived bindings before allocation, atomically claim the organization/name
+and complete request, and permanently retain organization-scoped replay claims through deletion
+and retirement. Identical low-level key strings in different organizations are independent.
+A credential from the wrong organization must not use a derived key to create or disclose an
+identity in either organization. Old replay returns the old identity or a terminal error, never
+a replacement. Verify these guarantees with real server persistence/integration tests, not an
+acknowledgement flag. Expiring idempotency stores are insufficient.
+
+Unknown creation outcomes reuse the frozen input and derived key. Once immutable identity facts
+are known, recovery reads that identity instead of issuing another creation request. Validated
+creation facts atomically replace creation-only inputs. Pending issuance retains exact bytes;
+after verified inclusion, recovery retains the accepted hash/index/reference and retrieves the
+historical entry rather than preparing or appending again. Failed retrieval does not authorize
+reissuance. Current key-specific URLs come from registry publication configuration and signed TXT;
+the SDK never synthesizes them or falls back to an old endpoint.
+
+Completed calls obtain fresh public evidence, including verified key/URL rotations without the
+original private key. Pending rotations require the rotation coordinator. Conflicting inputs,
+unexplained keys, and terminal identities stop. Explicit `replace: true` requires confirmed
+revocation/retirement and a fresh key, preserves earlier state/key history, and requires a fresh
+immutable ID, domain, and log stream. The server must reject every previously used key.
+
+### Key providers
+
+Deployment files support `keySource`, including `provider`, `keyRef`, `generation`, and
+non-secret `settings`. Injected `deps.keyProvider` wins and requires a stable `providerReference`;
+displaced provider settings/packages are not loaded. An injected `logRegistry` requires an
+independently selected `logTrustReference` and C2SP readers with `readIssuance()` for exact-byte,
+verified historical recovery; the shipped `C2spTlogReader` provides it.
+
+Default/explicit file custody emits a production-safety warning. File generation supports
+EdDSA and ES256. An explicit generation locator is suffixed with the named-scope digest;
+persisted locators are recovered, not replaced after ambiguous initialization.
+
+AWS KMS existing keys are selected lazily through the optional `@dnsid-ai/key-aws` package:
+
+```json
+{
+  "keySource": {
+    "provider": "aws-kms",
+    "keyRef": "arn:aws:kms:us-east-1:111122223333:key/11111111-1111-4111-8111-111111111111",
+    "settings": { "region": "us-east-1", "algorithm": "EdDSA" }
+  }
+}
+```
+
+AWS settings accept region and EdDSA/ES256; authentication uses ambient AWS credential chains,
+not secrets in deployment/recovery files. Cloud generation without atomic discovery is rejected:
+supply an existing key reference. Google KMS and Azure factories are unavailable in this binding.
+Unavailable packages, invalid settings, and conflicting selection fail before account discovery
+or mutations, with no file fallback. Ordinary manager construction opens existing keys only.
 Configuration-selected file and AWS keys must match the current operational key of the verified published
 identity, including key ID, algorithm, and public material. Missing publication or unavailable
-verification fails construction. Initial setup supplies an injected provider and owns its binding
-checks. Selecting local files emits a production-safety warning.
-Google KMS and Azure factories are unavailable in this binding.
+verification fails construction. Managed setup injects its provider and owns these binding checks.
+Moving an established signer to another provider requires authorized, publicly verified rotation;
+configuration alone cannot import or replace its private key.
 
-This groundwork does not expose automatic managed registration or named recovery. Those require
-a separate SDK workflow and verified permanent server replay/name claims; the existing expiring
-store is insufficient. Existing low-level registration remains available without assuming those
-server capabilities. Moving custody to another provider requires authorized, publicly verified
-rotation, not configuration alone.
+### Errors and storage
+
+The finite overall deadline defaults to five minutes; use `timeoutMs` / `signal` to change it.
+Injected networking must honor cancellation. In-flight durable writes must settle before the
+store lock is released, even after cancellation. Errors preserve structured causes, failed phase,
+resumability, known ID/domain, registry status, historical setup completion and issuance state.
+Registry READY is not success: public protocol ACTIVE and fresh complete log evidence are required.
+The returned manager retains the application's allowlist even when it excludes the setup entity.
+
+`FileRegistrationStore` requires a local POSIX filesystem supporting atomic rename, hard links
+(for key creation), and directory fsync throughout the directory's ancestor chain. Named directories/files are owner-only. Competing calls
+receive `STORE_BUSY`; locks are never stolen automatically. After an interruption, stop all writers,
+back up the root and private-key files, then remove the affected named directory's `setup.lock`.
+Keys, backups, and temp files are private material, separate from `setup.json`. Ephemeral
+container storage is not an off-host backup.
+
+Recovery uses version 3. Earlier single-operation state is refused without migration or replacement
+generation; preserve it and finish with the previous implementation. Missing/corrupt state or keys,
+timeouts, and failed evidence do not authorize a fresh identity.
 
 ## Included surfaces
 
@@ -577,7 +671,7 @@ type ManagedIssuanceSubmission =
 };
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L44)
+Defined in: [packages/sdk/src/managed-issuance.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L46)
 
 ***
 
@@ -954,7 +1048,7 @@ Returns true if the value looks like a domain name (as opposed to a URI or other
 function issueManagedIdentity(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L109)
+Defined in: [packages/sdk/src/managed-issuance.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L111)
 
 Starts one durable managed setup operation, or resumes the already persisted one.
 
@@ -1367,7 +1461,7 @@ Returns `config.identity.domain` or throws `ArgumentError` for verification-only
 function resumeManagedIssuance(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L143)
+Defined in: [packages/sdk/src/managed-issuance.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L145)
 
 Resumes only the durable operation, reusing its preparation key or exact completed bytes.
 
