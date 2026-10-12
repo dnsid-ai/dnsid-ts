@@ -54,6 +54,8 @@ export interface RotateManagedOperationalKeyOptions extends ManagedKeyRotationCo
   previousProviderReference: string;
   /** Omit to rotate within the previous provider. */
   targetKeyProvider?: KeyProvider;
+  /** Defaults to the previous key's algorithm. Required when changing algorithms. */
+  targetAlgorithm?: 'EdDSA' | 'ES256';
   newProviderReference: string;
   registryClient: ManagedKeyRotationRegistry;
   idempotencyKey: string;
@@ -130,9 +132,19 @@ export async function rotateManagedOperationalKey(
   const previousKey = await options.keyProvider.signingKey();
   new JWKS([previousKey]).validateOperational();
   const previousThumbprint = await jwkThumbprint(previousKey);
-  const newKid = await target.generateKey();
+  const algorithm = options.targetAlgorithm ?? previousKey.alg!;
+  if (algorithm !== 'EdDSA' && algorithm !== 'ES256') throw new ArgumentError('unsupported target algorithm');
+  if (target.validateKeyGeneration) {
+    await target.validateKeyGeneration(algorithm);
+  } else {
+    const active = await target.signingKey();
+    new JWKS([active]).validateOperational();
+    if (active.alg !== algorithm) throw new ArgumentError('target provider must validate support for the selected algorithm');
+  }
+  const newKid = await target.generateKey(algorithm);
   const newKey = await target.jwk(newKid);
   new JWKS([newKey]).validateOperational();
+  if (newKey.alg !== algorithm) throw permanentRotationError('generated key does not use the selected algorithm');
   if (await jwkThumbprint(newKey) === previousThumbprint) {
     throw permanentRotationError('managed KEY_ROTATION requires a distinct pending operational key');
   }
@@ -274,6 +286,9 @@ async function activateRotation(
   try {
     await verifyAcceptedPublication(options, rotation);
     if (!rotation.activated) await reconcileAcceptedRotation(previous, target, rotation);
+    if (previous !== target && await activeKey(previous, await previous.listKeyIds())) {
+      throw permanentRotationError('superseded source provider still has an active signing key');
+    }
     const activated = { ...rotation, activated: true, applicationSigningPaused: true };
     await options.persistRotation(activated);
     recoverable = activated;
@@ -322,6 +337,11 @@ async function assertKeyBinding(key: DnsIdJWK, kid: string, thumbprint: string):
   }
 }
 
+async function activeKey(provider: KeyProvider, listedIds: string[]): Promise<DnsIdJWK | null> {
+  if (provider.activeSigningKey) return provider.activeSigningKey();
+  return listedIds.length ? provider.signingKey() : null;
+}
+
 async function validateSavedRotation(rotation: ManagedKeyRotationResult, previous: KeyProvider, target: KeyProvider): Promise<void> {
   assertOperationReferences(rotation.previousProviderReference, rotation.newProviderReference, rotation.idempotencyKey);
   if (typeof rotation.activated !== 'boolean' || typeof rotation.applicationSigningPaused !== 'boolean'
@@ -330,10 +350,22 @@ async function validateSavedRotation(rotation: ManagedKeyRotationResult, previou
     throw permanentRotationError('saved managed rotation domain or entry hash mismatch');
   }
   await assertKeyBinding(rotation.previousKey, rotation.previousKid, rotation.previousThumbprint);
-  if ((await previous.listKeyIds()).includes(rotation.previousKid)) {
+  const previousIds = await previous.listKeyIds();
+  const sourceActive = await activeKey(previous, previousIds);
+  if (previousIds.includes(rotation.previousKid)) {
     await assertKeyBinding(await previous.jwk(rotation.previousKid), rotation.previousKid, rotation.previousThumbprint);
-  } else if (!rotation.activated && (await target.signingKey()).kid !== rotation.newKid) {
-    throw permanentRotationError('saved previous key is unavailable before activation');
+    if (sourceActive) {
+      const targetIsActive = previous === target && rotation.submission?.state === 'accepted'
+        && sourceActive.kid === rotation.newKid;
+      await assertKeyBinding(sourceActive,
+        targetIsActive ? rotation.newKid : rotation.previousKid,
+        targetIsActive ? rotation.newThumbprint : rotation.previousThumbprint);
+    }
+  } else {
+    if (rotation.submission?.state !== 'accepted') throw permanentRotationError('saved previous key is unavailable without saved acceptance');
+    await assertSubmissionMatchesRotation(rotation, rotation.submission);
+    await assertKeyBinding(await target.signingKey(), rotation.newKid, rotation.newThumbprint);
+    if (previous !== target && sourceActive) throw permanentRotationError('superseded source provider still has an active signing key');
   }
   const next = await target.jwk(rotation.newKid);
   await assertKeyBinding(next, rotation.newKid, rotation.newThumbprint);

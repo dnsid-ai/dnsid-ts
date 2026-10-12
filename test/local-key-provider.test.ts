@@ -70,6 +70,23 @@ describe('LocalKeyProvider.load', () => {
     } finally { finish(); spy.mockRestore(); }
   }));
 
+  it('generates a selected algorithm and restores it from the store', () => withTemp('dnsid-keys-', async dir => {
+    const path = join(dir, 'keys.json');
+    const provider = await LocalKeyProvider.load(path, true, 'EdDSA');
+    await provider.validateKeyGeneration('ES256');
+    const pending = await provider.generateKey('ES256');
+    expect((await provider.jwk(pending)).alg).toBe('ES256');
+    expect((await provider.signingKey()).alg).toBe('EdDSA');
+    await provider.activate(pending);
+    const reloaded = await LocalKeyProvider.load(path);
+    expect((await reloaded.signingKey()).alg).toBe('ES256');
+    const payload = new TextEncoder().encode('algorithm change');
+    expect(await verifyWithKey(payload, await reloaded.sign(payload), await reloaded.signingKey(), 'ES256')).toBe(true);
+    const before = await readFile(path, 'utf8');
+    await expect(provider.generateKey('RS256')).rejects.toThrow('unsupported local key algorithm');
+    expect(await readFile(path, 'utf8')).toBe(before);
+  }));
+
   it('rotates a symlinked store without replacing the link and backs up the target', () => withTemp('dnsid-keys-', async dir => {
     const target = join(dir, 'store', 'keys.json');
     const link = join(dir, 'keys.json');

@@ -79,6 +79,23 @@ Supply stable `previousProviderReference` and `newProviderReference` values;
 `resolveKeyProvider(reference)` to restore the saved providers, not current
 deployment settings. It restores the saved new signer before unpausing.
 Old rotation records without the new bindings must not be resumed automatically.
+Recovery rejects unrelated active source keys. A removed previous key is accepted
+only with saved acceptance and the exact saved target key already active; for
+cross-provider recovery, the source must have no active key. Provider lookup
+errors, including a listed but unavailable previous key, fail recovery.
+Resolvers must reopen the saved provider state, not create replacement state.
+
+Set `targetAlgorithm` (`EdDSA` or `ES256`) when changing algorithms; omission
+preserves the previous algorithm. The target's `validateKeyGeneration(algorithm)`
+checks settings/support before generation, and rotation checks the generated key
+before registry preparation. Providers without this hook must already have an
+active key using the selected algorithm. Local generation accepts either
+algorithm; AWS generation must match the configured KMS algorithm.
+
+Custom providers that can retire their active key may implement
+`activeSigningKey()` to return `null` when none exists. Without this hook,
+recovery treats an empty `listKeyIds()` as no active key and otherwise calls
+`signingKey()`; lookup errors are never treated as completed supersession.
 
 Cross-provider transfer requires a previous provider that supports superseding
 its active key after transfer. Built-in local and AWS providers currently reject

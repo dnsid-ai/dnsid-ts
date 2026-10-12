@@ -226,6 +226,19 @@ describe('AwsKmsKeyProvider', () => {
     });
   });
 
+  it('rejects unsupported generation algorithms before creating a KMS key', async () => {
+    const kms = new FakeAwsKms();
+    await kms.addP256Key('active-key');
+    const provider = await AwsKmsKeyProvider.load(kms, {
+      activeKeyId: 'active-key', algorithm: 'ECDSA_SHA_256',
+    });
+    await provider.validateKeyGeneration('ES256');
+    await expect(provider.generateKey('EdDSA')).rejects.toThrow('generation settings do not support EdDSA');
+    expect(kms.createInputs).toHaveLength(0);
+    const pending = await provider.generateKey('ES256');
+    expect((await provider.jwk(pending)).alg).toBe('ES256');
+  });
+
   it('supports AWS KMS Ed25519 keys and returns raw EdDSA signatures', async () => {
     const kms = new FakeAwsKms();
     await kms.addEd25519Key('ed-key');

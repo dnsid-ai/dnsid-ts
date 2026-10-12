@@ -51,16 +51,16 @@ function coordinator() {
   };
 }
 
-async function key(kid: string): Promise<{ publicJwk: DnsIdJWK; privateKey: CryptoKey }> {
-  const pair = await generateKeyPair('ES256', { extractable: true });
+async function key(kid: string, algorithm = 'ES256'): Promise<{ publicJwk: DnsIdJWK; privateKey: CryptoKey }> {
+  const pair = await generateKeyPair(algorithm, { extractable: true });
   return {
-    publicJwk: { ...await exportJWK(pair.publicKey), kid, alg: 'ES256', use: 'sig' } as DnsIdJWK,
+    publicJwk: { ...await exportJWK(pair.publicKey), kid, alg: algorithm, use: 'sig' } as DnsIdJWK,
     privateKey: pair.privateKey as CryptoKey,
   };
 }
 
 class RotationKeyProvider implements KeyProvider {
-  private activeKid: string;
+  private activeKid: string | null;
   private pendingKid?: string;
   private readonly retained = new Set<string>();
   activateCalls = 0;
@@ -73,22 +73,29 @@ class RotationKeyProvider implements KeyProvider {
     this.activeKid = previous.publicJwk.kid;
   }
 
-  async signingKey(): Promise<DnsIdJWK> { return this.jwk(this.activeKid); }
+  async signingKey(): Promise<DnsIdJWK> {
+    if (!this.activeKid) throw new Error('no active signing key');
+    return this.jwk(this.activeKid);
+  }
+  async activeSigningKey(): Promise<DnsIdJWK | null> { return this.activeKid ? this.signingKey() : null; }
   async jwk(kid: string): Promise<DnsIdJWK> {
     if (kid === this.previous.publicJwk.kid) return this.previous.publicJwk;
     if (kid === this.next.publicJwk.kid) return this.next.publicJwk;
     throw new Error(`key not found: ${kid}`);
   }
-  async listKeyIds(): Promise<string[]> { return [this.activeKid, ...this.retained]; }
-  async sign(payload: Uint8Array): Promise<Uint8Array> { return this.signKey(this.activeKid, payload); }
+  async listKeyIds(): Promise<string[]> { return [...(this.activeKid ? [this.activeKid] : []), ...this.retained]; }
+  async sign(payload: Uint8Array): Promise<Uint8Array> { return this.signKey((await this.signingKey()).kid, payload); }
   async signKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
     if (kid !== this.activeKid && kid !== this.pendingKid) throw new Error(`key is not available for signing: ${kid}`);
     const privateKey = kid === this.previous.publicJwk.kid ? this.previous.privateKey : this.next.privateKey;
     return new Uint8Array(await crypto.subtle.sign(
-      { name: 'ECDSA', hash: 'SHA-256' },
+      privateKey.algorithm.name === 'Ed25519' ? 'Ed25519' : { name: 'ECDSA', hash: 'SHA-256' },
       privateKey,
       toArrayBuffer(payload),
     ));
+  }
+  async validateKeyGeneration(algorithm: string): Promise<void> {
+    if (algorithm !== this.next.publicJwk.alg) throw new Error('unsupported generation algorithm');
   }
   async generateKey(): Promise<string> {
     this.pendingKid = this.next.publicJwk.kid;
@@ -97,7 +104,7 @@ class RotationKeyProvider implements KeyProvider {
   async activate(kid: string): Promise<void> {
     this.activateCalls++;
     if (kid !== this.pendingKid) throw new Error(`key is not pending: ${kid}`);
-    this.retained.add(this.activeKid);
+    if (this.activeKid) this.retained.add(this.activeKid);
     this.activeKid = kid;
     this.pendingKid = undefined;
   }
@@ -106,7 +113,8 @@ class RotationKeyProvider implements KeyProvider {
       this.failNextSupersede = false;
       throw new Error('transient supersede failure');
     }
-    if (!this.retained.delete(kid)) throw new Error(`key is not retained: ${kid}`);
+    if (kid === this.activeKid) this.activeKid = null;
+    else if (!this.retained.delete(kid)) throw new Error(`key is not retained: ${kid}`);
   }
 }
 
@@ -162,16 +170,170 @@ class RotationRegistry implements ManagedKeyRotationRegistry {
 }
 
 describe('managed registry operational-key rotation', () => {
-  it('restores the saved target signer after restart while configuration still selects the old provider', async () => {
+  it.each([false, true])('rejects an absent previous key without saved acceptance (activated=%s)', async activated => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    registry.state = 'pending';
+    const coordination = coordinator();
+    const pending = await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', ...coordination,
+    });
+    await provider.activate('op-2');
+    await provider.supersede('op-1');
+    await expect(resumeManagedOperationalKeyRotation({
+      rotation: { ...pending, activated }, resolveKeyProvider: async () => provider,
+      registryClient: registry, ...coordination,
+    })).rejects.toMatchObject({ cause: { message: expect.stringContaining('without saved acceptance') } });
+    expect(registry.submissions).toHaveLength(1);
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+  });
+
+  it.each(['retained', 'absent', 'unavailable'] as const)('rejects invalid source state: %s', async state => {
+    const old = new RotationKeyProvider(await key('op-1'), await key('unrelated'));
+    const target = new RotationKeyProvider(await key('initial'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    registry.state = 'pending';
+    const coordination = coordinator();
+    const pending = await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: old, targetKeyProvider: target,
+      registryClient: registry, idempotencyKey: 'rotation-1', ...coordination,
+      previousProviderReference: 'old', newProviderReference: 'target',
+    });
+    let source = old;
+    if (state === 'retained') {
+      await old.generateKey();
+      await old.activate('unrelated');
+    } else if (state === 'absent') {
+      source = new RotationKeyProvider(await key('unrelated'), await key('unused'));
+    } else {
+      vi.spyOn(old, 'activeSigningKey').mockResolvedValue(null);
+      vi.spyOn(old, 'jwk').mockRejectedValue(new Error('listed key unavailable'));
+    }
+    // Saved acceptance allows absent-key recovery only for a genuinely retired source.
+    const submission = { state: 'accepted' as const, entryHash: pending.entryHash, index: 1, logRef: `${LR}@1`, keyId: 'op-2' };
+    await target.activate('op-2');
+    await expect(resumeManagedOperationalKeyRotation({
+      rotation: { ...pending, submission }, resolveKeyProvider: async reference => reference === 'old' ? source : target,
+      registryClient: registry, ...coordination,
+    })).rejects.toBeInstanceOf(ManagedKeyRotationActivationError);
+    expect(registry.submissions).toHaveLength(1);
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+  });
+
+  it('keeps signing paused if cross-provider supersession leaves an active source key', async () => {
+    const old = new RotationKeyProvider(await key('op-1'), await key('unused'));
+    const target = new RotationKeyProvider(await key('initial'), await key('op-2'));
+    vi.spyOn(old, 'supersede').mockResolvedValue();
+    const coordination = coordinator();
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: old, targetKeyProvider: target,
+      registryClient: new RotationRegistry('op-1'), idempotencyKey: 'rotation-1', ...coordination,
+      previousProviderReference: 'old', newProviderReference: 'target',
+    })).rejects.toMatchObject({ cause: { message: expect.stringContaining('still has an active signing key') } });
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+  });
+
+  it('requires the exact active target binding after the previous key is removed', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    const completed = await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', ...coordination,
+    });
+    coordination.setApplicationSigningPaused.mockClear();
+    vi.spyOn(provider, 'signingKey').mockResolvedValue((await key('op-2')).publicJwk);
+    await expect(resumeManagedOperationalKeyRotation({
+      rotation: completed, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+    })).rejects.toMatchObject({ cause: { message: expect.stringContaining('key binding mismatch') } });
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+  });
+
+  it('explicitly changes algorithms and restores the accepted signer', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2', 'EdDSA'));
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    const completed = await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', targetAlgorithm: 'EdDSA', ...coordination,
+    });
+    expect((await provider.signingKey()).alg).toBe('EdDSA');
+    await expect(resumeManagedOperationalKeyRotation({
+      rotation: completed, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+    })).resolves.toMatchObject({ activated: true, applicationSigningPaused: false });
+    expect(registry.submissions).toHaveLength(1);
+  });
+
+  it.each(['ES256', 'EdDSA'] as const)('validates legacy providers using their active algorithm: %s', async targetAlgorithm => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const legacy: KeyProvider = provider;
+    legacy.validateKeyGeneration = undefined;
+    const generate = vi.spyOn(provider, 'generateKey');
+    const options = {
+      domain: DOMAIN, logReference: LR, keyProvider: legacy, registryClient: new RotationRegistry('op-1'),
+      idempotencyKey: 'rotation-1', targetAlgorithm, ...coordinator(),
+    };
+    if (targetAlgorithm === 'ES256') {
+      await expect(rotateManagedOperationalKey(options)).resolves.toMatchObject({ activated: true });
+    } else {
+      await expect(rotateManagedOperationalKey(options)).rejects.toThrow('must validate support');
+      expect(generate).not.toHaveBeenCalled();
+    }
+  });
+
+  it('rejects unsupported selection before generation', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const generate = vi.spyOn(provider, 'generateKey');
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: new RotationRegistry('op-1'),
+      idempotencyKey: 'rotation-1', targetAlgorithm: 'EdDSA', ...coordinator(),
+    })).rejects.toThrow('unsupported generation algorithm');
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unselected algorithm change before generation', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2', 'EdDSA'));
+    const generate = vi.spyOn(provider, 'generateKey');
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: new RotationRegistry('op-1'),
+      idempotencyKey: 'rotation-1', ...coordinator(),
+    })).rejects.toThrow('unsupported generation algorithm');
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it('checks the generated algorithm before registry preparation', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    vi.spyOn(provider, 'validateKeyGeneration').mockResolvedValue();
+    const registry = new RotationRegistry('op-1');
+    const prepare = vi.spyOn(registry, 'prepareKeyRotation');
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', targetAlgorithm: 'EdDSA', ...coordinator(),
+    })).rejects.toThrow('generated key does not use the selected algorithm');
+    expect(prepare).not.toHaveBeenCalled();
+    expect(registry.submissions).toHaveLength(0);
+  });
+
+  it.each(['signer', 'persistence'] as const)('restores the saved target signer after a %s crash while configuration still selects the old provider', async crash => {
     const previous = await key('op-1');
     const next = await key('op-2');
     const old = new RotationKeyProvider(previous, await key('unused'));
     const target = new RotationKeyProvider(await key('target-initial'), next);
-    // This provider supports supersession after its signer has moved to another provider.
-    old.supersede = vi.fn(async () => undefined);
     const registry = new RotationRegistry('op-1');
     const coordination = coordinator();
-    coordination.setApplicationSigner.mockRejectedValueOnce(new Error('crash before signer wiring'));
+    if (crash === 'signer') {
+      coordination.setApplicationSigner.mockRejectedValueOnce(new Error('crash before signer wiring'));
+    } else {
+      const persist = coordination.persistRotation.getMockImplementation()!;
+      coordination.persistRotation.mockImplementation(async rotation => {
+        if (rotation.activated) {
+          coordination.persistRotation.mockImplementation(persist);
+          throw new Error('crash before activation persistence');
+        }
+        await persist(rotation);
+      });
+    }
     let failure: ManagedKeyRotationActivationError | undefined;
     try {
       await rotateManagedOperationalKey({
@@ -181,7 +343,7 @@ describe('managed registry operational-key rotation', () => {
       });
     } catch (error) { failure = error as ManagedKeyRotationActivationError; }
     expect(failure).toBeInstanceOf(ManagedKeyRotationActivationError);
-    expect(failure!.rotation).toMatchObject({ activated: true, applicationSigningPaused: true });
+    expect(failure!.rotation).toMatchObject({ activated: crash === 'signer', applicationSigningPaused: true });
     expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
     const resolve = vi.fn(async (reference: string) => reference === 'saved-target' ? target : old);
     const restored = await resumeManagedOperationalKeyRotation({
