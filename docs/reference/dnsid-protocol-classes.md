@@ -407,7 +407,7 @@ Defined in: [packages/protocol/src/txt-record.ts:22](https://github.com/dnsid-ai
 get isDnsid1(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L49)
+Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L50)
 
 ###### Returns
 
@@ -423,7 +423,7 @@ Defined in: [packages/protocol/src/txt-record.ts:49](https://github.com/dnsid-ai
 get isTwoKey(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L50)
+Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L51)
 
 ###### Returns
 
@@ -439,7 +439,7 @@ Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai
 get usesEntityKey(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L51)
+Defined in: [packages/protocol/src/txt-record.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L52)
 
 ###### Returns
 
@@ -455,7 +455,7 @@ Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai
 canonical(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L135)
+Defined in: [packages/protocol/src/txt-record.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L136)
 
 ###### Returns
 
@@ -469,7 +469,7 @@ Defined in: [packages/protocol/src/txt-record.ts:135](https://github.com/dnsid-a
 governanceId(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L54)
+Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L55)
 
 Profile-selected accountable-entity identifier for relationship and acceptance checks; draft 01 uses `gi` as signed.
 
@@ -485,7 +485,7 @@ Profile-selected accountable-entity identifier for relationship and acceptance c
 hasStructuralGovernanceRelationship(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L65)
+Defined in: [packages/protocol/src/txt-record.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L66)
 
 Whether the agent FQDN is equal to or beneath the accountable entity's
 governance domain. A false result is valid only for delegated identities,
@@ -503,7 +503,7 @@ whose relationship MUST be established by verified ISSUANCE evidence.
 knownTagsCanonical(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L139)
+Defined in: [packages/protocol/src/txt-record.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L140)
 
 ###### Returns
 
@@ -517,7 +517,7 @@ Defined in: [packages/protocol/src/txt-record.ts:139](https://github.com/dnsid-a
 policyFlags(): Set<string>;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L172)
+Defined in: [packages/protocol/src/txt-record.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L173)
 
 ###### Returns
 
@@ -531,7 +531,7 @@ Defined in: [packages/protocol/src/txt-record.ts:172](https://github.com/dnsid-a
 runtimeKeyAllowedHost(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L58)
+Defined in: [packages/protocol/src/txt-record.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L59)
 
 ###### Returns
 
@@ -545,7 +545,7 @@ Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai
 runtimeKeyURI(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L57)
+Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L58)
 
 ###### Returns
 
@@ -559,7 +559,7 @@ Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai
 serialize(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L157)
+Defined in: [packages/protocol/src/txt-record.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L158)
 
 ###### Returns
 
@@ -573,7 +573,7 @@ Defined in: [packages/protocol/src/txt-record.ts:157](https://github.com/dnsid-a
 signatureVerificationKeyAllowedHost(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L56)
+Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L57)
 
 ###### Returns
 
@@ -587,7 +587,7 @@ Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai
 signatureVerificationKeyURI(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L55)
+Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L56)
 
 ###### Returns
 
@@ -601,7 +601,7 @@ Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai
 validate(): void;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L120)
+Defined in: [packages/protocol/src/txt-record.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L121)
 
 ###### Returns
 
@@ -615,7 +615,7 @@ Defined in: [packages/protocol/src/txt-record.ts:120](https://github.com/dnsid-a
 static parse(raw): DnsIdTxtRecord;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L35)
+Defined in: [packages/protocol/src/txt-record.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L36)
 
 ###### Parameters
 
@@ -635,7 +635,7 @@ Defined in: [packages/protocol/src/txt-record.ts:35](https://github.com/dnsid-ai
 static parseUnsignedCanonical(raw, agentFQDN?): DnsIdTxtRecord;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L39)
+Defined in: [packages/protocol/src/txt-record.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L40)
 
 ###### Parameters
 

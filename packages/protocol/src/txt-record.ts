@@ -31,6 +31,7 @@ export class DnsIdTxtRecord {
   cu?: string;
   unknownTags: Map<string, string> = new Map();
   agentFQDN = '';
+  private parsedTags = new Set<string>();
 
   static parse(raw: string): DnsIdTxtRecord {
     return DnsIdTxtRecord.parseTagPairs(raw, true, true);
@@ -76,7 +77,7 @@ export class DnsIdTxtRecord {
     if (!SUPPORTED_DNSID_VERSIONS.has(version)) throw new ParseError(`unsupported DNSid TXT record profile: ${version}`);
 
     const record = new DnsIdTxtRecord();
-    const seenTags = new Set<string>();
+    const seenTags = record.parsedTags;
     for (let i = 0; i < pairs.length; i++) {
       let pair = pairs[i]!;
       if (pair === '') {
@@ -148,9 +149,9 @@ export class DnsIdTxtRecord {
     if (this.ku) pairs.push(['ku', this.ku]);
     if (this.lr) pairs.push(['lr', this.lr]);
     if (this.su) pairs.push(['su', this.su]);
-    if (this.fl) pairs.push(['fl', this.fl]);
-    if (this.ka) pairs.push(['ka', this.ka]);
-    if (this.cu) pairs.push(['cu', this.cu]);
+    if (this.fl || this.parsedTags.has('fl')) pairs.push(['fl', this.fl ?? '']);
+    if (this.ka || this.parsedTags.has('ka')) pairs.push(['ka', this.ka ?? '']);
+    if (this.cu || this.parsedTags.has('cu')) pairs.push(['cu', this.cu ?? '']);
     return pairs;
   }
 
@@ -162,9 +163,9 @@ export class DnsIdTxtRecord {
     if (this.lr) parts.push(`lr=${this.lr}`);
     if (this.su) parts.push(`su=${this.su}`);
     if (this.sg) parts.push(`sg=${this.sg}`);
-    if (this.fl) parts.push(`fl=${this.fl}`);
-    if (this.ka) parts.push(`ka=${this.ka}`);
-    if (this.cu) parts.push(`cu=${this.cu}`);
+    if (this.fl || this.parsedTags.has('fl')) parts.push(`fl=${this.fl ?? ''}`);
+    if (this.ka || this.parsedTags.has('ka')) parts.push(`ka=${this.ka ?? ''}`);
+    if (this.cu || this.parsedTags.has('cu')) parts.push(`cu=${this.cu ?? ''}`);
     for (const [k, v] of this.unknownTags) parts.push(`${k}=${v}`);
     return parts.join(';');
   }

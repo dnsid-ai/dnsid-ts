@@ -91,6 +91,44 @@ describe('DnsIdTxtRecord wire handling', () => {
     expect(r.serialize()).toContain('exp=999');
   });
 
+  it.each(selectors)('preserves parsed empty optional tags in %s signature input and round trips', v => {
+    const r = DnsIdTxtRecord.parse(raw(v) + ';fl=;ka=;cu=;zz=');
+    r.agentFQDN = 'agent.example.com';
+    expect([r.fl, r.ka, r.cu]).toEqual([undefined, undefined, undefined]);
+    expect(() => r.validate()).not.toThrow();
+    const canonical = `cu=;ek=https://keys.example.com/entity.json;fl=;gi=example.com;ka=;` +
+      `ku=https://agent.example.com/jwks.json;lr=microledger:abc;su=https://agent.example.com/status;v=${v};zz=`;
+    expect(r.canonical()).toBe(canonical);
+    expect(r.knownTagsCanonical()).toBe(canonical.replace(';zz=', ''));
+    expect(r.serialize()).toBe(raw(v) + ';fl=;ka=;cu=;zz=');
+    expect(DnsIdTxtRecord.parse(r.serialize()).canonical()).toBe(canonical);
+    expect(DnsIdTxtRecord.parseUnsignedCanonical(canonical, r.agentFQDN).canonical()).toBe(canonical);
+  });
+
+  it('omits unset optional tags from SDK-created records', () => {
+    const r = new DnsIdTxtRecord();
+    Object.assign(r, { v: DNSID_DRAFT01_VERSION, gi: 'example.com', ek: 'https://keys.example.com/entity.json',
+      ku: 'https://agent.example.com/jwks.json', lr: 'microledger:abc', su: 'https://agent.example.com/status', sg: 'dGVzdA' });
+    expect(r.serialize()).toBe(raw(DNSID_DRAFT01_VERSION));
+    expect(r.canonical()).toBe(record().canonical());
+    r.fl = r.ka = r.cu = '';
+    expect(r.serialize()).toBe(raw(DNSID_DRAFT01_VERSION));
+    expect(r.canonical()).toBe(record().canonical());
+  });
+
+  it('uses current typed values for parsed optional tags', () => {
+    const r = DnsIdTxtRecord.parse(raw(DNSID_DRAFT01_VERSION) + ';fl=;ka=;cu=');
+    r.fl = 'mtls';
+    r.ka = '24h';
+    r.cu = 'https://agent.example.com/agents.md';
+    expect(r.serialize()).toBe(raw(DNSID_DRAFT01_VERSION) + ';fl=mtls;ka=24h;cu=https://agent.example.com/agents.md');
+    expect(r.canonical()).toContain('cu=https://agent.example.com/agents.md;');
+    expect(r.canonical()).toContain(';fl=mtls;gi=example.com;ka=24h;');
+    r.ka = 'invalid';
+    r.agentFQDN = 'agent.example.com';
+    expect(() => r.validate()).toThrow(/ka must be one of/);
+  });
+
   it('parses only alphabetically ordered unsigned canonical content', () => {
     const canonical = record().canonical();
     expect(DnsIdTxtRecord.parseUnsignedCanonical(canonical, 'agent.example.com').canonical()).toBe(canonical);
