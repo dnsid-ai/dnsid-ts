@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
 import {
+  JWKS,
+  type VerifiedDomain,
   jwkThumbprint,
   toArrayBuffer,
   type DnsIdJWK,
@@ -32,9 +34,20 @@ const STREAM_ID = 'ERERERERERERERERERERER';
 const LR = `c2sp-tlog:public:https://log.example/dnsid#${STREAM_ID}`;
 
 function coordinator() {
+  let saved: ManagedKeyRotationResult;
   return {
-    persistRotation: vi.fn(async (_rotation: ManagedKeyRotationResult) => undefined),
+    previousProviderReference: 'provider',
+    newProviderReference: 'provider',
+    persistRotation: vi.fn(async (rotation: ManagedKeyRotationResult) => { saved = rotation; }),
     setApplicationSigningPaused: vi.fn(async (_paused: boolean) => undefined),
+    setApplicationSigner: vi.fn(async (_provider: KeyProvider, _kid: string) => undefined),
+    verifyPublicationEvidence: vi.fn(async () => ({
+      domain: DOMAIN, record: { lr: LR },
+      jwks: new JWKS([JSON.parse(new TextDecoder().decode(saved.entryBytes)).new_ku]),
+      logReader: { readEvent: async () => parseC2spEventEntry(saved.entryBytes, {
+        scope: 'public', logOrigin: 'log.example/dnsid', streamId: STREAM_ID, lr: LR,
+      }) },
+    } as unknown as VerifiedDomain)),
   };
 }
 
@@ -149,6 +162,134 @@ class RotationRegistry implements ManagedKeyRotationRegistry {
 }
 
 describe('managed registry operational-key rotation', () => {
+  it('restores the saved target signer after restart while configuration still selects the old provider', async () => {
+    const previous = await key('op-1');
+    const next = await key('op-2');
+    const old = new RotationKeyProvider(previous, await key('unused'));
+    const target = new RotationKeyProvider(await key('target-initial'), next);
+    // This provider supports supersession after its signer has moved to another provider.
+    old.supersede = vi.fn(async () => undefined);
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    coordination.setApplicationSigner.mockRejectedValueOnce(new Error('crash before signer wiring'));
+    let failure: ManagedKeyRotationActivationError | undefined;
+    try {
+      await rotateManagedOperationalKey({
+        domain: DOMAIN, logReference: LR, keyProvider: old, targetKeyProvider: target,
+        registryClient: registry, idempotencyKey: 'cross-provider',
+        ...coordination, previousProviderReference: 'old-config', newProviderReference: 'saved-target',
+      });
+    } catch (error) { failure = error as ManagedKeyRotationActivationError; }
+    expect(failure).toBeInstanceOf(ManagedKeyRotationActivationError);
+    expect(failure!.rotation).toMatchObject({ activated: true, applicationSigningPaused: true });
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+    const resolve = vi.fn(async (reference: string) => reference === 'saved-target' ? target : old);
+    const restored = await resumeManagedOperationalKeyRotation({
+      rotation: failure!.rotation, resolveKeyProvider: resolve, registryClient: registry, ...coordination,
+    });
+    expect(resolve.mock.calls).toEqual([['old-config'], ['saved-target']]);
+    expect(coordination.setApplicationSigner).toHaveBeenLastCalledWith(target, 'op-2');
+    expect(coordination.setApplicationSigner.mock.invocationCallOrder.at(-1))
+      .toBeLessThan(coordination.setApplicationSigningPaused.mock.invocationCallOrder.at(-1)!);
+    expect(restored.applicationSigningPaused).toBe(false);
+    expect(registry.submissions).toHaveLength(1);
+    expect(target.activateCalls).toBe(1);
+  });
+
+  it.each(['newThumbprint', 'previousThumbprint', 'entryHash', 'logReference'] as const)(
+    'rejects a mismatched saved %s before replay or unpause', async field => {
+      const previous = await key('op-1');
+      const provider = new RotationKeyProvider(previous, await key('op-2'));
+      const registry = new RotationRegistry('op-1');
+      registry.state = 'pending';
+      const coordination = coordinator();
+      const pending = await rotateManagedOperationalKey({
+        domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+        idempotencyKey: 'rotation-1', ...coordination,
+      });
+      await expect(resumeManagedOperationalKeyRotation({
+        rotation: { ...pending, [field]: field === 'logReference' ? LR.replace(STREAM_ID, 'IiIiIiIiIiIiIiIiIiIiIi') : 'wrong' },
+        resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+      })).rejects.toBeInstanceOf(ManagedKeyRotationActivationError);
+      expect(registry.submissions).toHaveLength(1);
+      expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+      expect(provider.activateCalls).toBe(0);
+    },
+  );
+
+  it.each(['publication', 'continuity'])('does not activate with mismatched %s', async mismatch => {
+    const previous = await key('op-1');
+    const provider = new RotationKeyProvider(previous, await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    const verify = coordination.verifyPublicationEvidence.getMockImplementation()!;
+    coordination.verifyPublicationEvidence.mockImplementation(async () => {
+      const evidence = await verify();
+      if (mismatch === 'publication') return { ...evidence, jwks: new JWKS([previous.publicJwk]) } as VerifiedDomain;
+      return { ...evidence, logReader: { ...evidence.logReader, readEvent: async () => ({ type: 'RETIREMENT' }) } } as unknown as VerifiedDomain;
+    });
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', ...coordination,
+    })).rejects.toBeInstanceOf(ManagedKeyRotationActivationError);
+    expect(provider.activateCalls).toBe(0);
+    expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+  });
+
+  it.each(['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner', 'verifyPublicationEvidence'] as const)(
+    'requires %s before key generation', async dependency => {
+      const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+      const generate = vi.spyOn(provider, 'generateKey');
+      await expect(rotateManagedOperationalKey({
+        domain: DOMAIN, logReference: LR, keyProvider: provider,
+        registryClient: new RotationRegistry('op-1'), idempotencyKey: 'rotation-1',
+        ...coordinator(), [dependency]: undefined,
+      } as unknown as Parameters<typeof rotateManagedOperationalKey>[0])).rejects.toThrow(dependency);
+      expect(generate).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['persistRotation', 'setApplicationSigningPaused'] as const)(
+    'preserves exact recovery state and does not submit when %s fails', async dependency => {
+      const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+      const registry = new RotationRegistry('op-1');
+      const coordination = coordinator();
+      coordination[dependency].mockRejectedValueOnce(new Error('controller unavailable'));
+      let failure: ManagedKeyRotationSubmissionError | undefined;
+      try {
+        await rotateManagedOperationalKey({
+          domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+          idempotencyKey: 'rotation-1', ...coordination,
+        });
+      } catch (error) { failure = error as ManagedKeyRotationSubmissionError; }
+      expect(failure).toBeInstanceOf(ManagedKeyRotationSubmissionError);
+      expect(failure!.rotation).toMatchObject({ entryHash: await sha256Hex(failure!.rotation.entryBytes), applicationSigningPaused: true });
+      expect(registry.submissions).toHaveLength(0);
+      await expect(resumeManagedOperationalKeyRotation({
+        rotation: failure!.rotation, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+      })).resolves.toMatchObject({ activated: true });
+      expect(registry.submissions[0]!.bytes).toEqual(failure!.rotation.entryBytes);
+    },
+  );
+
+  it('returns a typed terminal rejection without resubmission', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    registry.state = 'rejected';
+    const coordination = coordinator();
+    let failure: ManagedKeyRotationSubmissionError | undefined;
+    try {
+      await rotateManagedOperationalKey({
+        domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+        idempotencyKey: 'rotation-1', ...coordination,
+      });
+    } catch (error) { failure = error as ManagedKeyRotationSubmissionError; }
+    await expect(resumeManagedOperationalKeyRotation({
+      rotation: failure!.rotation, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+    })).rejects.toMatchObject({ name: 'ManagedKeyRotationSubmissionError', retryWithSameBytes: false });
+    expect(registry.submissions).toHaveLength(1);
+  });
+
   it('signs exact prepared bytes and activates only after registry acceptance', async () => {
     const previous = await key('op-1');
     const next = await key('op-2');
@@ -210,7 +351,7 @@ describe('managed registry operational-key rotation', () => {
     expect((await provider.signingKey()).kid).toBe('op-1');
 
     registry.state = 'accepted';
-    const accepted = await resumeManagedOperationalKeyRotation({ keyProvider: provider, registryClient: registry, rotation: pending, ...coordination });
+    const accepted = await resumeManagedOperationalKeyRotation({ resolveKeyProvider: async () => provider, registryClient: registry, rotation: pending, ...coordination });
     expect(accepted.activated).toBe(true);
     expect(registry.submissions).toHaveLength(2);
     expect(registry.submissions[1]!.bytes).toEqual(registry.submissions[0]!.bytes);
@@ -245,7 +386,7 @@ describe('managed registry operational-key rotation', () => {
     expect(await provider.listKeyIds()).toEqual(['op-2', 'op-1']);
 
     const accepted = await resumeManagedOperationalKeyRotation({
-      keyProvider: provider,
+      resolveKeyProvider: async () => provider,
       registryClient: registry,
       rotation: failure!.rotation,
       ...coordination,
@@ -253,9 +394,7 @@ describe('managed registry operational-key rotation', () => {
     expect(accepted.activated).toBe(true);
     expect(provider.activateCalls).toBe(1);
     expect(await provider.listKeyIds()).toEqual(['op-2']);
-    expect(registry.submissions).toHaveLength(2);
-    expect(registry.submissions[1]!.bytes).toEqual(registry.submissions[0]!.bytes);
-    expect(registry.submissions.map(item => item.idempotencyKey)).toEqual(['rotation-1', 'rotation-1']);
+    expect(registry.submissions).toHaveLength(1);
   });
 
   it('preserves exact retry state for an indeterminate submission', async () => {
@@ -293,7 +432,7 @@ describe('managed registry operational-key rotation', () => {
 
     registry.submitError = undefined;
     const accepted = await resumeManagedOperationalKeyRotation({
-      keyProvider: provider,
+      resolveKeyProvider: async () => provider,
       registryClient: registry,
       rotation: failure!.rotation,
       ...coordination,
@@ -317,7 +456,7 @@ describe('managed registry operational-key rotation', () => {
       registryClient: registry,
       idempotencyKey: 'rotation-1',
       ...coordination,
-    })).rejects.toThrow('entry hash does not match');
+    })).rejects.toMatchObject({ cause: { message: expect.stringContaining('entry hash does not match') } });
     expect((await provider.signingKey()).kid).toBe('op-1');
   });
 });
