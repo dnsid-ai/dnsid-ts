@@ -47,7 +47,7 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L145)
+Defined in: [packages/sdk/src/local-key-provider.ts:151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L151)
 
 Promotes a pending key to active. The previously active key transitions to retained.
 
@@ -70,13 +70,19 @@ Promotes a pending key to active. The previously active key transitions to retai
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
+Defined in: [packages/sdk/src/local-key-provider.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L141)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -142,7 +148,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L167)
+Defined in: [packages/sdk/src/local-key-provider.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L173)
 
 ###### Parameters
 
@@ -248,7 +254,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
+Defined in: [packages/sdk/src/local-key-provider.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L161)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -265,6 +271,32 @@ Supersedes and removes a retained key from this provider's published key set.
 ###### Implementation of
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`supersede`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#supersede)
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()
+
+```ts
+validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`validateKeyGeneration`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#validatekeygeneration)
 
 <a id="fromdirectory"></a>
 
@@ -837,7 +869,7 @@ function createNodeIdentityManagerFromDnsid(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:462](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L462)
+Defined in: [packages/sdk/src/config-loading.ts:479](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L479)
 
 #### Parameters
 
@@ -871,7 +903,7 @@ function createNodeIdentityManagerFromEnvironment(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:458](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L458)
+Defined in: [packages/sdk/src/config-loading.ts:475](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L475)
 
 #### Parameters
 
@@ -905,7 +937,7 @@ function createNodeIdentityManagerFromFile(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:466](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L466)
+Defined in: [packages/sdk/src/config-loading.ts:483](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L483)
 
 #### Parameters
 
@@ -935,7 +967,7 @@ Defined in: [packages/sdk/src/config-loading.ts:466](https://github.com/dnsid-ai
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node-identity-manager.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L53)
+Defined in: [packages/sdk/src/node-identity-manager.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L58)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 
@@ -963,7 +995,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:471](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L471)
+Defined in: [packages/sdk/src/config-loading.ts:488](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L488)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 

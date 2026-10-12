@@ -1568,7 +1568,7 @@ Key states:
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L55)
+Defined in: [packages/protocol/src/key-provider.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L61)
 
 Promotes a pending key to active. The previously active key transitions to retained.
 
@@ -1582,18 +1582,40 @@ Promotes a pending key to active. The previously active key transitions to retai
 
 `Promise`\<`void`\>
 
+<a id="activesigningkey"></a>
+
+##### activeSigningKey()?
+
+```ts
+optional activeSigningKey(): Promise<DnsIdJWK | null>;
+```
+
+Defined in: [packages/protocol/src/key-provider.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L24)
+
+Optional explicit active-key lookup for providers that can have no active key. Errors must propagate.
+
+###### Returns
+
+`Promise`\<[`DnsIdJWK`](#dnsidjwk) \| `null`\>
+
 <a id="generatekey"></a>
 
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L50)
+Defined in: [packages/protocol/src/key-provider.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L53)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -1607,7 +1629,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L27)
+Defined in: [packages/protocol/src/key-provider.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L30)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -1630,7 +1652,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L33)
+Defined in: [packages/protocol/src/key-provider.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L36)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -1647,7 +1669,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 optional purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L63)
+Defined in: [packages/protocol/src/key-provider.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L69)
 
 ###### Parameters
 
@@ -1671,7 +1693,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L39)
+Defined in: [packages/protocol/src/key-provider.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L42)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -1711,7 +1733,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L42)
+Defined in: [packages/protocol/src/key-provider.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L45)
 
 Signs with a specified active or pending key.
 
@@ -1737,13 +1759,35 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L60)
+Defined in: [packages/protocol/src/key-provider.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L66)
 
 Supersedes and removes a retained key from this provider's published key set.
 
 ###### Parameters
 
 ###### kid
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()?
+
+```ts
+optional validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [packages/protocol/src/key-provider.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L56)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
 
 `string`
 

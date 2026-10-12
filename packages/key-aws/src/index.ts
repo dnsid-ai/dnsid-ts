@@ -277,7 +277,15 @@ export class AwsKmsKeyProvider implements KeyProvider {
     return signatureBytesForJose(this.config.algorithm, result.signature);
   }
 
-  async generateKey(): Promise<string> {
+  async validateKeyGeneration(algorithm: string): Promise<void> {
+    if (algorithm !== joseAlgForAws(this.config.algorithm)
+      || this.config.keySpec !== defaultKeySpecForAlgorithm(this.config.algorithm)) {
+      throw new ArgumentError(`AWS KMS generation settings do not support ${algorithm}`);
+    }
+  }
+
+  async generateKey(algorithm?: string): Promise<string> {
+    await this.validateKeyGeneration(algorithm ?? joseAlgForAws(this.config.algorithm));
     const result = await this.client.createSigningKey({
       keySpec: this.config.keySpec,
       description: this.config.description,

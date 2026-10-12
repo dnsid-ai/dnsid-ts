@@ -32,7 +32,7 @@ import {
 import { RegistryClient, type RegistryClientOptions } from '@dnsid-ai/registry';
 
 import { LocalKeyProvider } from './local-key-provider.ts';
-import { createNodeIdentityManager } from './node-identity-manager.ts';
+import { createNodeIdentityManager, validateInjectedTransport } from './node-identity-manager.ts';
 
 export type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 
@@ -346,7 +346,23 @@ const MANAGED_DEFAULTS_MS = 10 * 60 * 1000;
  * Initial setup injects its provider and owns its binding checks; missing publication fails closed.
  */
 export async function constructIdentityManager(loaded: LoadedConfig, deps: IdentityManagerDependencies = {}) {
-  validateDnsidConfig(loaded.dnsid ?? {}); // surface config errors before touching key files or policy URLs
+  const config = validateDnsidConfig(loaded.dnsid ?? {});
+  validateInjectedTransport(config.transport ?? {}, deps);
+  if (!config.identity && (deps.keyProvider || deps.entityKeyProvider)) {
+    throw new ArgumentError('key providers have no consumer without config.identity');
+  }
+  if (config.identity && !deps.keyProvider) {
+    const source = loaded.keySource;
+    if (source) await validateKeySource(source);
+    if (source?.generation) throw new ArgumentError('identity-manager construction opens existing keys only; use managed setup for generation');
+    if (!source?.keyRef && !source?.cliDirectory && !source?.keyStorePath) {
+      throw new ArgumentError('deps.keyProvider or a configured operational key source is required when config.identity is set');
+    }
+  }
+  const entityKeyPath = loaded.dnsid?.identity && !deps.entityKeyProvider ? loaded.keySource?.entityKeyPath : undefined;
+  if (entityKeyPath !== undefined && (typeof entityKeyPath !== 'string' || !entityKeyPath.trim())) {
+    throw new ArgumentError('keySource.entityKeyPath must be nonempty');
+  }
   const filled = { ...deps };
   if (!filled.logRegistry && loaded.logTrust) {
     filled.logRegistry = await logRegistryFromTrust(loaded.logTrust, loaded.dnsid?.transport);
@@ -417,9 +433,10 @@ export async function operationalKeyProvider(source: KeySource, domain: string):
 export async function validateKeySource(source: KeySource = {}): Promise<void> {
   const provider = source.provider ?? 'file';
   if (!['file', 'aws-kms', 'google-kms', 'azure-key-vault'].includes(provider)) throw new ArgumentError(`unknown key provider: ${provider}`);
-  for (const field of ['keyRef', 'keyStorePath', 'cliDirectory', 'entityKeyPath'] as const) {
+  for (const field of ['keyRef', 'keyStorePath', 'cliDirectory'] as const) {
     if (source[field] !== undefined && (typeof source[field] !== 'string' || !source[field]!.trim())) throw new ArgumentError(`keySource.${field} must be nonempty`);
   }
+  if (source.settings !== undefined) object(source.settings, 'keySource.settings');
   if (source.keyRef && source.generation) throw new ArgumentError('keyRef and generation are mutually exclusive');
   if ((source.cliDirectory || source.keyStorePath) && (provider !== 'file' || source.keyRef || source.generation)) throw new ArgumentError('CLI/keyStorePath cannot combine with cloud, keyRef, or generation');
   if (source.generation && (typeof source.generation.locator !== 'string' || !source.generation.locator.trim()
