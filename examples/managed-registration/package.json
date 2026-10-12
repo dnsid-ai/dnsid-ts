@@ -1,5 +1,5 @@
 {
-  "name": "@dnsid-ai/example-deployment-signing",
+  "name": "@dnsid-ai/example-managed-registration",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -9,10 +9,8 @@
   },
   "dependencies": {
     "@dnsid-ai/sdk": "^0.26.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.26.0",
     "@dnsid-ai/transport": "^0.26.0"
-  },
-  "optionalDependencies": {
-    "@dnsid-ai/key-aws": "^0.26.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

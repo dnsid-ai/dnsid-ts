@@ -4,11 +4,6 @@
     "baseUrl": "../..",
     "noEmit": true
   },
-  "include": [
-    "src/**/*.ts",
-    "../../packages/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts", "../../packages/**/*.ts"],
+  "exclude": ["node_modules"]
 }
