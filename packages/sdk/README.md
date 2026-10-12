@@ -68,6 +68,23 @@ If `ManagedKeyRotationActivationError` is raised, registry acceptance succeeded
 but local key-state reconciliation is incomplete. Resume with the error's exact
 rotation state; already-completed activation or supersession is not repeated.
 
+Rotation requires `persistRotation`, `setApplicationSigningPaused`,
+`setApplicationSigner`, and `verifyPublicationEvidence`. The verifier must return
+fresh protocol-verified signed TXT/ku evidence; evict old publication evidence
+before verification. Acceptance is checked against the saved bytes/hash, new
+key, and indexed log reference before publication and continuity checks.
+
+Supply stable `previousProviderReference` and `newProviderReference` values;
+`targetKeyProvider` optionally selects another provider. Recovery uses
+`resolveKeyProvider(reference)` to restore the saved providers, not current
+deployment settings. It restores the saved new signer before unpausing.
+Old rotation records without the new bindings must not be resumed automatically.
+
+Cross-provider transfer requires a previous provider that supports superseding
+its active key after transfer. Built-in local and AWS providers currently reject
+this operation. AWS and CLI/in-memory provider state also needs application-owned
+durable recovery. These limits are declared in `SDK_CONFORMANCE.knownDeviations`.
+
 ## Node.js convenience usage
 
 ```ts

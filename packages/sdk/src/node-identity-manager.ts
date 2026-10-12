@@ -33,6 +33,16 @@ export async function createNodeIdentityManager(config: DnsidConfig, deps: Ident
   // Validate everything (including nested lists) before touching the filesystem or network.
   const { transport, ...core } = validateDnsidConfig(config);
   const { dnsServer, caBundlePath, privateAddressHosts } = transport as TransportConfig;
+  validateInjectedTransport(transport as TransportConfig, deps);
+  const transportModule = deps.fetchJson && deps.dnsResolver ? null : await loadNodeTransport();
+  const fetchJson: JsonFetcher = deps.fetchJson
+    ?? ((url, fetchOptions) => transportModule!.fetchJson(url, { ...fetchOptions, dnsServer, caBundlePath, privateAddressHosts }));
+  const dnsResolver = deps.dnsResolver ?? transportModule!.createDefaultDnsResolver({ dnsServer });
+  return new IdentityManager(core, { ...deps, dnsResolver, fetchJson });
+}
+
+/** Checks conflicts without loading transport or making requests. */
+export function validateInjectedTransport({ dnsServer, caBundlePath, privateAddressHosts }: TransportConfig, deps: IdentityManagerDependencies): void {
   if (dnsServer !== undefined && deps.dnsResolver && deps.fetchJson) {
     throw new ArgumentError('config.transport.dnsServer has no SDK-managed consumer when both dnsResolver and fetchJson are injected');
   }
@@ -42,11 +52,6 @@ export async function createNodeIdentityManager(config: DnsidConfig, deps: Ident
   if (privateAddressHosts !== undefined && deps.fetchJson) {
     throw new ArgumentError('config.transport.privateAddressHosts has no SDK-managed consumer when fetchJson is injected');
   }
-  const transportModule = deps.fetchJson && deps.dnsResolver ? null : await loadNodeTransport();
-  const fetchJson: JsonFetcher = deps.fetchJson
-    ?? ((url, fetchOptions) => transportModule!.fetchJson(url, { ...fetchOptions, dnsServer, caBundlePath, privateAddressHosts }));
-  const dnsResolver = deps.dnsResolver ?? transportModule!.createDefaultDnsResolver({ dnsServer });
-  return new IdentityManager(core, { ...deps, dnsResolver, fetchJson });
 }
 
 /** Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted). */

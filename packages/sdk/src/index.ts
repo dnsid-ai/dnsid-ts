@@ -78,6 +78,7 @@ export {
 } from './managed-key-rotation.ts';
 export type {
   ManagedKeyRotationRegistry,
+  ManagedKeyRotationCoordination,
   ManagedKeyRotationResult,
   ResumeManagedOperationalKeyRotationOptions,
   RotateManagedOperationalKeyOptions,
