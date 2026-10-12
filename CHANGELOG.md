@@ -1,4 +1,15 @@
 
+## [0.26.0] - 2026-10-12
+
+### Documentation
+
+- docs: add trust policy setup example ([#80](https://github.com/dnsid-ai/dnsid-ts/pull/80))
+
+### Features
+
+- feat: registry client options ([#76](https://github.com/dnsid-ai/dnsid-ts/pull/76))
+
+
 ## [0.25.0] - 2026-10-07
 
 ### Chores
