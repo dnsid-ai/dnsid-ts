@@ -1774,7 +1774,7 @@ Key states:
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L56)
+Defined in: [packages/protocol/src/key-provider.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L62)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -1789,18 +1789,40 @@ The previously active key transitions to retained.
 
 `Promise`\<`void`\>
 
+<a id="activesigningkey"></a>
+
+##### activeSigningKey()?
+
+```ts
+optional activeSigningKey(): Promise<DnsIdJWK | null>;
+```
+
+Defined in: [packages/protocol/src/key-provider.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L24)
+
+Optional explicit active-key lookup for providers that can have no active key. Errors must propagate.
+
+###### Returns
+
+`Promise`\<[`DnsIdJWK`](#dnsidjwk) \| `null`\>
+
 <a id="generatekey"></a>
 
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L50)
+Defined in: [packages/protocol/src/key-provider.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L53)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -1814,7 +1836,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L27)
+Defined in: [packages/protocol/src/key-provider.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L30)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -1837,7 +1859,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L33)
+Defined in: [packages/protocol/src/key-provider.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L36)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -1854,7 +1876,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 optional purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L64)
+Defined in: [packages/protocol/src/key-provider.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L70)
 
 ###### Parameters
 
@@ -1878,7 +1900,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L39)
+Defined in: [packages/protocol/src/key-provider.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L42)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -1918,7 +1940,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L42)
+Defined in: [packages/protocol/src/key-provider.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L45)
 
 Signs with a specified active or pending key.
 
@@ -1944,13 +1966,35 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L61)
+Defined in: [packages/protocol/src/key-provider.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L67)
 
 Supersedes and removes a retained key from this provider's published key set.
 
 ###### Parameters
 
 ###### kid
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()?
+
+```ts
+optional validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [packages/protocol/src/key-provider.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L56)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
 
 `string`
 
@@ -3038,7 +3082,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:30](https://github.com/dns
 
 ### ManagedKeyRotationResult
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L62)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L64)
 
 #### Properties
 
@@ -3050,7 +3094,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:62](https://github.com/dns
 readonly activated: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L80)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L82)
 
 <a id="applicationsigningpaused"></a>
 
@@ -3060,7 +3104,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:80](https://github.com/dns
 readonly applicationSigningPaused: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L81)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L83)
 
 <a id="domain-10"></a>
 
@@ -3070,7 +3114,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:81](https://github.com/dns
 readonly domain: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L63)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L65)
 
 <a id="entrybytes-1"></a>
 
@@ -3080,7 +3124,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:63](https://github.com/dns
 readonly entryBytes: Uint8Array;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L77)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L79)
 
 Persist these exact bytes with idempotencyKey while activated is false.
 Callers must pause new application signing until this rotation is accepted.
@@ -3093,7 +3137,7 @@ Callers must pause new application signing until this rotation is accepted.
 readonly entryHash: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L72)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L74)
 
 <a id="idempotencykey-2"></a>
 
@@ -3103,7 +3147,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dns
 readonly idempotencyKey: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L78)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L80)
 
 <a id="logreference-3"></a>
 
@@ -3113,7 +3157,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:78](https://github.com/dns
 readonly logReference: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L64)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L66)
 
 <a id="newkid"></a>
 
@@ -3123,7 +3167,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dns
 readonly newKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L66)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L68)
 
 <a id="newproviderreference"></a>
 
@@ -3133,7 +3177,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dns
 readonly newProviderReference: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L68)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L70)
 
 <a id="newthumbprint"></a>
 
@@ -3143,7 +3187,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:68](https://github.com/dns
 readonly newThumbprint: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L71)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L73)
 
 <a id="previouskey"></a>
 
@@ -3153,7 +3197,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:71](https://github.com/dns
 readonly previousKey: DnsIdJWK;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L69)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L71)
 
 <a id="previouskid"></a>
 
@@ -3163,7 +3207,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:69](https://github.com/dns
 readonly previousKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L65)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L67)
 
 <a id="previousproviderreference"></a>
 
@@ -3173,7 +3217,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dns
 readonly previousProviderReference: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L67)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L69)
 
 <a id="previousthumbprint"></a>
 
@@ -3183,7 +3227,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:67](https://github.com/dns
 readonly previousThumbprint: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L70)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L72)
 
 <a id="submission-1"></a>
 
@@ -3193,7 +3237,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:70](https://github.com/dns
 readonly optional submission?: SubmissionResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L79)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L81)
 
 ***
 
@@ -3654,7 +3698,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:79](https://github.com/dnsid-a
 
 ### ResumeManagedOperationalKeyRotationOptions
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L84)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L86)
 
 #### Extends
 
@@ -3696,7 +3740,7 @@ Durably persists exact bytes and every subsequent reconciliation state.
 registryClient: Pick<ManagedKeyRotationRegistry, "submitPreparedEvent">;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L87)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L89)
 
 <a id="resolvekeyprovider"></a>
 
@@ -3706,7 +3750,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:87](https://github.com/dns
 resolveKeyProvider: (reference) => Promise<KeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L86)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L88)
 
 Resolves durable references, never the current deployment's selected provider.
 
@@ -3728,7 +3772,7 @@ Resolves durable references, never the current deployment's selected provider.
 rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L88)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L90)
 
 <a id="setapplicationsigner-1"></a>
 
@@ -4209,7 +4253,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:50](https://github.com/dns
 idempotencyKey: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L59)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L61)
 
 <a id="keyprovider-2"></a>
 
@@ -4241,7 +4285,7 @@ Exact unindexed c2sp-tlog reference configured for this identity.
 newProviderReference: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L57)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L59)
 
 <a id="persistrotation-2"></a>
 
@@ -4287,7 +4331,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:54](https://github.com/dns
 registryClient: ManagedKeyRotationRegistry;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L58)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L60)
 
 <a id="setapplicationsigner-2"></a>
 
@@ -4345,6 +4389,18 @@ resumes signing only after durable activation.
 ###### Inherited from
 
 [`ManagedKeyRotationCoordination`](#managedkeyrotationcoordination).[`setApplicationSigningPaused`](#setapplicationsigningpaused)
+
+<a id="targetalgorithm"></a>
+
+##### targetAlgorithm?
+
+```ts
+optional targetAlgorithm?: "EdDSA" | "ES256";
+```
+
+Defined in: [packages/sdk/src/managed-key-rotation.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L58)
+
+Defaults to the previous key's algorithm. Required when changing algorithms.
 
 <a id="targetkeyprovider"></a>
 

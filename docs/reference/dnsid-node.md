@@ -47,7 +47,7 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
+Defined in: [packages/sdk/src/local-key-provider.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L161)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -71,13 +71,19 @@ The previously active key transitions to retained.
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L147)
+Defined in: [packages/sdk/src/local-key-provider.ts:151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L151)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -143,7 +149,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:182](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L182)
+Defined in: [packages/sdk/src/local-key-provider.ts:188](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L188)
 
 ###### Parameters
 
@@ -249,7 +255,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L170)
+Defined in: [packages/sdk/src/local-key-provider.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L176)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -266,6 +272,32 @@ Supersedes and removes a retained key from this provider's published key set.
 ###### Implementation of
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`supersede`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#supersede)
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()
+
+```ts
+validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [packages/sdk/src/local-key-provider.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L147)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`validateKeyGeneration`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#validatekeygeneration)
 
 <a id="fromdirectory"></a>
 
