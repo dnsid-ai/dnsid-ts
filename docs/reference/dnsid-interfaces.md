@@ -4289,7 +4289,9 @@ Defined in: [packages/protocol/src/verification-budget.ts:3](https://github.com/
 #### Extended by
 
 - [`HttpVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/#httpverificationoptions)
+- [`WebBotAuthVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/#webbotauthverificationoptions)
 - [`HttpVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/#httpverificationoptions)
+- [`WebBotAuthVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/#webbotauthverificationoptions)
 - [`VerifyOIDCTokenOptions`](https://docs.dnsid.ai/reference/ts/dnsid-oidc/#verifyoidctokenoptions)
 - [`StreamVerifierOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#streamverifieroptions)
 - [`VerifyC2spStreamBundleOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#verifyc2spstreambundleoptions)

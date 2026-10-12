@@ -1054,6 +1054,30 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 
 ***
 
+<a id="parsedictionaryfield"></a>
+
+### parseDictionaryField()
+
+```ts
+function parseDictionaryField(headerValue): Dictionary;
+```
+
+Defined in: [http-signatures/src/index.ts:846](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L846)
+
+Parses a bounded Structured Field dictionary without silently erasing duplicate members.
+
+#### Parameters
+
+##### headerValue
+
+`string`
+
+#### Returns
+
+`Dictionary`
+
+***
+
 <a id="parsekeyid"></a>
 
 ### parseKeyId()
@@ -1102,6 +1126,30 @@ ArgumentError if the key ID is malformed.
 
 ***
 
+<a id="parsesha256contentdigest"></a>
+
+### parseSha256ContentDigest()
+
+```ts
+function parseSha256ContentDigest(headerValue): Uint8Array;
+```
+
+Defined in: [http-signatures/src/index.ts:1140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1140)
+
+Parses the required RFC 9530 SHA-256 digest.
+
+#### Parameters
+
+##### headerValue
+
+`string`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
 <a id="parsesignature"></a>
 
 ### parseSignature()
@@ -1110,7 +1158,7 @@ ArgumentError if the key ID is malformed.
 function parseSignature(headerValue): Map<string, Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:898](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L898)
+Defined in: [http-signatures/src/index.ts:910](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L910)
 
 Parses a `Signature` header (RFC 8941 Dictionary of byte sequences) into raw signature
 bytes keyed by label.
@@ -1140,7 +1188,7 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 function parseSignatureInput(headerValue): Map<string, SignatureParams>;
 ```
 
-Defined in: [http-signatures/src/index.ts:853](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L853)
+Defined in: [http-signatures/src/index.ts:865](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L865)
 
 Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
 signature params, preserving component and parameter order for canonical
@@ -1160,6 +1208,42 @@ signature-base reconstruction.
 
 VerificationError with VerificationCode.RecordInvalid if the header is malformed,
         a label is duplicated, or a parameter has the wrong structured-field type.
+
+***
+
+<a id="readboundedbody"></a>
+
+### readBoundedBody()
+
+```ts
+function readBoundedBody(
+   request, 
+   signal, 
+   maxBytes?
+): Promise<ArrayBuffer>;
+```
+
+Defined in: [http-signatures/src/index.ts:938](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L938)
+
+Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses.
+
+#### Parameters
+
+##### request
+
+`Request` \| `Response`
+
+##### signal
+
+`AbortSignal`
+
+##### maxBytes?
+
+`number` = `...`
+
+#### Returns
+
+`Promise`\<`ArrayBuffer`\>
 
 ***
 
@@ -1256,7 +1340,7 @@ function setDictionaryMember(
 ): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:959](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L959)
+Defined in: [http-signatures/src/index.ts:975](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L975)
 
 Sets one member of a structured-field Dictionary header (e.g. `Signature`, `Signature-Input`)
 to `label=value`, replacing any existing member with that label and preserving the rest.
