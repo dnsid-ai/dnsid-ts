@@ -134,9 +134,15 @@ export class LocalKeyProvider implements KeyProvider {
     return new Uint8Array(sig);
   }
 
-  async generateKey(): Promise<string> {
+  async validateKeyGeneration(algorithm: string): Promise<void> {
+    if (algorithm !== 'EdDSA' && algorithm !== 'ES256') throw new ArgumentError(`unsupported local key algorithm: ${algorithm}`);
+  }
+
+  async generateKey(algorithm?: string): Promise<string> {
     return this.mutate(async next => {
-      const key = await generateStoredKey(localKeyAlgorithm(next.active));
+      const selected = algorithm ?? localKeyAlgorithm(next.active);
+      await this.validateKeyGeneration(selected);
+      const key = await generateStoredKey(selected as LocalKeyAlgorithm);
       next.pending.push(key);
       return key.kid;
     });
