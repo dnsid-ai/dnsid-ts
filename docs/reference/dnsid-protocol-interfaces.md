@@ -2167,6 +2167,32 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 
 `Promise`\<`Date`\>
 
+<a id="preloadlifecyclehistory"></a>
+
+##### preloadLifecycleHistory()?
+
+```ts
+optional preloadLifecycleHistory(domain, entityKey): Promise<void>;
+```
+
+Defined in: [packages/protocol/src/log.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L72)
+
+Optional verified-history preload using the authenticated entity key. Binding must reuse it.
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### entityKey
+
+[`DnsIdJWK`](#dnsidjwk)
+
+###### Returns
+
+`Promise`\<`void`\>
+
 <a id="readevent-1"></a>
 
 ##### readEvent()
@@ -2175,7 +2201,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L92)
+Defined in: [packages/protocol/src/log.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L95)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -2198,7 +2224,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L102)
+Defined in: [packages/protocol/src/log.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L105)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -2233,7 +2259,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L72)
+Defined in: [packages/protocol/src/log.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L75)
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -2267,7 +2293,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L86)
+Defined in: [packages/protocol/src/log.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L89)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -2299,7 +2325,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L79)
+Defined in: [packages/protocol/src/log.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L82)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 

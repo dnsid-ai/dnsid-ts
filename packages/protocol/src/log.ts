@@ -1,4 +1,4 @@
-import type { AgentStatusState, LogRef } from './types.ts';
+import type { AgentStatusState, DnsIdJWK, LogRef } from './types.ts';
 import type { LogEvent } from './log-events.ts';
 
 export type LogSignerRole = 'Entity' | 'Operational' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational';
@@ -67,6 +67,9 @@ export interface LogReader {
    * (ISSUANCE or KEY_ROTATION event). Used for ka validation.
    */
   keyTimestamp(domain: string, keyThumbprint: string): Promise<Date>;
+
+  /** Optional verified-history preload using the authenticated entity key. Binding must reuse it. */
+  preloadLifecycleHistory?(domain: string, entityKey: DnsIdJWK): Promise<void>;
 
   /** Verifies draft-01 bilateral ISSUANCE binding for the current TXT record. */
   verifyBilateralBinding(record: unknown, entityKey: unknown, operationalKey: unknown): Promise<{

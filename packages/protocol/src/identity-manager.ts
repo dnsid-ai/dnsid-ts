@@ -922,94 +922,107 @@ export class IdentityManager implements IdentityResolver {
     signingKey: DnsIdJWK,
     signal: AbortSignal,
   ): Promise<IdentityEvidence> {
-    let jwks = recordSigningJwks;
-    let tlsCert = recordSigningTlsCert;
-    if (record.runtimeKeyURI() !== record.signatureVerificationKeyURI()) {
-      try {
-        const result = await this.fetchProtocolJson(record.runtimeKeyURI(), {
-          signal,
-          allowedHost: record.runtimeKeyAllowedHost(),
-          maxResponseBytes: JWKS_MAX_RESPONSE_BYTES,
-        });
-        const jwksData = result.data as { keys?: unknown[] };
-        if (!Array.isArray(jwksData?.keys)) {
-          throw new VerificationError('runtime JWKS response missing keys array', { code: VerificationCode.RecordInvalid });
-        }
-        jwks = new JWKS(jwksData.keys as DnsIdJWK[]);
-        tlsCert = result.tlsCert;
-        jwks.validateOperational();
-      } catch (e) {
-        if (e instanceof VerificationError) throw e;
-        if (e instanceof ValidationError) {
-          throw new VerificationError(`runtime JWKS validation failed: ${e.message}`, {
-            code: VerificationCode.RecordInvalid,
-            cause: e,
-          });
-        }
-        throw new VerificationError(`runtime JWKS fetch failed: ${(e as Error).message}`, {
-          code: VerificationCode.TLSError, transient: true,
-        });
-      }
-    }
-
-    // No key published in ek may share an RFC 7638 thumbprint with a ku key.
-    const thumbprintOf = async (key: DnsIdJWK, set: string): Promise<string> => {
-      try {
-        return await jwkThumbprint(key);
-      } catch (e) {
-        throw new VerificationError(`invalid key in ${set} JWK Set: ${(e as Error).message}`, {
-          code: VerificationCode.RecordInvalid, cause: e,
-        });
-      }
-    };
-    const ekThumbprints = new Set(await Promise.all(recordSigningJwks.keys.map(k => thumbprintOf(k, 'ek'))));
-    for (const key of jwks.keys) {
-      if (ekThumbprints.has(await thumbprintOf(key, 'ku'))) {
-        throw new VerificationError('ek and ku keys must be distinct', { code: VerificationCode.RecordInvalid });
-      }
-    }
-
-    let logReader;
+    const sibling = new AbortController();
+    const workSignal = AbortSignal.any([signal, sibling.signal]);
+    let logReader: LogReader;
     try {
       logReader = this.logRegistry
-        ? this.logRegistry.newReader(record.lr, { signal })
+        ? this.logRegistry.newReader(record.lr, { signal: workSignal })
         : new NoopLogReader(record.lr.split(':')[0] ?? '');
     } catch (e) {
       throw new VerificationError(`malformed lr in _dnsid record: ${(e as Error).message}`, {
         code: VerificationCode.RecordInvalid,
       });
     }
-
-    // Self-accounted identities have a structural agent-FQDN/gi relationship.
-    // Delegated cross-domain identities do not, so verified bilateral ISSUANCE
-    // evidence is the only acceptable governance relationship and must fail
-    // closed when no implementation for the advertised log method is present.
-    if (!record.hasStructuralGovernanceRelationship() && logReader instanceof NoopLogReader) {
-      throw new VerificationError(
-        'delegated governance relationship requires verified ISSUANCE evidence',
-        { code: VerificationCode.LogError, transient: false },
-      );
-    }
-
-    const operationalKey = jwks.currentOperationalSigningKey();
-    const signingKeyThumbprint = await jwkThumbprint(signingKey);
-    const operationalThumbprint = await jwkThumbprint(operationalKey);
-    if (signingKeyThumbprint === operationalThumbprint) {
-      throw new VerificationError('ek and ku keys must be distinct', { code: VerificationCode.RecordInvalid });
-    }
-    const binding = await waitForVerification(() => logReader.verifyBilateralBinding(record, signingKey, operationalKey), signal);
-    await waitForVerification(() => logReader.verifyOperationalContinuity(domain, binding.initialOperationalThumbprint, operationalThumbprint), signal);
-
-    let keyBoundAt = new Date(0);
-    if (record.ka) {
-      keyBoundAt = await waitForVerification(() => logReader.keyTimestamp(domain, operationalThumbprint), signal);
-      if (Date.now() - keyBoundAt.getTime() > parseKaDuration(record.ka)) {
-        throw new VerificationError(`signing key exceeds maximum key age ${record.ka}`, {
-          code: VerificationCode.KeyAgeExceeded,
-        });
+    // Attach handlers immediately: a preload can fail while ku is still pending.
+    const preload = Promise.allSettled([logReader.preloadLifecycleHistory?.(domain, signingKey).catch(e => { sibling.abort(); throw e; })]);
+    let jwks = recordSigningJwks;
+    let tlsCert = recordSigningTlsCert;
+    try {
+      if (record.runtimeKeyURI() !== record.signatureVerificationKeyURI()) {
+        try {
+          const result = await this.fetchProtocolJson(record.runtimeKeyURI(), {
+            signal: workSignal,
+            allowedHost: record.runtimeKeyAllowedHost(),
+            maxResponseBytes: JWKS_MAX_RESPONSE_BYTES,
+          });
+          const jwksData = result.data as { keys?: unknown[] };
+          if (!Array.isArray(jwksData?.keys)) {
+            throw new VerificationError('runtime JWKS response missing keys array', { code: VerificationCode.RecordInvalid });
+          }
+          jwks = new JWKS(jwksData.keys as DnsIdJWK[]);
+          tlsCert = result.tlsCert;
+          jwks.validateOperational();
+        } catch (e) {
+          if (e instanceof VerificationError) throw e;
+          if (e instanceof ValidationError) {
+            throw new VerificationError(`runtime JWKS validation failed: ${e.message}`, {
+              code: VerificationCode.RecordInvalid,
+              cause: e,
+            });
+          }
+          throw new VerificationError(`runtime JWKS fetch failed: ${(e as Error).message}`, {
+            code: VerificationCode.TLSError, transient: true,
+          });
+        }
       }
+
+      // No key published in ek may share an RFC 7638 thumbprint with a ku key.
+      const thumbprintOf = async (key: DnsIdJWK, set: string): Promise<string> => {
+        try {
+          return await jwkThumbprint(key);
+        } catch (e) {
+          throw new VerificationError(`invalid key in ${set} JWK Set: ${(e as Error).message}`, {
+            code: VerificationCode.RecordInvalid, cause: e,
+          });
+        }
+      };
+      const ekThumbprints = new Set(await Promise.all(recordSigningJwks.keys.map(k => thumbprintOf(k, 'ek'))));
+      for (const key of jwks.keys) {
+        if (ekThumbprints.has(await thumbprintOf(key, 'ku'))) {
+          throw new VerificationError('ek and ku keys must be distinct', { code: VerificationCode.RecordInvalid });
+        }
+      }
+
+      const [history] = await preload;
+      if (history?.status === 'rejected') throw history.reason;
+
+      // Self-accounted identities have a structural agent-FQDN/gi relationship.
+      // Delegated cross-domain identities do not, so verified bilateral ISSUANCE
+      // evidence is the only acceptable governance relationship and must fail
+      // closed when no implementation for the advertised log method is present.
+      if (!record.hasStructuralGovernanceRelationship() && logReader instanceof NoopLogReader) {
+        throw new VerificationError(
+          'delegated governance relationship requires verified ISSUANCE evidence',
+          { code: VerificationCode.LogError, transient: false },
+        );
+      }
+
+      const operationalKey = jwks.currentOperationalSigningKey();
+      const signingKeyThumbprint = await jwkThumbprint(signingKey);
+      const operationalThumbprint = await jwkThumbprint(operationalKey);
+      if (signingKeyThumbprint === operationalThumbprint) {
+        throw new VerificationError('ek and ku keys must be distinct', { code: VerificationCode.RecordInvalid });
+      }
+      const binding = await waitForVerification(() => logReader.verifyBilateralBinding(record, signingKey, operationalKey), workSignal);
+      await waitForVerification(() => logReader.verifyOperationalContinuity(domain, binding.initialOperationalThumbprint, operationalThumbprint), workSignal);
+
+      let keyBoundAt = new Date(0);
+      if (record.ka) {
+        keyBoundAt = await waitForVerification(() => logReader.keyTimestamp(domain, operationalThumbprint), workSignal);
+        if (Date.now() - keyBoundAt.getTime() > parseKaDuration(record.ka)) {
+          throw new VerificationError(`signing key exceeds maximum key age ${record.ka}`, {
+            code: VerificationCode.KeyAgeExceeded,
+          });
+        }
+      }
+      return { jwks, tlsCert, signingKeyThumbprint, logReader, keyBoundAt };
+    } catch (e) {
+      sibling.abort();
+      const [history] = await preload;
+      if (isCancellation(e) && history?.status === 'rejected' && !isCancellation(history.reason)) throw history.reason;
+      throw e;
     }
-    return { jwks, tlsCert, signingKeyThumbprint, logReader, keyBoundAt };
   }
 
   /** Post-sg status branch: fetch su and require ACTIVE. */
