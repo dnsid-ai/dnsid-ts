@@ -77,7 +77,7 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 | `@dnsid-ai/oidc` | DNSid OIDC federation profile helpers. |
 | `@dnsid-ai/jose` | DNSid JOSE JWT/JWS profile helpers. |
 | `@dnsid-ai/http-signatures` | DNSid RFC 9421 HTTP Message Signatures profile helpers. |
-| `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth profile: signed bot requests + key directory. |
+| `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth request signing/verification and signed key directories. |
 | `@dnsid-ai/registry` | Registry client and TXT publishing helpers. |
 | `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
 | `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |

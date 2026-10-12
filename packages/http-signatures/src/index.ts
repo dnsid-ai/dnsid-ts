@@ -842,6 +842,18 @@ function splitDictionary(headerValue: string): string[] {
   return parts;
 }
 
+/** Parses a bounded Structured Field dictionary without silently erasing duplicate members. */
+export function parseDictionaryField(headerValue: string): Dictionary {
+  assertHeaderBound(headerValue);
+  try {
+    const dictionary = parseStructuredDictionary(headerValue);
+    if (dictionary.size !== splitDictionary(headerValue).length) throw new Error('duplicate dictionary member');
+    return dictionary;
+  } catch (cause) {
+    throw new VerificationError('malformed structured field dictionary', { code: VerificationCode.RecordInvalid, cause });
+  }
+}
+
 /**
  * Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
  * signature params, preserving component and parameter order for canonical
@@ -922,8 +934,9 @@ function assertHeaderBound(value: string): void {
   if (value.length > 16 * 1024) throw new VerificationError('signature header exceeds 16 KiB', { code: VerificationCode.RecordInvalid });
 }
 
-async function readBoundedBody(request: Request, signal: AbortSignal): Promise<ArrayBuffer> {
-  const reader = request.clone().body!.getReader();
+/** Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses. */
+export async function readBoundedBody(request: Request | Response, signal: AbortSignal, maxBytes = 1024 * 1024): Promise<ArrayBuffer> {
+  const reader = (request instanceof Request ? request.clone() : request).body!.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   try {
@@ -931,10 +944,13 @@ async function readBoundedBody(request: Request, signal: AbortSignal): Promise<A
       const { done, value } = await waitForVerification(() => reader.read(), signal);
       if (done) break;
       size += value.length;
-      if (size > 1024 * 1024) throw new VerificationError('HTTP signature body exceeds 1 MiB', { code: VerificationCode.RecordInvalid });
+      if (size > maxBytes) throw new VerificationError('HTTP signature body exceeds size limit', { code: VerificationCode.RecordInvalid });
       chunks.push(value);
     }
-  } finally { void reader.cancel().catch(() => {}); }
+  } finally {
+    void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
   const bytes = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
@@ -1120,10 +1136,11 @@ function validateHttpSignaturesConfig(config: HttpSignaturesProfileConfig): void
   }
 }
 
-function parseSha256ContentDigest(headerValue: string): Uint8Array {
+/** Parses the required RFC 9530 SHA-256 digest. */
+export function parseSha256ContentDigest(headerValue: string): Uint8Array {
   let dictionary: Dictionary;
   try {
-    dictionary = parseStructuredDictionary(headerValue);
+    dictionary = parseDictionaryField(headerValue);
   } catch {
     throw new VerificationError('malformed Content-Digest header', { code: VerificationCode.SignatureInvalid });
   }
