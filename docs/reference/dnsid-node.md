@@ -837,7 +837,7 @@ function createNodeIdentityManagerFromDnsid(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:462](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L462)
+Defined in: [packages/sdk/src/config-loading.ts:479](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L479)
 
 #### Parameters
 
@@ -871,7 +871,7 @@ function createNodeIdentityManagerFromEnvironment(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:458](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L458)
+Defined in: [packages/sdk/src/config-loading.ts:475](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L475)
 
 #### Parameters
 
@@ -905,7 +905,7 @@ function createNodeIdentityManagerFromFile(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:466](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L466)
+Defined in: [packages/sdk/src/config-loading.ts:483](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L483)
 
 #### Parameters
 
@@ -935,7 +935,7 @@ Defined in: [packages/sdk/src/config-loading.ts:466](https://github.com/dnsid-ai
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/node-identity-manager.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L53)
+Defined in: [packages/sdk/src/node-identity-manager.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L58)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 
@@ -963,7 +963,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:471](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L471)
+Defined in: [packages/sdk/src/config-loading.ts:488](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L488)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 
