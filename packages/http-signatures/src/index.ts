@@ -621,6 +621,10 @@ export function hasComponentNamed(components: ComponentIdentifier[], name: strin
  * @throws ArgumentError if the component is not valid.
  */
 export function validateComponentIdentifier(component: ComponentIdentifier): void {
+  if (typeof component !== 'string' && (!component || typeof component !== 'object' || Array.isArray(component) || typeof component.name !== 'string' ||
+    (component.params !== undefined && (!component.params || typeof component.params !== 'object' || Array.isArray(component.params))))) {
+    throw new ArgumentError('invalid signature component identifier');
+  }
   const name = componentName(component);
   if (!KNOWN_DERIVED_COMPONENTS.has(name) && !isLowercaseHttpFieldName(name)) {
     throw new ArgumentError(`unknown signature component: ${name}`);
@@ -848,6 +852,11 @@ export function parseDictionaryField(headerValue: string): Dictionary {
   try {
     const dictionary = parseStructuredDictionary(headerValue);
     if (dictionary.size !== splitDictionary(headerValue).length) throw new Error('duplicate dictionary member');
+    for (const member of dictionary.values()) {
+      const values = [...member[1].values(), ...(isInnerList(member)
+        ? member[0].flatMap(([value, params]) => [value, ...params.values()]) : [member[0]])];
+      if (values.some(value => value instanceof Date || value instanceof DisplayString)) throw new Error('RFC 9651-only values are unsupported');
+    }
     return dictionary;
   } catch (cause) {
     throw new VerificationError('malformed structured field dictionary', { code: VerificationCode.RecordInvalid, cause });

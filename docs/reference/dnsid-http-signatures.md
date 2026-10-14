@@ -809,7 +809,7 @@ RFC 9421 derived component names accepted by this package (`@query-param` additi
 function buildSignatureInput(msg, params): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:747](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L747)
+Defined in: [http-signatures/src/index.ts:751](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L751)
 
 Builds the RFC 9421 signature base for a message: one `"component": value` line per
 covered component, terminated by the canonical `"@signature-params"` line.
@@ -1062,7 +1062,7 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseDictionaryField(headerValue): Dictionary;
 ```
 
-Defined in: [http-signatures/src/index.ts:846](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L846)
+Defined in: [http-signatures/src/index.ts:850](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L850)
 
 Parses a bounded Structured Field dictionary without silently erasing duplicate members.
 
@@ -1134,7 +1134,7 @@ ArgumentError if the key ID is malformed.
 function parseSha256ContentDigest(headerValue): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:1140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1140)
+Defined in: [http-signatures/src/index.ts:1149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1149)
 
 Parses the required RFC 9530 SHA-256 digest.
 
@@ -1158,7 +1158,7 @@ Parses the required RFC 9530 SHA-256 digest.
 function parseSignature(headerValue): Map<string, Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:910](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L910)
+Defined in: [http-signatures/src/index.ts:919](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L919)
 
 Parses a `Signature` header (RFC 8941 Dictionary of byte sequences) into raw signature
 bytes keyed by label.
@@ -1188,7 +1188,7 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 function parseSignatureInput(headerValue): Map<string, SignatureParams>;
 ```
 
-Defined in: [http-signatures/src/index.ts:865](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L865)
+Defined in: [http-signatures/src/index.ts:874](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L874)
 
 Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
 signature params, preserving component and parameter order for canonical
@@ -1223,7 +1223,7 @@ function readBoundedBody(
 ): Promise<ArrayBuffer>;
 ```
 
-Defined in: [http-signatures/src/index.ts:938](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L938)
+Defined in: [http-signatures/src/index.ts:947](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L947)
 
 Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses.
 
@@ -1283,7 +1283,7 @@ Checks whether two component identifiers are equivalent: same name and identical
 function serializeComponentIdentifier(component): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:724](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L724)
+Defined in: [http-signatures/src/index.ts:728](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L728)
 
 Serializes a component identifier as it appears in the signature base and `Signature-Input` header (quoted name plus parameters).
 
@@ -1307,7 +1307,7 @@ Serializes a component identifier as it appears in the signature base and `Signa
 function serializeStructuredFieldValue(value): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:719](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L719)
+Defined in: [http-signatures/src/index.ts:723](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L723)
 
 Serializes a bare value as an RFC 8941 structured field Item (bytes become `:base64:` byte sequences).
 
@@ -1340,7 +1340,7 @@ function setDictionaryMember(
 ): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:975](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L975)
+Defined in: [http-signatures/src/index.ts:984](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L984)
 
 Sets one member of a structured-field Dictionary header (e.g. `Signature`, `Signature-Input`)
 to `label=value`, replacing any existing member with that label and preserving the rest.
@@ -1381,7 +1381,7 @@ function signHttpMessage<T>(
 ): Promise<T>;
 ```
 
-Defined in: [http-signatures/src/index.ts:772](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L772)
+Defined in: [http-signatures/src/index.ts:776](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L776)
 
 Signs an HTTP message per RFC 9421 with the key provider's current operational key.
 

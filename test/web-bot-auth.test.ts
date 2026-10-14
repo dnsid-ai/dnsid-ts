@@ -11,8 +11,8 @@ import {
 import { parseSignatureInput, signHttpMessage } from '@dnsid-ai/http-signatures';
 import type { SignatureParams } from '@dnsid-ai/http-signatures';
 import type { WebBotAuthVerificationOptions } from '@dnsid-ai/web-bot-auth';
-import { JWKS, VerificationError, VerificationCode } from '@dnsid-ai/protocol';
-import type { VerifiedDomain } from '@dnsid-ai/protocol';
+import { JWKS, VerificationError, VerificationCode, VerifiedDomain, DnsIdTxtRecord, DNSSECState, NoopLogReader, IdentityManager } from '@dnsid-ai/protocol';
+import { currentProfileFixture } from './helpers/current-profile.ts';
 import { ArgumentError, jwkThumbprint, toArrayBuffer } from '@dnsid-ai/protocol';
 import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
@@ -47,7 +47,13 @@ describe('WebBotAuthProfile verification', () => {
   async function setup(options: WebBotAuthVerificationOptions = policy) {
     const signer = new WebBotAuthProfile({ domain, keyProvider: makeKeyProvider() });
     const req = await signer.createWebBotAuthSignedRequest(new Request('https://target.example/path', { method: 'POST', body: 'hello', headers: { Authorization: 'Bearer existing' } }));
-    const evidence = { domain, jwks: new JWKS([publicJwk]), expiry: () => new Date(Date.now() + 60_000) } as VerifiedDomain;
+    const evidence = new VerifiedDomain({
+      domain, jwks: new JWKS([publicJwk]), record: new DnsIdTxtRecord(), signingKey: publicJwk,
+      signingKeyThumbprint: await jwkThumbprint(publicJwk), tlsCert: { san: [domain], notAfter: new Date(Date.now() + 60_000) },
+      recordSigningTlsCert: { san: [domain], notAfter: new Date(Date.now() + 60_000) },
+      registryStatus: { state: 'ACTIVE', lastTransitionAt: new Date() }, verifiedAt: new Date(), dnsTTL: 60,
+      keyBoundAt: new Date(0), lastStatusCheckAt: new Date(), dnssecState: DNSSECState.UNKNOWN, logReader: new NoopLogReader('test'),
+    });
     const resolver = { verifyDomain: vi.fn().mockResolvedValue(evidence) };
     const fetch = vi.fn().mockImplementation((request: Request) => signer.serveHttpMessageSignaturesDirectory(request));
     const verifier = new WebBotAuthProfile({ identityResolver: resolver, discoveryFetch: fetch });
@@ -59,6 +65,21 @@ describe('WebBotAuthProfile verification', () => {
     delete params.parameters;
     change(params);
     return signHttpMessage(req, params, makeKeyProvider());
+  }
+
+  function rewriteDirectory(s: Awaited<ReturnType<typeof setup>>, change: (document: { keys: DnsIdJWK[] }, headers: Headers, params: SignatureParams) => void) {
+    s.fetch.mockImplementation(async (request: Request) => {
+      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+      const document = await response.json();
+      const headers = new Headers(response.headers);
+      const params = parseSignatureInput(headers.get('Signature-Input')!).get('sig1')!;
+      delete params.parameters;
+      change(document, headers, params);
+      const body = JSON.stringify(document);
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)));
+      headers.set('Content-Digest', `sha-256=:${btoa(String.fromCharCode(...digest))}:`);
+      return signHttpMessage({ message: new Response(body, { headers }), request }, params, makeKeyProvider());
+    });
   }
 
   it('verifies request/directory and forwards the current peer and cancellation', async () => {
@@ -203,7 +224,7 @@ describe('WebBotAuthProfile verification', () => {
     s.resolver.verifyDomain.mockRejectedValueOnce(new Error('denied'));
     await expect(s.verify()).rejects.toThrow('denied');
     s.resolver.verifyDomain.mockResolvedValue({ ...s.evidence, jwks: new JWKS([]) });
-    await expect(s.verify()).rejects.toThrow('current DNSid ku');
+    await expect(s.verify()).rejects.toThrow('operational');
     expect(s.resolver.verifyDomain).toHaveBeenCalledTimes(3);
   });
 
@@ -231,7 +252,7 @@ describe('WebBotAuthProfile verification', () => {
   });
 
   it('rechecks evidence freshness after discovery and nonce storage', async () => {
-    const s = await setup({ ...policy, consumeNonce: async () => { s.evidence.expiry = () => new Date(0); return true; } });
+    const s = await setup({ ...policy, consumeNonce: async () => { s.evidence.tlsCert.notAfter = new Date(0); return true; } });
     await expect(s.verify()).rejects.toThrow('evidence expired');
   });
 
@@ -313,13 +334,235 @@ describe('WebBotAuthProfile verification', () => {
   it('rejects directory evidence that expires while DNSid verification is running', async () => {
     const s = await setup();
     const expiry = new Date(Date.now() + 60_000);
-    s.evidence.expiry = () => expiry;
+    s.evidence.tlsCert.notAfter = expiry;
     s.resolver.verifyDomain.mockImplementation(async () => {
       vi.spyOn(Date, 'now').mockReturnValue(expiry.getTime() + 600_000);
       return s.evidence;
     });
     try { await expect(s.verify()).rejects.toThrow('currently valid'); }
     finally { vi.restoreAllMocks(); }
+  });
+
+  it('rejects an auxiliary non-signing ku key even when it signs valid WBA evidence', async () => {
+    const s = await setup();
+    const pair = await generateKeyPair('EdDSA');
+    const raw = await exportJWK(pair.publicKey);
+    const current = { ...raw, kty: raw.kty!, kid: 'current', alg: 'EdDSA', use: 'sig' } as DnsIdJWK;
+    const fixture = await currentProfileFixture(domain, current);
+    const resolver = new IdentityManager({}, {
+      dnsResolver: fixture.dnsResolver, logRegistry: fixture.logRegistry,
+      fetchJson: async (url, options) => {
+        const result = await fixture.fetchJson(url, options);
+        if (url === fixture.record.ku) result.data = { keys: [current, { ...publicJwk, use: 'enc' }] };
+        return result;
+      },
+    });
+    const verifier = new WebBotAuthProfile({ identityResolver: resolver, discoveryFetch: s.fetch });
+    await expect(verifier.verifyWebBotAuthSignedRequest(s.req, policy)).rejects.toThrow('current DNSid operational');
+  });
+
+  it.each(['missing identity', 'acceptance denial', 'missing mtls peer'])('rejects %s with the real configured identity manager', async kind => {
+    const s = await setup();
+    const fixture = await currentProfileFixture(domain, publicJwk, kind === 'missing mtls peer' ? 'mtls' : undefined);
+    const resolver = new IdentityManager({ verification: { trustedEntities: kind === 'acceptance denial' ? [] : [{ governanceId: 'example.com' }] } }, {
+      dnsResolver: kind === 'missing identity' ? { fetchTXT: async () => [[], DNSSECState.UNKNOWN] } : fixture.dnsResolver,
+      logRegistry: fixture.logRegistry, fetchJson: fixture.fetchJson,
+    });
+    const verifier = new WebBotAuthProfile({ identityResolver: resolver, discoveryFetch: s.fetch });
+    await expect(verifier.verifyWebBotAuthSignedRequest(s.req, policy)).rejects.toBeInstanceOf(VerificationError);
+    if (kind === 'missing mtls peer') await expect(verifier.verifyWebBotAuthSignedRequest(s.req, {
+      ...policy, peerCert: { san: [domain], notAfter: new Date(Date.now() + 60_000) },
+    })).resolves.toBeInstanceOf(VerifiedDomain);
+  });
+
+  it('uses fresh zero-TTL evidence only within each acquiring invocation', async () => {
+    const s = await setup();
+    const fixture = await currentProfileFixture(domain, publicJwk);
+    const fetchTXT = vi.fn().mockImplementation(async () => {
+      const [records, state] = await fixture.dnsResolver.fetchTXT('');
+      return [records.map(record => ({ ...record, ttl: 0 })), state];
+    });
+    const resolver = new IdentityManager({}, { dnsResolver: { fetchTXT }, logRegistry: fixture.logRegistry, fetchJson: fixture.fetchJson });
+    const verifier = new WebBotAuthProfile({ identityResolver: resolver, discoveryFetch: s.fetch });
+    for (let i = 0; i < 2; i++) {
+      const evidence = await verifier.verifyWebBotAuthSignedRequest(s.req, policy);
+      expect(evidence.dnsTTL).toBe(0);
+      expect(evidence.expiry().getTime()).toBeLessThanOrEqual(Date.now());
+    }
+    expect(fetchTXT).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['runtime certificate', 'entity certificate', 'key age', 'positive DNS TTL'])('rejects expired %s after replay storage, including zero-TTL evidence', async kind => {
+    const s = await setup({ ...policy, consumeNonce: async () => {
+      if (kind === 'runtime certificate') s.evidence.tlsCert.notAfter = new Date(0);
+      if (kind === 'entity certificate') s.evidence.recordSigningTlsCert.notAfter = new Date(0);
+      if (kind === 'key age') s.evidence.record.ka = '24h';
+      if (kind === 'positive DNS TTL') s.evidence.dnsExpiresAt.setTime(0);
+      return true;
+    } });
+    if (kind !== 'positive DNS TTL') Object.defineProperty(s.evidence, 'dnsTTL', { value: 0 });
+    await expect(s.verify()).rejects.toThrow('evidence expired');
+  });
+
+  it('requires exact application component coverage before discovery', async () => {
+    const s = await setup({ ...policy, requiredComponents: ['@method', '@path', { name: '@query-param', params: { name: 'operation' } }] });
+    await expect(s.verify()).rejects.toThrow('coverage');
+    expect(s.fetch).not.toHaveBeenCalled();
+    const req = await s.signer.createWebBotAuthSignedRequest(new Request('https://target.example/path?operation=create'), {
+      additionalComponents: ['@method', '@path', { name: '@query-param', params: { name: 'operation' } }],
+    });
+    await expect(s.verify(req)).resolves.toBe(s.evidence);
+    await expect(s.verifier.verifyWebBotAuthSignedRequest(req, { ...policy, requiredComponents: [{ name: '@query-param', params: { name: 'other' } }] })).rejects.toThrow('coverage');
+  });
+
+  it.each([null, 'invalid', [null], [42], [{}], [{ name: '@unknown' }], [{ name: '@method', params: { req: false } }], [{ name: '@method', params: [] }]].map(requiredComponents => ({ requiredComponents })))('rejects malformed coverage policy $requiredComponents before discovery', async ({ requiredComponents }) => {
+    const s = await setup({ ...policy, requiredComponents } as WebBotAuthVerificationOptions);
+    await expect(s.verify()).rejects.toThrow(ArgumentError);
+    expect(s.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 'verify', [], ['sign'], ['encrypt'], ['verify', 'verify'], ['verify', 1], ['verify', 'encrypt']].map(operations => ({ operations })))('rejects directory key_ops $operations', async ({ operations }) => {
+    const s = await setup();
+    rewriteDirectory(s, document => { document.keys[0]!.key_ops = operations; });
+    await expect(s.verify()).rejects.toThrow('key_ops');
+  });
+
+  it.each([['verify'], ['sign', 'verify']].map(operations => ({ operations })))('accepts directory key_ops $operations', async ({ operations }) => {
+    const s = await setup();
+    rewriteDirectory(s, document => { document.keys[0]!.key_ops = operations; });
+    await expect(s.verify()).resolves.toBe(s.evidence);
+  });
+
+  it('accepts valid directory signatures covering the actual response status', async () => {
+    const s = await setup();
+    rewriteDirectory(s, (_document, _headers, params) => { params.components.push('@status'); });
+    await expect(s.verify()).resolves.toBe(s.evidence);
+    expect(s.fetch.mock.calls[0][0].headers.get('Accept-Encoding')).toBe('identity');
+    expect(s.fetch.mock.calls[0][0].cache).toBe('no-store');
+  });
+
+  it.each(['gzip', 'identity', ''])('rejects any directory Content-Encoding %j without reading the body', async encoding => {
+    const s = await setup();
+    const response = new Response('not a directory', { headers: { 'Content-Encoding': encoding } });
+    const reader = vi.spyOn(response.body!, 'getReader');
+    s.fetch.mockResolvedValue(response);
+    await expect(s.verify()).rejects.toThrow('coded');
+    expect(reader).not.toHaveBeenCalled();
+  });
+
+  it.each(['request', 'directory'])('rejects one valid plus one invalid complete %s candidate', async kind => {
+    const s = await setup();
+    const duplicate = (headers: Headers) => {
+      headers.append('Signature-Input', headers.get('Signature-Input')!.replace(/^sig1=/, 'other='));
+      headers.append('Signature', `other=:${btoa('x'.repeat(64))}:`);
+    };
+    if (kind === 'directory') s.fetch.mockImplementation(async (request: Request) => {
+      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+      const headers = new Headers(response.headers);
+      duplicate(headers);
+      return new Response(response.body, { headers });
+    });
+    const headers = new Headers(s.req.headers);
+    if (kind === 'request') duplicate(headers);
+    await expect(s.verify(new Request(s.req, { headers }))).rejects.toThrow('exactly one');
+  });
+
+  it.each([false, true])('does not restart freshness when cached metadata is present: %s', async metadata => {
+    const s = await setup();
+    const acquiredAt = Date.now();
+    rewriteDirectory(s, (_document, headers) => {
+      headers.set('Cache-Control', 'max-age=60');
+      if (metadata) { headers.set('Date', new Date(acquiredAt).toUTCString()); headers.set('Age', '0'); }
+    });
+    const cached = await s.fetch(new Request(`https://${domain}/.well-known/http-message-signatures-directory`));
+    s.fetch.mockImplementation(async () => cached.clone());
+    await expect(s.verify()).resolves.toBe(s.evidence);
+    const req = await resignRequest(s.req, params => { params.expires = params.created! + 300; });
+    const now = vi.spyOn(Date, 'now').mockReturnValue(acquiredAt + 61_000);
+    try { await expect(s.verify(req)).rejects.toThrow('cache freshness'); }
+    finally { now.mockRestore(); }
+  });
+
+  it.each([503, 408, 429])('classifies HTTP %s directory availability failures as transient', async status => {
+    const s = await setup();
+    s.fetch.mockResolvedValue(new Response(null, { status }));
+    await expect(s.verify()).rejects.toMatchObject({ code: VerificationCode.TLSError, transient: true });
+    expect(s.resolver.verifyDomain).not.toHaveBeenCalled();
+  });
+
+  it.each([['ETIMEDOUT', true], ['ECONNRESET', true], ['CERT_HAS_EXPIRED', false], ['ERR_TLS_CERT_ALTNAME_INVALID', false], ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', false]])('classifies transport %s as transient: %s', async (code, transient) => {
+    const s = await setup();
+    s.fetch.mockRejectedValue(new TypeError('fetch failed', { cause: Object.assign(new Error('transport failure'), { code }) }));
+    await expect(s.verify()).rejects.toMatchObject({ code: VerificationCode.TLSError, transient });
+  });
+
+  it('classifies interrupted directory reads as transient', async () => {
+    const s = await setup();
+    s.fetch.mockImplementation(async (request: Request) => {
+      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+      const body = new ReadableStream({ start(controller) { controller.error(Object.assign(new Error('socket reset'), { code: 'ECONNRESET' })); } });
+      return new Response(body, { headers: response.headers });
+    });
+    await expect(s.verify()).rejects.toMatchObject({ code: VerificationCode.TLSError, transient: true });
+  });
+
+  it.each(['max-age=60, max-age=300', 'max-age="60', 'max-age=invalid'])('rejects ambiguous or malformed cache lifetime %s', async control => {
+    const s = await setup();
+    rewriteDirectory(s, (_document, headers) => { headers.set('Cache-Control', control); });
+    await expect(s.verify()).rejects.toThrow('cache lifetime');
+  });
+
+  it('preserves permanent unsafe-destination failures nested by fetch', async () => {
+    const s = await setup();
+    const cause = new VerificationError('unsafe destination', { code: VerificationCode.TLSError });
+    s.fetch.mockRejectedValue(new TypeError('fetch failed', { cause }));
+    await expect(s.verify()).rejects.toBe(cause);
+  });
+
+  it('ignores unrelated, incomplete, and other-key directory signatures', async () => {
+    const s = await setup();
+    s.fetch.mockImplementation(async (request: Request) => {
+      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+      const headers = new Headers(response.headers);
+      headers.append('Signature-Input', headers.get('Signature-Input')!.replace(/^sig1=/, 'other=').replace(/keyid="[^"]+"/, `keyid="${'a'.repeat(43)}"`));
+      headers.append('Signature', `other=:${btoa('x'.repeat(64))}:`);
+      return new Response(response.body, { headers });
+    });
+    const headers = new Headers(s.req.headers);
+    headers.append('Signature-Input', headers.get('Signature-Input')!.replace(/^sig1=/, 'incomplete='));
+    headers.append('Signature-Input', headers.get('Signature-Input')!.split(',')[0]!.replace(/^sig1=/, 'unrelated=').replace('web-bot-auth', 'other-profile'));
+    headers.append('Signature', `unrelated=:${btoa('x'.repeat(64))}:`);
+    await expect(s.verify(new Request(s.req, { headers }))).resolves.toBe(s.evidence);
+  });
+
+  it.each([';extension=@1', ';extension=%"display"'])('rejects RFC 9651-only Signature-Agent parameters %s', async extension => {
+    const s = await setup();
+    const headers = new Headers(s.req.headers);
+    headers.set('Signature-Agent', headers.get('Signature-Agent')! + extension);
+    await expect(s.verify(new Request(s.req, { headers }))).rejects.toThrow('structured field');
+    expect(s.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([NaN, Infinity, -Infinity, true, false, null, 0, -1, 301, 1.5])('rejects invalid signature durations %j', async value => {
+    const s = await setup();
+    for (const field of ['signatureTTL', 'directorySignatureTTL']) {
+      expect(() => new WebBotAuthProfile({ webBotAuth: { [field]: value } })).toThrow(ArgumentError);
+    }
+    await expect(s.signer.createWebBotAuthSignedRequest(s.req, { ttl: value } as never)).rejects.toThrow(ArgumentError);
+  });
+
+  it.each([NaN, Infinity, -Infinity, true, false, null, -1])('rejects invalid clock skew %j before network work', value => {
+    expect(() => new WebBotAuthProfile({ webBotAuth: { clockSkew: value } as never })).toThrow(ArgumentError);
+  });
+
+  it('honors explicit zero clock skew', async () => {
+    const s = await setup();
+    const req = await resignRequest(s.req, params => { params.created! += 1; params.expires! += 1; });
+    const now = vi.spyOn(Date, 'now').mockReturnValue(parseSignatureInput(s.req.headers.get('Signature-Input')!).get('sig1')!.created! * 1000);
+    const verifier = new WebBotAuthProfile({ identityResolver: s.resolver, discoveryFetch: s.fetch, webBotAuth: { clockSkew: 0 } });
+    try { await expect(verifier.verifyWebBotAuthSignedRequest(req, policy)).rejects.toThrow('currently valid'); }
+    finally { now.mockRestore(); }
+    expect(s.fetch).not.toHaveBeenCalled();
   });
 
   it('requires verifier dependencies and rejects signing-only operations without a local key', async () => {

@@ -18,7 +18,7 @@ describe('WBA public-address transport', () => {
     } as KeyProvider;
     const signer = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider });
     const req = await signer.createWebBotAuthSignedRequest(new Request('https://target.example/'));
-    const safeFetch = createSsrfSafeFetch();
+    const safeFetch = createSsrfSafeFetch({}, { decompress: false });
     const resolver = { verifyDomain: vi.fn() };
     const verifier = new WebBotAuthProfile({ identityResolver: resolver, discoveryFetch: request => safeFetch(request) });
     await expect(verifier.verifyWebBotAuthSignedRequest(req, { signerDomain: 'bot.example.com' })).rejects.toThrow();

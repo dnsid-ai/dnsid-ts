@@ -87,6 +87,17 @@ export class VerifiedDomain {
     return await this.logReader.verifyNonRevocation(this.domain, at);
   }
 
+  /** Checks evidence freshness within the operation that acquired it. Zero-TTL DNS evidence cannot be reused. */
+  assertFresh(): void {
+    const now = Date.now();
+    let code: VerificationCode | undefined;
+    if ([this.tlsCert, this.recordSigningTlsCert].some(cert =>
+      !Number.isFinite(cert.notAfter.getTime()) || now >= cert.notAfter.getTime())) code = VerificationCode.TLSError;
+    else if (this.record.ka && now >= this.keyBoundAt.getTime() + parseKaDuration(this.record.ka)) code = VerificationCode.KeyAgeExceeded;
+    else if (this.dnsTTL > 0 && now >= this.dnsExpiresAt.getTime()) code = VerificationCode.DNSResolution;
+    if (code) throw new VerificationError('identity evidence expired during verification', { code, transient: code === VerificationCode.DNSResolution });
+  }
+
   /**
    * Returns the earliest time at which this verified result should be considered stale.
    * Candidates: DNS TTL, TLS cert NotAfter, key age bound (ka).

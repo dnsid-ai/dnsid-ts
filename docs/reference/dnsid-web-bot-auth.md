@@ -50,28 +50,29 @@ Verification-only construction does not need a local identity or signing key:
 ```ts
 import { createSsrfSafeFetch } from '@dnsid-ai/transport'; // Node transport
 
-const safeFetch = createSsrfSafeFetch();
+const safeFetch = createSsrfSafeFetch({}, { decompress: false });
 const verifier = createWebBotAuthProfile({
   identityResolver, // configured DNSid resolver, including entity acceptance
   discoveryFetch: request => safeFetch(request),
 });
 const identity = await verifier.verifyWebBotAuthSignedRequest(request, {
   signerDomain: 'agent.example', // trusted application policy
+  requiredComponents: ['@method', '@target-uri'], // enforce operation binding
   peerCert, // current application peer certificate, required for fl=mtls
   timeoutMs: 30_000,
   signal,
 });
 ```
 
-Install `@dnsid-ai/transport` to use this Node transport. The package stays runtime-neutral: `discoveryFetch` is required and must enforce valid Web PKI, public-address DNS checks and connection pinning on every connection, manual redirects, and cancellation. Ordinary server-side `fetch` is not safe for untrusted discovery. Do not enable private-address exceptions for WBA discovery.
+Install `@dnsid-ai/transport` to use this Node transport. The package stays runtime-neutral: `discoveryFetch` is required and must enforce valid Web PKI, public-address DNS checks and connection pinning on every connection, manual redirects, cancellation, and unmodified response bytes and headers without decompression. Coded directories are rejected. Ordinary server-side `fetch` is not safe for untrusted discovery. Do not enable private-address exceptions for WBA discovery.
 
 Alternatively, explicitly set `allowSignatureAgentDomain: true` to let the signed HTTPS discovery host identify the signer. Cross-host delegation is rejected. Without `Signature-Agent`, supply both `signerDomain` and trusted `discovery: { uri, type }`. The default discovery type is `directory`; `jwks_uri` addresses a direct signed directory endpoint, not an unsigned JWKS.
 
-Every invocation verifies request and directory signatures, content digests, and current DNSid key binding and acceptance. There is no directory-only fallback or internal directory cache. Results authenticate identity but do not grant application permissions. The required coverage is `@authority`, not method or path; use `additionalComponents` when your operation requires those bindings.
+Every invocation verifies request and directory signatures, content digests, and current DNSid key binding and acceptance. There is no directory-only fallback or internal directory cache. Injected caches must preserve original acquisition timing and HTTP age metadata; returning the same response must not restart freshness. Without `Date`, the verifier conservatively bounds freshness from signed creation time. Results authenticate identity but do not grant application permissions. Default required coverage is `@authority`, not method or path. Use signing `additionalComponents` to add bindings and verifier `requiredComponents` to require them, with exact parameter equality. Coverage policy is checked before discovery; malformed policy raises `ArgumentError`.
 
 For one-time requests, supply `consumeNonce(entry, signal)`. It must atomically consume `(signerDomain, keyid, nonce)` and retain the entry until `retainUntil` (`expires + clockSkew`). Return `false` for reuse; store errors reject verification. Without this hook, time-valid requests can be replayed.
 
-The overall timeout defaults to 30 seconds and covers discovery, reads, DNSid verification, and replay storage. Limits are five redirects, 256 KiB directory content, 64 keys, JSON depth 16, 16 KiB signature/discovery/digest headers and URLs, 64 KiB aggregate header characters, and 1 MiB request content. The hosting layer must bound incoming request streams before cloning them; verification preserves the original request body. Signature lifetimes cannot exceed 300 seconds. Evidence freshness is checked again before return.
+The overall timeout defaults to 30 seconds and covers discovery, reads, DNSid verification, and replay storage. Limits are five redirects, 256 KiB directory content, 64 keys, JSON depth 16, 16 KiB signature/discovery/digest headers and URLs, 64 KiB aggregate header characters, and 1 MiB request content. The hosting layer must bound incoming request streams before cloning them; verification preserves the original request body. Signature lifetimes cannot exceed 300 seconds. Evidence freshness is checked again before return, including both certificates and key age. Fresh zero-TTL DNS evidence is valid only within the acquiring invocation. Directory timeouts and temporary HTTP failures are transient; invalid TLS, unsafe destinations, and invalid signatures remain permanent.
 
 ## Options
 
@@ -203,7 +204,7 @@ ArgumentError If the operational key is not Ed25519, the resolved
 serveHttpMessageSignaturesDirectory(req): Promise<Response>;
 ```
 
-Defined in: [web-bot-auth/src/index.ts:220](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L220)
+Defined in: [web-bot-auth/src/index.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L219)
 
 Builds the signed key directory response for
 [HTTP\_MESSAGE\_SIGNATURES\_DIRECTORY\_PATH](#http_message_signatures_directory_path).
@@ -241,6 +242,7 @@ verifyWebBotAuthSignedRequest(req, opts?): Promise<VerifiedDomain>;
 Defined in: [web-bot-auth/src/index.ts:250](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L250)
 
 Verifies request, signed directory, and DNSid ku binding. Does not grant permissions.
+requiredComponents enforces extra application coverage before discovery.
 Without consumeNonce, time-valid requests can be replayed.
 
 ###### Parameters
@@ -536,7 +538,7 @@ Overrides [WebBotAuthConfig.signatureTTL](#signaturettl) for this request (secon
 
 ### WebBotAuthVerificationOptions
 
-Defined in: [web-bot-auth/src/verify.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L12)
+Defined in: [web-bot-auth/src/verify.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L13)
 
 #### Extends
 
@@ -552,7 +554,7 @@ Defined in: [web-bot-auth/src/verify.ts:12](https://github.com/dnsid-ai/dnsid-ts
 optional allowSignatureAgentDomain?: boolean;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L16)
+Defined in: [web-bot-auth/src/verify.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L17)
 
 Explicit permission to use the signed Signature-Agent host as signer identity. Default: false.
 
@@ -564,7 +566,7 @@ Explicit permission to use the signed Signature-Agent host as signer identity. D
 optional consumeNonce?: (entry, signal) => Promise<boolean>;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L24)
+Defined in: [web-bot-auth/src/verify.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L27)
 
 Atomically consume (domain, keyid, nonce), retaining through retainUntil. False rejects reuse;
 errors fail closed. Without this policy, valid requests can be replayed.
@@ -605,7 +607,7 @@ errors fail closed. Without this policy, valid requests can be replayed.
 optional discovery?: object;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L18)
+Defined in: [web-bot-auth/src/verify.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L19)
 
 Trusted endpoint when Signature-Agent is absent. Must belong to signerDomain.
 
@@ -629,9 +631,21 @@ uri: string;
 optional peerCert?: TLSCertificate;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L20)
+Defined in: [web-bot-auth/src/verify.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L23)
 
 Current application peer, never the directory endpoint certificate.
+
+<a id="requiredcomponents"></a>
+
+##### requiredComponents?
+
+```ts
+optional requiredComponents?: ComponentIdentifier[];
+```
+
+Defined in: [web-bot-auth/src/verify.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L21)
+
+Extra request coverage required by application policy, including exact component parameters.
 
 <a id="signal"></a>
 
@@ -655,7 +669,7 @@ Defined in: [protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/
 optional signerDomain?: string;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L14)
+Defined in: [web-bot-auth/src/verify.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L15)
 
 Trusted expected signer. Discovery cannot delegate to another host.
 
@@ -699,10 +713,11 @@ Web Bot Auth key-discovery interpretation for the `Signature-Agent` member.
 type WebBotAuthDiscoveryFetch = (request) => Promise<Response>;
 ```
 
-Defined in: [web-bot-auth/src/verify.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L10)
+Defined in: [web-bot-auth/src/verify.ts:11](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L11)
 
 Trusted transport must validate Web PKI and pin connections to public DNS addresses.
-It must honor manual redirects and cancellation. Do not inject ordinary fetch on a server.
+It must honor manual redirects and cancellation, disable decompression, and preserve received bytes/headers.
+Cached responses must preserve their original HTTP age. Do not inject ordinary fetch on a server.
 
 #### Parameters
 

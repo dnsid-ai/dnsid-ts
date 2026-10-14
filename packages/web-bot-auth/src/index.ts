@@ -165,6 +165,8 @@ export class WebBotAuthProfile {
    *   identifier is invalid.
    */
   async createWebBotAuthSignedRequest(req: Request, opts: WebBotAuthSigningOptions = {}): Promise<Request> {
+    const ttl = opts.ttl === undefined ? this.config.signatureTTL ?? DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS : opts.ttl;
+    validateTtl(ttl, 'webBotAuth.signatureTTL');
     const signingKey = await this.ed25519SigningKey('Web Bot Auth signing requires Ed25519');
     const headers = new Headers(req.headers);
     const components: ComponentIdentifier[] = ['@authority'];
@@ -190,9 +192,6 @@ export class WebBotAuthProfile {
 
     const requestWithHeaders = new Request(req, { headers, body });
     const now = Math.floor(Date.now() / 1000);
-    const ttl = opts.ttl ?? this.config.signatureTTL ?? DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS;
-    validateTtl(ttl, 'webBotAuth.signatureTTL');
-
     return signHttpMessage(requestWithHeaders, {
       label: WEB_BOT_AUTH_SIGNATURE_LABEL,
       components,
@@ -245,6 +244,7 @@ export class WebBotAuthProfile {
   }
 
   /** Verifies request, signed directory, and DNSid ku binding. Does not grant permissions.
+   * requiredComponents enforces extra application coverage before discovery.
    * Without consumeNonce, time-valid requests can be replayed.
    */
   async verifyWebBotAuthSignedRequest(req: Request, opts: WebBotAuthVerificationOptions = {}): Promise<VerifiedDomain> {

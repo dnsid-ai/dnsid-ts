@@ -1,11 +1,12 @@
 import type { IdentityResolver, TLSCertificate, VerificationOptions, VerifiedDomain, DnsIdJWK } from '@dnsid-ai/protocol';
 import { ArgumentError, VerificationError, VerificationCode, normalizeFQDN, jwkThumbprint, fromBase64Url, toBase64Url, parseJsonNoDuplicateMembers, verifyWithKey, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
-import type { SignatureParams, HttpMessage } from '@dnsid-ai/http-signatures';
-import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField } from '@dnsid-ai/http-signatures';
+import type { SignatureParams, HttpMessage, ComponentIdentifier } from '@dnsid-ai/http-signatures';
+import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
 import { Token } from 'structured-headers';
 
 /** Trusted transport must validate Web PKI and pin connections to public DNS addresses.
- * It must honor manual redirects and cancellation. Do not inject ordinary fetch on a server.
+ * It must honor manual redirects and cancellation, disable decompression, and preserve received bytes/headers.
+ * Cached responses must preserve their original HTTP age. Do not inject ordinary fetch on a server.
  */
 export type WebBotAuthDiscoveryFetch = (request: Request) => Promise<Response>;
 
@@ -16,6 +17,8 @@ export interface WebBotAuthVerificationOptions extends VerificationOptions {
   allowSignatureAgentDomain?: boolean;
   /** Trusted endpoint when Signature-Agent is absent. Must belong to signerDomain. */
   discovery?: { uri: string; type?: 'directory' | 'jwks_uri' };
+  /** Extra request coverage required by application policy, including exact component parameters. */
+  requiredComponents?: ComponentIdentifier[];
   /** Current application peer, never the directory endpoint certificate. */
   peerCert?: TLSCertificate;
   /** Atomically consume (domain, keyid, nonce), retaining through retainUntil. False rejects reuse;
@@ -80,18 +83,26 @@ function endpoint(uri: string, type: string, domain?: string): URL {
   return url;
 }
 
-function cacheExpiry(response: Response): number {
+function cacheExpiry(response: Response, created: number, startedAt: number, receivedAt: number): number {
   const ageHeader = response.headers.get('Age');
-  const maxAge = /(?:^|,)\s*max-age\s*=\s*"?(\d+)"?\s*(?:,|$)/i.exec(response.headers.get('Cache-Control') ?? '');
-  if (ageHeader !== null && !/^\d+$/.test(ageHeader)) invalid('invalid directory cache age');
+  const control = response.headers.get('Cache-Control') ?? '';
+  const ages = [...control.matchAll(/(?:^|,)\s*max-age\s*=\s*(?:"(\d+)"|(\d+))\s*(?=,|$)/gi)];
+  if (ages.length > 1 || (ages.length === 0 && /(?:^|,)\s*max-age\b/i.test(control))) invalid('invalid directory cache lifetime');
+  const maxAge = ages[0];
+  if (ageHeader !== null && (!/^\d+$/.test(ageHeader) || !Number.isSafeInteger(Number(ageHeader)))) invalid('invalid directory cache age');
   if (!maxAge) {
     if (ageHeader !== null) invalid('cached directory lacks bounded HTTP freshness');
     return Infinity;
   }
-  const now = Date.now();
-  const date = Date.parse(response.headers.get('Date') ?? '');
-  const age = Math.max(Number(ageHeader ?? 0), Number.isFinite(date) ? (now - date) / 1000 : 0);
-  return now + (Number(maxAge[1]) - age) * 1000;
+  const lifetime = Number(maxAge[1] ?? maxAge[2]);
+  if (!Number.isSafeInteger(lifetime)) invalid('invalid directory cache lifetime');
+  const dateHeader = response.headers.get('Date');
+  const date = Date.parse(dateHeader ?? '');
+  if (dateHeader !== null && !Number.isFinite(date)) invalid('invalid directory cache date');
+  // Without original acquisition metadata, signed creation gives a conservative deadline that cannot restart.
+  const apparentAge = Math.max(0, receivedAt - (Number.isFinite(date) ? date : created * 1000));
+  const age = Math.max(apparentAge, Number(ageHeader ?? 0) * 1000 + receivedAt - startedAt);
+  return receivedAt + lifetime * 1000 - age;
 }
 
 function boundedDepth(value: unknown, depth = 0): void {
@@ -101,20 +112,38 @@ function boundedDepth(value: unknown, depth = 0): void {
 
 async function signature(message: HttpMessage, params: SignatureParams, raw: Uint8Array, key: DnsIdJWK): Promise<void> {
   try {
-    if (!await verifyWithKey(buildSignatureInput(message, params), raw, { ...key, alg: 'EdDSA' }, 'EdDSA')) invalid('invalid WBA signature');
+    // Public CryptoKey imports accept only verify; directory metadata is checked before narrowing usages.
+    if (!await verifyWithKey(buildSignatureInput(message, params), raw, { ...key, alg: 'EdDSA', key_ops: ['verify'] }, 'EdDSA')) invalid('invalid WBA signature');
   } catch (cause) {
     if (cause instanceof VerificationError) throw cause;
     throw new VerificationError('invalid WBA signature or key', { code: VerificationCode.SignatureInvalid, cause });
   }
 }
 
+function discoveryFailure(cause: unknown): never {
+  let error: unknown = cause;
+  const seen = new Set<unknown>();
+  let tls = false;
+  while (error && typeof error === 'object' && !seen.has(error)) {
+    if (error instanceof VerificationError) throw error;
+    seen.add(error);
+    const { code, cause: nested } = error as { code?: string; cause?: unknown };
+    if (typeof code === 'string' && /CERT|TLS|SSL|SIGNATURE|ISSUER|CRL|INVALID_CA|INVALID_PURPOSE|PATH_LENGTH/.test(code)) tls = true;
+    error = nested;
+  }
+  throw new VerificationError('WBA directory discovery failed', { code: VerificationCode.TLSError, transient: !tls, cause });
+}
+
 export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityResolver, fetchDirectory: WebBotAuthDiscoveryFetch, skew: number, opts: WebBotAuthVerificationOptions): Promise<VerifiedDomain> {
+  if (opts.requiredComponents !== undefined && !Array.isArray(opts.requiredComponents)) throw new ArgumentError('requiredComponents must be an array');
+  for (const component of opts.requiredComponents ?? []) validateComponentIdentifier(component);
   return withVerificationBudget(async signal => {
     let response: Response | undefined;
     try {
       const request = select(req, 'web-bot-auth');
       validity(request.params, skew);
       covers(request.params, '@authority');
+      for (const component of opts.requiredComponents ?? []) covers(request.params, component);
       await digest(req, request.params, signal, 1024 * 1024);
       let domain = opts.signerDomain === undefined ? undefined : normalizeFQDN(opts.signerDomain, true);
       let discovery = opts.discovery;
@@ -134,9 +163,14 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       if (!domain || !discovery) throw new ArgumentError('trusted signer domain and discovery policy are required');
       let url = endpoint(discovery.uri, discovery.type ?? 'directory', domain);
       let directoryRequest: Request;
+      let startedAt: number;
+      let receivedAt: number;
       for (let redirects = 0; ; redirects++) {
-        directoryRequest = new Request(url, { redirect: 'manual', signal });
-        response = await waitForVerification(() => fetchDirectory(directoryRequest), signal);
+        directoryRequest = new Request(url, { redirect: 'manual', cache: 'no-store', headers: { 'Accept-Encoding': 'identity' }, signal });
+        startedAt = Date.now();
+        try { response = await waitForVerification(() => fetchDirectory(directoryRequest), signal); }
+        catch (cause) { discoveryFailure(cause); }
+        receivedAt = Date.now();
         if (response.redirected) invalid('discovery transport followed an unchecked redirect');
         if (response.status < 300 || response.status >= 400) break;
         void response.body?.cancel().catch(() => {});
@@ -144,14 +178,16 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
         if (!location || location.length > 16 * 1024 || redirects >= 5) invalid('invalid or excessive WBA directory redirect');
         url = endpoint(new URL(location, url).href, 'jwks_uri', domain);
       }
+      if (response.status >= 500 || response.status === 408 || response.status === 429) throw new VerificationError('WBA directory temporarily unavailable', { code: VerificationCode.TLSError, transient: true });
+      if (response.headers.has('Content-Encoding')) invalid('coded WBA directory responses are unsupported');
       if (response.status !== 200 || response.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() !== 'application/http-message-signatures-directory+json') invalid('invalid WBA directory response');
       // Transport implementations can return responses from a different Fetch implementation.
       response = new Response(response.body, { status: response.status, headers: response.headers });
       const directory = select(response, 'http-message-signatures-directory', request.params.keyId);
-      const httpFreshUntil = cacheExpiry(response);
+      const httpFreshUntil = cacheExpiry(response, directory.params.created!, startedAt!, receivedAt!);
       validity(directory.params, skew);
       for (const component of [{ name: '@authority', params: { req: true } }, 'content-type', 'cache-control', 'content-digest'] as const) covers(directory.params, component);
-      const bytes = await digest(response, directory.params, signal, 256 * 1024);
+      const bytes = await digest(response, directory.params, signal, 256 * 1024).catch(discoveryFailure);
       let document: unknown;
       try { document = parseJsonNoDuplicateMembers(bytes); } catch { invalid('invalid WBA directory JSON'); }
       boundedDepth(document);
@@ -162,6 +198,8 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
         if (!value || typeof value !== 'object' || Array.isArray(value)) invalid('invalid directory JWK');
         const key = value as DnsIdJWK;
         if (key.kty !== 'OKP' || key.crv !== 'Ed25519' || typeof key.x !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(key.x) || toBase64Url(fromBase64Url(key.x)) !== key.x || 'd' in key || (key.alg !== undefined && key.alg !== 'ed25519') || (key.use !== undefined && key.use !== 'sig')) invalid('invalid public Ed25519 directory key');
+        const operations = key.key_ops;
+        if (operations !== undefined && (!Array.isArray(operations) || !operations.includes('verify') || operations.some(op => op !== 'sign' && op !== 'verify') || new Set(operations).size !== operations.length)) invalid('invalid directory JWK key_ops');
         if (await jwkThumbprint(key) !== key.kid) invalid('directory JWK thumbprint mismatch');
         if (key.kid === request.params.keyId) matching.push(key);
       }
@@ -171,13 +209,15 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       await signature(req, request.params, request.signature, key);
       const verified = await waitForVerification(() => resolver.verifyDomain(domain!, opts.peerCert, { signal }), signal);
       if (verified.domain !== domain) invalid('DNSid signer domain mismatch');
-      const bound = await Promise.all(verified.jwks.keys.map(k => jwkThumbprint(k)));
-      if (!bound.includes(key.kid)) invalid('WBA key is not bound to current DNSid ku material');
+      let operationalKey: DnsIdJWK;
+      try { operationalKey = verified.jwks.currentOperationalSigningKey(); }
+      catch { invalid('DNSid current operational signing key is unavailable'); }
+      if (await jwkThumbprint(operationalKey) !== key.kid) invalid('WBA key is not bound to the current DNSid operational signing key');
       const fresh = () => {
         validity(request.params, skew);
         validity(directory.params, skew);
-        if (httpFreshUntil < Date.now()) invalid('directory HTTP cache freshness expired');
-        if (!(verified.expiry().getTime() > Date.now())) invalid('DNSid evidence expired during WBA verification');
+        if (httpFreshUntil <= Date.now()) invalid('directory HTTP cache freshness expired');
+        verified.assertFresh();
       };
       fresh();
       if (opts.consumeNonce) {
