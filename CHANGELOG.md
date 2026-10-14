@@ -1,4 +1,15 @@
 
+## [0.27.0] - 2026-10-14
+
+### Bug Fixes
+
+- fix(protocol): preserve parsed empty optional TXT tags ([#83](https://github.com/dnsid-ai/dnsid-ts/pull/83))
+
+### Features
+
+- feat(web-bot-auth): verify DNSid requests and signed directories ([#86](https://github.com/dnsid-ai/dnsid-ts/pull/86))
+
+
 ## [0.26.0] - 2026-10-12
 
 ### Documentation
