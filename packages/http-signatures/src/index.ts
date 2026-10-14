@@ -509,7 +509,7 @@ export class HttpSignaturesProfile {
         code: VerificationCode.SignatureInvalid,
       });
     }
-    if (coversContentDigest) {
+    if (hasComponentNamed(sigParams.components, 'content-digest')) {
       if (!hasBody) {
         throw new VerificationError('content-digest is a covered component but request has no body', {
           code: VerificationCode.SignatureInvalid,
@@ -521,7 +521,7 @@ export class HttpSignaturesProfile {
           code: VerificationCode.SignatureInvalid,
         });
       }
-      const expectedDigest = parseSha256ContentDigest(digestHeader);
+      const expectedDigest = parseSha256ContentDigest(digestHeader, sigParams.components);
       const bodyBuffer = await readBoundedBody(req, opts.signal!);
       const actualBuffer = await crypto.subtle.digest('SHA-256', bodyBuffer);
       if (!constantTimeEqual(expectedDigest, new Uint8Array(actualBuffer))) {
@@ -1145,8 +1145,13 @@ function validateHttpSignaturesConfig(config: HttpSignaturesProfileConfig): void
   }
 }
 
-/** Parses the required RFC 9530 SHA-256 digest. */
-export function parseSha256ContentDigest(headerValue: string): Uint8Array {
+/** Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members. */
+export function parseSha256ContentDigest(headerValue: string, components: ComponentIdentifier[] = []): Uint8Array {
+  for (const component of components) {
+    if (componentName(component) === 'content-digest' && componentParams(component).key !== undefined && componentParams(component).key !== 'sha-256') {
+      throw new VerificationError('unsupported covered Content-Digest algorithm', { code: VerificationCode.SignatureInvalid });
+    }
+  }
   let dictionary: Dictionary;
   try {
     dictionary = parseDictionaryField(headerValue);

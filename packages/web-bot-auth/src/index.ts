@@ -144,7 +144,8 @@ export class WebBotAuthProfile {
     this.keyProvider = opts.keyProvider;
     this.identityResolver = opts.identityResolver;
     this.discoveryFetch = opts.discoveryFetch;
-    this.config = opts.webBotAuth ?? {};
+    const config = opts.webBotAuth ?? {};
+    this.config = { ...config, signatureAgent: config.signatureAgent === undefined ? undefined : { ...config.signatureAgent } };
     validateWebBotAuthConfig(this.domain ?? 'unused.example', this.config);
   }
 
@@ -329,6 +330,7 @@ function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: 
     throw new ArgumentError('Web Bot Auth Signature-Agent type must be directory or jwks_uri');
   }
   const rawUri = config.signatureAgent?.uri ?? legacyDirectUri ?? `https://${domain}`;
+  if (typeof rawUri !== 'string') throw new ArgumentError('Web Bot Auth Signature-Agent URI must be a string');
   let url: URL;
   try {
     url = new URL(rawUri);

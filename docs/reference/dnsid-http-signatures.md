@@ -1131,18 +1131,22 @@ ArgumentError if the key ID is malformed.
 ### parseSha256ContentDigest()
 
 ```ts
-function parseSha256ContentDigest(headerValue): Uint8Array;
+function parseSha256ContentDigest(headerValue, components?): Uint8Array;
 ```
 
 Defined in: [http-signatures/src/index.ts:1149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1149)
 
-Parses the required RFC 9530 SHA-256 digest.
+Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members.
 
 #### Parameters
 
 ##### headerValue
 
 `string`
+
+##### components?
+
+[`ComponentIdentifier`](#componentidentifier)[] = `[]`
 
 #### Returns
 

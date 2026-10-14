@@ -1,12 +1,13 @@
 import type { IdentityResolver, TLSCertificate, VerificationOptions, VerifiedDomain, DnsIdJWK } from '@dnsid-ai/protocol';
 import { ArgumentError, VerificationError, VerificationCode, normalizeFQDN, jwkThumbprint, fromBase64Url, toBase64Url, parseJsonNoDuplicateMembers, verifyWithKey, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
 import type { SignatureParams, HttpMessage, ComponentIdentifier } from '@dnsid-ai/http-signatures';
-import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
+import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, hasComponentNamed, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
 import { Token } from 'structured-headers';
 
 /** Trusted transport must validate Web PKI and pin connections to public DNS addresses.
  * It must honor manual redirects and cancellation, disable decompression, and preserve received bytes/headers.
- * Cached responses must preserve their original HTTP age. Do not inject ordinary fetch on a server.
+ * Prefer fresh acquisition honoring cache: 'no-store'. A caching transport must enforce original
+ * RFC 9111 age/freshness itself and reject reuse without sufficient metadata. Do not inject ordinary fetch on a server.
  */
 export type WebBotAuthDiscoveryFetch = (request: Request) => Promise<Response>;
 
@@ -58,11 +59,11 @@ function covers(params: SignatureParams, component: Parameters<typeof sameCompon
 
 async function digest(message: Request | Response, params: SignatureParams, signal: AbortSignal, maxBytes: number): Promise<Uint8Array> {
   if (message.body === null) {
-    if (params.components.some(c => sameComponent(c, 'content-digest'))) invalid('covered digest without supplied content');
+    if (hasComponentNamed(params.components, 'content-digest')) invalid('covered digest without supplied content');
     return new Uint8Array();
   }
   covers(params, 'content-digest');
-  const expected = parseSha256ContentDigest(message.headers.get('Content-Digest') ?? '');
+  const expected = parseSha256ContentDigest(message.headers.get('Content-Digest') ?? '', params.components);
   const bytes = new Uint8Array(await readBoundedBody(message, signal, maxBytes));
   const actual = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   if (!constantTimeEqual(expected, actual)) invalid('WBA Content-Digest mismatch');
@@ -81,28 +82,6 @@ function endpoint(uri: string, type: string, domain?: string): URL {
   if (type === 'directory') return new URL('/.well-known/http-message-signatures-directory', url.origin);
   if (type !== 'jwks_uri' || url.hash) invalid('unsupported WBA discovery type or fragment');
   return url;
-}
-
-function cacheExpiry(response: Response, created: number, startedAt: number, receivedAt: number): number {
-  const ageHeader = response.headers.get('Age');
-  const control = response.headers.get('Cache-Control') ?? '';
-  const ages = [...control.matchAll(/(?:^|,)\s*max-age\s*=\s*(?:"(\d+)"|(\d+))\s*(?=,|$)/gi)];
-  if (ages.length > 1 || (ages.length === 0 && /(?:^|,)\s*max-age\b/i.test(control))) invalid('invalid directory cache lifetime');
-  const maxAge = ages[0];
-  if (ageHeader !== null && (!/^\d+$/.test(ageHeader) || !Number.isSafeInteger(Number(ageHeader)))) invalid('invalid directory cache age');
-  if (!maxAge) {
-    if (ageHeader !== null) invalid('cached directory lacks bounded HTTP freshness');
-    return Infinity;
-  }
-  const lifetime = Number(maxAge[1] ?? maxAge[2]);
-  if (!Number.isSafeInteger(lifetime)) invalid('invalid directory cache lifetime');
-  const dateHeader = response.headers.get('Date');
-  const date = Date.parse(dateHeader ?? '');
-  if (dateHeader !== null && !Number.isFinite(date)) invalid('invalid directory cache date');
-  // Without original acquisition metadata, signed creation gives a conservative deadline that cannot restart.
-  const apparentAge = Math.max(0, receivedAt - (Number.isFinite(date) ? date : created * 1000));
-  const age = Math.max(apparentAge, Number(ageHeader ?? 0) * 1000 + receivedAt - startedAt);
-  return receivedAt + lifetime * 1000 - age;
 }
 
 function boundedDepth(value: unknown, depth = 0): void {
@@ -163,14 +142,10 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       if (!domain || !discovery) throw new ArgumentError('trusted signer domain and discovery policy are required');
       let url = endpoint(discovery.uri, discovery.type ?? 'directory', domain);
       let directoryRequest: Request;
-      let startedAt: number;
-      let receivedAt: number;
       for (let redirects = 0; ; redirects++) {
         directoryRequest = new Request(url, { redirect: 'manual', cache: 'no-store', headers: { 'Accept-Encoding': 'identity' }, signal });
-        startedAt = Date.now();
         try { response = await waitForVerification(() => fetchDirectory(directoryRequest), signal); }
         catch (cause) { discoveryFailure(cause); }
-        receivedAt = Date.now();
         if (response.redirected) invalid('discovery transport followed an unchecked redirect');
         if (response.status < 300 || response.status >= 400) break;
         void response.body?.cancel().catch(() => {});
@@ -184,7 +159,6 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       // Transport implementations can return responses from a different Fetch implementation.
       response = new Response(response.body, { status: response.status, headers: response.headers });
       const directory = select(response, 'http-message-signatures-directory', request.params.keyId);
-      const httpFreshUntil = cacheExpiry(response, directory.params.created!, startedAt!, receivedAt!);
       validity(directory.params, skew);
       for (const component of [{ name: '@authority', params: { req: true } }, 'content-type', 'cache-control', 'content-digest'] as const) covers(directory.params, component);
       const bytes = await digest(response, directory.params, signal, 256 * 1024).catch(discoveryFailure);
@@ -216,7 +190,6 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       const fresh = () => {
         validity(request.params, skew);
         validity(directory.params, skew);
-        if (httpFreshUntil <= Date.now()) invalid('directory HTTP cache freshness expired');
         verified.assertFresh();
       };
       fresh();

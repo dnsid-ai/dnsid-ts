@@ -216,16 +216,15 @@ describe('WebBotAuthProfile verification', () => {
     await expect(s.verify()).rejects.toThrow(reason);
   });
 
-  it('reevaluates acceptance and current keys on repeated directory use', async () => {
+  it('reevaluates acceptance and current keys on repeated fresh discovery', async () => {
     const s = await setup();
-    const cached = await s.signer.serveHttpMessageSignaturesDirectory(new Request(`https://${domain}/.well-known/http-message-signatures-directory`));
-    s.fetch.mockImplementation(async () => cached.clone());
     await expect(s.verify()).resolves.toBe(s.evidence);
     s.resolver.verifyDomain.mockRejectedValueOnce(new Error('denied'));
     await expect(s.verify()).rejects.toThrow('denied');
     s.resolver.verifyDomain.mockResolvedValue({ ...s.evidence, jwks: new JWKS([]) });
     await expect(s.verify()).rejects.toThrow('operational');
     expect(s.resolver.verifyDomain).toHaveBeenCalledTimes(3);
+    expect(s.fetch).toHaveBeenCalledTimes(3);
   });
 
   it.each(['https://127.0.0.1/', 'https://10.0.0.1/', 'https://[::1]/', 'https://localhost/', 'http://bot.example.com/', 'https://other.example/'])('rejects unapproved discovery %s', async uri => {
@@ -311,15 +310,16 @@ describe('WebBotAuthProfile verification', () => {
     await expect(s.verify()).rejects.toThrow();
   });
 
-  it.each(['301', '-1', 'invalid'])('rejects stale or malformed HTTP cache Age %s', async age => {
+  it.each([false, true])('uses a fresh no-store, max-age=0 directory with Date metadata: %s', async metadata => {
     const s = await setup();
-    s.fetch.mockImplementation(async (request: Request) => {
-      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
-      const headers = new Headers(response.headers);
-      headers.set('Age', age);
-      return new Response(await response.arrayBuffer(), { headers });
+    rewriteDirectory(s, (_document, headers, params) => {
+      headers.set('Cache-Control', 'no-store, max-age=0');
+      if (metadata) { headers.set('Date', new Date().toUTCString()); headers.set('Age', '0'); }
+      params.created! -= 60;
+      params.expires! -= 60;
     });
-    await expect(s.verify()).rejects.toThrow();
+    await expect(s.verify()).resolves.toBe(s.evidence);
+    expect(s.fetch.mock.calls[0][0].cache).toBe('no-store');
   });
 
   it('rejects excessive message headers and URLs', async () => {
@@ -467,7 +467,7 @@ describe('WebBotAuthProfile verification', () => {
     await expect(s.verify(new Request(s.req, { headers }))).rejects.toThrow('exactly one');
   });
 
-  it.each([false, true])('does not restart freshness when cached metadata is present: %s', async metadata => {
+  it.each([false, true])('propagates cache transport freshness enforcement with Date metadata: %s', async metadata => {
     const s = await setup();
     const acquiredAt = Date.now();
     rewriteDirectory(s, (_document, headers) => {
@@ -475,7 +475,11 @@ describe('WebBotAuthProfile verification', () => {
       if (metadata) { headers.set('Date', new Date(acquiredAt).toUTCString()); headers.set('Age', '0'); }
     });
     const cached = await s.fetch(new Request(`https://${domain}/.well-known/http-message-signatures-directory`));
-    s.fetch.mockImplementation(async () => cached.clone());
+    s.fetch.mockImplementation(async () => {
+      // An injected cache owns the acquisition metadata and must not reset age on delivery.
+      if (Date.now() >= acquiredAt + 60_000) throw new VerificationError('directory HTTP cache freshness expired', { code: VerificationCode.SignatureInvalid });
+      return cached.clone();
+    });
     await expect(s.verify()).resolves.toBe(s.evidence);
     const req = await resignRequest(s.req, params => { params.expires = params.created! + 300; });
     const now = vi.spyOn(Date, 'now').mockReturnValue(acquiredAt + 61_000);
@@ -506,10 +510,16 @@ describe('WebBotAuthProfile verification', () => {
     await expect(s.verify()).rejects.toMatchObject({ code: VerificationCode.TLSError, transient: true });
   });
 
-  it.each(['max-age=60, max-age=300', 'max-age="60', 'max-age=invalid'])('rejects ambiguous or malformed cache lifetime %s', async control => {
+  it('does not infer HTTP freshness from signed creation when Date and Age are absent', async () => {
     const s = await setup();
-    rewriteDirectory(s, (_document, headers) => { headers.set('Cache-Control', control); });
-    await expect(s.verify()).rejects.toThrow('cache lifetime');
+    rewriteDirectory(s, (_document, headers, params) => {
+      headers.set('Cache-Control', 'max-age=1');
+      headers.delete('Date');
+      headers.delete('Age');
+      params.created! -= 60;
+      params.expires! -= 60;
+    });
+    await expect(s.verify()).resolves.toBe(s.evidence);
   });
 
   it('preserves permanent unsafe-destination failures nested by fetch', async () => {
@@ -553,6 +563,81 @@ describe('WebBotAuthProfile verification', () => {
 
   it.each([NaN, Infinity, -Infinity, true, false, null, -1])('rejects invalid clock skew %j before network work', value => {
     expect(() => new WebBotAuthProfile({ webBotAuth: { clockSkew: value } as never })).toThrow(ArgumentError);
+  });
+
+  it('rejects mutable URI objects instead of retaining a configuration reference', () => {
+    const uri = new URL(`https://${domain}/keys`);
+    expect(() => new WebBotAuthProfile({ webBotAuth: { signatureAgent: { uri, type: 'jwks_uri' } } as never })).toThrow(ArgumentError);
+    expect(() => new WebBotAuthProfile({ webBotAuth: { directoryURL: uri } as never })).toThrow(ArgumentError);
+  });
+
+  it('snapshots configuration, including nested discovery, and still rejects expired requests', async () => {
+    const s = await setup();
+    const config = { signatureTTL: 30, directorySignatureTTL: 40, clockSkew: 0, includeSignatureAgent: true,
+      signatureAgent: { uri: `https://${domain}/keys`, type: 'jwks_uri' as 'jwks_uri' | 'directory' } };
+    const profile = new WebBotAuthProfile({ domain, keyProvider: makeKeyProvider(), identityResolver: s.resolver, discoveryFetch: s.fetch, webBotAuth: config });
+    config.signatureTTL = 300;
+    config.directorySignatureTTL = 300;
+    config.clockSkew = Infinity;
+    config.includeSignatureAgent = false;
+    config.signatureAgent.uri = 'http://127.0.0.1';
+    config.signatureAgent.type = 'directory';
+    const signed = await profile.createWebBotAuthSignedRequest(new Request('https://target.example/path'));
+    const params = parseSignatureInput(signed.headers.get('Signature-Input')!).get('sig1')!;
+    expect(params.expires! - params.created!).toBe(30);
+    expect(signed.headers.get('Signature-Agent')).toBe(`sig1="https://${domain}/keys";type=jwks_uri`);
+    const directory = await profile.serveHttpMessageSignaturesDirectory(new Request(`https://${domain}/keys`));
+    expect(directory.headers.get('Cache-Control')).toBe('max-age=40');
+    const directoryParams = parseSignatureInput(directory.headers.get('Signature-Input')!).get('sig1')!;
+    expect(directoryParams.expires! - directoryParams.created!).toBe(40);
+    await expect(profile.verifyWebBotAuthSignedRequest(signed, policy)).resolves.toBe(s.evidence);
+    s.fetch.mockClear();
+    const now = vi.spyOn(Date, 'now').mockReturnValue((params.expires! + 1) * 1000);
+    try { await expect(profile.verifyWebBotAuthSignedRequest(signed, policy)).rejects.toThrow('currently valid'); }
+    finally { now.mockRestore(); }
+    expect(s.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each(['request', 'directory'])('checks every keyed Content-Digest component on the %s', async kind => {
+    for (const key of ['sha-256', 'foo']) {
+      const s = await setup();
+      const component = { name: 'content-digest', params: { key } };
+      let req = s.req;
+      if (kind === 'request') {
+        const headers = new Headers(req.headers);
+        headers.append('Content-Digest', 'foo=:AA==:');
+        req = await resignRequest(new Request(req, { headers }), params => { params.components.push(component); });
+      } else s.fetch.mockImplementation(async (request: Request) => {
+        const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+        const headers = new Headers(response.headers);
+        headers.append('Content-Digest', 'foo=:AA==:');
+        const params = parseSignatureInput(headers.get('Signature-Input')!).get('sig1')!;
+        delete params.parameters;
+        params.components.push(component);
+        return signHttpMessage({ message: new Response(await response.arrayBuffer(), { headers }), request }, params, makeKeyProvider());
+      });
+      if (key === 'sha-256') await expect(s.verify(req)).resolves.toBe(s.evidence);
+      else await expect(s.verify(req)).rejects.toThrow('unsupported covered Content-Digest');
+    }
+  });
+
+  it('rejects keyed digest coverage without supplied content', async () => {
+    const s = await setup();
+    const req = await s.signer.createWebBotAuthSignedRequest(new Request('https://target.example/path', {
+      headers: { 'Content-Digest': 'sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:' },
+    }), { additionalComponents: [{ name: 'content-digest', params: { key: 'sha-256' } }] });
+    await expect(s.verify(req)).rejects.toThrow('without supplied content');
+    expect(s.fetch).not.toHaveBeenCalled();
+  });
+
+  it('retains exact minimum digest coverage for supplied content', async () => {
+    const s = await setup();
+    const req = await resignRequest(s.req, params => {
+      params.components = params.components.filter(c => c !== 'content-digest');
+      params.components.push({ name: 'content-digest', params: { key: 'sha-256' } });
+    });
+    await expect(s.verify(req)).rejects.toThrow('missing required WBA component');
+    expect(s.fetch).not.toHaveBeenCalled();
   });
 
   it('honors explicit zero clock skew', async () => {
