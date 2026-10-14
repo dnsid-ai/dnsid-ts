@@ -724,15 +724,10 @@ export class IdentityManager implements IdentityResolver {
   }
 
   private requireFreshEvidence(result: VerifiedDomain): void {
-    const now = Date.now();
-    let code: VerificationCode | undefined;
-    if ([result.tlsCert, result.recordSigningTlsCert].some(cert =>
-      !Number.isFinite(cert.notAfter.getTime()) || now >= cert.notAfter.getTime())) code = VerificationCode.TLSError;
-    else if (result.record.ka && now >= result.keyBoundAt.getTime() + parseKaDuration(result.record.ka)) code = VerificationCode.KeyAgeExceeded;
-    else if (result.dnsTTL > 0 && now >= result.dnsExpiresAt.getTime()) code = VerificationCode.DNSResolution;
-    if (code) {
+    try { result.assertFresh(); }
+    catch (error) {
       this.cache.evict(result.domain);
-      throw new VerificationError('identity evidence expired during verification', { code, transient: code === VerificationCode.DNSResolution });
+      throw error;
     }
   }
 

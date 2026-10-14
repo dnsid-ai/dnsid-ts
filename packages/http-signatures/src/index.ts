@@ -509,7 +509,7 @@ export class HttpSignaturesProfile {
         code: VerificationCode.SignatureInvalid,
       });
     }
-    if (coversContentDigest) {
+    if (hasComponentNamed(sigParams.components, 'content-digest')) {
       if (!hasBody) {
         throw new VerificationError('content-digest is a covered component but request has no body', {
           code: VerificationCode.SignatureInvalid,
@@ -521,7 +521,7 @@ export class HttpSignaturesProfile {
           code: VerificationCode.SignatureInvalid,
         });
       }
-      const expectedDigest = parseSha256ContentDigest(digestHeader);
+      const expectedDigest = parseSha256ContentDigest(digestHeader, sigParams.components);
       const bodyBuffer = await readBoundedBody(req, opts.signal!);
       const actualBuffer = await crypto.subtle.digest('SHA-256', bodyBuffer);
       if (!constantTimeEqual(expectedDigest, new Uint8Array(actualBuffer))) {
@@ -621,6 +621,10 @@ export function hasComponentNamed(components: ComponentIdentifier[], name: strin
  * @throws ArgumentError if the component is not valid.
  */
 export function validateComponentIdentifier(component: ComponentIdentifier): void {
+  if (typeof component !== 'string' && (!component || typeof component !== 'object' || Array.isArray(component) || typeof component.name !== 'string' ||
+    (component.params !== undefined && (!component.params || typeof component.params !== 'object' || Array.isArray(component.params))))) {
+    throw new ArgumentError('invalid signature component identifier');
+  }
   const name = componentName(component);
   if (!KNOWN_DERIVED_COMPONENTS.has(name) && !isLowercaseHttpFieldName(name)) {
     throw new ArgumentError(`unknown signature component: ${name}`);
@@ -842,6 +846,23 @@ function splitDictionary(headerValue: string): string[] {
   return parts;
 }
 
+/** Parses a bounded Structured Field dictionary without silently erasing duplicate members. */
+export function parseDictionaryField(headerValue: string): Dictionary {
+  assertHeaderBound(headerValue);
+  try {
+    const dictionary = parseStructuredDictionary(headerValue);
+    if (dictionary.size !== splitDictionary(headerValue).length) throw new Error('duplicate dictionary member');
+    for (const member of dictionary.values()) {
+      const values = [...member[1].values(), ...(isInnerList(member)
+        ? member[0].flatMap(([value, params]) => [value, ...params.values()]) : [member[0]])];
+      if (values.some(value => value instanceof Date || value instanceof DisplayString)) throw new Error('RFC 9651-only values are unsupported');
+    }
+    return dictionary;
+  } catch (cause) {
+    throw new VerificationError('malformed structured field dictionary', { code: VerificationCode.RecordInvalid, cause });
+  }
+}
+
 /**
  * Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
  * signature params, preserving component and parameter order for canonical
@@ -922,8 +943,9 @@ function assertHeaderBound(value: string): void {
   if (value.length > 16 * 1024) throw new VerificationError('signature header exceeds 16 KiB', { code: VerificationCode.RecordInvalid });
 }
 
-async function readBoundedBody(request: Request, signal: AbortSignal): Promise<ArrayBuffer> {
-  const reader = request.clone().body!.getReader();
+/** Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses. */
+export async function readBoundedBody(request: Request | Response, signal: AbortSignal, maxBytes = 1024 * 1024): Promise<ArrayBuffer> {
+  const reader = (request instanceof Request ? request.clone() : request).body!.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   try {
@@ -931,10 +953,13 @@ async function readBoundedBody(request: Request, signal: AbortSignal): Promise<A
       const { done, value } = await waitForVerification(() => reader.read(), signal);
       if (done) break;
       size += value.length;
-      if (size > 1024 * 1024) throw new VerificationError('HTTP signature body exceeds 1 MiB', { code: VerificationCode.RecordInvalid });
+      if (size > maxBytes) throw new VerificationError('HTTP signature body exceeds size limit', { code: VerificationCode.RecordInvalid });
       chunks.push(value);
     }
-  } finally { void reader.cancel().catch(() => {}); }
+  } finally {
+    void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
   const bytes = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
@@ -1120,10 +1145,16 @@ function validateHttpSignaturesConfig(config: HttpSignaturesProfileConfig): void
   }
 }
 
-function parseSha256ContentDigest(headerValue: string): Uint8Array {
+/** Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members. */
+export function parseSha256ContentDigest(headerValue: string, components: ComponentIdentifier[] = []): Uint8Array {
+  for (const component of components) {
+    if (componentName(component) === 'content-digest' && componentParams(component).key !== undefined && componentParams(component).key !== 'sha-256') {
+      throw new VerificationError('unsupported covered Content-Digest algorithm', { code: VerificationCode.SignatureInvalid });
+    }
+  }
   let dictionary: Dictionary;
   try {
-    dictionary = parseStructuredDictionary(headerValue);
+    dictionary = parseDictionaryField(headerValue);
   } catch {
     throw new VerificationError('malformed Content-Digest header', { code: VerificationCode.SignatureInvalid });
   }

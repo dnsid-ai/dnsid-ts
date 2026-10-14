@@ -19,6 +19,7 @@ import * as fs from 'node:fs';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
+import { Readable } from 'node:stream';
 import { Agent, fetch as undiciFetch } from 'undici';
 import type { Dispatcher } from 'undici';
 
@@ -69,6 +70,8 @@ export type { TransportConfig };
 
 /** Explicit exceptions for trusted test/private deployments using {@link createSsrfSafeFetch}. */
 export interface SsrfSafeFetchOptions {
+  /** Set false to preserve encoded response bytes and Content-Encoding, for signed-directory verification. Default: true. */
+  decompress?: boolean;
   /**
    * Hostnames, or leading-dot suffixes such as `.test`, whose resolved RFC 1918/ULA private or
    * loopback addresses may be contacted. Link-local and other unsafe ranges remain blocked, IP-literal
@@ -133,13 +136,34 @@ export function createSsrfSafeFetch(config: TransportConfig = {}, options: SsrfS
   const privateAddressHosts = (options.privateAddressHosts ?? []).map(normalizePrivateAddressHost);
   const connect: Record<string, unknown> = { lookup: createSsrfSafeLookup(config.dnsServer, privateAddressHosts) };
   if (config.caBundlePath) connect.ca = [...tls.rootCertificates, fs.readFileSync(config.caBundlePath, 'utf8')];
-  const fetchWithSafeLookup = createFetchWithDispatcher(new Agent({ connect }) as Dispatcher);
+  const dispatcher = new Agent({ connect });
+  const fetchWithSafeLookup = createFetchWithDispatcher(dispatcher);
   return async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input);
     if (isUnsafeIp(url.hostname)) {
       throw new VerificationError(`unsafe target IP address: ${url.hostname}`, {
         code: VerificationCode.TLSError,
       });
+    }
+    if (options.decompress === false) {
+      const { url: target, init: normalized } = normalizeFetchArgs(input, { ...init, redirect: 'manual' });
+      const request = new Request(target, normalized);
+      const targetUrl = new URL(request.url);
+      const response = await dispatcher.request({
+        origin: targetUrl.origin,
+        path: targetUrl.pathname + targetUrl.search,
+        method: request.method as Dispatcher.HttpMethod,
+        headers: Object.fromEntries(request.headers),
+        body: request.body ? Readable.fromWeb(request.body as unknown as import('node:stream/web').ReadableStream) : undefined,
+        signal: request.signal,
+      });
+      const headers = new Headers();
+      for (const [name, value] of Object.entries(response.headers)) {
+        for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) headers.append(name, item);
+      }
+      const noBody = request.method === 'HEAD' || [204, 205, 304].includes(response.statusCode);
+      if (noBody) await response.body.dump();
+      return new Response(noBody ? null : Readable.toWeb(response.body) as unknown as ReadableStream<Uint8Array>, { status: response.statusCode, statusText: response.statusText, headers });
     }
     return fetchWithSafeLookup(input, { ...init, redirect: 'manual' });
   };
