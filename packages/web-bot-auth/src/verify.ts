@@ -59,8 +59,8 @@ async function digest(message: Request | Response, params: SignatureParams, sign
     return new Uint8Array();
   }
   covers(params, 'content-digest');
-  const bytes = new Uint8Array(await readBoundedBody(message, signal, maxBytes));
   const expected = parseSha256ContentDigest(message.headers.get('Content-Digest') ?? '');
+  const bytes = new Uint8Array(await readBoundedBody(message, signal, maxBytes));
   const actual = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   if (!constantTimeEqual(expected, actual)) invalid('WBA Content-Digest mismatch');
   return bytes;
@@ -145,6 +145,8 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
         url = endpoint(new URL(location, url).href, 'jwks_uri', domain);
       }
       if (response.status !== 200 || response.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() !== 'application/http-message-signatures-directory+json') invalid('invalid WBA directory response');
+      // Transport implementations can return responses from a different Fetch implementation.
+      response = new Response(response.body, { status: response.status, headers: response.headers });
       const directory = select(response, 'http-message-signatures-directory', request.params.keyId);
       const httpFreshUntil = cacheExpiry(response);
       validity(directory.params, skew);

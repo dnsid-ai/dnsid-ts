@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
+import { Response as UndiciResponse } from 'undici';
 import {
   WEB_BOT_AUTH_TAG,
   HTTP_MESSAGE_SIGNATURES_DIRECTORY_MEDIA_TYPE,
@@ -68,6 +69,39 @@ describe('WebBotAuthProfile verification', () => {
     expect(s.resolver.verifyDomain).toHaveBeenCalledWith(domain, peerCert, { signal: expect.any(AbortSignal) });
     expect(s.fetch.mock.calls[0][0].url).toBe(`https://${domain}/.well-known/http-message-signatures-directory`);
     expect(s.fetch.mock.calls[0][0].redirect).toBe('manual');
+  });
+
+  it('verifies signed directories returned as Undici responses', async () => {
+    const s = await setup();
+    s.fetch.mockImplementation(async (request: Request) => {
+      const response = await s.signer.serveHttpMessageSignaturesDirectory(request);
+      const fetched = new UndiciResponse(await response.arrayBuffer(), { status: response.status, headers: [...response.headers] });
+      expect(fetched).not.toBeInstanceOf(Response);
+      return fetched;
+    });
+    await expect(s.verify()).resolves.toBe(s.evidence);
+  });
+
+  it('rejects unchecked transport redirects before normalizing responses', async () => {
+    const s = await setup();
+    const response = new UndiciResponse(null);
+    Object.defineProperty(response, 'redirected', { value: true });
+    s.fetch.mockResolvedValue(response);
+    await expect(s.verify()).rejects.toThrow('unchecked redirect');
+    expect(s.resolver.verifyDomain).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 'malformed'])('rejects invalid Content-Digest %s without cloning the request body', async value => {
+    const s = await setup();
+    const headers = new Headers(s.req.headers);
+    if (value === null) headers.delete('Content-Digest');
+    else headers.set('Content-Digest', value);
+    const req = new Request(s.req, { headers });
+    const clone = vi.spyOn(req, 'clone');
+    await expect(s.verify(req)).rejects.toThrow('Content-Digest');
+    expect(clone).not.toHaveBeenCalled();
+    expect(req.bodyUsed).toBe(false);
+    expect(s.fetch).not.toHaveBeenCalled();
   });
 
   it('requires explicit permission to infer the signer domain', async () => {
