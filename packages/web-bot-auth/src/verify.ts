@@ -115,7 +115,13 @@ function discoveryFailure(cause: unknown): never {
 
 export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityResolver, fetchDirectory: WebBotAuthDiscoveryFetch, skew: number, opts: WebBotAuthVerificationOptions): Promise<VerifiedDomain> {
   if (opts.requiredComponents !== undefined && !Array.isArray(opts.requiredComponents)) throw new ArgumentError('requiredComponents must be an array');
-  for (const component of opts.requiredComponents ?? []) validateComponentIdentifier(component);
+  for (const component of opts.requiredComponents ?? []) {
+    validateComponentIdentifier(component);
+    const name = typeof component === 'string' ? component : component.name;
+    if (name === '@status' || (typeof component !== 'string' && component.params?.req === true)) {
+      throw new ArgumentError('requiredComponents must contain only request components');
+    }
+  }
   return withVerificationBudget(async signal => {
     let response: Response | undefined;
     try {

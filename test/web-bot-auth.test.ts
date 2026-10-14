@@ -9,7 +9,7 @@ import {
   wbaDirectoryJwkFromPublicKey,
 } from '@dnsid-ai/web-bot-auth';
 import { parseSignatureInput, signHttpMessage } from '@dnsid-ai/http-signatures';
-import type { SignatureParams } from '@dnsid-ai/http-signatures';
+import type { ComponentIdentifier, SignatureParams } from '@dnsid-ai/http-signatures';
 import type { WebBotAuthVerificationOptions } from '@dnsid-ai/web-bot-auth';
 import { JWKS, VerificationError, VerificationCode, VerifiedDomain, DnsIdTxtRecord, DNSSECState, NoopLogReader, IdentityManager } from '@dnsid-ai/protocol';
 import { currentProfileFixture } from './helpers/current-profile.ts';
@@ -419,6 +419,21 @@ describe('WebBotAuthProfile verification', () => {
     const s = await setup({ ...policy, requiredComponents } as WebBotAuthVerificationOptions);
     await expect(s.verify()).rejects.toThrow(ArgumentError);
     expect(s.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each<ComponentIdentifier>([
+    '@status',
+    { name: '@status' },
+    { name: '@method', params: { req: true } },
+    { name: '@query-param', params: { name: 'operation', req: true } },
+    { name: 'content-digest', params: { key: 'sha-256', req: true } },
+  ])('rejects response-only coverage policy %j before request processing', async component => {
+    const s = await setup({ ...policy, requiredComponents: [component] });
+    await expect(s.verify()).rejects.toThrow(ArgumentError);
+    await expect(s.verify(new Request('https://target.example/'))).rejects.toThrow(ArgumentError);
+    expect(s.req.bodyUsed).toBe(false);
+    expect(s.fetch).not.toHaveBeenCalled();
+    expect(s.resolver.verifyDomain).not.toHaveBeenCalled();
   });
 
   it.each([null, 'verify', [], ['sign'], ['encrypt'], ['verify', 'verify'], ['verify', 1], ['verify', 'encrypt']].map(operations => ({ operations })))('rejects directory key_ops $operations', async ({ operations }) => {
