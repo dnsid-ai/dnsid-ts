@@ -179,6 +179,7 @@ export async function createC2spTlogVerificationRegistry(
     return new C2spTlogReader(lr, {
       policy,
       resourceFetcher,
+      revalidate: invocation?.revalidate,
       trustedCheckpointStore,
       maxTreeSize: limits.maxTreeSize,
       maxCheckpointBytes: limits.maxCheckpointBytes,

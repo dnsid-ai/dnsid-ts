@@ -1,4 +1,4 @@
-import type { IdentityResolver, TLSCertificate, VerificationOptions, VerifiedDomain, DnsIdJWK } from '@dnsid-ai/protocol';
+import type { RefreshingIdentityResolver, TLSCertificate, VerificationOptions, VerifiedDomain, DnsIdJWK } from '@dnsid-ai/protocol';
 import { ArgumentError, VerificationError, VerificationCode, normalizeFQDN, jwkThumbprint, fromBase64Url, toBase64Url, parseJsonNoDuplicateMembers, verifyWithKey, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
 import type { SignatureParams, HttpMessage, ComponentIdentifier } from '@dnsid-ai/http-signatures';
 import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, hasComponentNamed, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
@@ -6,7 +6,8 @@ import { Token } from 'structured-headers';
 
 /** Trusted transport must validate Web PKI and pin connections to public DNS addresses.
  * It must never follow redirects, honor cancellation, disable decompression, and preserve received bytes/headers.
- * Prefer fresh acquisition honoring cache: 'no-store'. A caching transport must enforce original
+ * Every call requires fresh acquisition: honor cache: 'no-store' and Cache-Control: no-cache.
+ * Never return a cached directory without upstream revalidation. Any upstream cache must enforce original
  * RFC 9111 age/freshness itself and reject reuse without sufficient metadata. Associate keys with normalized
  * discovery URLs and thumbprints; newer resolutions replace older key sets (signed proofs ordered by created).
  * Failed refreshes must not evict evidence or extend freshness. Do not inject ordinary fetch on a server.
@@ -72,6 +73,17 @@ async function digest(message: Request | Response, params: SignatureParams, sign
   return bytes;
 }
 
+/** WBA section 5.5: URL normalization, excluding query and fragment. */
+export function normalizedWbaIdentifier(uri: string): string {
+  const url = new URL(uri);
+  url.search = '';
+  url.hash = '';
+  return new URL(url.href.replace(/%[0-9a-f]{2}/gi, encoded => {
+    const char = String.fromCharCode(parseInt(encoded.slice(1), 16));
+    return /^[A-Za-z0-9._~-]$/.test(char) ? char : encoded.toUpperCase();
+  })).href;
+}
+
 function endpoint(uri: string, type: string, domain?: string): URL {
   if (uri.length > 16 * 1024) invalid('WBA discovery URI exceeds size limit');
   let url: URL;
@@ -118,7 +130,7 @@ function discoveryFailure(cause: unknown): never {
   throw new VerificationError('WBA directory discovery failed', { code: VerificationCode.TLSError, transient: !tls, cause });
 }
 
-export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityResolver, fetchDirectory: WebBotAuthDiscoveryFetch, skew: number, opts: WebBotAuthVerificationOptions): Promise<VerifiedDomain> {
+export async function verifyWebBotAuthRequest(req: Request, resolver: RefreshingIdentityResolver, fetchDirectory: WebBotAuthDiscoveryFetch, skew: number, opts: WebBotAuthVerificationOptions, refreshCooldowns: Map<string, number>): Promise<VerifiedDomain> {
   if (opts.requiredComponents !== undefined && !Array.isArray(opts.requiredComponents)) throw new ArgumentError('requiredComponents must be an array');
   for (const component of opts.requiredComponents ?? []) {
     validateComponentIdentifier(component);
@@ -150,7 +162,7 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       if (!domain && opts.allowSignatureAgentDomain === true) domain = normalizeFQDN(url.hostname, true);
       if (!domain) throw new ArgumentError('trusted signer domain policy is required');
       if (opts.discovery && endpoint(opts.discovery.uri, opts.discovery.type ?? 'directory', domain).href !== url.href) invalid('Signature-Agent does not match trusted discovery');
-      const directoryRequest = new Request(url, { redirect: 'manual', cache: 'no-store', headers: { 'Accept-Encoding': 'identity' }, signal });
+      const directoryRequest = new Request(url, { redirect: 'manual', cache: 'no-store', headers: { 'Accept-Encoding': 'identity', 'Cache-Control': 'no-cache' }, signal });
       try { response = await waitForVerification(() => fetchDirectory(directoryRequest), signal); }
       catch (cause) { discoveryFailure(cause); }
       if (response.redirected) invalid('discovery transport followed an unchecked redirect');
@@ -182,17 +194,29 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: IdentityRe
       const key = matching[0]!;
       await signature({ message: response, request: directoryRequest }, directory.params, directory.signature, key);
       await signature(req, request.params, request.signature, key);
-      const verified = await waitForVerification(() => resolver.verifyDomain(domain!, opts.peerCert, { signal }), signal);
-      if (verified.domain !== domain) invalid('DNSid signer domain mismatch');
-      let operationalKey: DnsIdJWK;
-      try { operationalKey = verified.jwks.currentOperationalSigningKey(); }
-      catch { invalid('DNSid current operational signing key is unavailable'); }
-      if (await jwkThumbprint(operationalKey) !== key.kid) invalid('WBA key is not bound to the current DNSid operational signing key');
+      let verified = await waitForVerification(() => resolver.verifyDomain(domain!, opts.peerCert, { signal }), signal);
       const fresh = () => {
         validity(request.params, skew);
         validity(directory.params, skew, true);
         verified.assertFresh();
       };
+      const bound = async () => {
+        fresh();
+        if (verified.domain !== domain) invalid('DNSid signer domain mismatch');
+        if (verified.record.runtimeKeyURI() && normalizedWbaIdentifier(url.href) === normalizedWbaIdentifier(verified.record.runtimeKeyURI())) invalid('WBA discovery must be separate from the authenticated ku endpoint');
+        let operationalKey: DnsIdJWK;
+        try { operationalKey = verified.jwks.currentOperationalSigningKey(); }
+        catch { invalid('DNSid current operational signing key is unavailable'); }
+        return await jwkThumbprint(operationalKey) === key.kid;
+      };
+      if (!await bound()) {
+        const now = Date.now();
+        for (const [host, deadline] of refreshCooldowns) if (deadline <= now) refreshCooldowns.delete(host);
+        if (refreshCooldowns.has(domain) || refreshCooldowns.size >= 1024) invalid('WBA key-mismatch refresh suppressed');
+        refreshCooldowns.set(domain, now + 5000);
+        verified = await waitForVerification(() => resolver.refreshDomain(domain!, opts.peerCert, { signal }), signal);
+        if (!await bound()) invalid('WBA key is not bound to the current DNSid operational signing key');
+      }
       fresh();
       if (opts.consumeNonce) {
         if (!request.params.nonce) invalid('replay policy requires a non-empty nonce');

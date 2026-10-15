@@ -40,6 +40,8 @@ export interface FetchResult {
 
 /** Options controlling {@link fetchJson}. */
 export interface HTTPSFetchOptions {
+  /** Bypass local caches and revalidate upstream evidence. */
+  revalidate?: boolean;
   /** Shared verification deadline/cancellation, including redirects. */
   signal?: AbortSignal;
   /** If set, the URL host (and every redirect host) must match this host exactly. */
@@ -653,6 +655,7 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
       rejectUnauthorized: true,
       headers: {
         'User-Agent': DNSID_USER_AGENT,
+        ...(opts.revalidate ? { 'Cache-Control': 'no-cache' } : {}),
       },
       lookup: createSsrfSafeLookup(opts.dnsServer, (opts.privateAddressHosts ?? []).map(normalizePrivateAddressHost)),
     };
