@@ -143,9 +143,10 @@ active/pending/retained lifecycle state and exposes public keys as JWKs.
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L296)
+Defined in: [index.ts:306](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L306)
 
-Promotes a pending key to active. The previously active key transitions to retained.
+Blocks new signing and drains in-flight signatures before promoting a pending key.
+The previously active key transitions to retained.
 
 ###### Parameters
 
@@ -169,7 +170,7 @@ Promotes a pending key to active. The previously active key transitions to retai
 generateKey(): Promise<string>;
 ```
 
-Defined in: [index.ts:280](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L280)
+Defined in: [index.ts:290](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L290)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -190,7 +191,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:230](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L230)
+Defined in: [index.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L232)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -217,7 +218,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [index.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L237)
+Defined in: [index.ts:239](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L239)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -238,7 +239,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:327](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L327)
+Defined in: [index.ts:342](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L342)
 
 ###### Parameters
 
@@ -266,7 +267,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:249](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L249)
+Defined in: [index.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L251)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -293,7 +294,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:226](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L226)
+Defined in: [index.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L228)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -314,7 +315,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:253](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L253)
+Defined in: [index.ts:255](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L255)
 
 Signs with a specified active or pending key.
 
@@ -344,7 +345,7 @@ Signs with a specified active or pending key.
 stateSnapshot(): AwsKmsKeyState;
 ```
 
-Defined in: [index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L241)
+Defined in: [index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L243)
 
 ###### Returns
 
@@ -358,7 +359,7 @@ Defined in: [index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:305](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L305)
+Defined in: [index.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L320)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -384,7 +385,7 @@ Supersedes and removes a retained key from this provider's published key set.
 static load(client, config): Promise<AwsKmsKeyProvider>;
 ```
 
-Defined in: [index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L214)
+Defined in: [index.ts:216](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L216)
 
 ###### Parameters
 

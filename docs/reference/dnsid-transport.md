@@ -350,7 +350,7 @@ Minimal WHATWG-fetch-compatible function signature returned by the fetch factori
 function createDefaultDnsResolver(config): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:191](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L191)
+Defined in: [transport/src/index.ts:212](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L212)
 
 Creates the DNS resolver used to fetch DNSid identity records (TXT).
 
@@ -425,7 +425,7 @@ const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example');
 function createDnsResolverFromServer(server): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:224](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L224)
+Defined in: [transport/src/index.ts:245](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L245)
 
 Creates a [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsresolver) that queries a specific DNS server.
 
@@ -457,7 +457,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:293](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L293)
+Defined in: [transport/src/index.ts:314](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L314)
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -530,7 +530,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L256)
+Defined in: [transport/src/index.ts:277](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L277)
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -578,7 +578,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:278](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L278)
+Defined in: [transport/src/index.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L299)
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -606,7 +606,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:422](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L422)
+Defined in: [transport/src/index.ts:443](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L443)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -638,7 +638,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:267](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L267)
+Defined in: [transport/src/index.ts:288](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L288)
 
 Splits a DNS server string into host and optional port.
 
