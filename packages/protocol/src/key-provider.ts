@@ -50,7 +50,8 @@ export interface KeyProvider {
   generateKey(): Promise<string>;
 
   /**
-   * Promotes a pending key to active. The previously active key transitions to retained.
+   * Blocks new signing and drains in-flight signatures before promoting a pending key.
+   * The previously active key transitions to retained.
    */
   activate(kid: string): Promise<void>;
 

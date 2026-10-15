@@ -82,15 +82,15 @@ describe('createC2spTlogVerificationRegistry', () => {
       throw new Error(`unexpected URL ${url}`);
     });
     const source = new ScanStreamSource(
-      { authenticateCheckpoint: () => undefined },
+      { authenticateCheckpoint: () => undefined, revalidate: true },
       { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
     );
 
     await expect(source.load(prefix)).resolves.toMatchObject({ complete: true, entries: { length: 257 } });
     expect(fetchBounded.mock.calls).toEqual([
-      [prefix + '/checkpoint', 1_048_576, expect.objectContaining({ timeoutMs: 10_000 })],
-      [entryBundlePath(prefix, 0), 16_777_472, expect.objectContaining({ timeoutMs: 10_000 })],
-      [entryBundlePath(prefix, 1, 1), 16_777_472, expect.objectContaining({ timeoutMs: 10_000 })],
+      [prefix + '/checkpoint', 1_048_576, expect.objectContaining({ timeoutMs: 10_000, revalidate: true })],
+      [entryBundlePath(prefix, 0), 16_777_472, expect.objectContaining({ timeoutMs: 10_000, revalidate: true })],
+      [entryBundlePath(prefix, 1, 1), 16_777_472, expect.objectContaining({ timeoutMs: 10_000, revalidate: true })],
     ]);
   });
 

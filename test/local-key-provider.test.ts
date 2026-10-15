@@ -40,6 +40,36 @@ async function writeP256KeyPair(dir: string, kid = 'p256-key') {
 }
 
 describe('LocalKeyProvider.load', () => {
+  it('drains signing before activation and refuses new signing while draining', () => withTemp('dnsid-keys-', async dir => {
+    const provider = await LocalKeyProvider.load(join(dir, 'keys.json'), true);
+    const previous = await provider.signingKey();
+    const pending = await provider.generateKey();
+    const payload = new Uint8Array([1, 2, 3]);
+    let begin!: () => void;
+    let finish!: () => void;
+    const started = new Promise<void>(resolve => { begin = resolve; });
+    const release = new Promise<void>(resolve => { finish = resolve; });
+    const sign = crypto.subtle.sign.bind(crypto.subtle);
+    const spy = vi.spyOn(crypto.subtle, 'sign').mockImplementationOnce(async (...args) => {
+      begin();
+      await release;
+      return sign(...args);
+    });
+    try {
+      const signature = provider.sign(payload);
+      await started;
+      const activation = provider.activate(pending);
+      await expect(provider.sign(payload)).rejects.toThrow('activation is in progress');
+      await expect(provider.activate(pending)).rejects.toThrow('activation is already in progress');
+      expect((await provider.signingKey()).kid).toBe(previous.kid);
+      finish();
+      expect(await verifyWithKey(payload, await signature, previous, 'EdDSA')).toBe(true);
+      await activation;
+      expect((await provider.signingKey()).kid).toBe(pending);
+      await expect(provider.sign(payload)).resolves.toHaveLength(64);
+    } finally { finish(); spy.mockRestore(); }
+  }));
+
   it('rotates a symlinked store without replacing the link and backs up the target', () => withTemp('dnsid-keys-', async dir => {
     const target = join(dir, 'store', 'keys.json');
     const link = join(dir, 'keys.json');

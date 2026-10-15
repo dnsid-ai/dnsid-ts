@@ -32,6 +32,7 @@ export type {
   FetchResult,
   IdentityManagerDependencies,
   IdentityResolver,
+  RefreshingIdentityResolver,
   JsonFetchOptions,
   JsonFetcher,
   SigningIdentityManager,

@@ -39,6 +39,8 @@ export interface C2spStreamBundleReaderOptions {
 
 /** Configuration for {@link C2spTlogReader}; only `policy` is required. */
 export interface C2spTlogReaderOptions {
+  /** Revalidate required lifecycle resources instead of reusing HTTP cache entries. */
+  revalidate?: boolean;
   /** Local trust policy: accepted log keys and witness quorum per origin. */
   policy: C2spTlogPolicy;
   /** Bounded resource fetcher for the default {@link ScanStreamSource} and stream-bundle reads. */
@@ -342,6 +344,7 @@ export class C2spTlogReader implements LogReader {
       bytes = await waitForVerification(() => this.resourceFetcher!.fetchBounded(endpoint, maximum, {
         signal,
         timeoutMs: this.options.requestTimeoutMs ?? DEFAULT_C2SP_REQUEST_TIMEOUT_MS,
+        revalidate: this.options.revalidate,
       }), signal);
       if (!(bytes instanceof Uint8Array) || bytes.length > maximum) throw new C2spTlogVerificationError(`C2SP response exceeds configured byte maximum ${maximum}: ${endpoint}`);
     } catch (cause) {
@@ -397,7 +400,7 @@ export class C2spTlogReader implements LogReader {
 
   private async loadEvidence(logPrefix: string, signal: AbortSignal): Promise<StreamEvidence> {
     try {
-      return await waitForVerification(() => this.source.load(logPrefix, { signal }), signal);
+      return await waitForVerification(() => this.source.load(logPrefix, { signal, revalidate: this.options.revalidate }), signal);
     } catch (cause) {
       throw c2spLogError('C2SP stream evidence is unavailable', cause, true);
     }

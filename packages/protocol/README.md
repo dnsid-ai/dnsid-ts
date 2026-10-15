@@ -67,6 +67,13 @@ new manager for changed trust policy. DNS expiry starts at lookup acquisition,
 not verification completion. Status refresh never extends it, zero-TTL answers
 are never reused, and DNS/TLS/key-age bounds are checked before returning.
 
+`refreshDomain(domain, peerCert?, options?)` performs complete verification without
+reusing the cached identity or falling back after failure. Concurrent refreshes
+share acquisition, but each caller still passes peer and acceptance checks.
+Injected JSON fetchers and log factories must honor `revalidate: true` by bypassing
+local caches and revalidating upstream evidence. DNS answers retain their normal TTL.
+Older in-flight lookups cannot overwrite a successful refresh.
+
 ## High-value operation log checks
 
 `verifyDomain()` validates the bilateral ISSUANCE binding for every identity. If

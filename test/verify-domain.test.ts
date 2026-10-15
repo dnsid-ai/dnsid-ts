@@ -607,6 +607,78 @@ describe('IdentityManager.verifyDomain()', () => {
     await expect(manager.verifyDomain('agent.example.com')).resolves.toMatchObject({ domain: 'agent.example.com' });
   });
 
+  it('refreshes cached keys, revalidates resources, and coalesces concurrent refreshes', async () => {
+    const { fixture } = await setup();
+    const gate = deferred();
+    let refreshing = false;
+    const fetchTXT = vi.fn(async (name: string) => {
+      if (refreshing) await gate.promise;
+      return fixture.dnsResolver.fetchTXT(name);
+    });
+    const nextPair = await generateKeyPair('ES256');
+    const nextKey = { ...await exportJWK(nextPair.publicKey), kid: 'next', alg: 'ES256' } as DnsIdJWK;
+    const fetchJson = vi.fn(async (url: string, opts?: import('@dnsid-ai/protocol').JsonFetchOptions) => {
+      const result = await fixture.fetchJson(url, opts);
+      return refreshing && url === fixture.record.ku ? { ...result, data: { keys: [nextKey] } } : result;
+    });
+    const reader = vi.fn(() => fixture.logReader);
+    fixture.logRegistry.register('microledger', reader);
+    const manager = new IdentityManager({ verification: { statusCheckInterval: 60 } }, { dnsResolver: { fetchTXT }, fetchJson, logRegistry: fixture.logRegistry });
+    expect((await manager.verifyDomain('agent.example.com')).jwks.keys).toEqual([operationalKey]);
+    refreshing = true;
+    fetchJson.mockClear();
+    const calls = Array.from({ length: 8 }, () => manager.refreshDomain('Agent.Example.COM.'));
+    gate.resolve();
+    const results = await Promise.all(calls);
+    expect(new Set(results).size).toBe(1);
+    expect(results[0]!.jwks.keys).toEqual([nextKey]);
+    expect(fetchJson).toHaveBeenCalledTimes(3);
+    for (const [, opts] of fetchJson.mock.calls) expect(opts?.revalidate).toBe(true);
+    expect(reader).toHaveBeenLastCalledWith(fixture.record.lr, expect.objectContaining({ revalidate: true }));
+    await expect(manager.verifyDomain('agent.example.com')).resolves.toBe(results[0]);
+    expect(fetchTXT).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['lookup', 'status'])('does not let an older %s overwrite successful refresh', async kind => {
+    const { fixture } = await setup();
+    const gate = deferred();
+    let delay = false;
+    const fetchJson = vi.fn(async (url: string, opts?: import('@dnsid-ai/protocol').JsonFetchOptions) => {
+      const result = await fixture.fetchJson(url, opts);
+      if (delay && !opts?.revalidate && url === (kind === 'lookup' ? fixture.record.ku : fixture.record.su)) await gate.promise;
+      return result;
+    });
+    const manager = new IdentityManager({ verification: { statusCheckInterval: kind === 'status' ? 0 : 60 } }, { ...fixture, fetchJson });
+    if (kind === 'status') await manager.verifyDomain('agent.example.com');
+    delay = true;
+    const older = manager.verifyDomain('agent.example.com');
+    await vi.waitFor(() => expect(fetchJson.mock.calls.some(([url, opts]) => !opts?.revalidate && url === fixture.record.ku)).toBe(true));
+    const refreshed = await manager.refreshDomain('agent.example.com');
+    gate.resolve();
+    await older;
+    // Status interval zero produces a new wrapper; the identity acquisition must remain the refreshed one.
+    expect((await manager.verifyDomain('agent.example.com')).jwks).toBe(refreshed.jwks);
+  });
+
+  it('never falls back to cached identity after refresh failure', async () => {
+    const { fixture } = await setup();
+    const fetchJson = vi.fn(fixture.fetchJson);
+    const manager = new IdentityManager({ verification: { statusCheckInterval: 60 } }, { ...fixture, fetchJson });
+    const cached = await manager.verifyDomain('agent.example.com');
+    fetchJson.mockRejectedValue(new Error('offline'));
+    await expect(manager.refreshDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.TLSError, transient: true });
+    await expect(manager.verifyDomain('agent.example.com')).resolves.toBe(cached);
+  });
+
+  it.each([false, true])('applies peer and acceptance checks to each refresh caller: denied=%s', async denied => {
+    const fixture = await currentProfileFixture('agent.example.com', operationalKey, 'mtls');
+    const manager = new IdentityManager({ verification: { trustedEntities: denied ? [] : undefined } }, fixture);
+    const peer = { notAfter: new Date('2099-01-01'), san: ['agent.example.com'] };
+    const results = await Promise.allSettled([manager.refreshDomain('agent.example.com', peer), manager.refreshDomain('agent.example.com')]);
+    expect(results[0]).toMatchObject(denied ? { status: 'rejected', reason: { code: VerificationCode.CounterpartyNotAccepted } } : { status: 'fulfilled' });
+    expect(results[1]).toMatchObject({ status: 'rejected', reason: { code: VerificationCode.TLSError } });
+  });
+
   it('evicts cached verification state', async () => {
     const { fixture, manager } = await setup();
     const fetchSpy = vi.spyOn(fixture.dnsResolver, 'fetchTXT');

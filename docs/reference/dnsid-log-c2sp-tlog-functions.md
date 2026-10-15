@@ -394,7 +394,7 @@ protection must survive process restarts.
 function createDefaultC2spBoundedResourceFetcher(transport?): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L85)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L88)
 
 Creates the default public-resource fetcher. It uses connection-time SSRF
 checks, rejects redirects, requires HTTP 200, and bounds the decoded body
@@ -452,7 +452,7 @@ signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L96)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L99)
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -1322,7 +1322,7 @@ function registerC2spTlog(registry, options): void;
 
 Defined in: [packages/log-c2sp-tlog/src/index.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/index.ts#L24)
 
-Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr. Reader options are shared; this low-level registration does not propagate per-invocation signals.
+Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr. Reader options are shared; invocation refresh and cancellation apply to each reader.
 
 #### Parameters
 
@@ -1348,7 +1348,7 @@ Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.
 function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarantees;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L74)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L77)
 
 Returns a copy of the capabilities required by the safe standard-resource factory.
 
@@ -1616,7 +1616,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L108)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L111)
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 

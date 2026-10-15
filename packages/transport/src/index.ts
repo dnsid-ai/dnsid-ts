@@ -40,6 +40,8 @@ export interface FetchResult {
 
 /** Options controlling {@link fetchJson}. */
 export interface HTTPSFetchOptions {
+  /** Bypass local caches and revalidate upstream evidence. */
+  revalidate?: boolean;
   /** Shared verification deadline/cancellation, including redirects. */
   signal?: AbortSignal;
   /** If set, the URL host (and every redirect host) must match this host exactly. */
@@ -162,8 +164,29 @@ export function createSsrfSafeFetch(config: TransportConfig = {}, options: SsrfS
         for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) headers.append(name, item);
       }
       const noBody = request.method === 'HEAD' || [204, 205, 304].includes(response.statusCode);
+      let body: ReadableStream<Uint8Array> | null = null;
       if (noBody) await response.body.dump();
-      return new Response(noBody ? null : Readable.toWeb(response.body) as unknown as ReadableStream<Uint8Array>, { status: response.statusCode, statusText: response.statusText, headers });
+      else {
+        // Node's toWeb adapter can enqueue buffered data after cancellation closes its controller.
+        const iterator = response.body[Symbol.asyncIterator]();
+        let canceled = false;
+        response.body.on('error', () => {});
+        body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            try {
+              const { value, done } = await iterator.next();
+              if (canceled) return;
+              if (done) controller.close();
+              else controller.enqueue(new Uint8Array(value));
+            } catch (error) { if (!canceled) controller.error(error); }
+          },
+          cancel() {
+            canceled = true;
+            response.body.destroy();
+          },
+        });
+      }
+      return new Response(body, { status: response.statusCode, statusText: response.statusText, headers });
     }
     return fetchWithSafeLookup(input, { ...init, redirect: 'manual' });
   };
@@ -653,6 +676,7 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
       rejectUnauthorized: true,
       headers: {
         'User-Agent': DNSID_USER_AGENT,
+        ...(opts.revalidate ? { 'Cache-Control': 'no-cache' } : {}),
       },
       lookup: createSsrfSafeLookup(opts.dnsServer, (opts.privateAddressHosts ?? []).map(normalizePrivateAddressHost)),
     };

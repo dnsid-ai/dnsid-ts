@@ -1062,7 +1062,7 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseDictionaryField(headerValue): Dictionary;
 ```
 
-Defined in: [http-signatures/src/index.ts:850](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L850)
+Defined in: [http-signatures/src/index.ts:856](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L856)
 
 Parses a bounded Structured Field dictionary without silently erasing duplicate members.
 
@@ -1134,7 +1134,7 @@ ArgumentError if the key ID is malformed.
 function parseSha256ContentDigest(headerValue, components?): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:1149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1149)
+Defined in: [http-signatures/src/index.ts:1155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1155)
 
 Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members.
 
@@ -1162,7 +1162,7 @@ Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported 
 function parseSignature(headerValue): Map<string, Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:919](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L919)
+Defined in: [http-signatures/src/index.ts:925](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L925)
 
 Parses a `Signature` header (RFC 8941 Dictionary of byte sequences) into raw signature
 bytes keyed by label.
@@ -1192,7 +1192,7 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 function parseSignatureInput(headerValue): Map<string, SignatureParams>;
 ```
 
-Defined in: [http-signatures/src/index.ts:874](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L874)
+Defined in: [http-signatures/src/index.ts:880](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L880)
 
 Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
 signature params, preserving component and parameter order for canonical
@@ -1227,7 +1227,7 @@ function readBoundedBody(
 ): Promise<ArrayBuffer>;
 ```
 
-Defined in: [http-signatures/src/index.ts:947](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L947)
+Defined in: [http-signatures/src/index.ts:953](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L953)
 
 Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses.
 
@@ -1344,7 +1344,7 @@ function setDictionaryMember(
 ): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:984](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L984)
+Defined in: [http-signatures/src/index.ts:990](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L990)
 
 Sets one member of a structured-field Dictionary header (e.g. `Signature`, `Signature-Input`)
 to `label=value`, replacing any existing member with that label and preserving the rest.
@@ -1381,11 +1381,12 @@ to `label=value`, replacing any existing member with that label and preserving t
 function signHttpMessage<T>(
    msg, 
    params, 
-   keyProvider
+   keyProvider, 
+   signingKey?
 ): Promise<T>;
 ```
 
-Defined in: [http-signatures/src/index.ts:776](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L776)
+Defined in: [http-signatures/src/index.ts:777](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L777)
 
 Signs an HTTP message per RFC 9421 with the key provider's current operational key.
 
@@ -1423,6 +1424,12 @@ Covered components and signature parameters to serialize into `Signature-Input`.
 ##### keyProvider
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1)
+
+##### signingKey?
+
+[`DnsIdJWK`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidjwk)
+
+Public key used to select signature metadata; defaults to the current key.
 
 #### Returns
 

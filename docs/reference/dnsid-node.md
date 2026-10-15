@@ -47,9 +47,10 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L145)
+Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
 
-Promotes a pending key to active. The previously active key transitions to retained.
+Blocks new signing and drains in-flight signatures before promoting a pending key.
+The previously active key transitions to retained.
 
 ###### Parameters
 
@@ -73,7 +74,7 @@ Promotes a pending key to active. The previously active key transitions to retai
 generateKey(): Promise<string>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L137)
+Defined in: [packages/sdk/src/local-key-provider.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L147)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -94,7 +95,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L112)
+Defined in: [packages/sdk/src/local-key-provider.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L114)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -121,7 +122,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L121)
+Defined in: [packages/sdk/src/local-key-provider.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L123)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -142,7 +143,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L167)
+Defined in: [packages/sdk/src/local-key-provider.ts:182](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L182)
 
 ###### Parameters
 
@@ -170,7 +171,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L125)
+Defined in: [packages/sdk/src/local-key-provider.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L127)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -197,7 +198,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L108)
+Defined in: [packages/sdk/src/local-key-provider.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L110)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -218,7 +219,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L129)
+Defined in: [packages/sdk/src/local-key-provider.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L131)
 
 Signs with a specified active or pending key.
 
@@ -248,7 +249,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L155)
+Defined in: [packages/sdk/src/local-key-provider.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L170)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -274,7 +275,7 @@ Supersedes and removes a retained key from this provider's published key set.
 static fromDirectory(dir): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L81)
+Defined in: [packages/sdk/src/local-key-provider.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L83)
 
 ###### Parameters
 
@@ -294,7 +295,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:81](https://github.com/dnsid
 static fromDomain(domain, dnsidDir?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L104)
+Defined in: [packages/sdk/src/local-key-provider.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L106)
 
 ###### Parameters
 
@@ -318,7 +319,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:104](https://github.com/dnsi
 static fromFile(filePath): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L98)
+Defined in: [packages/sdk/src/local-key-provider.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L100)
 
 Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 
@@ -340,7 +341,7 @@ Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 static generate(algorithm?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L77)
+Defined in: [packages/sdk/src/local-key-provider.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L79)
 
 ###### Parameters
 
@@ -364,7 +365,7 @@ static load(
 ): Promise<LocalKeyProvider>;
 ```
 
-Defined in: [packages/sdk/src/local-key-provider.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L49)
+Defined in: [packages/sdk/src/local-key-provider.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L51)
 
 ###### Parameters
 
