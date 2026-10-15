@@ -1014,7 +1014,7 @@ HTTPS URL for the lifecycle status endpoint (`su` tag).
 
 ### IdentityManagerDependencies
 
-Defined in: [packages/protocol/src/identity-manager.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L84)
+Defined in: [packages/protocol/src/identity-manager.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L86)
 
 Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/ts/dnsid-protocol-classes/#identitymanager). Configuration data lives in [DnsidConfig](#dnsidconfig).
 
@@ -1028,7 +1028,7 @@ Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/
 optional cache?: IdentityCache;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
+Defined in: [packages/protocol/src/identity-manager.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L93)
 
 <a id="dnsresolver-1"></a>
 
@@ -1038,7 +1038,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dn
 optional dnsResolver?: DNSResolver;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L90)
+Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
 
 <a id="entitykeyprovider"></a>
 
@@ -1048,7 +1048,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dn
 optional entityKeyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
+Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L90)
 
 Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejected without `config.identity`.
 
@@ -1060,7 +1060,7 @@ Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejec
 optional fetchJson?: JsonFetcher;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
+Defined in: [packages/protocol/src/identity-manager.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L94)
 
 <a id="keyprovider"></a>
 
@@ -1070,7 +1070,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dn
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L86)
+Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
 
 Local operational signer. Required with `config.identity`; rejected without it.
 
@@ -1082,7 +1082,7 @@ Local operational signer. Required with `config.identity`; rejected without it.
 optional logRegistry?: LogRegistry;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L89)
+Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
 
 ***
 
@@ -1090,10 +1090,11 @@ Defined in: [packages/protocol/src/identity-manager.ts:89](https://github.com/dn
 
 ### IdentityResolver
 
-Defined in: [packages/protocol/src/identity-manager.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L95)
+Defined in: [packages/protocol/src/identity-manager.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L97)
 
 #### Extended by
 
+- [`RefreshingIdentityResolver`](#refreshingidentityresolver)
 - [`SigningIdentityManager`](#signingidentitymanager)
 
 #### Methods
@@ -1110,7 +1111,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
 
 ###### Parameters
 
@@ -1529,6 +1530,18 @@ optional maxResponseBytes?: number;
 ```
 
 Defined in: [packages/protocol/src/identity-manager.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L78)
+
+<a id="revalidate"></a>
+
+##### revalidate?
+
+```ts
+optional revalidate?: boolean;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L80)
+
+Bypass local caches and revalidate upstream evidence.
 
 <a id="signal"></a>
 
@@ -2551,6 +2564,88 @@ Defined in: [packages/protocol/src/identity-manager.ts:67](https://github.com/dn
 
 ***
 
+<a id="refreshingidentityresolver"></a>
+
+### RefreshingIdentityResolver
+
+Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L101)
+
+#### Extends
+
+- [`IdentityResolver`](#identityresolver)
+
+#### Methods
+
+<a id="refreshdomain-1"></a>
+
+##### refreshDomain()
+
+```ts
+refreshDomain(
+   domain, 
+   peerCert?, 
+   options?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L102)
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### peerCert?
+
+[`TLSCertificate`](#tlscertificate)
+
+###### options?
+
+[`VerificationOptions`](#verificationoptions)
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-classes/#verifieddomain)\>
+
+<a id="verifydomain-2"></a>
+
+##### verifyDomain()
+
+```ts
+verifyDomain(
+   domain, 
+   peerCert?, 
+   options?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### peerCert?
+
+[`TLSCertificate`](#tlscertificate)
+
+###### options?
+
+[`VerificationOptions`](#verificationoptions)
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-classes/#verifieddomain)\>
+
+###### Inherited from
+
+[`IdentityResolver`](#identityresolver).[`verifyDomain`](#verifydomain-1)
+
+***
+
 <a id="retirementevent"></a>
 
 ### RetirementEvent
@@ -2919,7 +3014,7 @@ Defined in: [packages/protocol/src/log-events.ts:88](https://github.com/dnsid-ai
 
 ### SigningIdentityManager
 
-Defined in: [packages/protocol/src/identity-manager.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L99)
+Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
 
 #### Extends
 
@@ -2935,7 +3030,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:99](https://github.com/dn
 config: object;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L100)
+Defined in: [packages/protocol/src/identity-manager.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L106)
 
 ###### identity?
 
@@ -2949,6 +3044,12 @@ optional identity?: object;
 domain: string;
 ```
 
+###### identity.kuUrl?
+
+```ts
+optional kuUrl?: string;
+```
+
 #### Methods
 
 <a id="getkeyprovider-1"></a>
@@ -2959,13 +3060,13 @@ domain: string;
 getKeyProvider(): KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L101)
+Defined in: [packages/protocol/src/identity-manager.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L107)
 
 ###### Returns
 
 [`KeyProvider`](#keyprovider-1)
 
-<a id="verifydomain-2"></a>
+<a id="verifydomain-3"></a>
 
 ##### verifyDomain()
 
@@ -2977,7 +3078,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
 
 ###### Parameters
 

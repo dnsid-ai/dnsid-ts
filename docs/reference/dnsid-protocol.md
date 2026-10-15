@@ -72,6 +72,13 @@ new manager for changed trust policy. DNS expiry starts at lookup acquisition,
 not verification completion. Status refresh never extends it, zero-TTL answers
 are never reused, and DNS/TLS/key-age bounds are checked before returning.
 
+`refreshDomain(domain, peerCert?, options?)` performs complete verification without
+reusing the cached identity or falling back after failure. Concurrent refreshes
+share acquisition, but each caller still passes peer and acceptance checks.
+Injected JSON fetchers and log factories must honor `revalidate: true` by bypassing
+local caches and revalidating upstream evidence. DNS answers retain their normal TTL.
+Older in-flight lookups cannot overwrite a successful refresh.
+
 ## High-value operation log checks
 
 `verifyDomain()` validates the bilateral ISSUANCE binding for every identity. If
@@ -354,7 +361,7 @@ Defined in: [packages/protocol/src/types.ts:14](https://github.com/dnsid-ai/dnsi
 type JsonFetcher = (url, opts?) => Promise<FetchResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L81)
+Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L83)
 
 #### Parameters
 
@@ -662,7 +669,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1077](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1077)
+Defined in: [packages/protocol/src/identity-manager.ts:1108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1108)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -912,7 +919,7 @@ ValidationError if the name is empty, contains empty labels, has any label over 
 function normalizePrivateAddressHost(entry): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L171)
+Defined in: [packages/protocol/src/identity-manager.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L177)
 
 Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
 no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
@@ -1105,7 +1112,7 @@ ArgumentError if the key ID is malformed.
 function requireLocalDomain(manager): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
+Defined in: [packages/protocol/src/identity-manager.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L111)
 
 Returns `config.identity.domain` or throws `ArgumentError` for verification-only managers.
 
@@ -1239,7 +1246,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L296)
+Defined in: [packages/protocol/src/identity-manager.ts:302](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L302)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1270,7 +1277,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1114)
+Defined in: [packages/protocol/src/identity-manager.ts:1145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1145)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1465,6 +1472,7 @@ Documented on [Protocol core: interfaces](https://docs.dnsid.ai/reference/ts/dns
 - [MigrationEvent](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#migrationevent)
 - [OperationalKeyRotationOptions](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#operationalkeyrotationoptions)
 - [OperationalKeyRotationResult](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#operationalkeyrotationresult)
+- [RefreshingIdentityResolver](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#refreshingidentityresolver)
 - [RetirementEvent](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#retirementevent)
 - [RetryBackoffOptions](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#retrybackoffoptions)
 - [RevocationEvent](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#revocationevent)

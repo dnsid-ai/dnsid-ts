@@ -458,7 +458,7 @@ Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 type JsonFetcher = (url, opts?) => Promise<FetchResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L81)
+Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L83)
 
 #### Parameters
 
@@ -798,7 +798,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1077](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1077)
+Defined in: [packages/protocol/src/identity-manager.ts:1108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1108)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1150,7 +1150,7 @@ ValidationError if the name is empty, contains empty labels, has any label over 
 function normalizePrivateAddressHost(entry): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L171)
+Defined in: [packages/protocol/src/identity-manager.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L177)
 
 Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
 no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
@@ -1343,7 +1343,7 @@ ArgumentError if the key ID is malformed.
 function requireLocalDomain(manager): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
+Defined in: [packages/protocol/src/identity-manager.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L111)
 
 Returns `config.identity.domain` or throws `ArgumentError` for verification-only managers.
 
@@ -1551,7 +1551,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L296)
+Defined in: [packages/protocol/src/identity-manager.ts:302](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L302)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1582,7 +1582,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1114)
+Defined in: [packages/protocol/src/identity-manager.ts:1145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1145)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1891,6 +1891,7 @@ Documented on [Core SDK: interfaces](https://docs.dnsid.ai/reference/ts/dnsid-in
 - [MigrationEvent](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#migrationevent)
 - [OperationalKeyRotationOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#operationalkeyrotationoptions)
 - [OperationalKeyRotationResult](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#operationalkeyrotationresult)
+- [RefreshingIdentityResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver)
 - [ResumeManagedIssuanceOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#resumemanagedissuanceoptions)
 - [ResumeManagedOperationalKeyRotationOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#resumemanagedoperationalkeyrotationoptions)
 - [RetirementEvent](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#retirementevent)
