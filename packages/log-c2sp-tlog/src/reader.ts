@@ -260,6 +260,14 @@ export class C2spTlogReader implements LogReader {
     return event;
   }
 
+  /** Retrieves exact ISSUANCE bytes with verified inclusion, consistency, and lifecycle authorization. */
+  async readIssuance(domain: string): Promise<{ entryBytes: Uint8Array; index: number; logRef: string }> {
+    const history = await this.loadCompleteHistory(domain);
+    const issuance = history.indexedEvents.find(item => item.event.type === 'ISSUANCE');
+    if (!issuance) throw new VerificationError('verified ISSUANCE not found in this stream', { code: VerificationCode.LogError });
+    return { entryBytes: issuance.bytes.slice(), index: issuance.index, logRef: `${this.parsed.lr}@${issuance.index}` };
+  }
+
   async rebuildHistory(domain: string): Promise<LogEvent[]> { return (await this.loadCompleteHistory(domain)).events; }
 
   private async loadCompleteHistory(domain: string, entityKey?: DnsIdJWK): Promise<VerifiedHistory> {
