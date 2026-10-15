@@ -58,7 +58,7 @@ const registry = await createDnsidManagedVerificationRegistry();
 
 It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback when bundle evidence is unavailable or consistency evidence requires a complete scan. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
 
-Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
+Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts: on Node, `FileTrustedC2spCheckpointStore` from `@dnsid-ai/sdk/node` (or set `logTrust.checkpointStoreDirectory` when loading configuration). A checkpoint that fails continuity raises `C2spCheckpointConsistencyError`, whose `errorCategory` separates the three observations so a consumer can route them without matching message text: `LOG_ROLLBACK` (smaller tree; raise with operations and security, it may be a stale replica, a replay, an operator recovery, or an attack), `LOG_FORK` (equal size, different root; a security event), and `LOG_INCONSISTENT` (a larger tree that does not extend the trusted one; leans security). All three fail closed and are never transient; no category authorizes discarding trusted history, and an authorized re-baseline is an explicit operator action on the store, never a retry. Storage failures surface as `C2spCheckpointStoreError` (`CHECKPOINT_STORE_ERROR`), also non-transient: never substitute empty trust. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
 
 Checkpoint-store `load`/`compareAndSwap` and consistency-source
 `fetchConsistencyProof` receive the verification signal as their last argument.
@@ -150,6 +150,22 @@ lower-level composition, [C2spTlogBinding](https://docs.dnsid.ai/reference/ts/dn
 API for appending events, and [verifyC2spStreamBundle](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#verifyc2spstreambundle) for offline bundles.
 
 ## Type Aliases
+
+<a id="c2spcheckpointadvancekind"></a>
+
+### C2spCheckpointAdvanceKind
+
+```ts
+type C2spCheckpointAdvanceKind = "rollback" | "root_conflict" | "consistency_failed";
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L53)
+
+Which continuity check a candidate checkpoint failed. The vocabulary is shared with the Go
+(`CheckpointAdvanceErrorKind`) and Python (`C2spLifecycleErrorCategory`) SDKs; each kind
+describes an observation, never its cause.
+
+***
 
 <a id="c2spjsonevent"></a>
 
@@ -377,6 +393,8 @@ DNSid method contract with signature-independent logical event identity.
 
 Documented on [Transparency log: classes](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/):
 
+- [C2spCheckpointConsistencyError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2spcheckpointconsistencyerror)
+- [C2spCheckpointStoreError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2spcheckpointstoreerror)
 - [C2spTlogBinding](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogbinding)
 - [~~C2spTlogClient~~](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogclient)
 - [C2spTlogError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogerror)
@@ -392,6 +410,7 @@ Documented on [Transparency log: interfaces](https://docs.dnsid.ai/reference/ts/
 
 - [C2spBoundedResourceFetcher](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spboundedresourcefetcher)
 - [C2spChain](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spchain)
+- [C2spCheckpointSummary](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spcheckpointsummary)
 - [C2spConsistencyProofSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spconsistencyproofsource)
 - [C2spEventContext](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2speventcontext)
 - [C2spResourceFetchGuarantees](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spresourcefetchguarantees)

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   advanceTrustedC2spCheckpoint,
+  C2spCheckpointConsistencyError,
   InMemoryTrustedC2spCheckpointStore,
   leafHash,
   merkleRootFromEntries,
@@ -87,6 +88,53 @@ describe('trusted C2SP checkpoints', () => {
     await expect(advanceTrustedC2spCheckpoint(other, reference, checkpoint(2, secondRoot), witnessTime, {
       completeEntries: [{ index: 0, bytes: encoder.encode('wrong') }, { index: 1, bytes: secondEntry }],
     })).rejects.toThrow('prefix');
+  });
+
+  it('classifies rollback, equal-size fork, and failed consistency as distinct categories carrying both checkpoints', async () => {
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    await advanceTrustedC2spCheckpoint(store, reference, checkpoint(2, secondRoot), witnessTime, {
+      completeEntries: [{ index: 0, bytes: firstEntry }, { index: 1, bytes: secondEntry }],
+    });
+
+    const rollback = await advanceTrustedC2spCheckpoint(store, reference, checkpoint(1, firstRoot), witnessTime).catch(e => e);
+    expect(rollback).toBeInstanceOf(C2spCheckpointConsistencyError);
+    expect(rollback).toMatchObject({ kind: 'rollback', errorCategory: 'LOG_ROLLBACK', transient: false, splitView: false,
+      origin: reference.origin, trustedTreeSize: 2, observedTreeSize: 1 });
+    expect(rollback.trustedRootHash).toEqual(secondRoot);
+    expect(rollback.observedRootHash).toEqual(firstRoot);
+
+    const forkRoot = new Uint8Array(32);
+    const fork = await advanceTrustedC2spCheckpoint(store, reference, checkpoint(2, forkRoot), witnessTime).catch(e => e);
+    expect(fork).toBeInstanceOf(C2spCheckpointConsistencyError);
+    expect(fork).toMatchObject({ kind: 'root_conflict', errorCategory: 'LOG_FORK', splitView: true, trustedTreeSize: 2, observedTreeSize: 2 });
+    expect(fork.observedRootHash).toEqual(forkRoot);
+
+    const thirdRoot = merkleRootFromEntries([firstEntry, secondEntry, encoder.encode('third')]);
+    const badProof = await advanceTrustedC2spCheckpoint(store, reference, checkpoint(3, thirdRoot), witnessTime, {
+      consistencyProofSource: { fetchConsistencyProof: async () => [new Uint8Array(32)] },
+    }).catch(e => e);
+    expect(badProof).toBeInstanceOf(C2spCheckpointConsistencyError);
+    expect(badProof).toMatchObject({ kind: 'consistency_failed', errorCategory: 'LOG_INCONSISTENT', splitView: false, trustedTreeSize: 2, observedTreeSize: 3 });
+
+    const badPrefix = await advanceTrustedC2spCheckpoint(store, reference, checkpoint(3, thirdRoot), witnessTime, {
+      completeEntries: [{ index: 0, bytes: encoder.encode('wrong') }, { index: 1, bytes: secondEntry }, { index: 2, bytes: encoder.encode('third') }],
+    }).catch(e => e);
+    // The candidate's own prefix check runs first and stays INVALID_EVIDENCE: the scan does not reproduce the candidate root.
+    expect(badPrefix.errorCategory).toBe('INVALID_EVIDENCE');
+
+    // A scan that reproduces the candidate root but not the previously trusted one is a continuity failure.
+    const other = new InMemoryTrustedC2spCheckpointStore();
+    await advanceTrustedC2spCheckpoint(other, reference, checkpoint(1, forkRoot), witnessTime);
+    const noExtension = await advanceTrustedC2spCheckpoint(other, reference, checkpoint(2, secondRoot), witnessTime, {
+      completeEntries: [{ index: 0, bytes: firstEntry }, { index: 1, bytes: secondEntry }],
+    }).catch(e => e);
+    expect(noExtension).toBeInstanceOf(C2spCheckpointConsistencyError);
+    expect(noExtension).toMatchObject({ kind: 'consistency_failed', errorCategory: 'LOG_INCONSISTENT' });
+    expect(noExtension.cause).toBeInstanceOf(Error);
+
+    // Root copies: mutating the error must not reach the store.
+    rollback.trustedRootHash.fill(0);
+    await expect(store.load(reference.origin)).resolves.toMatchObject({ treeSize: 2, rootHash: secondRoot });
   });
 
   it('verifies RFC 6962 consistency proofs and retries a lost CAS race', async () => {

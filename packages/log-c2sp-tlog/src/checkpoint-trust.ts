@@ -1,6 +1,6 @@
 import { withVerificationBudget, waitForVerification, type VerificationOptions } from '@dnsid-ai/protocol';
 import type { Checkpoint } from './checkpoint.ts';
-import { C2spTlogVerificationError } from './errors.ts';
+import { C2spCheckpointConsistencyError, C2spTlogVerificationError } from './errors.ts';
 import type { ParsedC2spTlogLr } from './lr.ts';
 import { merkleRootFromEntries, nodeHash } from './merkle.ts';
 import type { IndexedEntry } from './stream-source.ts';
@@ -155,20 +155,28 @@ async function verifyCheckpointAdvance(
   if (completeEntries) verifyCompleteEntriesPrefix(completeEntries, candidate, 'candidate');
   if (!previous) return;
   if (previous.origin !== candidate.origin) throw new C2spTlogVerificationError('trusted checkpoint origin mismatch');
-  if (candidate.treeSize < previous.treeSize) throw new C2spTlogVerificationError('C2SP checkpoint rollback detected');
+  if (candidate.treeSize < previous.treeSize) {
+    throw new C2spCheckpointConsistencyError('C2SP checkpoint rollback detected', 'rollback', previous, candidate);
+  }
   if (candidate.treeSize === previous.treeSize) {
-    if (!equalBytes(candidate.rootHash, previous.rootHash)) throw new C2spTlogVerificationError('equal-size C2SP checkpoint has a different root');
+    if (!equalBytes(candidate.rootHash, previous.rootHash)) {
+      throw new C2spCheckpointConsistencyError('equal-size C2SP checkpoint has a different root', 'root_conflict', previous, candidate);
+    }
     return;
   }
   if (options.consistencyProofSource) {
     const proof = await options.consistencyProofSource.fetchConsistencyProof(reference, previous.treeSize, candidate.treeSize, options.signal);
     if (!verifyC2spConsistencyProof(previous.treeSize, candidate.treeSize, previous.rootHash, candidate.rootHash, proof)) {
-      throw new C2spTlogVerificationError('invalid C2SP checkpoint consistency proof');
+      throw new C2spCheckpointConsistencyError('invalid C2SP checkpoint consistency proof', 'consistency_failed', previous, candidate);
     }
     return;
   }
   if (completeEntries) {
-    verifyCompleteEntriesPrefix(completeEntries, previous, 'previously trusted');
+    try {
+      verifyCompleteEntriesPrefix(completeEntries, previous, 'previously trusted');
+    } catch (cause) {
+      throw new C2spCheckpointConsistencyError('complete scan does not extend the previously trusted checkpoint', 'consistency_failed', previous, candidate, cause);
+    }
     return;
   }
   throw new MissingC2spConsistencyEvidenceError('newer C2SP checkpoint requires consistency proof or verified complete-scan prefix');

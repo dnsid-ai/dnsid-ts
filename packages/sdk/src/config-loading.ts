@@ -32,6 +32,7 @@ import {
 import { RegistryClient, type RegistryClientOptions } from '@dnsid-ai/registry';
 
 import { LocalKeyProvider } from './local-key-provider.ts';
+import { FileTrustedC2spCheckpointStore } from './file-checkpoint-store.ts';
 import { createNodeIdentityManager } from './node-identity-manager.ts';
 
 export type EnvironmentSource = Readonly<Record<string, string | undefined>>;
@@ -46,6 +47,12 @@ export interface LogTrust {
   policyDocument?: Uint8Array;
   /** Trusted C2SP `tlog-policy` HTTPS URL. */
   policyUrl?: string;
+  /**
+   * Directory for the durable trusted-checkpoint store (`FileTrustedC2spCheckpointStore`).
+   * Without it, checkpoints are kept in memory and rollback protection ends when the process
+   * exits. Ignored for `managed: true`. Env: `DNSID_LOG_CHECKPOINT_STORE_DIR`.
+   */
+  checkpointStoreDirectory?: string;
 }
 
 export interface KeySource {
@@ -131,6 +138,7 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
   const profileFile = get('DNSID_LOG_TRUST_PROFILE_FILE');
   const logTrust = compact({
     policyUrl: get('DNSID_LOG_POLICY_URL'),
+    checkpointStoreDirectory: get('DNSID_LOG_CHECKPOINT_STORE_DIR'),
     policyDocument: policyFile === undefined ? undefined : new Uint8Array(await fs.readFile(policyFile)),
     profile: profileFile === undefined ? undefined : jsonObject(await fs.readFile(profileFile), profileFile),
   });
@@ -157,11 +165,12 @@ export async function loadFile(filePath: string): Promise<LoadedConfig> {
   if (root.dnsid !== undefined) loaded.dnsid = validateLoadedDnsidConfig(root.dnsid, `${filePath}: dnsid`);
   if (root.logTrust !== undefined) {
     const trust = object(root.logTrust, `${filePath}: logTrust`);
-    rejectUnknown(trust, `${filePath}: logTrust`, ['managed', 'profile', 'policyUrl']);
+    rejectUnknown(trust, `${filePath}: logTrust`, ['managed', 'profile', 'policyUrl', 'checkpointStoreDirectory']);
     loaded.logTrust = compact({
       managed: optional(trust, 'managed', 'boolean', `${filePath}: logTrust`),
       profile: trust.profile === undefined ? undefined : object(trust.profile, `${filePath}: logTrust.profile`),
       policyUrl: optional(trust, 'policyUrl', 'string', `${filePath}: logTrust`),
+      checkpointStoreDirectory: optional(trust, 'checkpointStoreDirectory', 'string', `${filePath}: logTrust`),
     });
   }
   if (root.registry !== undefined) {
@@ -383,10 +392,17 @@ async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig 
     if (trust.managed !== true) throw new ArgumentError('logTrust.managed must be true when present');
     return createDnsidManagedVerificationRegistry();
   }
+  const trustedCheckpointStore = trust.checkpointStoreDirectory === undefined
+    ? undefined
+    : await FileTrustedC2spCheckpointStore.open(trust.checkpointStoreDirectory);
+  if (!trustedCheckpointStore) {
+    console.warn('logTrust.checkpointStoreDirectory is not set: trusted checkpoints are kept in memory, so rollback protection ends when the process exits.');
+  }
   return createC2spTlogVerificationRegistry({
     trustProfile: trust.profile && parseC2spTlogTrustProfile(new TextEncoder().encode(JSON.stringify(trust.profile))),
     policyDocument: trust.policyDocument,
     policyUrl: trust.policyUrl,
+    trustedCheckpointStore,
     transport,
     checkpointMaxAge: MANAGED_DEFAULTS_MS,
     maxBundleLifetimeMs: trust.profile ? MANAGED_DEFAULTS_MS : undefined,

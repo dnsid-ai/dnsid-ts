@@ -37,7 +37,15 @@ export type LifecycleErrorCategory =
   | 'UNSUPPORTED_EVENT'
   | 'CHAIN_CONTINUITY'
   | 'INVALID_EVIDENCE'
-  | 'INCOMPLETE_STREAM';
+  | 'INCOMPLETE_STREAM'
+  /** A candidate checkpoint's tree is smaller than the trusted one. Fail closed; it may be a stale replica, a replay, an operator recovery, or an attack, and the category does not say which. */
+  | 'LOG_ROLLBACK'
+  /** A candidate checkpoint has the trusted size but a different root: an observed equivocation signal. Fail closed and escalate to security. */
+  | 'LOG_FORK'
+  /** A larger candidate checkpoint does not extend the trusted one: a consistency proof or complete-scan prefix failed. Fail closed and investigate the evidence. */
+  | 'LOG_INCONSISTENT'
+  /** Trusted checkpoint storage is unavailable, corrupt, or refused the write. Fail closed; never substitute empty trust. */
+  | 'CHECKPOINT_STORE_ERROR';
 
 /** Thrown when raw input (e.g. a TXT record or duration string) cannot be parsed into its structured form. */
 export class ParseError extends Error {

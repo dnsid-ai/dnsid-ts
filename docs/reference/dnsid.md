@@ -12,7 +12,7 @@ The root `@dnsid-ai/sdk` entrypoint is runtime-neutral: callers inject DNS resol
 ## Package layout
 
 - **Root export (`@dnsid-ai/sdk`)** — runtime-neutral. No Node built-ins, `Buffer`, filesystem, or `undici` imports; you inject `dnsResolver`, `fetchJson`, and key providers. Safe to bundle for browsers and other non-Node runtimes. Its managed C2SP workflows use the portable writer-only binding entrypoint.
-- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, configuration loaders (`loadEnvironment`, `loadFile`, `loadCliDirectory`, `mergeLoadedConfig`, `constructIdentityManager`), `createNodeIdentityManager`, and the one-call `createNodeIdentityManagerFromEnvironment` / `FromDnsid` / `FromFile`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
+- **`@dnsid-ai/sdk/node` subpath** — Node conveniences: `LocalKeyProvider`, `FileTrustedC2spCheckpointStore`, configuration loaders (`loadEnvironment`, `loadFile`, `loadCliDirectory`, `mergeLoadedConfig`, `constructIdentityManager`), `createNodeIdentityManager`, and the one-call `createNodeIdentityManagerFromEnvironment` / `FromDnsid` / `FromFile`. Loads the optional `@dnsid-ai/transport` peer when HTTPS defaults are needed.
 - **OIDC lives in `@dnsid-ai/oidc`** — deliberately not re-exported from the root because its default transport is Node-bound, and private-key token minting belongs server-side. Import it directly.
 
 ## Install
@@ -103,6 +103,29 @@ const idm = await createNodeIdentityManager({ identity, verification }, { keyPro
 fetcher; a setting is rejected when every dependency it would configure is injected.
 
 `LocalKeyProvider.load(path)` loads an existing store; pass `true` to create one when missing.
+
+### Durable checkpoint trust
+
+Transparency-log verification remembers the latest trusted checkpoint per log so a shrunken or
+forked log is refused. The default store is in memory, so that defence ends when the process
+exits and a freshly started client re-trusts whatever the log serves. For anything that restarts,
+inject the file-backed store, or set `logTrust.checkpointStoreDirectory`
+(env `DNSID_LOG_CHECKPOINT_STORE_DIR`) when loading configuration; without either, the loader
+logs a warning.
+
+```ts
+import { createNodeIdentityManager, FileTrustedC2spCheckpointStore } from '@dnsid-ai/sdk/node';
+import { createC2spTlogVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
+
+const trustedCheckpointStore = await FileTrustedC2spCheckpointStore.open('.dnsid/checkpoints');
+const logRegistry = createC2spTlogVerificationRegistry({ policyUrl, trustedCheckpointStore, /* ... */ });
+```
+
+One JSON file per log origin, written atomically and locked across processes; use a local
+filesystem. A corrupt file fails closed as `C2spCheckpointStoreError` and is never replaced.
+The store refuses to lower a trusted tree size through `compareAndSwap`; after a legitimate log
+restore an operator calls `rebaseline(origin, expected, replacement)` with the exact current
+state, which is an authorized decision, not something verification does for you.
 Use only one provider instance/process per store; mutations within that instance are serialized.
 Persistence uses flushed, mode-0600 sibling files and atomic replacement, keeping the previous
 successful generation at `<path>.bak`. Existing symlinks are resolved at load time; mutations and
@@ -495,7 +518,11 @@ type LifecycleErrorCategory =
   | "UNSUPPORTED_EVENT"
   | "CHAIN_CONTINUITY"
   | "INVALID_EVIDENCE"
-  | "INCOMPLETE_STREAM";
+  | "INCOMPLETE_STREAM"
+  | "LOG_ROLLBACK"
+  | "LOG_FORK"
+  | "LOG_INCONSISTENT"
+  | "CHECKPOINT_STORE_ERROR";
 ```
 
 Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)

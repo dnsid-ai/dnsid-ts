@@ -14,6 +14,8 @@
  */
 export type { CreateIdentityManagerDependencies } from './index.ts';
 export { LocalKeyProvider } from './local-key-provider.ts';
+export { FileTrustedC2spCheckpointStore } from './file-checkpoint-store.ts';
+export type { FileTrustedC2spCheckpointStoreOptions } from './file-checkpoint-store.ts';
 export type { LocalKeyAlgorithm } from './local-key-provider.ts';
 export { createNodeIdentityManager, createNodeIdentityVerifier } from './node-identity-manager.ts';
 export {

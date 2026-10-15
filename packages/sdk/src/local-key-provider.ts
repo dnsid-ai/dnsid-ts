@@ -6,6 +6,7 @@ import { createPrivateKey } from 'node:crypto';
 import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN, verifyWithKey } from '@dnsid-ai/protocol';
 import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 
+import { syncDirectory, writeFileAtomically } from './atomic-file.ts';
 import { readJson } from './node-fs.ts';
 
 /** Private JWK stored on disk. `d` holds the private scalar (base64url). */
@@ -202,27 +203,7 @@ export class LocalKeyProvider implements KeyProvider {
 
 /** Publish a fully flushed sibling file; never truncate the destination. */
 async function writeStore(filePath: string, store: KeyStore, committed?: () => void, exclusive = false): Promise<void> {
-  const tempPath = `${filePath}.${crypto.randomUUID()}.tmp`;
-  const file = await fs.open(tempPath, 'wx', 0o600);
-  try {
-    try {
-      await file.writeFile(JSON.stringify(store, null, 2), 'utf-8');
-      await file.sync();
-    } finally {
-      await file.close();
-    }
-    if (exclusive) await fs.link(tempPath, filePath);
-    else await fs.rename(tempPath, filePath);
-    committed?.(); // Rename is the visibility boundary, even if directory fsync fails.
-    await syncDirectory(path.dirname(filePath));
-  } finally {
-    await fs.rm(tempPath, { force: true });
-  }
-}
-
-async function syncDirectory(dir: string): Promise<void> {
-  const directory = await fs.open(dir, 'r');
-  try { await directory.sync(); } finally { await directory.close(); }
+  await writeFileAtomically(filePath, JSON.stringify(store, null, 2), { committed, exclusive });
 }
 
 function toPublicJwk(key: StoredKey): DnsIdJWK {
