@@ -22,7 +22,7 @@ and preserves that state, while stricter policies require a DNSSEC-aware resolve
 
 ### FileTrustedC2spCheckpointStore
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:46
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L46)
 
 Durable, file-backed trusted-checkpoint store for Node: one JSON file per log origin under a
 directory, written atomically (temporary file, fsync, rename, directory fsync) so a crash
@@ -58,7 +58,7 @@ compareAndSwap(
 ): Promise<boolean>;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:72
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L72)
 
 Atomically replaces `expected` with `candidate`; returns false on a lost race.
 Implementations must honor cancellation at the commit boundary: an aborted
@@ -101,7 +101,7 @@ load(origin, signal?): Promise<
 | undefined>;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:67
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L67)
 
 Returns the currently trusted checkpoint for `origin`, if any.
 
@@ -137,7 +137,7 @@ rebaseline(
 ): Promise<boolean>;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:82
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L82)
 
 Replaces the exact current state for `origin` with `replacement` without the monotonic
 check. This is the authorized recovery path after a legitimate log restore: it accepts a
@@ -171,7 +171,7 @@ Returns false when the current state is not `expected`, so a concurrent change i
 static open(directory, options?): Promise<FileTrustedC2spCheckpointStore>;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:57
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L57)
 
 Opens `directory`, creating it (mode 0700) when absent. Existing checkpoint files are kept.
 
@@ -564,7 +564,7 @@ Defined in: [packages/sdk/src/local-key-provider.ts:52](https://github.com/dnsid
 
 ### FileTrustedC2spCheckpointStoreOptions
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:23
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L23)
 
 #### Properties
 
@@ -576,7 +576,7 @@ Defined in: packages/sdk/src/file-checkpoint-store.ts:23
 optional lockTimeoutMs?: number;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:25
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L25)
 
 How long a writer waits for another process's lock before failing closed. Default 5000 ms.
 
@@ -588,7 +588,7 @@ How long a writer waits for another process's lock before failing closed. Defaul
 optional staleLockMs?: number;
 ```
 
-Defined in: packages/sdk/src/file-checkpoint-store.ts:27
+Defined in: [packages/sdk/src/file-checkpoint-store.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/file-checkpoint-store.ts#L27)
 
 A lock file older than this is treated as abandoned by a crashed process and removed. Default 60 000 ms.
 
