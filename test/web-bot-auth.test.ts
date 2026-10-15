@@ -131,10 +131,10 @@ describe('WebBotAuthProfile verification', () => {
     await expect(s.verifier.verifyWebBotAuthSignedRequest(s.req, { allowSignatureAgentDomain: true })).resolves.toBe(s.evidence);
   });
 
-  it('accepts non-default labels and default directory discovery, discarding paths', async () => {
+  it('accepts non-default labels, default directory discovery, and covered members with different keys', async () => {
     const s = await setup();
     const headers = new Headers(s.req.headers);
-    headers.set('Signature-Agent', `member="https://${domain}/ignored?query#fragment"`);
+    headers.set('Signature-Agent', `member="https://${domain}"`);
     const input = new Request(s.req, { headers });
     const params = parseSignatureInput(s.req.headers.get('Signature-Input')!).get('sig1')!;
     delete params.parameters;
@@ -153,11 +153,24 @@ describe('WebBotAuthProfile verification', () => {
     expect(s.fetch.mock.calls[0][0].url).toBe(`https://${domain}/.well-known/http-message-signatures-directory`);
   });
 
-  it('supports trusted discovery without Signature-Agent and direct jwks_uri', async () => {
-    const s = await setup({ ...policy, discovery: { uri: `https://${domain}/keys.json`, type: 'jwks_uri' } });
-    const req = await s.signer.createWebBotAuthSignedRequest(new Request('https://target.example/'), { signatureAgent: false });
+  it('constrains signed direct discovery to the trusted endpoint', async () => {
+    const discovery = { uri: `https://${domain}/keys.json`, type: 'jwks_uri' as const };
+    const s = await setup({ ...policy, discovery });
+    await expect(s.verify()).rejects.toThrow('trusted discovery');
+    expect(s.fetch).not.toHaveBeenCalled();
+    const signer = new WebBotAuthProfile({ domain, keyProvider: makeKeyProvider(), webBotAuth: { signatureAgent: discovery } });
+    const req = await signer.createWebBotAuthSignedRequest(new Request('https://target.example/'));
     await expect(s.verify(req)).resolves.toBe(s.evidence);
-    expect(s.fetch.mock.calls[0][0].url).toBe(`https://${domain}/keys.json`);
+    expect(s.fetch.mock.calls[0][0].url).toBe(discovery.uri);
+  });
+
+  it('requires Signature-Agent even with trusted discovery', async () => {
+    const s = await setup({ ...policy, discovery: { uri: `https://${domain}` } });
+    const headers = new Headers(s.req.headers);
+    headers.delete('Signature-Agent');
+    const req = await resignRequest(new Request(s.req, { headers }), p => { p.components = ['@authority', 'content-digest']; });
+    await expect(s.verify(req)).rejects.toThrow('Signature-Agent is required');
+    expect(s.fetch).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -173,6 +186,7 @@ describe('WebBotAuthProfile verification', () => {
   ])('rejects request %s', async (_name, change) => {
     const s = await setup();
     await expect(s.verify(await resignRequest(s.req, change))).rejects.toThrow();
+    expect(s.fetch).not.toHaveBeenCalled();
   });
 
   it.each(['request signature', 'request content', 'directory signature', 'directory content', 'directory tag', 'directory coverage', 'directory expiry', 'directory thumbprint'])('rejects modified %s', async kind => {
@@ -236,7 +250,7 @@ describe('WebBotAuthProfile verification', () => {
     expect(s.fetch).not.toHaveBeenCalled();
   });
 
-  it.each(['https://127.0.0.1/', 'https://other.example/', 'http://bot.example.com/'])('rejects unsafe redirect %s', async location => {
+  it.each(['https://127.0.0.1/', 'https://other.example/', 'http://bot.example.com/', `https://${domain}/next`])('rejects every redirect, including same-host %s', async location => {
     const s = await setup();
     s.fetch.mockResolvedValue(new Response(null, { status: 302, headers: { Location: location } }));
     await expect(s.verify()).rejects.toThrow();
@@ -283,10 +297,13 @@ describe('WebBotAuthProfile verification', () => {
       ['Signature-Agent', `sig1="https://${domain}";type="directory"`],
       ['Signature-Agent', `sig1="https://${domain}";type=unsupported`],
       ['Signature-Agent', `sig1="https://${domain}", sig1="https://${domain}"`],
+      ...['/', '/custom', '?keys=1', '#keys', '?', '#', ':443', '/..'].map(suffix => ['Signature-Agent', `sig1="https://${domain}${suffix}";type=directory`]),
+      ['Signature-Agent', `sig1="https://BOT.example.com";type=directory`],
     ]) {
       const headers = new Headers(s.req.headers);
       headers.set(name, value);
       await expect(s.verify(new Request(s.req.clone(), { headers }))).rejects.toThrow();
+      expect(s.fetch).not.toHaveBeenCalled();
     }
   });
 
@@ -588,13 +605,12 @@ describe('WebBotAuthProfile verification', () => {
 
   it('snapshots configuration, including nested discovery, and still rejects expired requests', async () => {
     const s = await setup();
-    const config = { signatureTTL: 30, directorySignatureTTL: 40, clockSkew: 0, includeSignatureAgent: true,
+    const config = { signatureTTL: 30, directorySignatureTTL: 40, clockSkew: 0,
       signatureAgent: { uri: `https://${domain}/keys`, type: 'jwks_uri' as 'jwks_uri' | 'directory' } };
     const profile = new WebBotAuthProfile({ domain, keyProvider: makeKeyProvider(), identityResolver: s.resolver, discoveryFetch: s.fetch, webBotAuth: config });
     config.signatureTTL = 300;
     config.directorySignatureTTL = 300;
     config.clockSkew = Infinity;
-    config.includeSignatureAgent = false;
     config.signatureAgent.uri = 'http://127.0.0.1';
     config.signatureAgent.type = 'directory';
     const signed = await profile.createWebBotAuthSignedRequest(new Request('https://target.example/path'));
@@ -655,6 +671,21 @@ describe('WebBotAuthProfile verification', () => {
     expect(s.fetch).not.toHaveBeenCalled();
   });
 
+  it.each(['request', 'directory'])('allows future request skew but never future directory creation: %s', async kind => {
+    const s = await setup();
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+    try {
+      for (const offset of [-1, 0, 1, 6]) {
+        let req = s.req;
+        const shift = (p: SignatureParams) => { p.created = Math.floor(Date.now() / 1000) + offset; p.expires = p.created + 60; };
+        if (kind === 'request') req = await resignRequest(req, shift);
+        else rewriteDirectory(s, (_document, _headers, params) => shift(params));
+        if (offset <= (kind === 'request' ? 5 : 0)) await expect(s.verify(req)).resolves.toBe(s.evidence);
+        else await expect(s.verify(req)).rejects.toThrow('currently valid');
+      }
+    } finally { now.mockRestore(); }
+  });
+
   it('honors explicit zero clock skew', async () => {
     const s = await setup();
     const req = await resignRequest(s.req, params => { params.created! += 1; params.expires! += 1; });
@@ -686,6 +717,22 @@ describe('WebBotAuthProfile', () => {
     expect(params.nonce).toMatch(/^[A-Za-z0-9_-]{86}$/);
     expect(params.components).toContain('@authority');
     expect(params.components).toContainEqual({ name: 'signature-agent', params: { key: 'sig1' } });
+  });
+
+  it('always covers Signature-Agent despite removed omission options from untyped callers', async () => {
+    const profile = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider: makeKeyProvider(), webBotAuth: { includeSignatureAgent: false } as never });
+    const signed = await profile.createWebBotAuthSignedRequest(new Request('https://target.example/'), { signatureAgent: false } as never);
+    expect(signed.headers.has('Signature-Agent')).toBe(true);
+    expect(parseSignatureInput(signed.headers.get('Signature-Input')!).get('sig1')!.components).toContainEqual({ name: 'signature-agent', params: { key: 'sig1' } });
+  });
+
+  it.each(['/', '/custom', '?keys=1', '#keys', '?', '#', ':443', '/..'])('rejects non-origin directory configuration %s', suffix => {
+    expect(() => new WebBotAuthProfile({ webBotAuth: { signatureAgent: { uri: `https://bot.example.com${suffix}` } } })).toThrow(ArgumentError);
+  });
+
+  it.each(['signature', 'signature-input', { name: 'signature', params: { key: 'other' } }])('rejects unsupported nested signing %j', async component => {
+    const profile = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider: makeKeyProvider() });
+    await expect(profile.createWebBotAuthSignedRequest(new Request('https://target.example/'), { additionalComponents: [component] })).rejects.toThrow('nested WBA signing');
   });
 
   it('preserves other Signature-Agent dictionary members', async () => {

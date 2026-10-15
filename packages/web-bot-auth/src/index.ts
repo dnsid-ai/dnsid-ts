@@ -6,6 +6,7 @@
  * `/.well-known/http-message-signatures-directory` document that advertises the
  * agent's public keys. Verification authenticates signed directories and requests
  * against current DNSid operational keys and configured entity acceptance.
+ * Targets `draft-ietf-webbotauth-httpsig-protocol-00`, not the editor's copy.
  *
  * Web Bot Auth requires an Ed25519 operational key; signing with any other key
  * type raises {@link ArgumentError}.
@@ -58,11 +59,9 @@ export interface WebBotAuthConfig {
   directoryURL?: string;
   /** Request-signature lifetime in seconds. Defaults to {@link DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS}. */
   signatureTTL?: number;
-  /** Whether signed requests include (and cover) the `Signature-Agent` header. Defaults to true. */
-  includeSignatureAgent?: boolean;
   /** Directory-signature lifetime in seconds; also sets the response `Cache-Control` max-age. Defaults to {@link DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS}. */
   directorySignatureTTL?: number;
-  /** Allowed verification clock skew in seconds. Default: 5. */
+  /** Allowed verification clock skew in seconds. Default: 5. Never permits future directory creation. */
   clockSkew?: number;
 }
 
@@ -82,10 +81,8 @@ export interface WebBotAuthProfileOptions {
 
 /** Per-request overrides for {@link WebBotAuthProfile.createWebBotAuthSignedRequest}. */
 export interface WebBotAuthSigningOptions {
-  /** Extra covered components appended to the defaults (`@authority`, plus `content-digest`/`signature-agent` when present). Duplicates are ignored. */
+  /** Extra covered components appended to `@authority`, keyed `signature-agent`, and `content-digest` when supplied. Duplicates are ignored; nested signing is unsupported. */
   additionalComponents?: ComponentIdentifier[];
-  /** Overrides {@link WebBotAuthConfig.includeSignatureAgent} for this request. */
-  signatureAgent?: boolean;
   /** Overrides {@link WebBotAuthConfig.signatureTTL} for this request (seconds). */
   ttl?: number;
 }
@@ -152,14 +149,14 @@ export class WebBotAuthProfile {
   /**
    * Returns a copy of `req` carrying a Web Bot Auth signature (tag `web-bot-auth`).
    *
-   * Covers `@authority` plus, when applicable, `content-digest` (a SHA-256
-   * `Content-Digest` header is added for requests with a body) and
-   * `signature-agent` (added unless disabled). The signature includes a nonce,
+   * Covers `@authority` and keyed `signature-agent`, plus `content-digest`
+   * when content is supplied (a SHA-256 `Content-Digest` header is added).
+   * The signature includes a nonce,
    * `created`/`expires` timestamps, and the operational key's JWK thumbprint as `keyid`.
    * The original request is not modified.
    *
    * @param req Outbound request to sign.
-   * @param opts Per-request overrides for covered components, `Signature-Agent`, and TTL.
+   * @param opts Per-request overrides for covered components and TTL.
    * @returns A new signed `Request`.
    * @throws ArgumentError If the operational key is not Ed25519, the resolved
    *   Signature-Agent URI is invalid, or an additional component
@@ -179,15 +176,14 @@ export class WebBotAuthProfile {
       components.push('content-digest');
     }
 
-    const includeSignatureAgent = opts.signatureAgent ?? this.config.includeSignatureAgent ?? true;
-    if (includeSignatureAgent) {
-      const { uri, type } = signatureAgentConfig(this.domain!, this.config);
-      setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, `${serializeStructuredFieldValue(uri)};type=${type}`);
-      components.push({ name: 'signature-agent', params: { key: WEB_BOT_AUTH_SIGNATURE_LABEL } });
-    }
+    const { uri, type } = signatureAgentConfig(this.domain!, this.config);
+    setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, `${serializeStructuredFieldValue(uri)};type=${type}`);
+    components.push({ name: 'signature-agent', params: { key: WEB_BOT_AUTH_SIGNATURE_LABEL } });
 
     for (const component of opts.additionalComponents ?? []) {
       validateComponentIdentifier(component);
+      const name = typeof component === 'string' ? component : component.name;
+      if (name === 'signature' || name === 'signature-input') throw new ArgumentError('nested WBA signing is unsupported');
       if (!components.some(c => sameComponent(c, component))) components.push(component);
     }
 
@@ -341,7 +337,7 @@ function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: 
     throw new ArgumentError('Web Bot Auth Signature-Agent must be https');
   }
   if (type === 'directory') {
-    if (url.pathname !== '/' || url.search || url.hash) {
+    if (rawUri !== url.origin) {
       throw new ArgumentError('Web Bot Auth directory Signature-Agent must be an origin URI');
     }
     return { uri: url.origin, type };
