@@ -82,6 +82,64 @@ describe('WebBotAuthProfile verification', () => {
     });
   }
 
+  it.each([
+    ['max-age=295, must-revalidate', '295', 0, false],
+    ['max-age=295, must-revalidate', '294', 0, true],
+    ['max-age=295, must-revalidate', '', -295, false],
+    ['max-age=295, must-revalidate', '', undefined, true],
+    ['max-age=0', '0', 0, true],
+    ['max-age=0', '1', 0, false],
+    ['no-store', '', undefined, true],
+    ['no-cache', '', undefined, true],
+    ['max-age="295", extension="a,b"', '0', 0, true],
+    ['max-age=295', '-1', 0, false],
+    ['max-age=295', '2147483648', 0, false],
+    ['max-age=oops', '', 0, false],
+    ['max-age=295, max-age=295', '', 0, false],
+    ['max-age=1, stale-while-revalidate=600, stale-if-error=600', '1', 0, false],
+  ] as const)('enforces HTTP freshness: %s, Age=%s, Date offset=%s', async (control, age, dateOffset, valid) => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Math.floor(Date.now() / 1000) * 1000);
+    try {
+      const s = await setup();
+      rewriteDirectory(s, (_document, headers) => {
+        headers.set('Cache-Control', control);
+        if (age) headers.set('Age', age);
+        if (dateOffset === undefined) headers.delete('Date');
+        else headers.set('Date', new Date(now() + dateOffset * 1000).toUTCString());
+      });
+      if (valid) await expect(s.verify()).resolves.toBe(s.evidence);
+      else {
+        await expect(s.verify()).rejects.toThrow();
+        expect(s.resolver.verifyDomain).not.toHaveBeenCalled();
+      }
+    } finally { now.mockRestore(); }
+  });
+
+  it.each(['identity', 'nonce'])('rechecks the HTTP freshness deadline after %s work', async stage => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Math.floor(Date.now() / 1000) * 1000);
+    const expire = () => { now.mockReturnValue(now() + 2000); };
+    try {
+      const s = await setup(stage === 'nonce' ? { ...policy, consumeNonce: async () => { expire(); return true; } } : policy);
+      rewriteDirectory(s, (_document, headers) => headers.set('Cache-Control', 'max-age=1'));
+      if (stage === 'identity') s.resolver.verifyDomain.mockImplementation(async () => { expire(); return s.evidence; });
+      await expect(s.verify()).rejects.toThrow('HTTP-stale');
+    } finally { now.mockRestore(); }
+  });
+
+  it('counts response delay against HTTP freshness', async () => {
+    const s = await setup();
+    rewriteDirectory(s, (_document, headers) => { headers.set('Cache-Control', 'max-age=1'); headers.delete('Date'); });
+    const fetch = s.fetch.getMockImplementation()!;
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+    s.fetch.mockImplementation(async request => {
+      const response = await fetch(request);
+      now.mockReturnValue(now() + 2000);
+      return response;
+    });
+    try { await expect(s.verify()).rejects.toThrow('HTTP-stale'); }
+    finally { now.mockRestore(); }
+  });
+
   it('verifies request/directory and forwards the current peer and cancellation', async () => {
     const peerCert = { san: [domain], notAfter: new Date(Date.now() + 60_000) };
     const s = await setup({ ...policy, peerCert });
@@ -782,6 +840,19 @@ describe('WebBotAuthProfile verification', () => {
 });
 
 describe('WebBotAuthProfile', () => {
+  it.each(['request', 'directory'])('rejects key rotation between metadata selection and %s signing', async kind => {
+    const next = await generateKeyPair('EdDSA');
+    const nextJwk = { ...await exportJWK(next.publicKey), kid: 'next', alg: 'EdDSA' } as DnsIdJWK;
+    const provider = makeKeyProvider();
+    vi.mocked(provider.signingKey).mockResolvedValueOnce(publicJwk).mockResolvedValue(nextJwk);
+    vi.mocked(provider.sign).mockImplementation(async bytes => new Uint8Array(await crypto.subtle.sign(
+      'Ed25519', next.privateKey, toArrayBuffer(bytes),
+    )));
+    const profile = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider: provider });
+    const req = new Request('https://bot.example.com/');
+    await expect(kind === 'request' ? profile.createWebBotAuthSignedRequest(req) : profile.serveHttpMessageSignaturesDirectory(req)).rejects.toThrow('HTTP signing key changed');
+  });
+
   it('signs requests with WBA defaults', async () => {
     const profile = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider: makeKeyProvider() });
     const signed = await profile.createWebBotAuthSignedRequest(new Request('https://target.example/path'));

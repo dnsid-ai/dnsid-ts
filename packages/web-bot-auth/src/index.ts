@@ -207,7 +207,7 @@ export class WebBotAuthProfile {
       expires: now + ttl,
       nonce: generateNonce(64),
       tag: WEB_BOT_AUTH_TAG,
-    }, this.keyProvider!);
+    }, this.keyProvider!, signingKey);
   }
 
   /**
@@ -235,6 +235,7 @@ export class WebBotAuthProfile {
     const headers = new Headers({
       'Content-Type': HTTP_MESSAGE_SIGNATURES_DIRECTORY_MEDIA_TYPE,
       'Cache-Control': `max-age=${expires - now}, must-revalidate`,
+      'Date': new Date(now * 1000).toUTCString(),
       'Content-Digest': `sha-256=:${toStdBase64(new Uint8Array(digest))}:`,
     });
     const res = new Response(body, { status: 200, headers });
@@ -247,7 +248,7 @@ export class WebBotAuthProfile {
       expires,
       nonce: generateNonce(64),
       tag: HTTP_MESSAGE_SIGNATURES_DIRECTORY_TAG,
-    }, this.keyProvider!);
+    }, this.keyProvider!, signingKey);
     if (Date.now() / 1000 >= expires) throw new ArgumentError('WBA directory signature expired during generation');
     return signed;
   }

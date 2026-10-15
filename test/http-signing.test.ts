@@ -363,6 +363,22 @@ describe('HTTP Message Signature reusable primitives', () => {
     expect(base).toContain('"signature-agent";key="sig1": "https://bot.example"');
   });
 
+  it.each(['primitive', 'profile'])('rejects a rotated signing key in the shared %s path', async kind => {
+    const provider = makeKeyProvider();
+    const next = await generateKeyPair('ES256');
+    const nextJwk = { ...await exportJWK(next.publicKey), kid: 'next', alg: 'ES256' } as DnsIdJWK;
+    vi.mocked(provider.signingKey).mockResolvedValueOnce(publicJwk).mockResolvedValue(nextJwk);
+    vi.mocked(provider.sign).mockImplementation(async bytes => new Uint8Array(await crypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' }, next.privateKey, toArrayBuffer(bytes),
+    )));
+    const req = makeGetRequest();
+    const signing = kind === 'primitive'
+      ? signHttpMessage(req, { label: 'sig1', components: ['@method'] }, provider)
+      : new HttpSignaturesProfile({ domain: SIGNER_CONFIG.domain, keyProvider: provider, identityResolver: resolverStub }).createSignedHttpRequest(req);
+    await expect(signing).rejects.toThrow('HTTP signing key changed');
+    expect(req.headers.has('Signature')).toBe(false);
+  });
+
   it('adds or replaces only the selected dictionary member when signing', async () => {
     const req = new Request('https://api.example.com/', {
       headers: {

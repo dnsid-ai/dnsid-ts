@@ -50,6 +50,13 @@ it('keeps raw redirects manual and supports bodyless responses and request strea
   expect(await echoed.text()).toBe('exact request bytes');
 });
 
+it.each([undefined, 'rejected directory', new Error('rejected directory')])('cancels an unread raw response without an unhandled error: %s', async reason => {
+  const fetch = createSsrfSafeFetch({}, { privateAddressHosts: ['raw.test'], decompress: false });
+  const response = await fetch(`${origin}/pending`);
+  await response.body!.cancel(reason);
+  await new Promise<void>(resolve => setImmediate(resolve));
+});
+
 it('cancels raw response streams under the caller signal', async () => {
   const fetch = createSsrfSafeFetch({}, { privateAddressHosts: ['raw.test'], decompress: false });
   const controller = new AbortController();

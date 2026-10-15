@@ -39,7 +39,8 @@ export interface RotateManagedOperationalKeyOptions {
   idempotencyKey: string;
   /** Durably persists exact bytes and every subsequent reconciliation state. */
   persistRotation: (rotation: ManagedKeyRotationResult) => Promise<void>;
-  /** Pauses application signing before submission and resumes it only after durable activation. */
+  /** Blocks new application signing and drains in-flight request/directory signing before resolving;
+   * resumes signing only after durable activation. */
   setApplicationSigningPaused: (paused: boolean) => Promise<void>;
 }
 

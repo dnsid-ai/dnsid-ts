@@ -191,6 +191,8 @@ export class AwsKmsKeyProvider implements KeyProvider {
   private readonly jwkCache = new Map<string, DnsIdJWK>();
   private readonly client: AwsKmsFacade;
   private readonly state: Required<AwsKmsKeyState>;
+  private readonly signing = new Set<Promise<Uint8Array>>();
+  private activating = false;
   private readonly config: Required<Pick<AwsKmsConfig, 'algorithm' | 'keySpec' | 'scheduleKeyDeletionOnPurge' | 'deletionWindowInDays'>>
     & Pick<AwsKmsConfig, 'description' | 'tags'>;
 
@@ -251,6 +253,14 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async signKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
+    if (this.activating) throw new ArgumentError('key activation is in progress');
+    const operation = this.signWithKey(kid, payload);
+    this.signing.add(operation);
+    try { return await operation; }
+    finally { this.signing.delete(operation); }
+  }
+
+  private async signWithKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
     if (kid !== this.state.activeKeyId && !this.state.pendingKeyIds.includes(kid)) throw new ArgumentError(`key is not active or pending for signing: ${kid}`);
     const useDigest = payload.byteLength > AWS_KMS_RAW_SIGN_LIMIT_BYTES && this.config.algorithm === 'ECDSA_SHA_256';
     if (payload.byteLength > AWS_KMS_RAW_SIGN_LIMIT_BYTES && !useDigest) {
@@ -294,12 +304,17 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async activate(kid: string): Promise<void> {
-    const canonicalKid = (await this.publicJwk(kid)).kid;
-    const idx = this.state.pendingKeyIds.indexOf(canonicalKid);
-    if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
-    this.state.pendingKeyIds.splice(idx, 1);
-    this.state.retainedKeyIds.push(this.state.activeKeyId);
-    this.state.activeKeyId = canonicalKid;
+    if (this.activating) throw new ArgumentError('key activation is already in progress');
+    this.activating = true;
+    try {
+      await Promise.allSettled(this.signing);
+      const canonicalKid = (await this.publicJwk(kid)).kid;
+      const idx = this.state.pendingKeyIds.indexOf(canonicalKid);
+      if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
+      this.state.pendingKeyIds.splice(idx, 1);
+      this.state.retainedKeyIds.push(this.state.activeKeyId);
+      this.state.activeKeyId = canonicalKid;
+    } finally { this.activating = false; }
   }
 
   async supersede(kid: string): Promise<void> {

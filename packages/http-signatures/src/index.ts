@@ -23,7 +23,7 @@ import {
 } from 'structured-headers';
 import type { BareItem, Dictionary, InnerList, Item, Parameters } from 'structured-headers';
 
-import type { IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@dnsid-ai/protocol';
+import type { DnsIdJWK, IdentityResolver, KeyProvider, SigningIdentityManager, VerifiedDomain } from '@dnsid-ai/protocol';
 import { requireLocalDomain } from '@dnsid-ai/protocol';
 import {
   ArgumentError,
@@ -340,7 +340,7 @@ export class HttpSignaturesProfile {
       components,
     };
 
-    const signed = await signHttpMessage(requestWithDigest, sigParams, keyProvider);
+    const signed = await signHttpMessage(requestWithDigest, sigParams, keyProvider, signingKey);
     return signed as Request;
   }
 
@@ -770,12 +770,18 @@ export function buildSignatureInput(msg: HttpMessage, params: SignatureParams): 
  * @param msg - Request or Response to sign; pass `{ message, request }` to sign a response
  *   whose covered components reference the originating request (`req` parameter).
  * @param params - Covered components and signature parameters to serialize into `Signature-Input`.
+ * @param signingKey - Public key used to select signature metadata; defaults to the current key.
  * @returns A new message of the same type carrying the signature headers.
  * @throws ArgumentError if a covered component cannot be resolved (see {@link buildSignatureInput}).
  */
-export async function signHttpMessage<T extends Request | Response>(msg: T | { message: T; request?: Request }, params: SignatureParams, keyProvider: KeyProvider): Promise<T> {
+export async function signHttpMessage<T extends Request | Response>(msg: T | { message: T; request?: Request }, params: SignatureParams, keyProvider: KeyProvider, signingKey?: DnsIdJWK): Promise<T> {
   const { message } = asMessage(msg);
-  const sigRaw = await keyProvider.sign(buildSignatureInput(msg, params));
+  const key = signingKey ?? await keyProvider.signingKey();
+  const input = buildSignatureInput(msg, params);
+  const sigRaw = await keyProvider.sign(input);
+  if (!await verifyWithKey(input, sigRaw, key, jwkSignatureAlg(key))) {
+    throw new ArgumentError('HTTP signing key changed or returned an invalid signature');
+  }
   const headers = new Headers(message.headers);
   setDictionaryMember(headers, 'Signature-Input', params.label, serializeSigParams(params));
   setDictionaryMember(headers, 'Signature', params.label, `:${toStdBase64(sigRaw)}:`);

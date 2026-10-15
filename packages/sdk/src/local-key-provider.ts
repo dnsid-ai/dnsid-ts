@@ -37,6 +37,8 @@ interface KeyStore {
  */
 export class LocalKeyProvider implements KeyProvider {
   private store: KeyStore;
+  private readonly signing = new Set<Promise<Uint8Array>>();
+  private activating = false;
   private readonly filePath: string | null;
   // ponytail: per-instance queue; use a cross-process lock and reload before writes if shared writers are needed.
   private mutations: Promise<unknown> = Promise.resolve();
@@ -127,6 +129,14 @@ export class LocalKeyProvider implements KeyProvider {
   }
 
   async signKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
+    if (this.activating) throw new ArgumentError('key activation is in progress');
+    const operation = this.signWithKey(kid, payload);
+    this.signing.add(operation);
+    try { return await operation; }
+    finally { this.signing.delete(operation); }
+  }
+
+  private async signWithKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
     const key = kid === this.store.active.kid ? this.store.active : this.store.pending.find(candidate => candidate.kid === kid);
     if (!key) throw new ArgumentError(`key is not active or pending for signing: ${kid}`);
     const cryptoKey = await importPrivateKey(key);
@@ -143,13 +153,18 @@ export class LocalKeyProvider implements KeyProvider {
   }
 
   async activate(kid: string): Promise<void> {
-    await this.mutate(next => {
-      const idx = next.pending.findIndex(k => k.kid === kid);
-      if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
-      const [incoming] = next.pending.splice(idx, 1) as [StoredKey];
-      next.retained.push(next.active);
-      next.active = incoming;
-    });
+    if (this.activating) throw new ArgumentError('key activation is already in progress');
+    this.activating = true;
+    try {
+      await Promise.allSettled(this.signing);
+      await this.mutate(next => {
+        const idx = next.pending.findIndex(k => k.kid === kid);
+        if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
+        const [incoming] = next.pending.splice(idx, 1) as [StoredKey];
+        next.retained.push(next.active);
+        next.active = incoming;
+      });
+    } finally { this.activating = false; }
   }
 
   async supersede(kid: string): Promise<void> {
