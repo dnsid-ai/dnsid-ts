@@ -5,8 +5,12 @@ import {
   InMemoryTrustedC2spCheckpointStore,
   ScanStreamSource,
   createDnsidManagedVerificationRegistry,
+  enforceCheckpointPolicy,
+  parseC2spPolicyFile,
+  parseCheckpoint,
   parseSignedNoteVerifierKey,
   requiredC2spResourceFetchGuarantees,
+  verifyC2spStreamBundle,
   type C2spBoundedResourceFetcher,
   type SignedNoteKey,
 } from '@dnsid-ai/log-c2sp-tlog';
@@ -50,6 +54,12 @@ type ReaderInternals = {
 };
 
 const internals = (reader: C2spTlogReader): ReaderInternals => reader as unknown as ReaderInternals;
+
+const PARTNERS_POLICY = `log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1
+witness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4
+quorum dnsid-witness-1
+`;
+const PARTNERS_BUNDLE_KEY = 'dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ';
 
 describe('DNSid-managed C2SP trust', () => {
   it('implements the managed trust selection conformance vectors', async () => {
@@ -104,5 +114,70 @@ describe('DNSid-managed C2SP trust', () => {
       checkpointFreshnessMs: 600_000,
       required: undefined,
     });
+  });
+
+  it('selects the exact partners profile with the managed defaults', async () => {
+    const fetcher: C2spBoundedResourceFetcher = {
+      fetchBounded: vi.fn(async () => { throw new Error('not called during catalog construction'); }),
+      securityGuarantees: requiredC2spResourceFetchGuarantees,
+    };
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const registry = await createDnsidManagedVerificationRegistry({
+      resourceFetcher: fetcher,
+      trustedCheckpointStore: store,
+    });
+    const partners = internals(registry.newReader(
+      'c2sp-tlog:public:https://log.partners.dnsid.ai#EREREREREREREREREREREQ',
+    ) as C2spTlogReader);
+
+    expect(partners.checkpointStore).toBe(store);
+    expect(partners.source.resourceFetcher).toBe(fetcher);
+    expect(partners.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
+    expect(partners.options.streamBundle).toMatchObject({
+      policyDocument: new TextEncoder().encode(PARTNERS_POLICY),
+      bundleKeys: [parseSignedNoteVerifierKey(PARTNERS_BUNDLE_KEY)],
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      required: undefined,
+    });
+  });
+
+  // Live checkpoint captured on 2026-10-16, signed by the log and its witness.
+  it('verifies the partner log checkpoint under the pinned partners policy', () => {
+    const checkpoint = parseCheckpoint(readFileSync(
+      new URL('./vectors/c2sp-partners-checkpoint.txt', import.meta.url),
+      'utf8',
+    ));
+    const result = enforceCheckpointPolicy(
+      checkpoint,
+      'log.partners.dnsid.ai',
+      parseC2spPolicyFile(PARTNERS_POLICY),
+      'public',
+    );
+    expect(checkpoint.treeSize).toBe(172);
+    expect(result.acceptedWitnessTimestamps).toHaveLength(1);
+  });
+
+  // Reviewed service fixture from Identity-Digital/dnsid#2639, captured 2026-10-02.
+  it('verifies a partner-signed stream bundle under the pinned partners profile', async () => {
+    const bytes = readFileSync(new URL('./vectors/c2sp-partners-stream-bundle.json', import.meta.url));
+    const bundle = JSON.parse(bytes.toString('utf8'));
+    const issuance = JSON.parse(Buffer.from(bundle.events[0].entry, 'base64url').toString('utf8'));
+    const result = await verifyC2spStreamBundle(bytes, {
+      expectedFqdn: bundle.fqdn,
+      expectedLogReference: bundle.lr,
+      policyBytes: new TextEncoder().encode(PARTNERS_POLICY),
+      bundleKeys: [parseSignedNoteVerifierKey(PARTNERS_BUNDLE_KEY)],
+      entityKey: issuance.ek,
+      maxBundleBytes: 128 * 1024,
+      maxEvents: 16,
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      nowMs: (bundle.expires - 60) * 1000,
+      trustedCheckpointStore: new InMemoryTrustedC2spCheckpointStore(),
+    });
+    expect(result.bundle.signature.kid).toBe('dnsid-stream-bundle+b1e0b597');
+    expect(result.bundle.state.loggedState).toBe('ACTIVE');
+    expect(result.events).toHaveLength(1);
   });
 });

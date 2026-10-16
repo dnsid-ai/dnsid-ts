@@ -29,9 +29,22 @@ const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
   ]
 }`);
 
+// Matches the reviewed service profile in Identity-Digital/dnsid#2639;
+// the log's discovery endpoints are not trust anchors.
+const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.partners.dnsid.ai",
+  "tlog_policy": "log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1\\nwitness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ"
+  ]
+}`);
+
 const MANAGED_CATALOG = [
   { scope: 'public', logPrefix: 'https://log.dev.dnsid.ai', trustProfileDocument: DEVELOPMENT_TRUST_PROFILE },
   { scope: 'public', logPrefix: 'https://log.dnsid.ai', trustProfileDocument: PRODUCTION_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.partners.dnsid.ai', trustProfileDocument: PARTNERS_TRUST_PROFILE },
 ] as const;
 
 /** Shared infrastructure for {@link createDnsidManagedVerificationRegistry}. */
@@ -50,8 +63,9 @@ export interface DnsidManagedVerificationOptions {
  * trust decision; the generic factory never selects these roots implicitly.
  *
  * Trust snapshots are bundled with the SDK and selected only after parsing an
- * exact canonical `(scope, logPrefix)` pair. Managed verification prefers
- * signed stream bundles with safe raw-scan fallback.
+ * exact canonical `(scope, logPrefix)` pair. The catalog covers the
+ * development, production, and partner (`https://log.partners.dnsid.ai`) logs.
+ * Managed verification prefers signed stream bundles with safe raw-scan fallback.
  */
 export async function createDnsidManagedVerificationRegistry(
   options: DnsidManagedVerificationOptions = {},
