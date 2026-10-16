@@ -67,6 +67,12 @@ pending writes after cancellation; racing an uncancelable write is insufficient.
 Checkpoint advancement shares the caller's cancellation and has a 30-second
 standalone default (`timeoutMs`/`signal` options).
 
+See [checkpoint trust and recovery](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/CHECKPOINTS.md) for typed diagnostics,
+exact-state storage requirements, durable-adapter obligations, and the
+independently authorized deployment recovery procedure. This SDK supplies no
+built-in durable adapter or recovery authorization service. Storage errors never
+substitute empty trust; failed publication acknowledgment requires reconciliation.
+
 Never derive `policyUrl` from an unverified identity record, its `lr`, or a log prefix. Advanced deployments can compose `parseC2spPolicyFile`, `ScanStreamSource`, `registerC2spTlog`, and a custom checkpoint store directly for private transports, mirrors, archives, or portable bundles.
 
 Public verification needs a trusted local policy and complete stream evidence. A single inclusion proof proves historical inclusion only; it is not current lifecycle state or non-revocation evidence.
@@ -377,6 +383,8 @@ DNSid method contract with signature-independent logical event identity.
 
 Documented on [Transparency log: classes](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/):
 
+- [C2spCheckpointConsistencyError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2spcheckpointconsistencyerror)
+- [C2spCheckpointStoreError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2spcheckpointstoreerror)
 - [C2spTlogBinding](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogbinding)
 - [~~C2spTlogClient~~](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogclient)
 - [C2spTlogError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogerror)
@@ -384,6 +392,7 @@ Documented on [Transparency log: classes](https://docs.dnsid.ai/reference/ts/dns
 - [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader)
 - [C2spTlogVerificationError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogverificationerror)
 - [InMemoryTrustedC2spCheckpointStore](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#inmemorytrustedc2spcheckpointstore)
+- [MissingC2spConsistencyEvidenceError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#missingc2spconsistencyevidenceerror)
 - [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#scanstreamsource)
 
 ## Interfaces

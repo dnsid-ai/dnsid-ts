@@ -23,7 +23,7 @@ function advanceTrustedC2spCheckpoint(
 ): Promise<TrustedC2spCheckpoint>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L111)
 
 Advances the stored trusted checkpoint for a log origin to `checkpoint`,
 guarding against split-view and rollback attacks: a same-size checkpoint
@@ -60,8 +60,19 @@ A defensive copy of the newly trusted checkpoint.
 
 #### Throws
 
-C2spTlogVerificationError on origin mismatch, rollback, root
-  divergence, or missing/invalid consistency evidence.
+ArgumentError for invalid checkpoint fields or origin mismatch.
+
+#### Throws
+
+C2spCheckpointConsistencyError for rollback, forks, or inconsistent growth.
+
+#### Throws
+
+C2spCheckpointStoreError for storage failure or malformed stored state.
+
+#### Throws
+
+C2spTlogVerificationError for missing/invalid candidate evidence.
 
 ***
 
@@ -1679,7 +1690,7 @@ function verifyC2spConsistencyProof(
 ): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L100)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L144)
 
 Verifies an RFC 6962 consistency proof that the tree of size `fromSize` with
 root `fromRoot` is a prefix of the tree of size `toSize` with root `toRoot`.

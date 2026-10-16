@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ArgumentError } from '@dnsid-ai/protocol';
 
 import {
   advanceTrustedC2spCheckpoint,
@@ -34,30 +35,36 @@ describe('trusted C2SP checkpoints', () => {
     let started!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
     const ready = new Promise<void>(resolve => { started = resolve; });
+    let finished!: () => void;
+    const done = new Promise<void>(resolve => { finished = resolve; });
     const pause = async (current: typeof stage, signal?: AbortSignal) => {
       expect(signal).toBeInstanceOf(AbortSignal);
       if (current === stage) { started(); await gate; }
     };
     const store: TrustedC2spCheckpointStore = {
-      load: async (origin, signal) => { await pause('load', signal); return backing.load(origin, signal); },
+      load: async (origin, signal) => {
+        try { await pause('load', signal); return await backing.load(origin, signal); }
+        finally { if (stage === 'load') finished(); }
+      },
       compareAndSwap: vi.fn(async (origin, previous, candidate, signal) => {
-        await pause('commit', signal);
-        return backing.compareAndSwap(origin, previous, candidate, signal);
+        try { await pause('commit', signal); return await backing.compareAndSwap(origin, previous, candidate, signal); }
+        finally { if (stage === 'commit') finished(); }
       }),
     };
     const controller = new AbortController();
     const pending = advanceTrustedC2spCheckpoint(store, reference, checkpoint(2, secondRoot), witnessTime, {
       signal: controller.signal,
       consistencyProofSource: { fetchConsistencyProof: async (_ref, _from, _to, signal) => {
-        await pause('proof', signal);
-        return [leafHash(secondEntry)];
+        try { await pause('proof', signal); return [leafHash(secondEntry)]; }
+        finally { if (stage === 'proof') finished(); }
       } },
     });
     await ready;
-    controller.abort();
-    await expect(pending).rejects.toThrow('canceled');
+    const reason = new Error('caller stopped verification');
+    controller.abort(reason);
+    await expect(pending).rejects.toMatchObject({ transient: true, cause: reason });
     release();
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await done;
     expect(store.compareAndSwap).toHaveBeenCalledTimes(stage === 'commit' ? 1 : 0);
     await expect(backing.load(reference.origin)).resolves.toMatchObject({ treeSize: 1 });
   });
@@ -92,6 +99,8 @@ describe('trusted C2SP checkpoints', () => {
   it('verifies RFC 6962 consistency proofs and retries a lost CAS race', async () => {
     expect(verifyC2spConsistencyProof(1, 2, firstRoot, secondRoot, [leafHash(secondEntry)])).toBe(true);
     expect(verifyC2spConsistencyProof(1, 2, firstRoot, secondRoot, [new Uint8Array(32)])).toBe(false);
+    expect(verifyC2spConsistencyProof(1, 2, firstRoot, secondRoot, undefined as unknown as Uint8Array[])).toBe(false);
+    expect(verifyC2spConsistencyProof(1, 2, firstRoot, secondRoot, [{ length: 32 }] as Uint8Array[])).toBe(false);
     expect(verifyC2spConsistencyProof(1, 1, firstRoot, firstRoot, [])).toBe(true);
     expect(verifyC2spConsistencyProof(1, 1, firstRoot, new Uint8Array(32), [])).toBe(false);
     expect(verifyC2spConsistencyProof(1, 1, firstRoot, firstRoot, [new Uint8Array(32)])).toBe(false);
@@ -147,12 +156,95 @@ describe('trusted C2SP checkpoints', () => {
     }
   });
 
+  it.each([
+    { origin: '' }, { origin: 'other.example' },
+    ...[-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, '1', true].map(treeSize => ({ treeSize })),
+    ...[new Uint8Array(31), new Uint8Array(33), 'root'].map(rootHash => ({ rootHash })),
+    ...[new Date(NaN), '2026-07-24T12:00:00Z', 0].map(witnessTime => ({ witnessTime })),
+  ])('rejects invalid store input %o without changing trust', async invalid => {
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const valid = { origin: reference.origin, treeSize: 1, rootHash: firstRoot, witnessTime };
+    await store.compareAndSwap(reference.origin, undefined, valid);
+    const malformed = { ...valid, ...invalid } as TrustedC2spCheckpoint;
+    await expect(store.compareAndSwap(reference.origin, valid, malformed)).rejects.toBeInstanceOf(ArgumentError);
+    await expect(store.compareAndSwap(reference.origin, malformed, valid)).rejects.toBeInstanceOf(ArgumentError);
+    await expect(store.load(reference.origin)).resolves.toEqual(valid);
+  });
+
+  it('validates origins and advance inputs before calling storage', async () => {
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    await expect(store.load(' ')).rejects.toBeInstanceOf(ArgumentError);
+    const load = vi.spyOn(store, 'load');
+    await expect(advanceTrustedC2spCheckpoint(store, reference, checkpoint(-1, firstRoot), witnessTime)).rejects.toBeInstanceOf(ArgumentError);
+    await expect(advanceTrustedC2spCheckpoint(store, reference, checkpoint(1, firstRoot), new Date(NaN))).rejects.toBeInstanceOf(ArgumentError);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('copies Buffer roots and Date values on both store boundaries', async () => {
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const input = { origin: reference.origin, treeSize: 1, rootHash: Buffer.from(firstRoot), witnessTime: new Date(witnessTime) };
+    await store.compareAndSwap(reference.origin, undefined, input);
+    input.rootHash.fill(0);
+    input.witnessTime.setTime(0);
+    const loaded = (await store.load(reference.origin))!;
+    expect(loaded.rootHash).toEqual(firstRoot);
+    expect(loaded.witnessTime).toEqual(witnessTime);
+    loaded.rootHash.fill(0);
+    loaded.witnessTime.setTime(0);
+    await expect(store.load(reference.origin)).resolves.toMatchObject({ rootHash: firstRoot, witnessTime });
+  });
+
+  it('snapshots Buffer-backed candidate and scan bytes before asynchronous storage', async () => {
+    const backing = new InMemoryTrustedC2spCheckpointStore();
+    let release!: () => void;
+    let started!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    const store: TrustedC2spCheckpointStore = {
+      load: async (...args) => { started(); await gate; return backing.load(...args); },
+      compareAndSwap: (...args) => backing.compareAndSwap(...args),
+    };
+    const root = Buffer.from(firstRoot);
+    const bytes = Buffer.from(firstEntry);
+    const time = new Date(witnessTime);
+    const pending = advanceTrustedC2spCheckpoint(store, reference, checkpoint(1, root), time, {
+      completeEntries: [{ index: 0, bytes }],
+    });
+    await ready;
+    root.fill(0);
+    bytes.fill(0);
+    time.setTime(0);
+    release();
+    const result = await pending;
+    expect(result).toMatchObject({ rootHash: firstRoot, witnessTime });
+    result.rootHash.fill(0);
+    result.witnessTime.setTime(0);
+    await expect(backing.load(reference.origin)).resolves.toMatchObject({ rootHash: firstRoot, witnessTime });
+  });
+
+  it('verifies empty-tree consistency without accepting extra proof nodes', async () => {
+    const empty = merkleRootFromEntries([]);
+    expect(verifyC2spConsistencyProof(0, 1, empty, firstRoot, [])).toBe(true);
+    expect(verifyC2spConsistencyProof(0, 1, empty, firstRoot, [firstRoot])).toBe(false);
+    expect(verifyC2spConsistencyProof(0, 1, firstRoot, firstRoot, [])).toBe(false);
+    expect(verifyC2spConsistencyProof(0, 0, empty, empty, [])).toBe(true);
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    await advanceTrustedC2spCheckpoint(store, reference, checkpoint(0, empty), witnessTime);
+    await advanceTrustedC2spCheckpoint(store, reference, checkpoint(1, firstRoot), witnessTime, {
+      consistencyProofSource: { fetchConsistencyProof: async () => [] },
+    });
+    await expect(store.load(reference.origin)).resolves.toMatchObject({ treeSize: 1 });
+  });
+
   it('uses atomic origin-scoped compare-and-swap snapshots', async () => {
     const store = new InMemoryTrustedC2spCheckpointStore();
     const initial: TrustedC2spCheckpoint = { origin: reference.origin, treeSize: 1, rootHash: firstRoot, witnessTime };
     await expect(store.compareAndSwap(reference.origin, undefined, initial)).resolves.toBe(true);
-    const stale = { ...initial, rootHash: new Uint8Array(32) };
-    await expect(store.compareAndSwap(reference.origin, stale, { ...initial, treeSize: 2, rootHash: secondRoot })).resolves.toBe(false);
+    for (const stale of [{ ...initial, rootHash: new Uint8Array(32) }, { ...initial, witnessTime: new Date(witnessTime.getTime() + 1) }]) {
+      await expect(store.compareAndSwap(reference.origin, stale, { ...initial, treeSize: 2, rootHash: secondRoot })).resolves.toBe(false);
+    }
+    await expect(store.compareAndSwap(reference.origin, undefined, initial)).resolves.toBe(false);
+    await expect(store.load(reference.origin)).resolves.toEqual(initial);
   });
 });
 

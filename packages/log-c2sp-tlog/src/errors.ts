@@ -38,8 +38,8 @@ export class C2spTlogVerificationError extends C2spTlogError {
   /** Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`. */
   readonly errorCategory: LifecycleErrorCategory;
 
-  constructor(message: string, errorCategory: LifecycleErrorCategory = 'INVALID_EVIDENCE') {
-    super(message, { errorCategory });
+  constructor(message: string, errorCategory: LifecycleErrorCategory = 'INVALID_EVIDENCE', cause?: unknown) {
+    super(message, { errorCategory, cause });
     this.name = 'C2spTlogVerificationError';
     this.errorCategory = errorCategory;
   }
@@ -50,8 +50,8 @@ export function c2spLogError(message: string, cause: unknown, transient: boolean
   if (cause instanceof VerificationError && cause.code === VerificationCode.LogError) return cause;
   return new VerificationError(message, {
     code: VerificationCode.LogError,
-    transient,
-    errorCategory: 'INVALID_EVIDENCE',
+    transient: cause instanceof VerificationError ? cause.transient : transient,
+    errorCategory: cause instanceof VerificationError ? cause.errorCategory ?? 'INVALID_EVIDENCE' : 'INVALID_EVIDENCE',
     cause,
   });
 }

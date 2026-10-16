@@ -116,7 +116,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:33](https://github.com/dnsid-a
 
 ### C2spConsistencyProofSource
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L34)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L41)
 
 Fetches RFC 6962 consistency proofs between two tree sizes of a log.
 
@@ -135,7 +135,7 @@ fetchConsistencyProof(
 ): Promise<Uint8Array<ArrayBufferLike>[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L35)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L42)
 
 ###### Parameters
 
@@ -1644,7 +1644,7 @@ Parsed C2SP tlog-checkpoint: origin, tree size, SHA-256 root hash, and the signe
 
 #### Properties
 
-<a id="origin"></a>
+<a id="origin-1"></a>
 
 ##### origin
 
@@ -1892,7 +1892,7 @@ optional keyHash?: Uint8Array<ArrayBufferLike>;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L5)
 
-<a id="name-3"></a>
+<a id="name-6"></a>
 
 ##### name
 
@@ -2012,7 +2012,7 @@ method: "c2sp-tlog";
 
 Defined in: [packages/log-c2sp-tlog/src/lr.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L9)
 
-<a id="origin-1"></a>
+<a id="origin-2"></a>
 
 ##### origin
 
@@ -2329,7 +2329,7 @@ kind: "ed25519";
 
 Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L7)
 
-<a id="name-4"></a>
+<a id="name-7"></a>
 
 ##### name
 
@@ -2811,7 +2811,7 @@ Latest policy-accepted checkpoint remembered for a log origin, with its witnesse
 
 #### Properties
 
-<a id="origin-2"></a>
+<a id="origin-3"></a>
 
 ##### origin
 
@@ -2857,9 +2857,14 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:13](https://github.c
 
 ### TrustedC2spCheckpointStore
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L17)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L24)
 
-Persistence for per-origin trusted checkpoints, updated with optimistic compare-and-swap semantics.
+Persistence for per-origin trusted checkpoints. Compare all four fields, including
+witnessed time. Validate inputs, return independent snapshots, and fail closed on
+lost/corrupt storage; undefined means a genuinely unseen origin, not storage loss.
+Durable adapters must explicitly initialize namespaces and acknowledge durable
+commits. An error after publication requires read-back reconciliation, not retry
+on the assumption that the old state remains. See the package storage contract.
 
 #### Methods
 
@@ -2876,7 +2881,7 @@ compareAndSwap(
 ): Promise<boolean>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L25)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L32)
 
 Atomically replaces `expected` with `candidate`; returns false on a lost race.
 Implementations must honor cancellation at the commit boundary: an aborted
@@ -2912,7 +2917,7 @@ signal must prevent a pending write, not merely reject its returned promise.
 load(origin, signal?): Promise<TrustedC2spCheckpoint | undefined>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L19)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L26)
 
 Returns the currently trusted checkpoint for `origin`, if any.
 

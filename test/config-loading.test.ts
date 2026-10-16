@@ -108,6 +108,9 @@ describe('loadEnvironment()', () => {
       DNSID_AGENT_UPSTREAM: 'http://127.0.0.1:3001',
       DNSID_SERVER: 'https://api.example',
       DNSID_UNKNOWN: 'x',
+      DNSID_CHECKPOINT_STORE: '/must-not-open',
+      DNSID_CHECKPOINT_INITIALIZE: 'true',
+      DNSID_CHECKPOINT_RECOVERY: 'reset',
     })).toEqual({});
   });
 
@@ -154,6 +157,15 @@ describe('loadFile()', () => {
     await writeFile(file, '{"registry":{},"registry":{}}');
     await expect(loadFile(file)).rejects.toThrow(ArgumentError);
   }));
+
+  it.each(['trustedCheckpointStore', 'checkpointStorePath', 'initializeCheckpointStore', 'checkpointRecovery'])
+    ('rejects code-only checkpoint member %s for generic and managed trust', member => withTemp(async root => {
+      const file = join(root, 'dnsid.json');
+      for (const trust of [{ managed: true }, { profile: TRUST_PROFILE }]) {
+        await writeFile(file, JSON.stringify({ logTrust: { ...trust, [member]: '/must-not-open' } }));
+        await expect(loadFile(file)).rejects.toBeInstanceOf(ArgumentError);
+      }
+    }));
 
   it('rejects mistyped nested dnsid members at loading, but leaves partial identity unset', () => withTemp(async root => {
     const file = join(root, 'dnsid.json');
