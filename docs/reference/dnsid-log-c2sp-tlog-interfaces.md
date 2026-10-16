@@ -112,6 +112,48 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:33](https://github.com/dnsid-a
 
 ***
 
+<a id="c2spcheckpointsummary"></a>
+
+### C2spCheckpointSummary
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L62)
+
+The subset of a trusted checkpoint a consistency error records.
+
+#### Properties
+
+<a id="origin-1"></a>
+
+##### origin
+
+```ts
+origin: string;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L63)
+
+<a id="roothash"></a>
+
+##### rootHash
+
+```ts
+rootHash: Uint8Array;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L65)
+
+<a id="treesize"></a>
+
+##### treeSize
+
+```ts
+treeSize: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L64)
+
+***
+
 <a id="c2spconsistencyproofsource"></a>
 
 ### C2spConsistencyProofSource
@@ -1644,7 +1686,7 @@ Parsed C2SP tlog-checkpoint: origin, tree size, SHA-256 root hash, and the signe
 
 #### Properties
 
-<a id="origin"></a>
+<a id="origin-2"></a>
 
 ##### origin
 
@@ -1654,7 +1696,7 @@ origin: string;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L7)
 
-<a id="roothash"></a>
+<a id="roothash-1"></a>
 
 ##### rootHash
 
@@ -1684,7 +1726,7 @@ signedText: string;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L7)
 
-<a id="treesize"></a>
+<a id="treesize-1"></a>
 
 ##### treeSize
 
@@ -1892,7 +1934,7 @@ optional keyHash?: Uint8Array<ArrayBufferLike>;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L5)
 
-<a id="name-3"></a>
+<a id="name-5"></a>
 
 ##### name
 
@@ -2012,7 +2054,7 @@ method: "c2sp-tlog";
 
 Defined in: [packages/log-c2sp-tlog/src/lr.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L9)
 
-<a id="origin-1"></a>
+<a id="origin-3"></a>
 
 ##### origin
 
@@ -2319,7 +2361,7 @@ optional keyId?: Uint8Array<ArrayBufferLike>;
 
 Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L7)
 
-<a id="kind"></a>
+<a id="kind-1"></a>
 
 ##### kind
 
@@ -2329,7 +2371,7 @@ kind: "ed25519";
 
 Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L7)
 
-<a id="name-4"></a>
+<a id="name-6"></a>
 
 ##### name
 
@@ -2811,7 +2853,7 @@ Latest policy-accepted checkpoint remembered for a log origin, with its witnesse
 
 #### Properties
 
-<a id="origin-2"></a>
+<a id="origin-4"></a>
 
 ##### origin
 
@@ -2821,7 +2863,7 @@ origin: string;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L10)
 
-<a id="roothash-1"></a>
+<a id="roothash-2"></a>
 
 ##### rootHash
 
@@ -2831,7 +2873,7 @@ rootHash: Uint8Array;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L12)
 
-<a id="treesize-1"></a>
+<a id="treesize-2"></a>
 
 ##### treeSize
 

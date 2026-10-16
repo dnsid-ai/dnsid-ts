@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { DNSSECState, LogRegistry } from '@dnsid-ai/sdk';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
 import { createC2spTlogVerificationRegistry, createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
-import { constructIdentityManager, createNodeIdentityManagerFromEnvironment } from '@dnsid-ai/sdk/node';
+import { constructIdentityManager, createNodeIdentityManagerFromEnvironment, FileTrustedC2spCheckpointStore } from '@dnsid-ai/sdk/node';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 vi.mock('@dnsid-ai/log-c2sp-tlog', async importOriginal => ({
   ...await importOriginal<typeof import('@dnsid-ai/log-c2sp-tlog')>(),
@@ -32,6 +35,28 @@ describe('constructIdentityManager() log trust wiring', () => {
       maxBundleLifetimeMs: undefined,
       allowedClockSkew: 0,
     });
+  });
+
+  it('warns when no checkpoint store directory is configured, and passes a file store when one is', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const dir = await mkdtemp(join(tmpdir(), 'dnsid-cfg-checkpoints-'));
+    try {
+      await constructIdentityManager({ logTrust: { policyUrl: 'https://policy.test/p' } }, deps);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('checkpointStoreDirectory is not set'));
+      expect(vi.mocked(createC2spTlogVerificationRegistry).mock.lastCall![0]).toMatchObject({ trustedCheckpointStore: undefined });
+
+      warn.mockClear();
+      await createNodeIdentityManagerFromEnvironment({
+        DNSID_LOG_POLICY_URL: 'https://policy.test/p',
+        DNSID_LOG_CHECKPOINT_STORE_DIR: join(dir, 'store'),
+      });
+      expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('checkpointStoreDirectory'));
+      const options = vi.mocked(createC2spTlogVerificationRegistry).mock.lastCall![0];
+      expect(options.trustedCheckpointStore).toBeInstanceOf(FileTrustedC2spCheckpointStore);
+    } finally {
+      warn.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('managed: true calls the managed factory with no options', async () => {
