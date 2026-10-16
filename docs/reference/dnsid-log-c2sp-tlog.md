@@ -67,7 +67,7 @@ pending writes after cancellation; racing an uncancelable write is insufficient.
 Checkpoint advancement shares the caller's cancellation and has a 30-second
 standalone default (`timeoutMs`/`signal` options).
 
-See [checkpoint trust and recovery](../_media/CHECKPOINTS.md) for typed diagnostics,
+See [checkpoint trust and recovery](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/CHECKPOINTS.md) for typed diagnostics,
 exact-state storage requirements, durable-adapter obligations, and the
 independently authorized deployment recovery procedure. This SDK supplies no
 built-in durable adapter or recovery authorization service. Storage errors never
