@@ -80,7 +80,7 @@ export { prepareC2spTlogEventForSigning, parsePreparedC2spTlogEvent, signPrepare
 export type { C2spSignerRole, C2spChain, PreparedC2spTlogEvent, PreparedC2spVerificationContext, SignPreparedC2spOptions, C2spTlogAppendOptions } from './writer.ts';
 export { C2spTlogError, C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';
 export { C2SP_TLOG_PROFILE_VERSION, C2SP_TLOG_SPECIFICATIONS, DNSID_C2SP_METHOD_REVISION } from './version.ts';
-export { advanceTrustedC2spCheckpoint, InMemoryTrustedC2spCheckpointStore, verifyC2spConsistencyProof } from './checkpoint-trust.ts';
+export { advanceTrustedC2spCheckpoint, C2spCheckpointConsistencyError, C2spCheckpointStoreError, InMemoryTrustedC2spCheckpointStore, MissingC2spConsistencyEvidenceError, verifyC2spConsistencyProof } from './checkpoint-trust.ts';
 export type { C2spConsistencyProofSource, TrustedC2spCheckpoint, TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 export { DEFAULT_C2SP_MAX_STREAM_BUNDLE_BYTES, DEFAULT_C2SP_MAX_STREAM_BUNDLE_EVENTS, parseC2spStreamBundle, verifyC2spStreamBundle } from './stream-bundle.ts';
 export type {

@@ -398,7 +398,11 @@ type LifecycleErrorCategory =
   | "UNSUPPORTED_EVENT"
   | "CHAIN_CONTINUITY"
   | "INVALID_EVIDENCE"
-  | "INCOMPLETE_STREAM";
+  | "INCOMPLETE_STREAM"
+  | "LOG_ROLLBACK"
+  | "LOG_FORK"
+  | "LOG_INCONSISTENT"
+  | "CHECKPOINT_STORE_ERROR";
 ```
 
 Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)
