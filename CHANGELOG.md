@@ -1,4 +1,35 @@
 
+## [0.28.0] - 2026-10-16
+
+### Features
+
+- feat(web-bot-auth): align with published WG draft 00 ([#94](https://github.com/dnsid-ai/dnsid-ts/pull/94))
+- feat(web-bot-auth): harden directory timing and key refresh ([#96](https://github.com/dnsid-ai/dnsid-ts/pull/96))
+- feat: add the partner log to the managed verification catalog ([#48](https://github.com/dnsid-ai/dnsid-ts/pull/48))
+
+
+## [0.27.0] - 2026-10-14
+
+### Bug Fixes
+
+- fix(protocol): preserve parsed empty optional TXT tags ([#83](https://github.com/dnsid-ai/dnsid-ts/pull/83))
+
+### Features
+
+- feat(web-bot-auth): verify DNSid requests and signed directories ([#86](https://github.com/dnsid-ai/dnsid-ts/pull/86))
+
+
+## [0.26.0] - 2026-10-12
+
+### Documentation
+
+- docs: add trust policy setup example ([#80](https://github.com/dnsid-ai/dnsid-ts/pull/80))
+
+### Features
+
+- feat: registry client options ([#76](https://github.com/dnsid-ai/dnsid-ts/pull/76))
+
+
 ## [0.25.0] - 2026-10-07
 
 ### Chores

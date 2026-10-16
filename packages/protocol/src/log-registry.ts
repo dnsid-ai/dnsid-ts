@@ -4,7 +4,7 @@ import type { Log, LoggedStateEvidence, LogReader } from './log.ts';
 import type { LogEvent } from './log-events.ts';
 
 /** Factory function that creates a LogReader bound to a specific lr value. */
-export type LogReaderFactory = (lr: string, options?: { signal?: AbortSignal }) => LogReader;
+export type LogReaderFactory = (lr: string, options?: { signal?: AbortSignal; revalidate?: boolean }) => LogReader;
 
 const METHOD_RE = /^[a-z][a-z0-9-]*$/;
 
@@ -38,7 +38,7 @@ export class LogRegistry {
    * Returns a NoopLogReader if no factory is registered for the method.
    * @throws ParseError if lr is malformed (no colon, empty method, or method violates pattern).
    */
-  newReader(lr: string, options?: { signal?: AbortSignal }): LogReader {
+  newReader(lr: string, options?: { signal?: AbortSignal; revalidate?: boolean }): LogReader {
     const colonIdx = lr.indexOf(':');
     if (colonIdx === -1) {
       throw new ParseError(`malformed log reference (no colon): ${lr}`);

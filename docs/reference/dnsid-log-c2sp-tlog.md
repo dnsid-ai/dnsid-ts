@@ -56,7 +56,7 @@ import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog'
 const registry = await createDnsidManagedVerificationRegistry();
 ```
 
-It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai` or `https://log.dnsid.ai`. Both development and production use bundle-first verification with bounded raw-scan fallback when bundle evidence is unavailable or consistency evidence requires a complete scan. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
+It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai`, `https://log.dnsid.ai`, or `https://log.partners.dnsid.ai`. Development, production, and partners all use bundle-first verification with bounded raw-scan fallback when bundle evidence is unavailable or consistency evidence requires a complete scan. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
 
 Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
 
@@ -232,7 +232,7 @@ Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS 
 const C2SP_ENTRIES_PER_BUNDLE: 256 = 256;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L60)
 
 C2SP tlog-tiles fixes full entry bundles at 256 entries.
 
@@ -283,7 +283,7 @@ Pinned versions (URL or commit) of each C2SP specification this package implemen
 const DEFAULT_C2SP_MAX_CHECKPOINT_BYTES: 1048576 = 1_048_576;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L59)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L62)
 
 ***
 
@@ -295,7 +295,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:59](https://github.com/
 const DEFAULT_C2SP_MAX_ENTRY_BUNDLE_BYTES: 16777472 = 16_777_472;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L64)
 
 256 * (2-byte prefix + 65,535-byte entry).
 
@@ -333,7 +333,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:22](https://github.com/
 const DEFAULT_C2SP_MAX_TOTAL_ENTRY_BYTES: 268435456 = 268_435_456;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L65)
 
 ***
 
@@ -345,7 +345,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:62](https://github.com/
 const DEFAULT_C2SP_MAX_TREE_SIZE: 1000000 = 1_000_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L58)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L61)
 
 ***
 
@@ -357,7 +357,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:58](https://github.com/
 const DEFAULT_C2SP_REQUEST_TIMEOUT_MS: 10000 = 10_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L66)
 
 ***
 

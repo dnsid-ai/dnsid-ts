@@ -363,6 +363,22 @@ describe('HTTP Message Signature reusable primitives', () => {
     expect(base).toContain('"signature-agent";key="sig1": "https://bot.example"');
   });
 
+  it.each(['primitive', 'profile'])('rejects a rotated signing key in the shared %s path', async kind => {
+    const provider = makeKeyProvider();
+    const next = await generateKeyPair('ES256');
+    const nextJwk = { ...await exportJWK(next.publicKey), kid: 'next', alg: 'ES256' } as DnsIdJWK;
+    vi.mocked(provider.signingKey).mockResolvedValueOnce(publicJwk).mockResolvedValue(nextJwk);
+    vi.mocked(provider.sign).mockImplementation(async bytes => new Uint8Array(await crypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' }, next.privateKey, toArrayBuffer(bytes),
+    )));
+    const req = makeGetRequest();
+    const signing = kind === 'primitive'
+      ? signHttpMessage(req, { label: 'sig1', components: ['@method'] }, provider)
+      : new HttpSignaturesProfile({ domain: SIGNER_CONFIG.domain, keyProvider: provider, identityResolver: resolverStub }).createSignedHttpRequest(req);
+    await expect(signing).rejects.toThrow('HTTP signing key changed');
+    expect(req.headers.has('Signature')).toBe(false);
+  });
+
   it('adds or replaces only the selected dictionary member when signing', async () => {
     const req = new Request('https://api.example.com/', {
       headers: {
@@ -726,6 +742,38 @@ describe('HttpSignaturesProfile.verifySignedHttpRequest()', () => {
     }, makeKeyProvider());
 
     await expect(verifier.verifySignedHttpRequest(signed)).rejects.toThrow(VerificationError);
+  });
+
+  it.each(['sha-256', 'foo'])('validates additional keyed Content-Digest coverage for %s', async key => {
+    const { signer, verifier } = await setup();
+    const original = await signer.createSignedHttpRequest(makePostRequest('hello'));
+    const headers = new Headers(original.headers);
+    headers.append('Content-Digest', 'foo=:AA==:');
+    const params = parseSignatureInput(headers.get('Signature-Input')!).get('sig1')!;
+    delete params.parameters;
+    params.components.push({ name: 'content-digest', params: { key } });
+    const signed = await signHttpMessage(new Request(original, { headers }), params, makeKeyProvider());
+    if (key === 'sha-256') await expect(verifier.verifySignedHttpRequest(signed)).resolves.toMatchObject({ domain: 'signer.example.com' });
+    else await expect(verifier.verifySignedHttpRequest(signed)).rejects.toThrow(VerificationError);
+  });
+
+  it('rejects keyed digest coverage without supplied content', async () => {
+    const { signer, verifier } = await setup();
+    const signed = await signer.createSignedHttpRequest(new Request('https://api.example.com/resource', {
+      headers: { 'Content-Digest': 'sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:' },
+    }), { additionalComponents: [{ name: 'content-digest', params: { key: 'sha-256' } }] });
+    await expect(verifier.verifySignedHttpRequest(signed)).rejects.toThrow('request has no body');
+  });
+
+  it('retains exact minimum digest coverage even for keyed sha-256', async () => {
+    const { signer, verifier } = await setup();
+    const original = await signer.createSignedHttpRequest(makePostRequest());
+    const params = parseSignatureInput(original.headers.get('Signature-Input')!).get('sig1')!;
+    delete params.parameters;
+    params.components = params.components.filter(c => c !== 'content-digest');
+    params.components.push({ name: 'content-digest', params: { key: 'sha-256' } });
+    const signed = await signHttpMessage(original, params, makeKeyProvider());
+    await expect(verifier.verifySignedHttpRequest(signed)).rejects.toThrow('content-digest is not covered');
   });
 
   it('throws VerificationError when Signature-Input header is absent', async () => {

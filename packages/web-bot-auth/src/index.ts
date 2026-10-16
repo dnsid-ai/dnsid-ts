@@ -4,14 +4,19 @@
  * Signs outbound HTTP requests per Web Bot Auth (RFC 9421 HTTP Message Signatures
  * with the `web-bot-auth` tag) and serves the signed
  * `/.well-known/http-message-signatures-directory` document that advertises the
- * agent's public keys.
+ * agent's public keys. Verification authenticates signed directories and requests
+ * against current DNSid operational keys and configured entity acceptance.
+ * Targets `draft-ietf-webbotauth-httpsig-protocol-00`, not the editor's copy.
  *
  * Web Bot Auth requires an Ed25519 operational key; signing with any other key
  * type raises {@link ArgumentError}.
  *
  * @packageDocumentation
  */
-import type { KeyProvider, SigningIdentityManager, DnsIdJWK } from '@dnsid-ai/protocol';
+import type { KeyProvider, SigningIdentityManager, DnsIdJWK, RefreshingIdentityResolver, VerifiedDomain } from '@dnsid-ai/protocol';
+import { verifyWebBotAuthRequest, normalizedWbaIdentifier } from './verify.ts';
+import type { WebBotAuthVerificationOptions, WebBotAuthDiscoveryFetch } from './verify.ts';
+export type { WebBotAuthVerificationOptions, WebBotAuthDiscoveryFetch } from './verify.ts';
 import { requireLocalDomain } from '@dnsid-ai/protocol';
 import { ArgumentError, jwkSignatureAlg, jwkThumbprint, normalizeFQDN } from '@dnsid-ai/protocol';
 import type { ComponentIdentifier } from '@dnsid-ai/http-signatures';
@@ -29,7 +34,7 @@ export const HTTP_MESSAGE_SIGNATURES_DIRECTORY_PATH = '/.well-known/http-message
 export const HTTP_MESSAGE_SIGNATURES_DIRECTORY_MEDIA_TYPE = 'application/http-message-signatures-directory+json';
 /** Default request-signature lifetime (seconds) when no TTL is configured. */
 export const DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS = 60;
-/** Default directory-signature lifetime and `Cache-Control` max-age (seconds). */
+/** Default directory-signature lifetime (seconds), including backdating. */
 export const DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS = 300;
 
 /** Web Bot Auth key-discovery interpretation for the `Signature-Agent` member. */
@@ -54,40 +59,41 @@ export interface WebBotAuthConfig {
   directoryURL?: string;
   /** Request-signature lifetime in seconds. Defaults to {@link DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS}. */
   signatureTTL?: number;
-  /** Whether signed requests include (and cover) the `Signature-Agent` header. Defaults to true. */
-  includeSignatureAgent?: boolean;
-  /** Directory-signature lifetime in seconds; also sets the response `Cache-Control` max-age. Defaults to {@link DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS}. */
+  /** Directory-signature lifetime in seconds, including up to five seconds of backdating. Defaults to {@link DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS}. */
   directorySignatureTTL?: number;
-  /** Allowed verification clock skew in seconds. Reserved for the future verifier API. Default: 5. */
+  /** Allowed verification clock skew in seconds. Default: 5. Never permits future directory creation. */
   clockSkew?: number;
 }
 
 /** Constructor options for {@link WebBotAuthProfile}. */
 export interface WebBotAuthProfileOptions {
-  /** Agent FQDN the profile signs for (e.g. `agent.example`). Normalized on construction. */
-  domain: string;
-  /** Key provider holding the agent's Ed25519 operational key. */
-  keyProvider: KeyProvider;
+  /** Agent FQDN the profile signs for (e.g. `agent.example`). Required for signing; normalized on construction. */
+  domain?: string;
+  /** Key provider holding the agent's Ed25519 operational key. Required for signing. */
+  keyProvider?: KeyProvider;
+  /** Required for DNSid WBA verification; acceptance is enforced on every invocation. */
+  identityResolver?: RefreshingIdentityResolver;
+  /** Required for verification. Must enforce Web PKI and public-address connection pinning. */
+  discoveryFetch?: WebBotAuthDiscoveryFetch;
   /** Optional Web Bot Auth configuration overrides. */
   webBotAuth?: WebBotAuthConfig;
 }
 
 /** Per-request overrides for {@link WebBotAuthProfile.createWebBotAuthSignedRequest}. */
 export interface WebBotAuthSigningOptions {
-  /** Extra covered components appended to the defaults (`@authority`, plus `content-digest`/`signature-agent` when present). Duplicates are ignored. */
+  /** Extra covered components appended to `@authority`, keyed `signature-agent`, and `content-digest` when supplied. Duplicates are ignored; nested signing is unsupported. */
   additionalComponents?: ComponentIdentifier[];
-  /** Overrides {@link WebBotAuthConfig.includeSignatureAgent} for this request. */
-  signatureAgent?: boolean;
   /** Overrides {@link WebBotAuthConfig.signatureTTL} for this request (seconds). */
   ttl?: number;
 }
 
 /**
- * Web Bot Auth signing profile for a single agent domain.
+ * DNSid Web Bot Auth signing, directory serving, and verification profile.
  *
  * Signs outbound requests with the agent's Ed25519 operational key per
  * RFC 9421 (tag `web-bot-auth`) and serves the signed key directory that
- * verifiers fetch to resolve the signature's key.
+ * verifiers fetch to resolve the signature's key. Verification-only instances
+ * need an identity resolver and SSRF-safe discovery transport, not a local key.
  *
  * @example
  * ```ts
@@ -108,49 +114,66 @@ export class WebBotAuthProfile {
    * @param identityManager Manager whose domain and operational key provider back the profile.
    * @param webBotAuth Optional Web Bot Auth configuration overrides.
    */
-  static fromIdentityManager(identityManager: SigningIdentityManager, webBotAuth?: WebBotAuthConfig): WebBotAuthProfile {
+  static fromIdentityManager(identityManager: SigningIdentityManager & RefreshingIdentityResolver, webBotAuth?: WebBotAuthConfig): WebBotAuthProfile {
+    const domain = requireLocalDomain(identityManager);
+    const agent = signatureAgentConfig(domain, webBotAuth ?? {});
+    if (agent.type === 'jwks_uri' && identityManager.config.identity?.kuUrl && normalizedWbaIdentifier(agent.uri) === normalizedWbaIdentifier(identityManager.config.identity.kuUrl)) {
+      throw new ArgumentError('WBA discovery must be separate from the local ku endpoint');
+    }
     return new WebBotAuthProfile({
-      domain: requireLocalDomain(identityManager),
+      domain,
       keyProvider: identityManager.getKeyProvider(),
+      identityResolver: identityManager,
       webBotAuth,
     });
   }
 
-  private readonly domain: string;
-  private readonly keyProvider: KeyProvider;
+  private readonly domain?: string;
+  private readonly keyProvider?: KeyProvider;
+  private readonly identityResolver?: RefreshingIdentityResolver;
+  private readonly discoveryFetch?: WebBotAuthDiscoveryFetch;
   private readonly config: WebBotAuthConfig;
+  private readonly refreshCooldowns = new Map<string, number>();
 
   /**
    * @throws ArgumentError If `opts.domain` is not a valid agent FQDN.
    */
   constructor(opts: WebBotAuthProfileOptions) {
     try {
-      this.domain = normalizeFQDN(opts.domain, true);
+      this.domain = opts.domain === undefined ? undefined : normalizeFQDN(opts.domain, true);
     } catch (e) {
       throw new ArgumentError(`domain is not a valid agent FQDN: ${(e as Error).message}`);
     }
     this.keyProvider = opts.keyProvider;
-    this.config = opts.webBotAuth ?? {};
-    validateWebBotAuthConfig(this.domain, this.config);
+    if ((opts.identityResolver || opts.discoveryFetch) && typeof opts.identityResolver?.refreshDomain !== 'function') {
+      throw new ArgumentError('WBA verification requires a RefreshingIdentityResolver');
+    }
+    this.identityResolver = opts.identityResolver;
+    this.discoveryFetch = opts.discoveryFetch;
+    const config = opts.webBotAuth ?? {};
+    this.config = { ...config, signatureAgent: config.signatureAgent === undefined ? undefined : { ...config.signatureAgent } };
+    validateWebBotAuthConfig(this.domain ?? 'unused.example', this.config);
   }
 
   /**
    * Returns a copy of `req` carrying a Web Bot Auth signature (tag `web-bot-auth`).
    *
-   * Covers `@authority` plus, when applicable, `content-digest` (a SHA-256
-   * `Content-Digest` header is added for requests with a body) and
-   * `signature-agent` (added unless disabled). The signature includes a nonce,
+   * Covers `@authority` and keyed `signature-agent`, plus `content-digest`
+   * when content is supplied (a SHA-256 `Content-Digest` header is added).
+   * The signature includes a nonce,
    * `created`/`expires` timestamps, and the operational key's JWK thumbprint as `keyid`.
    * The original request is not modified.
    *
    * @param req Outbound request to sign.
-   * @param opts Per-request overrides for covered components, `Signature-Agent`, and TTL.
+   * @param opts Per-request overrides for covered components and TTL.
    * @returns A new signed `Request`.
    * @throws ArgumentError If the operational key is not Ed25519, the resolved
    *   Signature-Agent URI is invalid, or an additional component
    *   identifier is invalid.
    */
   async createWebBotAuthSignedRequest(req: Request, opts: WebBotAuthSigningOptions = {}): Promise<Request> {
+    const ttl = opts.ttl === undefined ? this.config.signatureTTL ?? DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS : opts.ttl;
+    validateTtl(ttl, 'webBotAuth.signatureTTL');
     const signingKey = await this.ed25519SigningKey('Web Bot Auth signing requires Ed25519');
     const headers = new Headers(req.headers);
     const components: ComponentIdentifier[] = ['@authority'];
@@ -162,23 +185,19 @@ export class WebBotAuthProfile {
       components.push('content-digest');
     }
 
-    const includeSignatureAgent = opts.signatureAgent ?? this.config.includeSignatureAgent ?? true;
-    if (includeSignatureAgent) {
-      const { uri, type } = signatureAgentConfig(this.domain, this.config);
-      setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, `${serializeStructuredFieldValue(uri)};type=${type}`);
-      components.push({ name: 'signature-agent', params: { key: WEB_BOT_AUTH_SIGNATURE_LABEL } });
-    }
+    const { uri, type } = signatureAgentConfig(this.domain!, this.config);
+    setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, `${serializeStructuredFieldValue(uri)};type=${type}`);
+    components.push({ name: 'signature-agent', params: { key: WEB_BOT_AUTH_SIGNATURE_LABEL } });
 
     for (const component of opts.additionalComponents ?? []) {
       validateComponentIdentifier(component);
+      const name = typeof component === 'string' ? component : component.name;
+      if (name === 'signature' || name === 'signature-input') throw new ArgumentError('nested WBA signing is unsupported');
       if (!components.some(c => sameComponent(c, component))) components.push(component);
     }
 
     const requestWithHeaders = new Request(req, { headers, body });
     const now = Math.floor(Date.now() / 1000);
-    const ttl = opts.ttl ?? this.config.signatureTTL ?? DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS;
-    validateTtl(ttl, 'webBotAuth.signatureTTL');
-
     return signHttpMessage(requestWithHeaders, {
       label: WEB_BOT_AUTH_SIGNATURE_LABEL,
       components,
@@ -188,7 +207,7 @@ export class WebBotAuthProfile {
       expires: now + ttl,
       nonce: generateNonce(64),
       tag: WEB_BOT_AUTH_TAG,
-    }, this.keyProvider);
+    }, this.keyProvider!, signingKey);
   }
 
   /**
@@ -210,28 +229,42 @@ export class WebBotAuthProfile {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body));
     const ttl = this.config.directorySignatureTTL ?? DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS;
     validateTtl(ttl, 'webBotAuth.directorySignatureTTL');
+    const now = Math.floor(Date.now() / 1000);
+    const created = now - Math.min(5, ttl - 1);
+    const expires = created + ttl;
     const headers = new Headers({
       'Content-Type': HTTP_MESSAGE_SIGNATURES_DIRECTORY_MEDIA_TYPE,
-      'Cache-Control': `max-age=${ttl}`,
+      'Cache-Control': `max-age=${expires - now}, must-revalidate`,
+      'Date': new Date(now * 1000).toUTCString(),
       'Content-Digest': `sha-256=:${toStdBase64(new Uint8Array(digest))}:`,
     });
     const res = new Response(body, { status: 200, headers });
-    const now = Math.floor(Date.now() / 1000);
-
-    return signHttpMessage({ message: res, request: req }, {
+    const signed = await signHttpMessage({ message: res, request: req }, {
       label: WEB_BOT_AUTH_SIGNATURE_LABEL,
       components: [{ name: '@authority', params: { req: true } }, 'content-type', 'cache-control', 'content-digest'],
       keyId: await jwkThumbprint(signingKey),
       alg: joseAlgToHttpSigAlg('EdDSA'),
-      created: now,
-      expires: now + ttl,
+      created,
+      expires,
       nonce: generateNonce(64),
       tag: HTTP_MESSAGE_SIGNATURES_DIRECTORY_TAG,
-    }, this.keyProvider);
+    }, this.keyProvider!, signingKey);
+    if (Date.now() / 1000 >= expires) throw new ArgumentError('WBA directory signature expired during generation');
+    return signed;
+  }
+
+  /** Verifies request, signed directory, and DNSid ku binding. Does not grant permissions.
+   * requiredComponents enforces extra application coverage before discovery.
+   * Without consumeNonce, time-valid requests can be replayed.
+   */
+  async verifyWebBotAuthSignedRequest(req: Request, opts: WebBotAuthVerificationOptions = {}): Promise<VerifiedDomain> {
+    if (!this.identityResolver || !this.discoveryFetch) throw new ArgumentError('WBA verification requires identityResolver and SSRF-safe discoveryFetch');
+    return verifyWebBotAuthRequest(req, this.identityResolver, this.discoveryFetch, this.config.clockSkew ?? 5, opts, this.refreshCooldowns);
   }
 
   /** Fetches the active operational key, throwing ArgumentError with `message` if it is not Ed25519. */
   private async ed25519SigningKey(message: string): Promise<DnsIdJWK> {
+    if (!this.domain || !this.keyProvider) throw new ArgumentError('WBA signing requires domain and keyProvider');
     const signingKey = await this.keyProvider.signingKey();
     if (jwkSignatureAlg(signingKey) !== 'EdDSA') throw new ArgumentError(message);
     return signingKey;
@@ -306,6 +339,7 @@ function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: 
     throw new ArgumentError('Web Bot Auth Signature-Agent type must be directory or jwks_uri');
   }
   const rawUri = config.signatureAgent?.uri ?? legacyDirectUri ?? `https://${domain}`;
+  if (typeof rawUri !== 'string') throw new ArgumentError('Web Bot Auth Signature-Agent URI must be a string');
   let url: URL;
   try {
     url = new URL(rawUri);
@@ -316,7 +350,7 @@ function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: 
     throw new ArgumentError('Web Bot Auth Signature-Agent must be https');
   }
   if (type === 'directory') {
-    if (url.pathname !== '/' || url.search || url.hash) {
+    if (rawUri !== url.origin) {
       throw new ArgumentError('Web Bot Auth directory Signature-Agent must be an origin URI');
     }
     return { uri: url.origin, type };

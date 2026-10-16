@@ -76,6 +76,8 @@ export interface JsonFetchOptions {
   allowedHost?: string;
   domainBoundary?: boolean;
   maxResponseBytes?: number;
+  /** Bypass local caches and revalidate upstream evidence. */
+  revalidate?: boolean;
 }
 
 export type JsonFetcher = (url: string, opts?: JsonFetchOptions) => Promise<FetchResult>;
@@ -96,8 +98,12 @@ export interface IdentityResolver {
   verifyDomain(domain: string, peerCert?: TLSCertificate, options?: VerificationOptions): Promise<VerifiedDomain>;
 }
 
+export interface RefreshingIdentityResolver extends IdentityResolver {
+  refreshDomain(domain: string, peerCert?: TLSCertificate, options?: VerificationOptions): Promise<VerifiedDomain>;
+}
+
 export interface SigningIdentityManager extends IdentityResolver {
-  config: { identity?: { domain: string } };
+  config: { identity?: { domain: string; kuUrl?: string } };
   getKeyProvider(): KeyProvider;
 }
 
@@ -309,7 +315,7 @@ export function validateDnsidConfig(config: unknown = {}): DnsidConfig {
  * JWT/JWS, HTTP Message Signatures, transport, registry workflows, and
  * concrete key storage live in sibling packages.
  */
-export class IdentityManager implements IdentityResolver {
+export class IdentityManager implements RefreshingIdentityResolver {
   /** Validated immutable snapshot. `identity` is absent for verification-only managers. */
   public readonly config: DnsidConfig & { verification: VerificationConfig; transport: TransportConfig };
   private readonly keyProvider: KeyProvider | null;
@@ -322,6 +328,7 @@ export class IdentityManager implements IdentityResolver {
   private readonly fetchJson: JsonFetcher | null;
   private readonly inFlightVerifications = new Map<string, SharedVerification>();
   private readonly inFlightStatusRefreshes = new Map<string, SharedVerification>();
+  private readonly inFlightRefreshes = new Map<string, SharedVerification>();
 
   /**
    * @param config - Data-only configuration; omit `identity` for a verification-only manager.
@@ -591,6 +598,11 @@ export class IdentityManager implements IdentityResolver {
     return withVerificationBudget(signal => this.verifyDomainWithinBudget(domain, peerCert, signal, true), options);
   }
 
+  /** Fully verifies new identity evidence without cached-result fallback. */
+  async refreshDomain(domain: string, peerCert?: TLSCertificate, options: VerificationOptions = {}): Promise<VerifiedDomain> {
+    return withVerificationBudget(signal => this.verifyDomainWithinBudget(domain, peerCert, signal, true, true), options);
+  }
+
   /**
    * Protocol-only verification used to confirm registry-managed publication of the local
    * identity. Skips counterparty acceptance, so it is restricted to `config.identity.domain`:
@@ -611,7 +623,7 @@ export class IdentityManager implements IdentityResolver {
     return withVerificationBudget(signal => this.verifyDomainWithinBudget(requested, undefined, signal, false), options);
   }
 
-  private async verifyDomainWithinBudget(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, enforceAcceptance: boolean): Promise<VerifiedDomain> {
+  private async verifyDomainWithinBudget(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, enforceAcceptance: boolean, refresh = false): Promise<VerifiedDomain> {
     try {
       domain = normalizeFQDN(domain);
     } catch (e) {
@@ -619,7 +631,7 @@ export class IdentityManager implements IdentityResolver {
     }
 
     // Shared/coalesced work ends here; everything below is per-invocation policy.
-    const result = await this.verifyReusableIdentity(domain, peerCert, signal);
+    const result = await this.verifyReusableIdentity(domain, peerCert, signal, refresh);
     verifyMtlsPeer(result.record, domain, peerCert);
     if (enforceAcceptance) this.enforceCounterpartyAcceptance(result);
     this.requireFreshEvidence(result);
@@ -640,7 +652,13 @@ export class IdentityManager implements IdentityResolver {
     );
   }
 
-  private async verifyReusableIdentity(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal): Promise<VerifiedDomain> {
+  private async verifyReusableIdentity(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, refresh = false): Promise<VerifiedDomain> {
+    if (refresh) {
+      const existing = this.inFlightRefreshes.get(domain);
+      const result = await this.joinShared(existing ?? this.startShared(this.inFlightRefreshes, domain, child => this.verifyDomainUncached(domain, child, true)), signal);
+      if (existing && result.dnsTTL === 0) return this.verifyDomainUncached(domain, signal, true);
+      return result;
+    }
     const cached = this.cache.get(domain);
     if (cached) {
       verifyMtlsPeer(cached.record, domain, peerCert);
@@ -665,9 +683,20 @@ export class IdentityManager implements IdentityResolver {
   private startShared(map: Map<string, SharedVerification>, domain: string, operation: (signal: AbortSignal) => Promise<VerifiedDomain>): SharedVerification {
     const controller = new AbortController();
     const shared = { controller, callers: 0 } as SharedVerification;
+    if (map === this.inFlightRefreshes) {
+      this.inFlightVerifications.delete(domain);
+      this.inFlightStatusRefreshes.delete(domain);
+    }
     // ponytail: shared work has a 30s cap; expose a worker budget if longer scans become necessary.
     shared.promise = withVerificationBudget(operation, { signal: controller.signal }).then(result => {
-      if (!controller.signal.aborted && map.get(domain) === shared) this.cache.put(domain, result);
+      if (!controller.signal.aborted && map.get(domain) === shared) {
+        if (map === this.inFlightRefreshes) {
+          // Older lookups/status checks must not overwrite the refreshed key state.
+          this.inFlightVerifications.delete(domain);
+          this.inFlightStatusRefreshes.delete(domain);
+        }
+        this.cache.put(domain, result);
+      }
       return result;
     }).catch(error => {
       if (map.get(domain) === shared && error instanceof VerificationError && error.code === VerificationCode.StatusNotActive) this.cache.evict(domain);
@@ -719,24 +748,19 @@ export class IdentityManager implements IdentityResolver {
       dnssecState: cached.dnssecState,
       logReader: cached.logReader,
     });
-    this.requireFreshEvidence(refreshed);
+    this.requireFreshEvidence(refreshed, cached);
     return refreshed;
   }
 
-  private requireFreshEvidence(result: VerifiedDomain): void {
-    const now = Date.now();
-    let code: VerificationCode | undefined;
-    if ([result.tlsCert, result.recordSigningTlsCert].some(cert =>
-      !Number.isFinite(cert.notAfter.getTime()) || now >= cert.notAfter.getTime())) code = VerificationCode.TLSError;
-    else if (result.record.ka && now >= result.keyBoundAt.getTime() + parseKaDuration(result.record.ka)) code = VerificationCode.KeyAgeExceeded;
-    else if (result.dnsTTL > 0 && now >= result.dnsExpiresAt.getTime()) code = VerificationCode.DNSResolution;
-    if (code) {
-      this.cache.evict(result.domain);
-      throw new VerificationError('identity evidence expired during verification', { code, transient: code === VerificationCode.DNSResolution });
+  private requireFreshEvidence(result: VerifiedDomain, cached = result): void {
+    try { result.assertFresh(); }
+    catch (error) {
+      if (this.cache.get(result.domain) === cached) this.cache.evict(result.domain);
+      throw error;
     }
   }
 
-  private async verifyDomainUncached(domain: string, signal: AbortSignal): Promise<VerifiedDomain> {
+  private async verifyDomainUncached(domain: string, signal: AbortSignal, revalidate = false): Promise<VerifiedDomain> {
     const dnsAcquiredAt = Date.now(); // Lookup start is conservative even for injected resolvers.
     let txtRecords: TXTRecord[];
     let dnssecState: DNSSECState;
@@ -832,7 +856,7 @@ export class IdentityManager implements IdentityResolver {
     let recordSigningTlsCert: TLSCertificate;
     try {
       const result = await this.fetchProtocolJson(record.signatureVerificationKeyURI(), {
-        signal,
+        signal, revalidate,
         allowedHost: record.signatureVerificationKeyAllowedHost(),
         domainBoundary: true,
         maxResponseBytes: JWKS_MAX_RESPONSE_BYTES,
@@ -873,8 +897,8 @@ export class IdentityManager implements IdentityResolver {
     try {
       const cancelSiblingOnFailure = <T>(branch: Promise<T>) => branch.catch((e: unknown) => { fanout.abort(); throw e; });
       [identity, statusCheck] = await Promise.allSettled([
-        cancelSiblingOnFailure(this.verifyIdentityEvidence(domain, record, recordSigningJwks, recordSigningTlsCert, signingKey, fanout.signal)),
-        cancelSiblingOnFailure(this.fetchActiveStatus(record.su, fanout.signal)),
+        cancelSiblingOnFailure(this.verifyIdentityEvidence(domain, record, recordSigningJwks, recordSigningTlsCert, signingKey, fanout.signal, revalidate)),
+        cancelSiblingOnFailure(this.fetchActiveStatus(record.su, fanout.signal, revalidate)),
       ]);
     } finally {
       signal.removeEventListener('abort', onAbort);
@@ -921,13 +945,14 @@ export class IdentityManager implements IdentityResolver {
     recordSigningTlsCert: TLSCertificate,
     signingKey: DnsIdJWK,
     signal: AbortSignal,
+    revalidate: boolean,
   ): Promise<IdentityEvidence> {
     let jwks = recordSigningJwks;
     let tlsCert = recordSigningTlsCert;
     if (record.runtimeKeyURI() !== record.signatureVerificationKeyURI()) {
       try {
         const result = await this.fetchProtocolJson(record.runtimeKeyURI(), {
-          signal,
+          signal, revalidate,
           allowedHost: record.runtimeKeyAllowedHost(),
           maxResponseBytes: JWKS_MAX_RESPONSE_BYTES,
         });
@@ -972,7 +997,7 @@ export class IdentityManager implements IdentityResolver {
     let logReader;
     try {
       logReader = this.logRegistry
-        ? this.logRegistry.newReader(record.lr, { signal })
+        ? this.logRegistry.newReader(record.lr, { signal, revalidate })
         : new NoopLogReader(record.lr.split(':')[0] ?? '');
     } catch (e) {
       throw new VerificationError(`malformed lr in _dnsid record: ${(e as Error).message}`, {
@@ -1013,10 +1038,10 @@ export class IdentityManager implements IdentityResolver {
   }
 
   /** Post-sg status branch: fetch su and require ACTIVE. */
-  private async fetchActiveStatus(su: string, signal: AbortSignal): Promise<AgentStatus> {
+  private async fetchActiveStatus(su: string, signal: AbortSignal, revalidate: boolean): Promise<AgentStatus> {
     let status: AgentStatus;
     try {
-      const { data } = await this.fetchProtocolJson(su, { maxResponseBytes: STATUS_MAX_RESPONSE_BYTES, signal });
+      const { data } = await this.fetchProtocolJson(su, { maxResponseBytes: STATUS_MAX_RESPONSE_BYTES, signal, revalidate });
       status = parseAgentStatus(data);
     } catch (e) {
       if (e instanceof VerificationError) throw e;
@@ -1055,6 +1080,7 @@ export class IdentityManager implements IdentityResolver {
     } catch (e) {
       throw new ArgumentError(`domain is not a valid FQDN: ${(e as Error).message}`);
     }
+    this.inFlightRefreshes.delete(normalized);
     this.inFlightVerifications.delete(normalized);
     this.inFlightStatusRefreshes.delete(normalized);
     this.cache.evict(normalized);

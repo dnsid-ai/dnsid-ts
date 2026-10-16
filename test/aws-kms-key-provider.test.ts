@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { verifyWithKey } from '@dnsid-ai/protocol';
-import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade, validateAwsKmsSettings } from '@dnsid-ai/key-aws';
 import type {
   AwsKmsCreateSigningKeyInput,
   AwsKmsFacade,
@@ -10,6 +10,14 @@ import type {
   AwsKmsSignInput,
   AwsSdkKmsClient,
 } from '@dnsid-ai/key-aws';
+
+it('validates non-secret provider settings and supported algorithms before any KMS call', () => {
+  expect(() => validateAwsKmsSettings({ region: 'us-east-1', algorithm: 'EdDSA' })).not.toThrow();
+  expect(() => validateAwsKmsSettings({ algorithm: 'ES256' })).not.toThrow();
+  for (const settings of [{ region: '' }, { algorithm: 'RS256' }, { secretAccessKey: 'secret' }, { token: 'secret' }]) {
+    expect(() => validateAwsKmsSettings(settings)).toThrow();
+  }
+});
 
 class FakeAwsKms implements AwsKmsFacade {
   readonly createInputs: AwsKmsCreateSigningKeyInput[] = [];
@@ -104,6 +112,38 @@ class FakeAwsKms implements AwsKmsFacade {
 }
 
 describe('AwsKmsKeyProvider', () => {
+  it('drains KMS signing before activation and refuses new signing while draining', async () => {
+    const kms = new FakeAwsKms();
+    await kms.addP256Key('active-key');
+    const provider = await AwsKmsKeyProvider.load(kms, { activeKeyId: 'active-key', algorithm: 'ECDSA_SHA_256' });
+    const previous = await provider.signingKey();
+    const pending = await provider.generateKey();
+    const payload = new Uint8Array([1, 2, 3]);
+    let begin!: () => void;
+    let finish!: () => void;
+    const started = new Promise<void>(resolve => { begin = resolve; });
+    const release = new Promise<void>(resolve => { finish = resolve; });
+    const sign = kms.sign.bind(kms);
+    vi.spyOn(kms, 'sign').mockImplementationOnce(async input => {
+      begin();
+      await release;
+      return sign(input);
+    });
+    try {
+      const signature = provider.sign(payload);
+      await started;
+      const activation = provider.activate(pending);
+      await expect(provider.sign(payload)).rejects.toThrow('activation is in progress');
+      await expect(provider.activate(pending)).rejects.toThrow('activation is already in progress');
+      expect((await provider.signingKey()).kid).toBe(previous.kid);
+      finish();
+      expect(await verifyWithKey(payload, await signature, previous, 'ES256')).toBe(true);
+      await activation;
+      expect((await provider.signingKey()).kid).toBe(pending);
+      await expect(provider.sign(payload)).resolves.toHaveLength(64);
+    } finally { finish(); }
+  });
+
   it('loads active and retained public keys as JWKs, with active first', async () => {
     const kms = new FakeAwsKms();
     await kms.addP256Key('active-key');

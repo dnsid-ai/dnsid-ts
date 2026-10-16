@@ -407,7 +407,7 @@ Defined in: [packages/protocol/src/txt-record.ts:22](https://github.com/dnsid-ai
 get isDnsid1(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L49)
+Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L50)
 
 ###### Returns
 
@@ -423,7 +423,7 @@ Defined in: [packages/protocol/src/txt-record.ts:49](https://github.com/dnsid-ai
 get isTwoKey(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L50)
+Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L51)
 
 ###### Returns
 
@@ -439,7 +439,7 @@ Defined in: [packages/protocol/src/txt-record.ts:50](https://github.com/dnsid-ai
 get usesEntityKey(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L51)
+Defined in: [packages/protocol/src/txt-record.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L52)
 
 ###### Returns
 
@@ -455,7 +455,7 @@ Defined in: [packages/protocol/src/txt-record.ts:51](https://github.com/dnsid-ai
 canonical(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L135)
+Defined in: [packages/protocol/src/txt-record.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L136)
 
 ###### Returns
 
@@ -469,7 +469,7 @@ Defined in: [packages/protocol/src/txt-record.ts:135](https://github.com/dnsid-a
 governanceId(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L54)
+Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L55)
 
 Profile-selected accountable-entity identifier for relationship and acceptance checks; draft 01 uses `gi` as signed.
 
@@ -485,7 +485,7 @@ Profile-selected accountable-entity identifier for relationship and acceptance c
 hasStructuralGovernanceRelationship(): boolean;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L65)
+Defined in: [packages/protocol/src/txt-record.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L66)
 
 Whether the agent FQDN is equal to or beneath the accountable entity's
 governance domain. A false result is valid only for delegated identities,
@@ -503,7 +503,7 @@ whose relationship MUST be established by verified ISSUANCE evidence.
 knownTagsCanonical(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L139)
+Defined in: [packages/protocol/src/txt-record.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L140)
 
 ###### Returns
 
@@ -517,7 +517,7 @@ Defined in: [packages/protocol/src/txt-record.ts:139](https://github.com/dnsid-a
 policyFlags(): Set<string>;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L172)
+Defined in: [packages/protocol/src/txt-record.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L173)
 
 ###### Returns
 
@@ -531,7 +531,7 @@ Defined in: [packages/protocol/src/txt-record.ts:172](https://github.com/dnsid-a
 runtimeKeyAllowedHost(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L58)
+Defined in: [packages/protocol/src/txt-record.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L59)
 
 ###### Returns
 
@@ -545,7 +545,7 @@ Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai
 runtimeKeyURI(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L57)
+Defined in: [packages/protocol/src/txt-record.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L58)
 
 ###### Returns
 
@@ -559,7 +559,7 @@ Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai
 serialize(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L157)
+Defined in: [packages/protocol/src/txt-record.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L158)
 
 ###### Returns
 
@@ -573,7 +573,7 @@ Defined in: [packages/protocol/src/txt-record.ts:157](https://github.com/dnsid-a
 signatureVerificationKeyAllowedHost(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L56)
+Defined in: [packages/protocol/src/txt-record.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L57)
 
 ###### Returns
 
@@ -587,7 +587,7 @@ Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai
 signatureVerificationKeyURI(): string;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L55)
+Defined in: [packages/protocol/src/txt-record.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L56)
 
 ###### Returns
 
@@ -601,7 +601,7 @@ Defined in: [packages/protocol/src/txt-record.ts:55](https://github.com/dnsid-ai
 validate(): void;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L120)
+Defined in: [packages/protocol/src/txt-record.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L121)
 
 ###### Returns
 
@@ -615,7 +615,7 @@ Defined in: [packages/protocol/src/txt-record.ts:120](https://github.com/dnsid-a
 static parse(raw): DnsIdTxtRecord;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L35)
+Defined in: [packages/protocol/src/txt-record.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L36)
 
 ###### Parameters
 
@@ -635,7 +635,7 @@ Defined in: [packages/protocol/src/txt-record.ts:35](https://github.com/dnsid-ai
 static parseUnsignedCanonical(raw, agentFQDN?): DnsIdTxtRecord;
 ```
 
-Defined in: [packages/protocol/src/txt-record.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L39)
+Defined in: [packages/protocol/src/txt-record.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L40)
 
 ###### Parameters
 
@@ -657,7 +657,7 @@ Defined in: [packages/protocol/src/txt-record.ts:39](https://github.com/dnsid-ai
 
 ### DomainLog
 
-Defined in: [packages/protocol/src/verified-domain.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L116)
+Defined in: [packages/protocol/src/verified-domain.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L127)
 
 The full verified event history for a domain, loaded from the lifecycle log.
 
@@ -671,7 +671,7 @@ The full verified event history for a domain, loaded from the lifecycle log.
 new DomainLog(domain, events): DomainLog;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L120)
+Defined in: [packages/protocol/src/verified-domain.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L131)
 
 ###### Parameters
 
@@ -697,7 +697,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:120](https://github.com/dn
 readonly domain: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L117)
+Defined in: [packages/protocol/src/verified-domain.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L128)
 
 <a id="events"></a>
 
@@ -707,7 +707,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:117](https://github.com/dn
 readonly events: LogEvent[];
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L118)
+Defined in: [packages/protocol/src/verified-domain.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L129)
 
 #### Methods
 
@@ -719,7 +719,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:118](https://github.com/dn
 snapshotAt(at): DomainSnapshot;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L130)
+Defined in: [packages/protocol/src/verified-domain.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L141)
 
 Materializes the domain state at a specific point in time.
 Pure computation — no I/O.
@@ -744,7 +744,7 @@ VerificationError if no events exist at or before `at`, or no ISSUANCE event fou
 
 ### DomainSnapshot
 
-Defined in: [packages/protocol/src/verified-domain.ts:305](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L305)
+Defined in: [packages/protocol/src/verified-domain.ts:316](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L316)
 
 The materialized state of a domain at a specific point in time.
 
@@ -758,7 +758,7 @@ The materialized state of a domain at a specific point in time.
 new DomainSnapshot(fields): DomainSnapshot;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:316](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L316)
+Defined in: [packages/protocol/src/verified-domain.ts:327](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L327)
 
 ###### Parameters
 
@@ -810,7 +810,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:316](https://github.com/dn
 readonly activeKey: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:309](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L309)
+Defined in: [packages/protocol/src/verified-domain.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L320)
 
 <a id="activekeythumbprint"></a>
 
@@ -820,7 +820,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:309](https://github.com/dn
 readonly activeKeyThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:310](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L310)
+Defined in: [packages/protocol/src/verified-domain.ts:321](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L321)
 
 <a id="domain-1"></a>
 
@@ -830,7 +830,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:310](https://github.com/dn
 readonly domain: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:306](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L306)
+Defined in: [packages/protocol/src/verified-domain.ts:317](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L317)
 
 <a id="events-1"></a>
 
@@ -840,7 +840,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:306](https://github.com/dn
 readonly events: LogEvent[];
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:314](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L314)
+Defined in: [packages/protocol/src/verified-domain.ts:325](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L325)
 
 <a id="governanceid-1"></a>
 
@@ -850,7 +850,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:314](https://github.com/dn
 readonly governanceId: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:312](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L312)
+Defined in: [packages/protocol/src/verified-domain.ts:323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L323)
 
 <a id="historicalstate"></a>
 
@@ -860,7 +860,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:312](https://github.com/dn
 readonly historicalState: AgentStatusState;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:308](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L308)
+Defined in: [packages/protocol/src/verified-domain.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L319)
 
 Lifecycle state materialized from the verified log history at `snapshotAt`.
 
@@ -872,7 +872,7 @@ Lifecycle state materialized from the verified log history at `snapshotAt`.
 readonly keyBoundAt: Date;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:311](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L311)
+Defined in: [packages/protocol/src/verified-domain.ts:322](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L322)
 
 <a id="snapshotat-1"></a>
 
@@ -882,7 +882,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:311](https://github.com/dn
 readonly snapshotAt: Date;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:313](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L313)
+Defined in: [packages/protocol/src/verified-domain.ts:324](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L324)
 
 ***
 
@@ -890,7 +890,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:313](https://github.com/dn
 
 ### IdentityManager
 
-Defined in: [packages/protocol/src/identity-manager.ts:312](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L312)
+Defined in: [packages/protocol/src/identity-manager.ts:318](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L318)
 
 Core DNSid protocol facade.
 
@@ -900,7 +900,7 @@ concrete key storage live in sibling packages.
 
 #### Implements
 
-- [`IdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identityresolver)
+- [`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver)
 
 #### Constructors
 
@@ -912,7 +912,7 @@ concrete key storage live in sibling packages.
 new IdentityManager(config?, deps?): IdentityManager;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:332](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L332)
+Defined in: [packages/protocol/src/identity-manager.ts:339](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L339)
 
 ###### Parameters
 
@@ -944,7 +944,7 @@ Injected runtime objects. The protocol core has no default DNS/HTTPS
 readonly config: DnsidConfig & object;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:314](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L314)
+Defined in: [packages/protocol/src/identity-manager.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L320)
 
 Validated immutable snapshot. `identity` is absent for verification-only managers.
 
@@ -972,7 +972,7 @@ verification: VerificationConfig;
 canonicalizeLogEvent(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:394](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L394)
+Defined in: [packages/protocol/src/identity-manager.ts:401](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L401)
 
 ###### Parameters
 
@@ -992,7 +992,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:394](https://github.com/d
 createTxtRecord(): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:539](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L539)
+Defined in: [packages/protocol/src/identity-manager.ts:546](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L546)
 
 Builds and signs the `_dnsid` TXT record for DNS publication.
 
@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1051](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1051)
+Defined in: [packages/protocol/src/identity-manager.ts:1076](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1076)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1030,7 +1030,7 @@ Removes a domain from the IdentityManager cache.
 getEntityKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:501](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L501)
+Defined in: [packages/protocol/src/identity-manager.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L508)
 
 Returns the accountable-entity public key set for ek JWKS publication.
 
@@ -1046,7 +1046,7 @@ Returns the accountable-entity public key set for ek JWKS publication.
 getKeyProvider(): KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:372](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L372)
+Defined in: [packages/protocol/src/identity-manager.ts:379](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L379)
 
 ###### Returns
 
@@ -1060,7 +1060,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:372](https://github.com/d
 getKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:494](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L494)
+Defined in: [packages/protocol/src/identity-manager.ts:501](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L501)
 
 Returns the local identity's operational public key set for ku JWKS publication.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1037](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1037)
+Defined in: [packages/protocol/src/identity-manager.ts:1062](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1062)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1090,6 +1090,44 @@ Loads the full verified event history for a domain from its bound lifecycle log.
 
 `Promise`\<[`DomainLog`](#domainlog)\>
 
+<a id="refreshdomain"></a>
+
+##### refreshDomain()
+
+```ts
+refreshDomain(
+   domain, 
+   peerCert?, 
+   options?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:602](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L602)
+
+Fully verifies new identity evidence without cached-result fallback.
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### peerCert?
+
+[`TLSCertificate`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#tlscertificate)
+
+###### options?
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions) = `{}`
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](#verifieddomain)\>
+
+###### Implementation of
+
+[`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver).[`refreshDomain`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshdomain-1)
+
 <a id="requiredlogsignatures"></a>
 
 ##### requiredLogSignatures()
@@ -1098,7 +1136,7 @@ Loads the full verified event history for a domain from its bound lifecycle log.
 requiredLogSignatures(event): LogSignerRole[];
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:399](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L399)
+Defined in: [packages/protocol/src/identity-manager.ts:406](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L406)
 
 ###### Parameters
 
@@ -1118,7 +1156,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:399](https://github.com/d
 rotateOperationalKey(options): Promise<OperationalKeyRotationResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:509](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L509)
+Defined in: [packages/protocol/src/identity-manager.ts:516](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L516)
 
 Runs the draft-01 operational-key rotation transaction.
 
@@ -1140,7 +1178,7 @@ Runs the draft-01 operational-key rotation transaction.
 signAndWriteEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:387](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L387)
+Defined in: [packages/protocol/src/identity-manager.ts:394](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L394)
 
 Signs and appends a lifecycle event to the local identity log.
 
@@ -1162,7 +1200,7 @@ Signs and appends a lifecycle event to the local identity log.
 signEvent(event, role): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:412](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L412)
+Defined in: [packages/protocol/src/identity-manager.ts:419](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L419)
 
 ###### Parameters
 
@@ -1191,7 +1229,7 @@ signEventWithProvider(
 ): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:422](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L422)
+Defined in: [packages/protocol/src/identity-manager.ts:429](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L429)
 
 ###### Parameters
 
@@ -1227,7 +1265,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:590](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L590)
+Defined in: [packages/protocol/src/identity-manager.ts:597](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L597)
 
 Verifies a DNSid identity according to the protocol, then enforces configured
 `trustedEntities` acceptance. Acceptance runs per invocation, including cache hits,
@@ -1253,7 +1291,7 @@ and is never cached; a denial leaves valid protocol evidence cached.
 
 ###### Implementation of
 
-[`IdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#identityresolver).[`verifyDomain`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verifydomain-1)
+[`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver).[`verifyDomain`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verifydomain-2)
 
 <a id="writesignedevent"></a>
 
@@ -1263,7 +1301,7 @@ and is never cached; a denial leaves valid protocol evidence cached.
 writeSignedEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:467](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L467)
+Defined in: [packages/protocol/src/identity-manager.ts:474](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L474)
 
 ###### Parameters
 
@@ -1662,6 +1700,10 @@ Returns a NoopLogReader if no factory is registered for the method.
 `string`
 
 ###### options?
+
+###### revalidate?
+
+`boolean`
 
 ###### signal?
 
@@ -2437,7 +2479,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationActivationError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L84)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L85)
 
 Registry acceptance succeeded, but local key-state reconciliation did not.
 
@@ -2459,7 +2501,7 @@ new ManagedKeyRotationActivationError(
 ): ManagedKeyRotationActivationError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L87)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L88)
 
 ###### Parameters
 
@@ -2583,7 +2625,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L85)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L86)
 
 <a id="stack-3"></a>
 
@@ -2783,7 +2825,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationSubmissionError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L71)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L72)
 
 Submission failed after the completed entry bytes were fixed.
 
@@ -2806,7 +2848,7 @@ new ManagedKeyRotationSubmissionError(
 ): ManagedKeyRotationSubmissionError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L75)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L76)
 
 ###### Parameters
 
@@ -2934,7 +2976,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly retryWithSameBytes: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L73)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L74)
 
 <a id="rotation-1"></a>
 
@@ -2944,7 +2986,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:73](https://github.com/dns
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L72)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L73)
 
 <a id="stack-4"></a>
 
@@ -4489,6 +4531,22 @@ Defined in: [packages/protocol/src/verified-domain.ts:23](https://github.com/dns
 
 #### Methods
 
+<a id="assertfresh"></a>
+
+##### assertFresh()
+
+```ts
+assertFresh(): void;
+```
+
+Defined in: [packages/protocol/src/verified-domain.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L91)
+
+Checks evidence freshness within the operation that acquired it. Zero-TTL DNS evidence cannot be reused.
+
+###### Returns
+
+`void`
+
 <a id="cachedstate"></a>
 
 ##### cachedState()
@@ -4514,7 +4572,7 @@ Reflects the state at lastStatusCheckAt, not necessarily right now.
 expiry(): Date;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L94)
+Defined in: [packages/protocol/src/verified-domain.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L105)
 
 Returns the earliest time at which this verified result should be considered stale.
 Candidates: DNS TTL, TLS cert NotAfter, key age bound (ka).

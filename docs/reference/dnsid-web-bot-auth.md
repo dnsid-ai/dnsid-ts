@@ -7,7 +7,7 @@ description: "Web Bot Auth profile: signed bot requests and the key-directory en
 
 DNSid Web Bot Auth profile helpers.
 
-This package signs outbound HTTP requests per the Web Bot Auth draft (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag) and serves the `/.well-known/http-message-signatures-directory` document so origins can discover and verify an agent's keys.
+This package signs and verifies DNSid Web Bot Auth requests (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag), serves signed key directories, and verifies discovered directories against current DNSid operational (`ku`) keys. It targets published `draft-ietf-webbotauth-httpsig-protocol-00`, including its directory format, not the editor's copy or a finalized WBA standard. This is a narrower DNSid profile, not a general WBA implementation. External partner interoperability has not been tested.
 
 It builds on `@dnsid-ai/http-signatures` and `@dnsid-ai/protocol` contracts and performs no DNS or HTTPS transport itself. Signing requires an Ed25519 operational key; the profile throws `ArgumentError` for other key types.
 
@@ -41,23 +41,62 @@ Serve the key directory (mount at `/.well-known/http-message-signatures-director
 const response = await profile.serveHttpMessageSignaturesDirectory(request);
 ```
 
-The directory response is itself signed with the `http-message-signatures-directory` tag and served as `application/http-message-signatures-directory+json`.
+The directory response is signed with the `http-message-signatures-directory` tag and served as `application/http-message-signatures-directory+json`. Signatures are backdated by `min(5, ttl - 1)` seconds without extending their lifetime. The default response has at most 295 seconds of freshness and signed `Cache-Control: max-age=295, must-revalidate`. Disable CDN stale-serving overrides, `stale-while-revalidate`, and `stale-if-error` for this endpoint.
+
+## Verify a request
+
+Verification-only construction does not need a local identity or signing key:
+
+```ts
+import { createSsrfSafeFetch } from '@dnsid-ai/transport'; // Node transport
+
+const safeFetch = createSsrfSafeFetch({}, { decompress: false });
+const verifier = createWebBotAuthProfile({
+  identityResolver, // RefreshingIdentityResolver, including configured entity acceptance
+  discoveryFetch: request => safeFetch(request),
+});
+const identity = await verifier.verifyWebBotAuthSignedRequest(request, {
+  signerDomain: 'agent.example', // trusted application policy
+  requiredComponents: ['@method', '@target-uri'], // enforce operation binding
+  peerCert, // current application peer certificate, required for fl=mtls
+  timeoutMs: 30_000,
+  signal,
+});
+```
+
+Install `@dnsid-ai/transport` to use this Node transport. The package stays runtime-neutral: `discoveryFetch` is required and must enforce valid Web PKI, public-address DNS checks and connection pinning on every connection, rejection of all redirects (including same-host HTTPS), cancellation, and unmodified response bytes and headers without decompression. Coded directories are rejected. Ordinary server-side `fetch` is not safe for untrusted discovery. Do not enable private-address exceptions for WBA discovery.
+
+Alternatively, explicitly set `allowSignatureAgentDomain: true` to let the signed HTTPS discovery host identify the signer. Cross-host delegation is rejected. `Signature-Agent` and its exact keyed coverage are mandatory, even with trusted `discovery: { uri, type }`, which now constrains the signed endpoint rather than replacing it. Missing, uncovered, invalid, or unsupported discovery rejects before network work. The default type is `directory` and requires an exact ASCII HTTPS origin without a trailing slash, path, query, or fragment; `jwks_uri` addresses a direct signed directory endpoint, not an unsigned JWKS. Signature relabeling preserves the original covered discovery member.
+
+Every invocation verifies request and directory signatures, content digests, and current DNSid key binding and acceptance. There is no directory-only fallback or internal directory cache. Every discovery request uses `cache: 'no-store'` and `Cache-Control: no-cache`. Injected transports must bypass local caches and revalidate upstream on each call. A fresh directory missing the key fails without a retry. Even newly fetched responses are rejected when HTTP-stale. `max-age`, `Date`, `Age`, and fetch latency establish a deadline that is checked again before return. A revalidated `max-age=0` response with absent or zero `Age` may serve its acquiring invocation, as may fresh `no-store` or `no-cache` responses. Injected caching transports must enforce RFC 9111 freshness using original acquisition timing and HTTP age metadata, reject reuse without sufficient metadata, and never restart freshness when returning the same response. Key attribution must use the normalized discovery URL and thumbprint within the policy context. Newer resolutions replace older key sets, including removed keys; order signed proofs by `created`. Failed refreshes must neither evict evidence nor extend freshness. The verifier does not infer cache reuse or derive an HTTP deadline from signed creation time. Results authenticate identity but do not grant application permissions. Default required coverage is `@authority`, not method or path. Use signing `additionalComponents` to add bindings and verifier `requiredComponents` to require them, with exact parameter equality. Nested WBA signing is unsupported. Coverage policy is checked before discovery; malformed policy raises `ArgumentError`. Covered keyed `Content-Digest` components must select `sha-256`; unsupported members are rejected. Profile configuration, including nested discovery settings, is snapshotted and validated on construction.
+
+For one-time requests, supply `consumeNonce(entry, signal)`. It must atomically consume `(signerDomain, keyid, nonce)` and retain the entry until `retainUntil` (`expires + clockSkew`). Return `false` for reuse; store errors reject verification. Without this hook, time-valid requests can be replayed.
+
+The overall timeout defaults to 30 seconds and covers discovery, reads, DNSid verification, and replay storage. Redirects are rejected. Limits are 256 KiB directory content, 64 keys, JSON depth 16, 16 KiB signature/discovery/digest headers and URLs, 64 KiB aggregate header characters, and 1 MiB request content. The hosting layer must bound incoming request streams before cloning them; verification preserves the original request body. Signature lifetimes cannot exceed 300 seconds. Directory signature creation cannot be in the future, even within configured clock skew. Evidence freshness is checked again before return, including both certificates and key age. Fresh zero-TTL DNS evidence is valid only within the acquiring invocation. Directory timeouts and temporary HTTP failures are transient; invalid TLS, unsafe destinations, and invalid signatures remain permanent.
 
 ## Options
 
 - `signatureAgent` — the discovery URI and type advertised in `Signature-Agent`. It defaults to the domain's HTTPS origin with `type=directory`; use `type=jwks_uri` for a direct JWKS endpoint.
 - `directoryURL` — deprecated compatibility option interpreted as a direct `jwks_uri` endpoint. Use `signatureAgent.uri` instead.
 - `signatureTTL` / `directorySignatureTTL` — signature lifetimes in seconds (defaults: 60 for requests, 300 for the directory).
-- `includeSignatureAgent` — set `false` to omit the `Signature-Agent` header.
+- `clockSkew` — non-negative verification tolerance in seconds (default: 5); never permits future directory creation.
 
 You can also build the profile from a signing identity manager with `WebBotAuthProfile.fromIdentityManager(idm)`.
+
+The `includeSignatureAgent` configuration and per-request `signatureAgent` omission options have been removed. Only the current DNSid operational key is accepted, without overlapping-key grace. Verification requires `RefreshingIdentityResolver`; missing `refreshDomain` raises `ArgumentError` on construction. After valid request and directory signatures, a current-key mismatch permits one `refreshDomain` attempt per normalized signer domain per five seconds, shared across concurrent calls and discovery URLs. Failed attempts consume the allowance; concurrent retries are suppressed. Admission state is capped at 1024 domains and fails closed when full. Refreshed evidence must pass normal acceptance, current-peer, current-key, and freshness checks. There is no eviction workaround or stale fallback. Propagation and availability can still interrupt rotation, and learning the new key rejects outstanding old-key requests.
+
+The agent domain is the identity FQDN, not its accountable entity or request destination. WBA discovery must be separate from the live `ku` JWKS, including query/fragment variants. `fromIdentityManager` rejects locally configured `ku` discovery; verification checks the authenticated `ku` endpoint. Validated HTTPS at the agent's public `ku` endpoint supplies DNSid's agent-FQDN TLS check without inbound access to the crawler process. With `fl=mtls`, current application-peer evidence remains required.
+
+Use the shared managed rotation/recovery workflow: its pause hook must block new request/directory signing and wait for existing signing operations before resolving. Probe new-key requests through a verifier caching the old key. The shared HTTP signer verifies each returned signature against the public key selected for its metadata and fails on mismatch. Built-in local and AWS providers drain in-flight signatures and reject new signing during activation; custom providers must enforce the same contract. For a lost or suspected compromised key, stop signing and use revocation/reissuance, not routine rotation. Short TTLs and mismatch refresh do not revoke stolen keys. The same `ku` also authorizes `KEY_ROTATION`: unrestricted key access on a signing node can authorize identity rotation, not just forge requests. Keeping `ek` off the fleet does not remove this exposure; dedicated fleet-key delegation requires a separate security design.
 
 DNSid Web Bot Auth profile.
 
 Signs outbound HTTP requests per Web Bot Auth (RFC 9421 HTTP Message Signatures
 with the `web-bot-auth` tag) and serves the signed
 `/.well-known/http-message-signatures-directory` document that advertises the
-agent's public keys.
+agent's public keys. Verification authenticates signed directories and requests
+against current DNSid operational keys and configured entity acceptance.
+Targets `draft-ietf-webbotauth-httpsig-protocol-00`, not the editor's copy.
 
 Web Bot Auth requires an Ed25519 operational key; signing with any other key
 type raises [ArgumentError](https://docs.dnsid.ai/reference/ts/dnsid-classes/#argumenterror).
@@ -68,13 +107,14 @@ type raises [ArgumentError](https://docs.dnsid.ai/reference/ts/dnsid-classes/#ar
 
 ### WebBotAuthProfile
 
-Defined in: [index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L105)
+Defined in: [web-bot-auth/src/index.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L111)
 
-Web Bot Auth signing profile for a single agent domain.
+DNSid Web Bot Auth signing, directory serving, and verification profile.
 
 Signs outbound requests with the agent's Ed25519 operational key per
 RFC 9421 (tag `web-bot-auth`) and serves the signed key directory that
-verifiers fetch to resolve the signature's key.
+verifiers fetch to resolve the signature's key. Verification-only instances
+need an identity resolver and SSRF-safe discovery transport, not a local key.
 
 #### Example
 
@@ -100,7 +140,7 @@ await fetch(signed);
 new WebBotAuthProfile(opts): WebBotAuthProfile;
 ```
 
-Defined in: [index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L126)
+Defined in: [web-bot-auth/src/index.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L141)
 
 ###### Parameters
 
@@ -126,13 +166,13 @@ ArgumentError If `opts.domain` is not a valid agent FQDN.
 createWebBotAuthSignedRequest(req, opts?): Promise<Request>;
 ```
 
-Defined in: [index.ts:153](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L153)
+Defined in: [web-bot-auth/src/index.ts:174](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L174)
 
 Returns a copy of `req` carrying a Web Bot Auth signature (tag `web-bot-auth`).
 
-Covers `@authority` plus, when applicable, `content-digest` (a SHA-256
-`Content-Digest` header is added for requests with a body) and
-`signature-agent` (added unless disabled). The signature includes a nonce,
+Covers `@authority` and keyed `signature-agent`, plus `content-digest`
+when content is supplied (a SHA-256 `Content-Digest` header is added).
+The signature includes a nonce,
 `created`/`expires` timestamps, and the operational key's JWK thumbprint as `keyid`.
 The original request is not modified.
 
@@ -148,7 +188,7 @@ Outbound request to sign.
 
 [`WebBotAuthSigningOptions`](#webbotauthsigningoptions) = `{}`
 
-Per-request overrides for covered components, `Signature-Agent`, and TTL.
+Per-request overrides for covered components and TTL.
 
 ###### Returns
 
@@ -170,7 +210,7 @@ ArgumentError If the operational key is not Ed25519, the resolved
 serveHttpMessageSignaturesDirectory(req): Promise<Response>;
 ```
 
-Defined in: [index.ts:206](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L206)
+Defined in: [web-bot-auth/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L225)
 
 Builds the signed key directory response for
 [HTTP\_MESSAGE\_SIGNATURES\_DIRECTORY\_PATH](#http_message_signatures_directory_path).
@@ -197,6 +237,34 @@ A 200 response with media type [HTTP\_MESSAGE\_SIGNATURES\_DIRECTORY\_MEDIA\_TYP
 
 ArgumentError If the operational key is not Ed25519.
 
+<a id="verifywebbotauthsignedrequest"></a>
+
+##### verifyWebBotAuthSignedRequest()
+
+```ts
+verifyWebBotAuthSignedRequest(req, opts?): Promise<VerifiedDomain>;
+```
+
+Defined in: [web-bot-auth/src/index.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L260)
+
+Verifies request, signed directory, and DNSid ku binding. Does not grant permissions.
+requiredComponents enforces extra application coverage before discovery.
+Without consumeNonce, time-valid requests can be replayed.
+
+###### Parameters
+
+###### req
+
+`Request`
+
+###### opts?
+
+[`WebBotAuthVerificationOptions`](#webbotauthverificationoptions) = `{}`
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#verifieddomain)\>
+
 <a id="fromidentitymanager"></a>
 
 ##### fromIdentityManager()
@@ -205,7 +273,7 @@ ArgumentError If the operational key is not Ed25519.
 static fromIdentityManager(identityManager, webBotAuth?): WebBotAuthProfile;
 ```
 
-Defined in: [index.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L111)
+Defined in: [web-bot-auth/src/index.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L117)
 
 Builds a profile from a signing identity manager, reusing its domain and key provider.
 
@@ -213,7 +281,7 @@ Builds a profile from a signing identity manager, reusing its domain and key pro
 
 ###### identityManager
 
-[`SigningIdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#signingidentitymanager)
+[`SigningIdentityManager`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#signingidentitymanager) & [`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver)
 
 Manager whose domain and operational key provider back the profile.
 
@@ -233,7 +301,7 @@ Optional Web Bot Auth configuration overrides.
 
 ### SignatureAgentConfig
 
-Defined in: [index.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L39)
+Defined in: [web-bot-auth/src/index.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L44)
 
 `Signature-Agent` discovery configuration.
 
@@ -247,7 +315,7 @@ Defined in: [index.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 optional type?: SignatureAgentType;
 ```
 
-Defined in: [index.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L43)
+Defined in: [web-bot-auth/src/index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L48)
 
 Discovery interpretation. Default: `directory`.
 
@@ -259,7 +327,7 @@ Discovery interpretation. Default: `directory`.
 optional uri?: string;
 ```
 
-Defined in: [index.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L41)
+Defined in: [web-bot-auth/src/index.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L46)
 
 HTTPS origin for `directory`, or the direct HTTPS endpoint for `jwks_uri`.
 
@@ -269,7 +337,7 @@ HTTPS origin for `directory`, or the direct HTTPS endpoint for `jwks_uri`.
 
 ### WebBotAuthConfig
 
-Defined in: [index.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L47)
+Defined in: [web-bot-auth/src/index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L52)
 
 Profile-level Web Bot Auth configuration. All members are optional; defaults are noted per member.
 
@@ -283,9 +351,9 @@ Profile-level Web Bot Auth configuration. All members are optional; defaults are
 optional clockSkew?: number;
 ```
 
-Defined in: [index.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L62)
+Defined in: [web-bot-auth/src/index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L65)
 
-Allowed verification clock skew in seconds. Reserved for the future verifier API. Default: 5.
+Allowed verification clock skew in seconds. Default: 5. Never permits future directory creation.
 
 <a id="directorysignaturettl"></a>
 
@@ -295,9 +363,9 @@ Allowed verification clock skew in seconds. Reserved for the future verifier API
 optional directorySignatureTTL?: number;
 ```
 
-Defined in: [index.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L60)
+Defined in: [web-bot-auth/src/index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L63)
 
-Directory-signature lifetime in seconds; also sets the response `Cache-Control` max-age. Defaults to [DEFAULT\_DIRECTORY\_SIGNATURE\_TTL\_SECONDS](#default_directory_signature_ttl_seconds).
+Directory-signature lifetime in seconds, including up to five seconds of backdating. Defaults to [DEFAULT\_DIRECTORY\_SIGNATURE\_TTL\_SECONDS](#default_directory_signature_ttl_seconds).
 
 <a id="directoryurl"></a>
 
@@ -307,23 +375,11 @@ Directory-signature lifetime in seconds; also sets the response `Cache-Control` 
 optional directoryURL?: string;
 ```
 
-Defined in: [index.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L54)
+Defined in: [web-bot-auth/src/index.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L59)
 
 ###### Deprecated
 
 Use `signatureAgent.uri`. Retained as a direct `jwks_uri` endpoint.
-
-<a id="includesignatureagent"></a>
-
-##### includeSignatureAgent?
-
-```ts
-optional includeSignatureAgent?: boolean;
-```
-
-Defined in: [index.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L58)
-
-Whether signed requests include (and cover) the `Signature-Agent` header. Defaults to true.
 
 <a id="signatureagent"></a>
 
@@ -333,7 +389,7 @@ Whether signed requests include (and cover) the `Signature-Agent` header. Defaul
 optional signatureAgent?: SignatureAgentConfig;
 ```
 
-Defined in: [index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L52)
+Defined in: [web-bot-auth/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L57)
 
 Signature-Agent URI and discovery type. Defaults to the domain's HTTPS origin
 with `type=directory`.
@@ -346,7 +402,7 @@ with `type=directory`.
 optional signatureTTL?: number;
 ```
 
-Defined in: [index.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L56)
+Defined in: [web-bot-auth/src/index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L61)
 
 Request-signature lifetime in seconds. Defaults to [DEFAULT\_WEB\_BOT\_AUTH\_SIGNATURE\_TTL\_SECONDS](#default_web_bot_auth_signature_ttl_seconds).
 
@@ -356,35 +412,59 @@ Request-signature lifetime in seconds. Defaults to [DEFAULT\_WEB\_BOT\_AUTH\_SIG
 
 ### WebBotAuthProfileOptions
 
-Defined in: [index.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L66)
+Defined in: [web-bot-auth/src/index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L69)
 
 Constructor options for [WebBotAuthProfile](#webbotauthprofile).
 
 #### Properties
 
-<a id="domain"></a>
+<a id="discoveryfetch"></a>
 
-##### domain
+##### discoveryFetch?
 
 ```ts
-domain: string;
+optional discoveryFetch?: WebBotAuthDiscoveryFetch;
 ```
 
-Defined in: [index.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L68)
+Defined in: [web-bot-auth/src/index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L77)
 
-Agent FQDN the profile signs for (e.g. `agent.example`). Normalized on construction.
+Required for verification. Must enforce Web PKI and public-address connection pinning.
+
+<a id="domain"></a>
+
+##### domain?
+
+```ts
+optional domain?: string;
+```
+
+Defined in: [web-bot-auth/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L71)
+
+Agent FQDN the profile signs for (e.g. `agent.example`). Required for signing; normalized on construction.
+
+<a id="identityresolver"></a>
+
+##### identityResolver?
+
+```ts
+optional identityResolver?: RefreshingIdentityResolver;
+```
+
+Defined in: [web-bot-auth/src/index.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L75)
+
+Required for DNSid WBA verification; acceptance is enforced on every invocation.
 
 <a id="keyprovider"></a>
 
-##### keyProvider
+##### keyProvider?
 
 ```ts
-keyProvider: KeyProvider;
+optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [index.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L70)
+Defined in: [web-bot-auth/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L73)
 
-Key provider holding the agent's Ed25519 operational key.
+Key provider holding the agent's Ed25519 operational key. Required for signing.
 
 <a id="webbotauth"></a>
 
@@ -394,7 +474,7 @@ Key provider holding the agent's Ed25519 operational key.
 optional webBotAuth?: WebBotAuthConfig;
 ```
 
-Defined in: [index.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L72)
+Defined in: [web-bot-auth/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L79)
 
 Optional Web Bot Auth configuration overrides.
 
@@ -404,7 +484,7 @@ Optional Web Bot Auth configuration overrides.
 
 ### WebBotAuthSigningOptions
 
-Defined in: [index.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L76)
+Defined in: [web-bot-auth/src/index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L83)
 
 Per-request overrides for [WebBotAuthProfile.createWebBotAuthSignedRequest](#createwebbotauthsignedrequest).
 
@@ -418,21 +498,9 @@ Per-request overrides for [WebBotAuthProfile.createWebBotAuthSignedRequest](#cre
 optional additionalComponents?: ComponentIdentifier[];
 ```
 
-Defined in: [index.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L78)
+Defined in: [web-bot-auth/src/index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L85)
 
-Extra covered components appended to the defaults (`@authority`, plus `content-digest`/`signature-agent` when present). Duplicates are ignored.
-
-<a id="signatureagent-1"></a>
-
-##### signatureAgent?
-
-```ts
-optional signatureAgent?: boolean;
-```
-
-Defined in: [index.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L80)
-
-Overrides [WebBotAuthConfig.includeSignatureAgent](#includesignatureagent) for this request.
+Extra covered components appended to `@authority`, keyed `signature-agent`, and `content-digest` when supplied. Duplicates are ignored; nested signing is unsupported.
 
 <a id="ttl"></a>
 
@@ -442,9 +510,166 @@ Overrides [WebBotAuthConfig.includeSignatureAgent](#includesignatureagent) for t
 optional ttl?: number;
 ```
 
-Defined in: [index.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L82)
+Defined in: [web-bot-auth/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L87)
 
 Overrides [WebBotAuthConfig.signatureTTL](#signaturettl) for this request (seconds).
+
+***
+
+<a id="webbotauthverificationoptions"></a>
+
+### WebBotAuthVerificationOptions
+
+Defined in: [web-bot-auth/src/verify.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L17)
+
+#### Extends
+
+- [`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions)
+
+#### Properties
+
+<a id="allowsignatureagentdomain"></a>
+
+##### allowSignatureAgentDomain?
+
+```ts
+optional allowSignatureAgentDomain?: boolean;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L21)
+
+Explicit permission to use the signed Signature-Agent host as signer identity. Default: false.
+
+<a id="consumenonce"></a>
+
+##### consumeNonce?
+
+```ts
+optional consumeNonce?: (entry, signal) => Promise<boolean>;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L31)
+
+Atomically consume (domain, keyid, nonce), retaining through retainUntil. False rejects reuse;
+errors fail closed. Without this policy, valid requests can be replayed.
+
+###### Parameters
+
+###### entry
+
+###### keyid
+
+`string`
+
+###### nonce
+
+`string`
+
+###### retainUntil
+
+`Date`
+
+###### signerDomain
+
+`string`
+
+###### signal
+
+`AbortSignal`
+
+###### Returns
+
+`Promise`\<`boolean`\>
+
+<a id="discovery"></a>
+
+##### discovery?
+
+```ts
+optional discovery?: object;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L23)
+
+Optional trusted endpoint constraint. Must match the covered Signature-Agent endpoint and signerDomain.
+
+###### type?
+
+```ts
+optional type?: "directory" | "jwks_uri";
+```
+
+###### uri
+
+```ts
+uri: string;
+```
+
+<a id="peercert"></a>
+
+##### peerCert?
+
+```ts
+optional peerCert?: TLSCertificate;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L27)
+
+Current application peer, never the directory endpoint certificate.
+
+<a id="requiredcomponents"></a>
+
+##### requiredComponents?
+
+```ts
+optional requiredComponents?: ComponentIdentifier[];
+```
+
+Defined in: [web-bot-auth/src/verify.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L25)
+
+Extra request coverage required by application policy, including exact component parameters.
+
+<a id="signal"></a>
+
+##### signal?
+
+```ts
+optional signal?: AbortSignal;
+```
+
+Defined in: [protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L6)
+
+###### Inherited from
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions).[`signal`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#signal-1)
+
+<a id="signerdomain"></a>
+
+##### signerDomain?
+
+```ts
+optional signerDomain?: string;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L19)
+
+Trusted expected signer. Discovery cannot delegate to another host.
+
+<a id="timeoutms"></a>
+
+##### timeoutMs?
+
+```ts
+optional timeoutMs?: number;
+```
+
+Defined in: [protocol/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L5)
+
+Overall invocation budget, including all discovery and evidence. Default: 30 seconds.
+
+###### Inherited from
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions).[`timeoutMs`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#timeoutms)
 
 ## Type Aliases
 
@@ -456,9 +681,39 @@ Overrides [WebBotAuthConfig.signatureTTL](#signaturettl) for this request (secon
 type SignatureAgentType = "directory" | "jwks_uri";
 ```
 
-Defined in: [index.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L36)
+Defined in: [web-bot-auth/src/index.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L41)
 
 Web Bot Auth key-discovery interpretation for the `Signature-Agent` member.
+
+***
+
+<a id="webbotauthdiscoveryfetch"></a>
+
+### WebBotAuthDiscoveryFetch
+
+```ts
+type WebBotAuthDiscoveryFetch = (request) => Promise<Response>;
+```
+
+Defined in: [web-bot-auth/src/verify.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/verify.ts#L15)
+
+Trusted transport must validate Web PKI and pin connections to public DNS addresses.
+It must never follow redirects, honor cancellation, disable decompression, and preserve received bytes/headers.
+Every call requires fresh acquisition: honor cache: 'no-store' and Cache-Control: no-cache.
+Never return a cached directory without upstream revalidation. Any upstream cache must enforce original
+RFC 9111 age/freshness itself and reject reuse without sufficient metadata. Associate keys with normalized
+discovery URLs and thumbprints; newer resolutions replace older key sets (signed proofs ordered by created).
+Failed refreshes must not evict evidence or extend freshness. Do not inject ordinary fetch on a server.
+
+#### Parameters
+
+##### request
+
+`Request`
+
+#### Returns
+
+`Promise`\<`Response`\>
 
 ## Variables
 
@@ -470,9 +725,9 @@ Web Bot Auth key-discovery interpretation for the `Signature-Agent` member.
 const DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS: 300 = 300;
 ```
 
-Defined in: [index.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L33)
+Defined in: [web-bot-auth/src/index.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L38)
 
-Default directory-signature lifetime and `Cache-Control` max-age (seconds).
+Default directory-signature lifetime (seconds), including backdating.
 
 ***
 
@@ -484,7 +739,7 @@ Default directory-signature lifetime and `Cache-Control` max-age (seconds).
 const DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS: 60 = 60;
 ```
 
-Defined in: [index.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L31)
+Defined in: [web-bot-auth/src/index.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L36)
 
 Default request-signature lifetime (seconds) when no TTL is configured.
 
@@ -498,7 +753,7 @@ Default request-signature lifetime (seconds) when no TTL is configured.
 const HTTP_MESSAGE_SIGNATURES_DIRECTORY_MEDIA_TYPE: "application/http-message-signatures-directory+json" = 'application/http-message-signatures-directory+json';
 ```
 
-Defined in: [index.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L29)
+Defined in: [web-bot-auth/src/index.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L34)
 
 Media type of the key directory document.
 
@@ -512,7 +767,7 @@ Media type of the key directory document.
 const HTTP_MESSAGE_SIGNATURES_DIRECTORY_PATH: "/.well-known/http-message-signatures-directory" = '/.well-known/http-message-signatures-directory';
 ```
 
-Defined in: [index.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L27)
+Defined in: [web-bot-auth/src/index.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L32)
 
 Well-known path where the agent's HTTP message signatures key directory is served.
 
@@ -526,7 +781,7 @@ Well-known path where the agent's HTTP message signatures key directory is serve
 const HTTP_MESSAGE_SIGNATURES_DIRECTORY_TAG: "http-message-signatures-directory" = 'http-message-signatures-directory';
 ```
 
-Defined in: [index.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L25)
+Defined in: [web-bot-auth/src/index.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L30)
 
 RFC 9421 `tag` parameter identifying a signed key-directory response.
 
@@ -540,7 +795,7 @@ RFC 9421 `tag` parameter identifying a signed key-directory response.
 const WEB_BOT_AUTH_SIGNATURE_LABEL: "sig1" = 'sig1';
 ```
 
-Defined in: [index.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L21)
+Defined in: [web-bot-auth/src/index.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L26)
 
 Signature label used for the Web Bot Auth member in the `Signature`/`Signature-Input` dictionaries.
 
@@ -554,7 +809,7 @@ Signature label used for the Web Bot Auth member in the `Signature`/`Signature-I
 const WEB_BOT_AUTH_TAG: "web-bot-auth" = 'web-bot-auth';
 ```
 
-Defined in: [index.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L23)
+Defined in: [web-bot-auth/src/index.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L28)
 
 RFC 9421 `tag` parameter identifying a Web Bot Auth request signature.
 
@@ -568,7 +823,7 @@ RFC 9421 `tag` parameter identifying a Web Bot Auth request signature.
 function createWebBotAuthProfile(opts): WebBotAuthProfile;
 ```
 
-Defined in: [index.ts:258](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L258)
+Defined in: [web-bot-auth/src/index.ts:291](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L291)
 
 Creates a [WebBotAuthProfile](#webbotauthprofile) for an agent domain.
 
@@ -609,7 +864,7 @@ ArgumentError If `opts.domain` is not a valid agent FQDN.
 function wbaDirectoryJwkFromPublicKey(key): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:270](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L270)
+Defined in: [web-bot-auth/src/index.ts:303](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/src/index.ts#L303)
 
 Converts an operational key JWK into its public directory form: private
 members stripped, `kid` set to the JWK thumbprint, with `alg` and `use: 'sig'`.

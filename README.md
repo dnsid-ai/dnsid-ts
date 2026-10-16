@@ -77,7 +77,7 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 | `@dnsid-ai/oidc` | DNSid OIDC federation profile helpers. |
 | `@dnsid-ai/jose` | DNSid JOSE JWT/JWS profile helpers. |
 | `@dnsid-ai/http-signatures` | DNSid RFC 9421 HTTP Message Signatures profile helpers. |
-| `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth profile: signed bot requests + key directory. |
+| `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth request signing/verification and signed key directories. |
 | `@dnsid-ai/registry` | Registry client and TXT publishing helpers. |
 | `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
 | `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |
@@ -289,6 +289,8 @@ Browser support should use injected browser-safe transport and key-provider impl
 - Generated API reference (this repo, one page per package): [`docs/reference/index.md`](docs/reference/index.md)
 - Security and production operations: [`docs/security.md`](docs/security.md)
 - Examples: [`examples/`](https://github.com/dnsid-ai/dnsid-ts/tree/main/examples)
+- Trust policy setup: [`examples/trust-policy`](examples/trust-policy/README.md) · [Full guide](https://docs.dnsid.ai/sdk-trust-policy/)
+- Deployment configuration and existing-key signing: [`examples/deployment-signing`](examples/deployment-signing/README.md)
 
 ## Current limitations
 
@@ -314,7 +316,7 @@ chose:
 
 - DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
 - HTTPS GET to the JWKS and status URLs published in that TXT record
-- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` / `https://log.partners.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
 - No telemetry, usage reporting, update checks, or crash reporting
 
 **Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.

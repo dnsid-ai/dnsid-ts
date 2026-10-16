@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DNSSECState } from '@dnsid-ai/sdk';
+import { DNSSECState, IdentityManager, JWKS } from '@dnsid-ai/sdk';
 import { createNodeIdentityManager, createNodeIdentityManagerFromDnsid, loadCliDirectory } from '@dnsid-ai/sdk/node';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
 import { withTemp, writeKeyPair } from './helpers/cli-directory.ts';
@@ -26,6 +26,20 @@ async function writePemKey(dir: string, algorithm: 'EdDSA' | 'ES256' = 'EdDSA') 
 }
 
 describe('createNodeIdentityManagerFromDnsid', () => {
+  beforeEach(() => {
+    // Key-file parsing tests use an already verified matching publication.
+    vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence').mockImplementation(async function (this: IdentityManager) {
+      return { jwks: new JWKS([await this.getKeyProvider().signingKey()]) } as never;
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('rejects a configured CLI key when publication is absent', () => withTemp(async root => {
+    vi.restoreAllMocks();
+    await writeFile(join(root, 'config.json'), JSON.stringify({ domain: 'agent.example.com', governance_id: 'example.com', ...PUBLISHED }));
+    await writeKeyPair(root, 'unpublished-key');
+    await expect(createNodeIdentityManagerFromDnsid(...options(root))).rejects.toThrow(/no _dnsid TXT record/);
+  }));
   it('uses the Node default resolver when callers omit a DNS resolver', async () => {
     await expect(createNodeIdentityManager({
       identity: {

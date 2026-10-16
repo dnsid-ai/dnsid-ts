@@ -12,14 +12,31 @@
  */
 import {
   CreateKeyCommand,
+  KMSClient,
   GetPublicKeyCommand,
   MessageType,
   ScheduleKeyDeletionCommand,
   SignCommand,
 } from '@aws-sdk/client-kms';
-import type { KMSClient } from '@aws-sdk/client-kms';
 import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { ArgumentError } from '@dnsid-ai/protocol';
+
+/** Deployment-file settings use ambient AWS credentials; raw credentials are not accepted. */
+export function validateAwsKmsSettings(settings: Record<string, unknown> = {}): void {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)
+    || Object.keys(settings).some(key => !['region', 'algorithm'].includes(key))) throw new ArgumentError('AWS KMS settings allow only region and algorithm; use ambient credentials');
+  if (settings.region !== undefined && (typeof settings.region !== 'string' || !settings.region.trim())) throw new ArgumentError('AWS KMS region must be nonempty');
+  if (settings.algorithm !== undefined && !['EdDSA', 'ES256'].includes(settings.algorithm as string)) throw new ArgumentError('AWS KMS algorithm must be EdDSA or ES256');
+}
+
+/** Opens an existing KMS key, without generation or private-key import. */
+export async function createAwsKmsKeyProvider(keyRef: string, settings: Record<string, unknown> = {}): Promise<AwsKmsKeyProvider> {
+  validateAwsKmsSettings(settings);
+  if (!keyRef?.trim()) throw new ArgumentError('AWS KMS requires a stable existing keyRef');
+  return AwsKmsKeyProvider.load(new AwsSdkKmsFacade(new KMSClient({ region: settings.region as string | undefined })), {
+    activeKeyId: keyRef, algorithm: settings.algorithm === 'ES256' ? 'ECDSA_SHA_256' : 'ED25519_SHA_512',
+  });
+}
 
 export type AwsKmsSigningAlgorithm = 'ECDSA_SHA_256' | 'ED25519_SHA_512';
 
@@ -174,6 +191,8 @@ export class AwsKmsKeyProvider implements KeyProvider {
   private readonly jwkCache = new Map<string, DnsIdJWK>();
   private readonly client: AwsKmsFacade;
   private readonly state: Required<AwsKmsKeyState>;
+  private readonly signing = new Set<Promise<Uint8Array>>();
+  private activating = false;
   private readonly config: Required<Pick<AwsKmsConfig, 'algorithm' | 'keySpec' | 'scheduleKeyDeletionOnPurge' | 'deletionWindowInDays'>>
     & Pick<AwsKmsConfig, 'description' | 'tags'>;
 
@@ -234,6 +253,14 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async signKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
+    if (this.activating) throw new ArgumentError('key activation is in progress');
+    const operation = this.signWithKey(kid, payload);
+    this.signing.add(operation);
+    try { return await operation; }
+    finally { this.signing.delete(operation); }
+  }
+
+  private async signWithKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
     if (kid !== this.state.activeKeyId && !this.state.pendingKeyIds.includes(kid)) throw new ArgumentError(`key is not active or pending for signing: ${kid}`);
     const useDigest = payload.byteLength > AWS_KMS_RAW_SIGN_LIMIT_BYTES && this.config.algorithm === 'ECDSA_SHA_256';
     if (payload.byteLength > AWS_KMS_RAW_SIGN_LIMIT_BYTES && !useDigest) {
@@ -277,12 +304,17 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async activate(kid: string): Promise<void> {
-    const canonicalKid = (await this.publicJwk(kid)).kid;
-    const idx = this.state.pendingKeyIds.indexOf(canonicalKid);
-    if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
-    this.state.pendingKeyIds.splice(idx, 1);
-    this.state.retainedKeyIds.push(this.state.activeKeyId);
-    this.state.activeKeyId = canonicalKid;
+    if (this.activating) throw new ArgumentError('key activation is already in progress');
+    this.activating = true;
+    try {
+      await Promise.allSettled(this.signing);
+      const canonicalKid = (await this.publicJwk(kid)).kid;
+      const idx = this.state.pendingKeyIds.indexOf(canonicalKid);
+      if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
+      this.state.pendingKeyIds.splice(idx, 1);
+      this.state.retainedKeyIds.push(this.state.activeKeyId);
+      this.state.activeKeyId = canonicalKid;
+    } finally { this.activating = false; }
   }
 
   async supersede(kid: string): Promise<void> {

@@ -129,6 +129,31 @@ The CLI loader maps persisted fields as written: a missing `status_url` or `log_
 
 DNSSEC modes are: `auto` (default), which rejects `FAILED` and permits `VALID`, `UNSIGNED`, or `UNKNOWN`; `validated`, which permits `VALID` or `UNSIGNED`; and `required`, which permits only `VALID`.
 
+## Registration and provider groundwork
+
+Deployment files support `registration.organizationId`, optional `governanceId`, and an
+independently selected `entityKeyUrl`. These are setup expectations, not registry-root selectors
+or counterparty acceptance defaults. `RegistryClient.getOrganizationOnboarding()` reads the
+existing authenticated endpoint and exposes organization/GI proof and delegation readiness;
+it does not supply an entity-JWKS URL or establish trust.
+
+`keySource` selects file custody or an optional existing AWS KMS key using `provider`, `keyRef`,
+and non-secret `settings` (`region` and EdDSA/ES256 `algorithm`). Injected providers win, and
+only the selected factory is loaded. AWS authentication uses ambient credential chains, not
+secrets in deployment files. Unavailable factories or invalid settings fail without file fallback.
+Ordinary manager construction opens existing keys only; generation requires workflow coordination.
+Configuration-selected file and AWS keys must match the current operational key of the verified published
+identity, including key ID, algorithm, and public material. Missing publication or unavailable
+verification fails construction. Initial setup supplies an injected provider and owns its binding
+checks. Selecting local files emits a production-safety warning.
+Google KMS and Azure factories are unavailable in this binding.
+
+This groundwork does not expose automatic managed registration or named recovery. Those require
+a separate SDK workflow and verified permanent server replay/name claims; the existing expiring
+store is insufficient. Existing low-level registration remains available without assuming those
+server capabilities. Moving custody to another provider requires authorized, publicly verified
+rotation, not configuration alone.
+
 ## Included surfaces
 
 `@dnsid-ai/sdk` re-exports the common core and profile surfaces and namespaces:
@@ -433,7 +458,7 @@ Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 type JsonFetcher = (url, opts?) => Promise<FetchResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L81)
+Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L83)
 
 #### Parameters
 
@@ -773,7 +798,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1082](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1082)
+Defined in: [packages/protocol/src/identity-manager.ts:1108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1108)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1125,7 +1150,7 @@ ValidationError if the name is empty, contains empty labels, has any label over 
 function normalizePrivateAddressHost(entry): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L171)
+Defined in: [packages/protocol/src/identity-manager.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L177)
 
 Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
 no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
@@ -1318,7 +1343,7 @@ ArgumentError if the key ID is malformed.
 function requireLocalDomain(manager): string;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
+Defined in: [packages/protocol/src/identity-manager.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L111)
 
 Returns `config.identity.domain` or throws `ArgumentError` for verification-only managers.
 
@@ -1366,7 +1391,7 @@ Resumes only the durable operation, reusing its preparation key or exact complet
 function resumeManagedOperationalKeyRotation(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L161)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L162)
 
 Retries only the persisted completed bytes and activates on acceptance.
 
@@ -1426,7 +1451,7 @@ retried unless callers explicitly override shouldRetry.
 function rotateManagedOperationalKey(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L99)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L100)
 
 Runs C2SP registry-managed rotation. The registry owns managed ku publication
 and append reconciliation; local activation happens only after an accepted
@@ -1526,7 +1551,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:296](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L296)
+Defined in: [packages/protocol/src/identity-manager.ts:302](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L302)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1557,7 +1582,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1119)
+Defined in: [packages/protocol/src/identity-manager.ts:1145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1145)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1866,6 +1891,7 @@ Documented on [Core SDK: interfaces](https://docs.dnsid.ai/reference/ts/dnsid-in
 - [MigrationEvent](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#migrationevent)
 - [OperationalKeyRotationOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#operationalkeyrotationoptions)
 - [OperationalKeyRotationResult](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#operationalkeyrotationresult)
+- [RefreshingIdentityResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver)
 - [ResumeManagedIssuanceOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#resumemanagedissuanceoptions)
 - [ResumeManagedOperationalKeyRotationOptions](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#resumemanagedoperationalkeyrotationoptions)
 - [RetirementEvent](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#retirementevent)

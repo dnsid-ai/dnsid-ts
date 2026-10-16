@@ -64,6 +64,12 @@ describe('transport SSRF protections', () => {
     });
   });
 
+  it('sends upstream revalidation on explicit evidence refresh', async () => {
+    mockHttpsStatus(403);
+    await fetchJson('https://agent.example/keys', { revalidate: true }).catch(() => {});
+    expect(httpsGetMock.mock.calls[0]![1].headers).toMatchObject({ 'Cache-Control': 'no-cache' });
+  });
+
   it('blocks direct private HTTPS targets before connecting', async () => {
     const err = await fetchJson('https://127.0.0.1/.well-known/jwks.json').catch(e => e);
     expect(err).toBeInstanceOf(VerificationError);

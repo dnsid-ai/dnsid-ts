@@ -1014,7 +1014,7 @@ HTTPS URL for the lifecycle status endpoint (`su` tag).
 
 ### IdentityManagerDependencies
 
-Defined in: [packages/protocol/src/identity-manager.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L84)
+Defined in: [packages/protocol/src/identity-manager.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L86)
 
 Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/ts/dnsid-classes/#identitymanager). Configuration data lives in [DnsidConfig](#dnsidconfig).
 
@@ -1028,7 +1028,7 @@ Runtime objects injected into [IdentityManager](https://docs.dnsid.ai/reference/
 optional cache?: IdentityCache;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
+Defined in: [packages/protocol/src/identity-manager.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L93)
 
 <a id="dnsresolver-1"></a>
 
@@ -1038,7 +1038,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dn
 optional dnsResolver?: DNSResolver;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L90)
+Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
 
 <a id="entitykeyprovider"></a>
 
@@ -1048,7 +1048,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dn
 optional entityKeyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
+Defined in: [packages/protocol/src/identity-manager.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L90)
 
 Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejected without `config.identity`.
 
@@ -1060,7 +1060,7 @@ Accountable-entity key provider for `_dnsid` signing and lifecycle events. Rejec
 optional fetchJson?: JsonFetcher;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L92)
+Defined in: [packages/protocol/src/identity-manager.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L94)
 
 <a id="keyprovider"></a>
 
@@ -1070,7 +1070,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:92](https://github.com/dn
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L86)
+Defined in: [packages/protocol/src/identity-manager.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L88)
 
 Local operational signer. Required with `config.identity`; rejected without it.
 
@@ -1082,7 +1082,7 @@ Local operational signer. Required with `config.identity`; rejected without it.
 optional logRegistry?: LogRegistry;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L89)
+Defined in: [packages/protocol/src/identity-manager.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L91)
 
 ***
 
@@ -1090,10 +1090,11 @@ Defined in: [packages/protocol/src/identity-manager.ts:89](https://github.com/dn
 
 ### IdentityResolver
 
-Defined in: [packages/protocol/src/identity-manager.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L95)
+Defined in: [packages/protocol/src/identity-manager.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L97)
 
 #### Extended by
 
+- [`RefreshingIdentityResolver`](#refreshingidentityresolver)
 - [`SigningIdentityManager`](#signingidentitymanager)
 
 #### Methods
@@ -1110,7 +1111,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
 
 ###### Parameters
 
@@ -1717,6 +1718,18 @@ optional maxResponseBytes?: number;
 
 Defined in: [packages/protocol/src/identity-manager.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L78)
 
+<a id="revalidate"></a>
+
+##### revalidate?
+
+```ts
+optional revalidate?: boolean;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L80)
+
+Bypass local caches and revalidate upstream evidence.
+
 <a id="signal"></a>
 
 ##### signal?
@@ -1755,9 +1768,10 @@ Key states:
 activate(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L55)
+Defined in: [packages/protocol/src/key-provider.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L56)
 
-Promotes a pending key to active. The previously active key transitions to retained.
+Blocks new signing and drains in-flight signatures before promoting a pending key.
+The previously active key transitions to retained.
 
 ###### Parameters
 
@@ -1834,7 +1848,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 optional purge(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L63)
+Defined in: [packages/protocol/src/key-provider.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L64)
 
 ###### Parameters
 
@@ -1924,7 +1938,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/key-provider.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L60)
+Defined in: [packages/protocol/src/key-provider.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/key-provider.ts#L61)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -2910,7 +2924,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:26](https://github.com/dns
 
 ### ManagedKeyRotationResult
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L46)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L47)
 
 #### Properties
 
@@ -2922,7 +2936,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:46](https://github.com/dns
 readonly activated: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L58)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L59)
 
 <a id="applicationsigningpaused"></a>
 
@@ -2932,7 +2946,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:58](https://github.com/dns
 readonly applicationSigningPaused: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L59)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L60)
 
 <a id="domain-10"></a>
 
@@ -2942,7 +2956,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:59](https://github.com/dns
 readonly domain: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L47)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L48)
 
 <a id="entrybytes-1"></a>
 
@@ -2952,7 +2966,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:47](https://github.com/dns
 readonly entryBytes: Uint8Array;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L55)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L56)
 
 Persist these exact bytes with idempotencyKey while activated is false.
 Callers must pause new application signing until this rotation is accepted.
@@ -2965,7 +2979,7 @@ Callers must pause new application signing until this rotation is accepted.
 readonly idempotencyKey: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L56)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L57)
 
 <a id="logreference-3"></a>
 
@@ -2975,7 +2989,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:56](https://github.com/dns
 readonly logReference: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L48)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L49)
 
 <a id="newkid"></a>
 
@@ -2985,7 +2999,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:48](https://github.com/dns
 readonly newKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L50)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L51)
 
 <a id="previouskid"></a>
 
@@ -2995,7 +3009,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:50](https://github.com/dns
 readonly previousKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L49)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L50)
 
 <a id="submission-1"></a>
 
@@ -3005,7 +3019,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:49](https://github.com/dns
 readonly optional submission?: SubmissionResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L57)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L58)
 
 ***
 
@@ -3237,6 +3251,88 @@ Defined in: [packages/protocol/src/identity-manager.ts:67](https://github.com/dn
 
 ***
 
+<a id="refreshingidentityresolver"></a>
+
+### RefreshingIdentityResolver
+
+Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L101)
+
+#### Extends
+
+- [`IdentityResolver`](#identityresolver)
+
+#### Methods
+
+<a id="refreshdomain-1"></a>
+
+##### refreshDomain()
+
+```ts
+refreshDomain(
+   domain, 
+   peerCert?, 
+   options?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L102)
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### peerCert?
+
+[`TLSCertificate`](#tlscertificate)
+
+###### options?
+
+[`VerificationOptions`](#verificationoptions)
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#verifieddomain)\>
+
+<a id="verifydomain-2"></a>
+
+##### verifyDomain()
+
+```ts
+verifyDomain(
+   domain, 
+   peerCert?, 
+   options?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
+
+###### Parameters
+
+###### domain
+
+`string`
+
+###### peerCert?
+
+[`TLSCertificate`](#tlscertificate)
+
+###### options?
+
+[`VerificationOptions`](#verificationoptions)
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#verifieddomain)\>
+
+###### Inherited from
+
+[`IdentityResolver`](#identityresolver).[`verifyDomain`](#verifydomain-1)
+
+***
+
 <a id="resumemanagedissuanceoptions"></a>
 
 ### ResumeManagedIssuanceOptions
@@ -3384,7 +3480,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:79](https://github.com/dnsid-a
 
 ### ResumeManagedOperationalKeyRotationOptions
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L62)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L63)
 
 #### Properties
 
@@ -3396,7 +3492,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:62](https://github.com/dns
 keyProvider: KeyProvider;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L63)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L64)
 
 <a id="persistrotation"></a>
 
@@ -3406,7 +3502,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:63](https://github.com/dns
 persistRotation: (rotation) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L66)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L67)
 
 ###### Parameters
 
@@ -3426,7 +3522,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dns
 registryClient: Pick<ManagedKeyRotationRegistry, "submitPreparedEvent">;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L64)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L65)
 
 <a id="rotation-2"></a>
 
@@ -3436,7 +3532,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:64](https://github.com/dns
 rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L65)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L66)
 
 <a id="setapplicationsigningpaused"></a>
 
@@ -3446,7 +3542,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:65](https://github.com/dns
 setApplicationSigningPaused: (paused) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L67)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L68)
 
 ###### Parameters
 
@@ -3914,9 +4010,10 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:38](https://github.com/dns
 setApplicationSigningPaused: (paused) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L43)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L44)
 
-Pauses application signing before submission and resumes it only after durable activation.
+Blocks new application signing and drains in-flight request/directory signing before resolving;
+resumes signing only after durable activation.
 
 ###### Parameters
 
@@ -3996,7 +4093,7 @@ Defined in: [packages/sdk/src/conformance.ts:11](https://github.com/dnsid-ai/dns
 
 ### SigningIdentityManager
 
-Defined in: [packages/protocol/src/identity-manager.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L99)
+Defined in: [packages/protocol/src/identity-manager.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L105)
 
 #### Extends
 
@@ -4012,7 +4109,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:99](https://github.com/dn
 config: object;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L100)
+Defined in: [packages/protocol/src/identity-manager.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L106)
 
 ###### identity?
 
@@ -4026,6 +4123,12 @@ optional identity?: object;
 domain: string;
 ```
 
+###### identity.kuUrl?
+
+```ts
+optional kuUrl?: string;
+```
+
 #### Methods
 
 <a id="getkeyprovider-1"></a>
@@ -4036,13 +4139,13 @@ domain: string;
 getKeyProvider(): KeyProvider;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L101)
+Defined in: [packages/protocol/src/identity-manager.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L107)
 
 ###### Returns
 
 [`KeyProvider`](#keyprovider-1)
 
-<a id="verifydomain-2"></a>
+<a id="verifydomain-3"></a>
 
 ##### verifyDomain()
 
@@ -4054,7 +4157,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L96)
+Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L98)
 
 ###### Parameters
 
@@ -4289,7 +4392,9 @@ Defined in: [packages/protocol/src/verification-budget.ts:3](https://github.com/
 #### Extended by
 
 - [`HttpVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/#httpverificationoptions)
+- [`WebBotAuthVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/#webbotauthverificationoptions)
 - [`HttpVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/#httpverificationoptions)
+- [`WebBotAuthVerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/#webbotauthverificationoptions)
 - [`VerifyOIDCTokenOptions`](https://docs.dnsid.ai/reference/ts/dnsid-oidc/#verifyoidctokenoptions)
 - [`StreamVerifierOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#streamverifieroptions)
 - [`VerifyC2spStreamBundleOptions`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#verifyc2spstreambundleoptions)

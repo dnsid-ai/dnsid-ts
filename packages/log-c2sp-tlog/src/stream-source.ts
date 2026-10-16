@@ -15,6 +15,8 @@ export interface C2spResourceFetchGuarantees {
 
 /** Cancellation and deadline controls for one bounded resource read. */
 export interface C2spResourceFetchOptions {
+  /** Bypass caches and revalidate upstream evidence. */
+  revalidate?: boolean;
   signal?: AbortSignal;
   /** Finite timeout in milliseconds. */
   timeoutMs: number;
@@ -24,7 +26,7 @@ export interface C2spResourceFetchOptions {
  * Fetches one C2SP resource while enforcing the supplied decoded-byte limit
  * during the read. Implementations must require HTTP 200, reject redirects,
  * honor cancellation and the finite timeout, and provide truthful security
- * capabilities.
+ * capabilities. With revalidate, bypass local caches and revalidate upstream.
  */
 export interface C2spBoundedResourceFetcher {
   fetchBounded(url: string, maxBytes: number, options: C2spResourceFetchOptions): Promise<Uint8Array>;
@@ -37,10 +39,11 @@ export interface IndexedEntry { index: number; bytes: Uint8Array }
 export interface StreamEvidence { checkpoint: Checkpoint; entries: IndexedEntry[]; complete: boolean }
 
 /** Supplies checkpoint-plus-entries evidence for a log prefix. */
-export interface StreamSource { load(prefix: string, options?: { signal?: AbortSignal }): Promise<StreamEvidence> }
+export interface StreamSource { load(prefix: string, options?: { signal?: AbortSignal; revalidate?: boolean }): Promise<StreamEvidence> }
 
 /** Configuration for {@link ScanStreamSource}; the byte/size limits bound untrusted responses. */
 export interface ScanStreamSourceOptions {
+  revalidate?: boolean;
   /** Called with the parsed checkpoint before any entries are fetched; throw to reject it. */
   authenticateCheckpoint: (checkpoint: Checkpoint) => void | Promise<void>;
   maxTreeSize?: number;
@@ -147,13 +150,13 @@ export class ScanStreamSource implements StreamSource {
   }
 
   /** Loads and authenticates the checkpoint, then every entry of the log at `prefix` (`complete` is always true). */
-  async load(prefix: string, options: { signal?: AbortSignal } = {}): Promise<StreamEvidence> {
+  async load(prefix: string, options: { signal?: AbortSignal; revalidate?: boolean } = {}): Promise<StreamEvidence> {
     const signal = options.signal && this.options.signal ? AbortSignal.any([options.signal, this.options.signal]) : options.signal ?? this.options.signal;
-    return withVerificationBudget(child => this.loadWithinBudget(prefix, child), { signal });
+    return withVerificationBudget(child => this.loadWithinBudget(prefix, child, options.revalidate ?? this.options.revalidate), { signal });
   }
 
-  private async loadWithinBudget(prefix: string, signal: AbortSignal): Promise<StreamEvidence> {
-    const checkpointBytes = await this.bytes(checkpointPath(prefix), this.maxCheckpointBytes, signal);
+  private async loadWithinBudget(prefix: string, signal: AbortSignal, revalidate?: boolean): Promise<StreamEvidence> {
+    const checkpointBytes = await this.bytes(checkpointPath(prefix), this.maxCheckpointBytes, signal, revalidate);
     const checkpoint = parseCheckpoint(new TextDecoder().decode(checkpointBytes));
     await this.options.authenticateCheckpoint(checkpoint);
     if (checkpoint.treeSize > this.maxTreeSize) throw new C2spTlogVerificationError(`checkpoint tree size exceeds configured maximum ${this.maxTreeSize}`);
@@ -163,7 +166,7 @@ export class ScanStreamSource implements StreamSource {
     for (let bundleIndex = 0; bundleIndex * C2SP_ENTRIES_PER_BUNDLE < checkpoint.treeSize; bundleIndex++) {
       const want = Math.min(C2SP_ENTRIES_PER_BUNDLE, checkpoint.treeSize - bundleIndex * C2SP_ENTRIES_PER_BUNDLE);
       const path = entryBundlePath(prefix, bundleIndex, want === C2SP_ENTRIES_PER_BUNDLE ? undefined : want);
-      const bundleBytes = await this.bytes(path, this.maxEntryBundleBytes, signal);
+      const bundleBytes = await this.bytes(path, this.maxEntryBundleBytes, signal, revalidate);
       totalEntryBytes += bundleBytes.length;
       if (totalEntryBytes > this.maxTotalEntryBytes) throw new C2spTlogVerificationError(`entry bundles exceed configured total byte maximum ${this.maxTotalEntryBytes}`);
       const bundle = parseEntryBundle(bundleBytes);
@@ -175,12 +178,13 @@ export class ScanStreamSource implements StreamSource {
     return { checkpoint, entries, complete: true };
   }
 
-  private async bytes(url: string, maximum: number, signal: AbortSignal): Promise<Uint8Array> {
+  private async bytes(url: string, maximum: number, signal: AbortSignal, revalidate?: boolean): Promise<Uint8Array> {
     let bytes: Uint8Array;
     try {
       bytes = await waitForVerification(() => this.resourceFetcher.fetchBounded(url, maximum, {
         signal,
         timeoutMs: this.requestTimeoutMs,
+        revalidate,
       }), signal);
     } catch (cause) {
       if (cause instanceof VerificationError) throw cause;
@@ -220,7 +224,8 @@ async function fetchBoundedResponse(
   try {
     let response: Response;
     try {
-      response = await fetchImpl(url, { method: 'GET', redirect: 'manual', signal: controller.signal });
+      response = await fetchImpl(url, { method: 'GET', redirect: 'manual', signal: controller.signal,
+        ...(options.revalidate ? { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } } : {}) });
     } catch (cause) {
       if (cause instanceof VerificationError) {
         throw new C2spTlogError(`C2SP resource fetch failed: ${rawUrl}`, { cause, transient: cause.transient });
