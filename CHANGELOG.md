@@ -1,4 +1,11 @@
 
+## [0.28.1] - 2026-10-16
+
+### Chores
+
+- ci: add security scanning via shared github-actions workflow ([#81](https://github.com/dnsid-ai/dnsid-ts/pull/81))
+
+
 ## [0.28.0] - 2026-10-16
 
 ### Features
