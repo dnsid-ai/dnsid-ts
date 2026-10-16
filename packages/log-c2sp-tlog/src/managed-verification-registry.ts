@@ -29,17 +29,15 @@ const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
   ]
 }`);
 
-// The partner environment's log. Its log and bundle keys were checked against
-// the signing keys' public halves, obtained out of band, and its witness key
-// against the reviewed partner witness policy; the log's own discovery
-// endpoints are not what the pins rest on.
+// Matches the reviewed service profile in Identity-Digital/dnsid#2639;
+// the log's discovery endpoints are not trust anchors.
 const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
   "version": 1,
   "scope": "public",
   "log_prefix": "https://log.partners.dnsid.ai",
-  "tlog_policy": "log log.partners.dnsid.ai+52d6a7c3+ASsAuEkXpM63Qh2yh0q7DvueHqITfWGvcpWCOQfaDz5m\\nwitness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4\\nquorum dnsid-witness-1\\n",
+  "tlog_policy": "log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1\\nwitness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+b12677d8+AWOB3PQPuFoGK66bqsFRcNh4n4q2DaAcauBijHymUUWH"
+    "dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ"
   ]
 }`);
 
