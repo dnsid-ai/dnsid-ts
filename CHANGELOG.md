@@ -1,4 +1,13 @@
 
+## [0.28.0] - 2026-10-16
+
+### Features
+
+- feat(web-bot-auth): align with published WG draft 00 ([#94](https://github.com/dnsid-ai/dnsid-ts/pull/94))
+- feat(web-bot-auth): harden directory timing and key refresh ([#96](https://github.com/dnsid-ai/dnsid-ts/pull/96))
+- feat: add the partner log to the managed verification catalog ([#48](https://github.com/dnsid-ai/dnsid-ts/pull/48))
+
+
 ## [0.27.0] - 2026-10-14
 
 ### Bug Fixes
