@@ -30,6 +30,8 @@ conventional_commits = false
 filter_unconventional = false
 split_commits = false
 commit_preprocessors = [
+  # This breaking PR was merged as fix: without the ! marker.
+  { pattern = "\\Afix: enforce checkpoint continuity and trusted storage contracts \\(#98\\)(\\n|\\z)", replace = "fix!: enforce checkpoint continuity and trusted storage contracts (#98)${1}" },
   # Transform "Merge pull request #N from branch\n\nPR title" → "PR title ([#N](url))"
   { pattern = "Merge pull request #(\\d+) from [^\\n]+\\n\\n(.*)", replace = "${2} ([#${1}](https://github.com/dnsid-ai/dnsid-ts/pull/${1}))" },
   # Squash merge: first line "feat: title (#N)" → "feat: title ([#N](url))"
