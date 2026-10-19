@@ -1,4 +1,17 @@
 
+## [0.29.0] - 2026-10-19
+
+### Bug Fixes
+
+- fix!: enforce checkpoint continuity and trusted storage contracts ([#98](https://github.com/dnsid-ai/dnsid-ts/pull/98))
+- fix: classify missing identity records as RecordNotFound ([#100](https://github.com/dnsid-ai/dnsid-ts/pull/100))
+- fix: classify checkpoint contract changes as breaking for releases ([#101](https://github.com/dnsid-ai/dnsid-ts/pull/101))
+
+### Chores
+
+- ci: add security scanning via shared github-actions workflow ([#81](https://github.com/dnsid-ai/dnsid-ts/pull/81))
+
+
 ## [0.28.0] - 2026-10-16
 
 ### Features
