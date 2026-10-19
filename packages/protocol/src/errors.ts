@@ -1,9 +1,11 @@
 /** Machine-readable classification of a DNSid verification failure, carried on {@link VerificationError}. */
 export enum VerificationCode {
-  /** DNS lookup of the `_dnsid` TXT record failed or returned no identity record. Absence alone is not classified as transient. */
+  /** DNS lookup failed due to a timeout, network error, or ordinary SERVFAIL. Transient. */
   DNSResolution = 'DNSResolution',
   /** DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mode requires signing. */
   DNSSECFailed = 'DNSSECFailed',
+  /** No `_dnsid` TXT record exists (NXDOMAIN or NOERROR/NODATA). Non-transient; later verification may succeed after publication. */
+  RecordNotFound = 'RecordNotFound',
   /** The identity record or a fetched JWKS is malformed or fails protocol validation. */
   RecordInvalid = 'RecordInvalid',
   /** The identity record signature (or a bilateral binding signature) does not verify against the entity key. */

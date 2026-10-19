@@ -250,7 +250,10 @@ export function createDnsResolverFromServer(server: string): DNSResolver {
   let hostPromise: Promise<string> | undefined;
   return {
     async fetchTXT(name: string, options?: { signal?: AbortSignal }): Promise<[TXTRecord[], DNSSECState]> {
-      hostPromise ??= net.isIP(parsed.host) ? Promise.resolve(parsed.host) : dnsPromises.lookup(parsed.host).then(({ address }) => address);
+      hostPromise ??= net.isIP(parsed.host) ? Promise.resolve(parsed.host) : dnsPromises.lookup(parsed.host).then(({ address }) => address).catch(cause => {
+        // A missing resolver host is a transport failure, not an absent identity record.
+        throw new VerificationError('DNS server hostname lookup failed', { code: VerificationCode.DNSResolution, transient: true, cause });
+      });
       return resolveTxtWithTtl(name, await hostPromise, port, options?.signal);
     },
   };

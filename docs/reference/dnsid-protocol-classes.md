@@ -13,7 +13,7 @@ Part of [Protocol core](https://docs.dnsid.ai/reference/ts/dnsid-protocol/) (`@d
 
 ### ArgumentError
 
-Defined in: [packages/protocol/src/errors.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L113)
+Defined in: [packages/protocol/src/errors.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L115)
 
 Thrown when a caller passes an invalid or unusable argument to a DNSid API.
 
@@ -31,7 +31,7 @@ Thrown when a caller passes an invalid or unusable argument to a DNSid API.
 new ArgumentError(message): ArgumentError;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L114)
+Defined in: [packages/protocol/src/errors.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L116)
 
 ###### Parameters
 
@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1076](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1076)
+Defined in: [packages/protocol/src/identity-manager.ts:1082](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1082)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1062](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1062)
+Defined in: [packages/protocol/src/identity-manager.ts:1068](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1068)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -2041,7 +2041,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
 ### ParseError
 
-Defined in: [packages/protocol/src/errors.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L47)
+Defined in: [packages/protocol/src/errors.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L49)
 
 Thrown when raw input (e.g. a TXT record or duration string) cannot be parsed into its structured form.
 
@@ -2059,7 +2059,7 @@ Thrown when raw input (e.g. a TXT record or duration string) cannot be parsed in
 new ParseError(message): ParseError;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L48)
+Defined in: [packages/protocol/src/errors.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L50)
 
 ###### Parameters
 
@@ -2285,7 +2285,7 @@ Error.prepareStackTrace
 
 ### ValidationError
 
-Defined in: [packages/protocol/src/errors.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L55)
+Defined in: [packages/protocol/src/errors.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L57)
 
 Thrown when parsed data is structurally sound but violates a DNSid protocol constraint.
 
@@ -2303,7 +2303,7 @@ Thrown when parsed data is structurally sound but violates a DNSid protocol cons
 new ValidationError(message): ValidationError;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L56)
+Defined in: [packages/protocol/src/errors.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L58)
 
 ###### Parameters
 
@@ -2529,7 +2529,7 @@ Error.prepareStackTrace
 
 ### VerificationError
 
-Defined in: [packages/protocol/src/errors.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L86)
+Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
 
 Thrown when DNSid identity verification fails.
 
@@ -2550,7 +2550,7 @@ flag indicating whether a retry may succeed (see `retryTransientVerification`).
 new VerificationError(message, init): VerificationError;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
+Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
 
 ###### Parameters
 
@@ -2582,7 +2582,7 @@ Error.constructor
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -2610,7 +2610,7 @@ Error.cause
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -2622,7 +2622,7 @@ Classification of the failure.
 readonly optional errorCategory?: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
 
 Lifecycle conformance category, when the failure maps to a lifecycle state-machine rule.
 
@@ -2682,7 +2682,7 @@ Error.stack
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -2694,7 +2694,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -2706,7 +2706,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 

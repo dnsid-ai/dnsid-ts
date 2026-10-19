@@ -4,7 +4,7 @@ import * as dns from 'node:dns/promises';
 import { generateKeyPairSync } from 'node:crypto';
 import packet from 'dns-packet';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ArgumentError, DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
+import { ArgumentError, DNSSECMode, DNSSECState, IdentityManager, InMemoryIdentityCache, VerificationCode, type DnsIdJWK } from '@dnsid-ai/protocol';
 import { createDefaultDnsResolver, createDnsResolverFromServer } from '@dnsid-ai/transport';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
@@ -54,6 +54,50 @@ async function server(
     await new Promise<void>(resolve => tcp.close(() => resolve()));
   } };
 }
+
+it.each(['configured UDP', 'configured TCP', 'default wire'])(
+  'classifies the DNS outcome matrix over %s', async transport => {
+    const outcomes = [
+      { label: 'NXDOMAIN', flags: 3, answers: [], code: VerificationCode.RecordNotFound, transient: false },
+      { label: 'NODATA', flags: 0, answers: [], code: VerificationCode.RecordNotFound, transient: false },
+      { label: 'multiple', flags: 0, answers: [txt(name, 60, 'first'), txt(name, 60, 'second')], code: VerificationCode.RecordInvalid, transient: false },
+      { label: 'malformed', flags: 0, answers: [txt(name, 60, 'not a DNSid record')], code: VerificationCode.RecordInvalid, transient: false },
+      { label: 'SERVFAIL', flags: 2, answers: [], code: VerificationCode.DNSResolution, transient: true },
+    ];
+    for (const outcome of outcomes) {
+      const answer = (q: packet.Packet) => reply(q, outcome.answers, outcome.flags);
+      const fake = await server(transport === 'configured TCP' ? q => reply(q, [], packet.TRUNCATED_RESPONSE) : answer, answer);
+      const address = `127.0.0.1:${fake.port}`;
+      vi.mocked(dns.getServers).mockReturnValue([address]);
+      // The default resolver checks native/scoped DNS after an empty wire response or failure.
+      vi.mocked(dns.resolveTxt).mockRejectedValue(Object.assign(new Error(outcome.label), {
+        code: outcome.flags === 2 ? 'ESERVFAIL' : outcome.flags === 3 ? 'ENOTFOUND' : 'ENODATA',
+      }));
+      const resolver = transport === 'default wire' ? createDefaultDnsResolver({}) : createDefaultDnsResolver({ dnsServer: address });
+      try {
+        if (outcome.code === VerificationCode.RecordNotFound) {
+          await expect(resolver.fetchTXT(name)).resolves.toEqual([[], DNSSECState.UNKNOWN]);
+        }
+        const manager = new IdentityManager({}, { dnsResolver: resolver });
+        await expect(manager.verifyDomain('example.com'), outcome.label).rejects.toMatchObject({ code: outcome.code, transient: outcome.transient });
+        if (outcome.code === VerificationCode.RecordNotFound) {
+          for (const dnssecMode of [DNSSECMode.validated, DNSSECMode.required]) {
+            const strict = new IdentityManager({ verification: { dnssecMode } }, { dnsResolver: resolver });
+            await expect(strict.verifyDomain('example.com')).rejects.toMatchObject({ code: VerificationCode.DNSSECFailed, transient: false });
+          }
+        }
+      } finally { await fake.close(); }
+    }
+  },
+);
+
+it('classifies a configured DNS timeout as transient DNSResolution', async () => {
+  const fake = await server(() => undefined);
+  try {
+    const manager = new IdentityManager({}, { dnsResolver: createDnsResolverFromServer(`127.0.0.1:${fake.port}`) });
+    await expect(manager.verifyDomain('example.com')).rejects.toMatchObject({ code: VerificationCode.DNSResolution, transient: true });
+  } finally { await fake.close(); }
+});
 
 it('rejects an invalid configured server port before any lookup', () => {
   expect(() => createDnsResolverFromServer('127.0.0.1:0')).toThrow(ArgumentError);

@@ -133,7 +133,8 @@ Common error mapping:
 
 | Failure | Typical error surface |
 | --- | --- |
-| DNS resolution failure or no `_dnsid` record | `VerificationError` with `DNSResolution` |
+| DNS timeout, network failure, or ordinary SERVFAIL | Transient `VerificationError` with `DNSResolution` |
+| No `_dnsid` record (NXDOMAIN or NOERROR/NODATA), after DNSSEC policy passes | Non-transient `VerificationError` with `RecordNotFound`; later verification can succeed after publication |
 | DNSSEC failed/unknown under strict policy | `VerificationError` with `DNSSECFailed` |
 | Malformed TXT record, JWKS, status, or invalid JSON | `ParseError`, `ValidationError`, or `VerificationError` with `RecordInvalid` depending on layer |
 | TLS failure, expired certificate, hostname mismatch, timeout, unsafe address, disallowed redirect, oversized response, non-200 response | `VerificationError` with `TLSError` |

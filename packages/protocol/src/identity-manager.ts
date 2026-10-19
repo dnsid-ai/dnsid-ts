@@ -773,9 +773,15 @@ export class IdentityManager implements RefreshingIdentityResolver {
       }
       [txtRecords, dnssecState] = await waitForVerification(() => this.dnsResolver!.fetchTXT(`_dnsid.${domain}`, { signal }), signal);
     } catch (e) {
-      throw new VerificationError(`DNS lookup failed: ${(e as Error).message}`, {
-        code: VerificationCode.DNSResolution, transient: true,
-      });
+      if (e instanceof VerificationError && e.code === VerificationCode.DNSSECFailed) throw e;
+      if (e && typeof e === 'object' && 'code' in e && (e.code === 'ENOTFOUND' || e.code === 'ENODATA')) {
+        txtRecords = [];
+        dnssecState = DNSSECState.UNKNOWN;
+      } else {
+        throw new VerificationError(`DNS lookup failed: ${(e as Error)?.message}`, {
+          code: VerificationCode.DNSResolution, transient: true, cause: e,
+        });
+      }
     }
 
     if (!Object.values(DNSSECState).includes(dnssecState)) {
@@ -814,7 +820,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
 
     if (txtRecords.length === 0) {
       throw new VerificationError(`no _dnsid TXT record found for ${domain}`, {
-        code: VerificationCode.DNSResolution,
+        code: VerificationCode.RecordNotFound,
       });
     }
     if (txtRecords.length !== 1) {
