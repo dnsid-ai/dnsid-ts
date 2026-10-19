@@ -304,7 +304,7 @@ Machine-readable classification of a DNSid verification failure, carried on [Ver
 CounterpartyNotAccepted: "CounterpartyNotAccepted";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L22)
+Defined in: [packages/protocol/src/errors.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L24)
 
 Configured `trustedEntities` policy denied a protocol-valid counterparty. Always permanent.
 
@@ -318,7 +318,7 @@ DNSResolution: "DNSResolution";
 
 Defined in: [packages/protocol/src/errors.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L4)
 
-DNS lookup of the `_dnsid` TXT record failed or returned no identity record. Absence alone is not classified as transient.
+DNS lookup failed due to a timeout, network error, or ordinary SERVFAIL. Transient.
 
 <a id="dnssecfailed"></a>
 
@@ -340,7 +340,7 @@ DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mod
 KeyAgeExceeded: "KeyAgeExceeded";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L14)
+Defined in: [packages/protocol/src/errors.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L16)
 
 The operational key is older than the identity record's `ka` maximum key age.
 
@@ -352,7 +352,7 @@ The operational key is older than the identity record's `ka` maximum key age.
 LogError: "LogError";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L20)
+Defined in: [packages/protocol/src/errors.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L22)
 
 A transparency log read, entry check, or consistency verification failed.
 
@@ -364,9 +364,21 @@ A transparency log read, entry check, or consistency verification failed.
 RecordInvalid: "RecordInvalid";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L8)
+Defined in: [packages/protocol/src/errors.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L10)
 
 The identity record or a fetched JWKS is malformed or fails protocol validation.
+
+<a id="recordnotfound"></a>
+
+##### RecordNotFound
+
+```ts
+RecordNotFound: "RecordNotFound";
+```
+
+Defined in: [packages/protocol/src/errors.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L8)
+
+No `_dnsid` TXT record exists (NXDOMAIN or NOERROR/NODATA). Non-transient; later verification may succeed after publication.
 
 <a id="signatureinvalid"></a>
 
@@ -376,7 +388,7 @@ The identity record or a fetched JWKS is malformed or fails protocol validation.
 SignatureInvalid: "SignatureInvalid";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L10)
+Defined in: [packages/protocol/src/errors.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L12)
 
 The identity record signature (or a bilateral binding signature) does not verify against the entity key.
 
@@ -388,7 +400,7 @@ The identity record signature (or a bilateral binding signature) does not verify
 StatusNotActive: "StatusNotActive";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L18)
+Defined in: [packages/protocol/src/errors.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L20)
 
 The agent status document reports a state other than active (e.g. revoked or retired).
 
@@ -400,7 +412,7 @@ The agent status document reports a state other than active (e.g. revoked or ret
 StatusUnavailable: "StatusUnavailable";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L16)
+Defined in: [packages/protocol/src/errors.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L18)
 
 The agent status endpoint is unreachable or returned an unusable response.
 
@@ -412,7 +424,7 @@ The agent status endpoint is unreachable or returned an unusable response.
 TLSError: "TLSError";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L12)
+Defined in: [packages/protocol/src/errors.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L14)
 
 An HTTPS fetch of the JWKS or status endpoint failed at the transport/TLS layer.
 
@@ -502,7 +514,7 @@ type LifecycleErrorCategory =
   | "CHECKPOINT_STORE_ERROR";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)
+Defined in: [packages/protocol/src/errors.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L28)
 
 Stable, language-neutral categories used by lifecycle conformance vectors.
 
@@ -802,7 +814,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1108)
+Defined in: [packages/protocol/src/identity-manager.ts:1114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1114)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1586,7 +1598,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1145)
+Defined in: [packages/protocol/src/identity-manager.ts:1151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1151)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial

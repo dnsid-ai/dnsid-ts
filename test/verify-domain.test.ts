@@ -11,6 +11,7 @@ import {
   JWKS_MAX_RESPONSE_BYTES,
   STATUS_MAX_RESPONSE_BYTES,
   VerificationCode,
+  VerificationError,
   retryTransientVerification,
   toArrayBuffer,
   toBase64Url,
@@ -157,12 +158,12 @@ describe('IdentityManager.verifyDomain()', () => {
   });
 
   it.each([DNSSECState.VALID, DNSSECState.UNSIGNED, DNSSECState.UNKNOWN])(
-    'classifies absent TXT records as non-transient DNSResolution with DNSSEC %s', async dnssecState => {
+    'classifies absent TXT records as non-transient RecordNotFound with DNSSEC %s', async dnssecState => {
       const dnsResolver = { fetchTXT: vi.fn().mockResolvedValue([[], dnssecState]) };
       const fetchJson = vi.fn();
       const manager = new IdentityManager({ identity }, { keyProvider, dnsResolver, fetchJson });
       await expect(retryTransientVerification(() => manager.verifyDomain('agent.example.com'))).rejects.toMatchObject({
-        code: VerificationCode.DNSResolution,
+        code: VerificationCode.RecordNotFound,
         message: 'no _dnsid TXT record found for agent.example.com',
         transient: false,
       });
@@ -171,14 +172,63 @@ describe('IdentityManager.verifyDomain()', () => {
     },
   );
 
-  it.each([
-    [DNSSECMode.auto, DNSSECState.FAILED],
-    [DNSSECMode.validated, DNSSECState.UNKNOWN],
-    [DNSSECMode.required, DNSSECState.UNSIGNED],
-  ])('preserves DNSSEC rejection for empty answers in %s mode with %s', async (dnssecMode, dnssecState) => {
-    const dnsResolver = { fetchTXT: vi.fn().mockResolvedValue([[], dnssecState]) };
-    const manager = new IdentityManager({ identity, verification: { dnssecMode } }, { keyProvider, dnsResolver });
-    await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.DNSSECFailed });
+  it.each(Object.values(DNSSECMode).flatMap(mode => Object.values(DNSSECState).map(state => ({ mode, state }))))(
+    'applies DNSSEC $mode policy to empty answers with $state', async ({ mode, state }) => {
+      const dnsResolver = { fetchTXT: vi.fn().mockResolvedValue([[], state]) };
+      const manager = new IdentityManager({ verification: { dnssecMode: mode } }, { dnsResolver });
+      const rejected = state === DNSSECState.FAILED ||
+        (mode === DNSSECMode.validated && state === DNSSECState.UNKNOWN) ||
+        (mode === DNSSECMode.required && state !== DNSSECState.VALID);
+      await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({
+        code: rejected ? VerificationCode.DNSSECFailed : VerificationCode.RecordNotFound, transient: false,
+      });
+    },
+  );
+
+  it.each(Object.values(DNSSECMode).flatMap(mode => ['ENOTFOUND', 'ENODATA'].map(code => ({ mode, code }))))(
+    'normalizes injected $code before DNSSEC $mode policy', async ({ mode, code }) => {
+      const dnsResolver = { fetchTXT: vi.fn().mockRejectedValue(Object.assign(new Error('not found'), { code })) };
+      const fetchJson = vi.fn();
+      const manager = new IdentityManager({ verification: { dnssecMode: mode } }, { dnsResolver, fetchJson });
+      await expect(retryTransientVerification(() => manager.verifyDomain('agent.example.com'))).rejects.toMatchObject({
+        code: mode === DNSSECMode.auto ? VerificationCode.RecordNotFound : VerificationCode.DNSSECFailed, transient: false,
+      });
+      expect(dnsResolver.fetchTXT).toHaveBeenCalledOnce();
+      expect(fetchJson).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['ETIMEOUT', 'ECONNREFUSED', 'ENETUNREACH', 'ESERVFAIL'])(
+    'keeps injected %s failures transient', async code => {
+      const cause = Object.assign(new Error('lookup failed'), { code });
+      const manager = new IdentityManager({}, { dnsResolver: { fetchTXT: vi.fn().mockRejectedValue(cause) } });
+      await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({
+        code: VerificationCode.DNSResolution, transient: true, cause,
+      });
+    },
+  );
+
+  it.each(Object.values(DNSSECMode))('preserves an injected DNSSEC failure in %s mode', async dnssecMode => {
+    const error = new VerificationError('known DNSSEC failure', { code: VerificationCode.DNSSECFailed });
+    const manager = new IdentityManager({ verification: { dnssecMode } }, { dnsResolver: { fetchTXT: vi.fn().mockRejectedValue(error) } });
+    await expect(manager.verifyDomain('agent.example.com')).rejects.toBe(error);
+  });
+
+  it.each(['empty', 'ENOTFOUND', 'ENODATA'])('does not cache %s absence or block verification after publication', async outcome => {
+    const { fixture } = await setup();
+    const fetchTXT = vi.fn(fixture.dnsResolver.fetchTXT);
+    if (outcome === 'empty') fetchTXT.mockResolvedValueOnce([[], DNSSECState.UNKNOWN]);
+    else fetchTXT.mockRejectedValueOnce(Object.assign(new Error('not found'), { code: outcome }));
+    const cache = new InMemoryIdentityCache();
+    const put = vi.spyOn(cache, 'put');
+    const fetchJson = vi.fn(fixture.fetchJson);
+    const manager = new IdentityManager({}, { dnsResolver: { fetchTXT }, cache, fetchJson, logRegistry: fixture.logRegistry });
+    await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.RecordNotFound, transient: false });
+    expect(put).not.toHaveBeenCalled();
+    expect(fetchJson).not.toHaveBeenCalled();
+    await expect(manager.verifyDomain('agent.example.com')).resolves.toMatchObject({ domain: 'agent.example.com' });
+    expect(fetchTXT).toHaveBeenCalledTimes(2);
+    expect(put).toHaveBeenCalledOnce();
   });
 
   it('rejects multiple TXT records', async () => {
@@ -188,7 +238,7 @@ describe('IdentityManager.verifyDomain()', () => {
       { strings: [fixture.record.serialize()], ttl: 300 },
     ], DNSSECState.UNSIGNED]) };
     const manager = new IdentityManager({ identity }, { keyProvider, logRegistry: fixture.logRegistry, dnsResolver, fetchJson: fixture.fetchJson });
-    await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.RecordInvalid });
+    await expect(manager.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.RecordInvalid, transient: false });
   });
 
   it('rejects DNSSEC validation failures even when DNSSEC is not required', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import { IdentityManager, LogRegistry, VerificationCode } from '@dnsid-ai/protocol';
 import { LocalKeyProvider, createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
 import { HttpSignaturesProfile } from '@dnsid-ai/http-signatures';
 import { JoseProfile } from '@dnsid-ai/jose';
@@ -18,6 +18,7 @@ import {
   ManagedKeyRotationActivationError,
   ManagedKeyRotationSubmissionError,
   SDK_CONFORMANCE,
+  VerificationCode as SDKVerificationCode,
   createIdentityManager,
   createIdentityVerifier,
   issueManagedIdentity,
@@ -39,6 +40,8 @@ import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } 
 
 describe('modular package entrypoints', () => {
   it('export the expected public package surfaces', () => {
+    expect(VerificationCode.RecordNotFound).toBe('RecordNotFound');
+    expect(SDKVerificationCode.RecordNotFound).toBe(VerificationCode.RecordNotFound);
     expect(IdentityManager).toBeTypeOf('function');
     expect(LogRegistry).toBeTypeOf('function');
     expect(HttpSignaturesProfile).toBeTypeOf('function');

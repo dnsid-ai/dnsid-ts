@@ -1,8 +1,8 @@
 import * as dns from 'node:dns/promises';
 import { generateKeyPairSync } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { DNSSECState, IdentityManager, InMemoryIdentityCache, type DnsIdJWK } from '@dnsid-ai/protocol';
-import { createDefaultDnsResolver } from '@dnsid-ai/transport';
+import { DNSSECMode, DNSSECState, IdentityManager, InMemoryIdentityCache, VerificationCode, type DnsIdJWK } from '@dnsid-ai/protocol';
+import { createDefaultDnsResolver, createDnsResolverFromServer } from '@dnsid-ai/transport';
 import { currentProfileFixture } from './helpers/current-profile.ts';
 
 vi.mock('node:dns/promises', async importOriginal => ({
@@ -13,9 +13,43 @@ vi.mock('node:dns/promises', async importOriginal => ({
 }));
 afterEach(() => vi.restoreAllMocks());
 
-it('treats system SERVFAIL as a resolution error, not DNSSEC validation failure', async () => {
-  vi.mocked(dns.resolveTxt).mockRejectedValue(Object.assign(new Error('upstream failed'), { code: 'ESERVFAIL' }));
-  await expect(createDefaultDnsResolver({}).fetchTXT('_dnsid.example.com')).rejects.toThrow('upstream failed');
+it.each(['ETIMEOUT', 'ECONNREFUSED', 'ENETUNREACH', 'ESERVFAIL'])('keeps system %s failures transient', async code => {
+  const cause = Object.assign(new Error('upstream failed'), { code });
+  vi.mocked(dns.resolveTxt).mockRejectedValue(cause);
+  const resolver = createDefaultDnsResolver({});
+  await expect(resolver.fetchTXT('_dnsid.example.com')).rejects.toBe(cause);
+  const manager = new IdentityManager({}, { dnsResolver: resolver });
+  await expect(manager.verifyDomain('example.com')).rejects.toMatchObject({ code: VerificationCode.DNSResolution, transient: true });
+});
+
+it.each(['empty', 'ENOTFOUND', 'ENODATA'])('normalizes system %s absence before DNSSEC policy', async outcome => {
+  if (outcome === 'empty') vi.mocked(dns.resolveTxt).mockResolvedValue([]);
+  else vi.mocked(dns.resolveTxt).mockRejectedValue(Object.assign(new Error('not found'), { code: outcome }));
+  const resolver = createDefaultDnsResolver({});
+  await expect(resolver.fetchTXT('_dnsid.example.com')).resolves.toEqual([[], DNSSECState.UNKNOWN]);
+  for (const dnssecMode of Object.values(DNSSECMode)) {
+    const manager = new IdentityManager({ verification: { dnssecMode } }, { dnsResolver: resolver });
+    await expect(manager.verifyDomain('example.com')).rejects.toMatchObject({
+      code: dnssecMode === DNSSECMode.auto ? VerificationCode.RecordNotFound : VerificationCode.DNSSECFailed, transient: false,
+    });
+  }
+});
+
+it.each([
+  { label: 'multiple', records: [['first'], ['second']] },
+  { label: 'malformed', records: [['not a DNSid record']] },
+])('keeps $label system TXT records non-transient RecordInvalid', async ({ records }) => {
+  vi.mocked(dns.resolveTxt).mockResolvedValue(records);
+  const manager = new IdentityManager({}, { dnsResolver: createDefaultDnsResolver({}) });
+  await expect(manager.verifyDomain('example.com')).rejects.toMatchObject({ code: VerificationCode.RecordInvalid, transient: false });
+});
+
+it('does not mistake a missing configured resolver hostname for an absent identity', async () => {
+  vi.mocked(dns.lookup).mockRejectedValue(Object.assign(new Error('resolver not found'), { code: 'ENOTFOUND' }));
+  const resolver = createDnsResolverFromServer('missing-resolver.example');
+  await expect(resolver.fetchTXT('_dnsid.example.com')).rejects.toMatchObject({ code: VerificationCode.DNSResolution, transient: true });
+  const manager = new IdentityManager({}, { dnsResolver: resolver });
+  await expect(manager.verifyDomain('example.com')).rejects.toMatchObject({ code: VerificationCode.DNSResolution, transient: true });
 });
 
 it('falls back to TTL 0 when no system DNS servers are available', async () => {

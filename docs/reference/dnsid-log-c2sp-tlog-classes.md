@@ -79,7 +79,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:56](https://github.c
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -109,7 +109,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -227,7 +227,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -263,7 +263,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:51](https://github.c
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -279,7 +279,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -471,7 +471,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:69](https://github.c
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -501,7 +501,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -589,7 +589,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -605,7 +605,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -621,7 +621,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -1857,7 +1857,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:11](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -1887,7 +1887,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -1903,7 +1903,7 @@ Classification of the failure.
 readonly optional errorCategory?: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
 
 Lifecycle conformance category, when the failure maps to a lifecycle state-machine rule.
 
@@ -1971,7 +1971,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -1987,7 +1987,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -2003,7 +2003,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -2195,7 +2195,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:30](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -2225,7 +2225,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -2241,7 +2241,7 @@ Classification of the failure.
 readonly optional errorCategory?: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
 
 Lifecycle conformance category, when the failure maps to a lifecycle state-machine rule.
 
@@ -2313,7 +2313,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -2329,7 +2329,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -2345,7 +2345,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -2881,7 +2881,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -2911,7 +2911,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -2999,7 +2999,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -3015,7 +3015,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -3031,7 +3031,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -3336,7 +3336,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -3366,7 +3366,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L88)
+Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
 
 Classification of the failure.
 
@@ -3454,7 +3454,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L90)
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
 
 True when retrying the verification may succeed.
 
@@ -3470,7 +3470,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -3486,7 +3486,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
