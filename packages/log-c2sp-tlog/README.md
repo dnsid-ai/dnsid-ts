@@ -62,6 +62,12 @@ pending writes after cancellation; racing an uncancelable write is insufficient.
 Checkpoint advancement shares the caller's cancellation and has a 30-second
 standalone default (`timeoutMs`/`signal` options).
 
+See [checkpoint trust and recovery](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/CHECKPOINTS.md) for typed diagnostics,
+exact-state storage requirements, durable-adapter obligations, and the
+independently authorized deployment recovery procedure. This SDK supplies no
+built-in durable adapter or recovery authorization service. Storage errors never
+substitute empty trust; failed publication acknowledgment requires reconciliation.
+
 Never derive `policyUrl` from an unverified identity record, its `lr`, or a log prefix. Advanced deployments can compose `parseC2spPolicyFile`, `ScanStreamSource`, `registerC2spTlog`, and a custom checkpoint store directly for private transports, mirrors, archives, or portable bundles.
 
 Public verification needs a trusted local policy and complete stream evidence. A single inclusion proof proves historical inclusion only; it is not current lifecycle state or non-revocation evidence.

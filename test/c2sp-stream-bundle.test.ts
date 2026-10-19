@@ -3,12 +3,17 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { correctedBundle } from './helpers/corrected-c2sp-bundle.ts';
 
-import { jwkThumbprint, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@dnsid-ai/protocol';
+import { jwkThumbprint, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@dnsid-ai/protocol';
 import {
   C2SP_TLOG_PROFILE_VERSION,
   C2SP_TLOG_SPECIFICATIONS,
   C2spTlogError,
+  C2spCheckpointConsistencyError,
+  C2spCheckpointStoreError,
+  MissingC2spConsistencyEvidenceError,
   C2spTlogReader,
+  type C2spTlogReaderOptions,
+  type TrustedC2spCheckpointStore,
   InMemoryTrustedC2spCheckpointStore,
   canonicalBytes,
   canonicalizeC2spEvent,
@@ -323,6 +328,264 @@ async function missingConsistencyReader(rawEntries: Uint8Array[], required = fal
       .verifyBilateralBinding({ agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku),
   };
 }
+
+function rawReader(value: Fixture, entries: Uint8Array[], options: Partial<C2spTlogReaderOptions> = {}) {
+  return new C2spTlogReader(LR, {
+    policy: parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes)),
+    entityKey: value.options.entityKey,
+    trustedCheckpointStore: value.options.trustedCheckpointStore,
+    streamSource: { load: async () => ({
+      checkpoint: parseCheckpoint(new TextDecoder().decode(value.checkpoint(entries))),
+      entries: entries.map((bytes, index) => ({ index, bytes })),
+      complete: true,
+    }) },
+    ...options,
+  });
+}
+
+const issuanceBytes = () => new TextEncoder().encode(ISSUANCE_ENTRY);
+
+describe('C2SP checkpoint public boundaries', () => {
+  it.each(['reader', 'bundle', 'binding', 'non-revocation', 'readEvent'] as const)('preserves rollback/fork diagnostics at the %s boundary', async path => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    const store = value.options.trustedCheckpointStore;
+    await verifyC2spStreamBundle(value.bytes, value.options);
+    const previous = (await store.load(ORIGIN))!;
+    for (const [entries, category] of [
+      [[issuanceBytes()], 'LOG_ROLLBACK'],
+      [[issuanceBytes(), new TextEncoder().encode('other leaf')], 'LOG_FORK'],
+    ] as const) {
+      let operation: Promise<unknown>;
+      if (path !== 'bundle') {
+        const reader = rawReader(value, [...entries], { checkpointMaxAge: 60_000, proofs: {
+          '0': { index: 0, hashes: entries.length === 1 ? [] : [leafHash(entries[1]!)],
+            checkpoint: parseCheckpoint(new TextDecoder().decode(value.checkpoint([...entries]))) },
+        } });
+        const issuance = JSON.parse(ISSUANCE_ENTRY);
+        operation = path === 'binding' ? reader.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku)
+          : path === 'non-revocation' ? reader.verifyNonRevocation('agent.example', new Date())
+          : path === 'readEvent' ? reader.readEvent(`${LR}@0`) : reader.rebuildHistory('agent.example');
+      } else {
+        value.object.checkpoint = Buffer.from(value.checkpoint([...entries])).toString('base64url');
+        value.object.complete_through_size = entries.length;
+        (value.object.events as Array<{ proof: string }>)[0]!.proof = entries.length === 1 ? '' : Buffer.from(leafHash(entries[1]!)).toString('base64url');
+        operation = verifyC2spStreamBundle(value.resign(), value.options);
+      }
+      const error = await operation.catch(error => error);
+      expect(error).toBeInstanceOf(C2spCheckpointConsistencyError);
+      if (!(error instanceof C2spCheckpointConsistencyError)) throw error;
+      expect(error).toMatchObject({ code: VerificationCode.LogError, transient: false, errorCategory: category,
+        origin: ORIGIN, trustedTreeSize: 2, observedTreeSize: entries.length,
+        trustedRootHash: previous.rootHash, observedRootHash: merkleRootFromEntries([...entries]) });
+      error.trustedRootHash.fill(0);
+      error.observedRootHash.fill(0);
+      await expect(store.load(ORIGIN)).resolves.toEqual(previous);
+    }
+  });
+
+  it('distinguishes a candidate-valid contradictory prefix from invalid scan evidence', async () => {
+    const value = fixture();
+    const store = value.options.trustedCheckpointStore;
+    await rawReader(value, [issuanceBytes(), new TextEncoder().encode('old leaf')]).rebuildHistory('agent.example');
+    const previous = await store.load(ORIGIN);
+    const entries = [issuanceBytes(), BUNDLE_EXTRA_ENTRY, BUNDLE_EXTRA_ENTRY];
+    const checkpoint = parseCheckpoint(new TextDecoder().decode(value.checkpoint(entries)));
+    const verify = (scanned: Array<{ index: number; bytes: Uint8Array }>) => rawReader(value, entries, {
+      streamSource: { load: async () => ({ checkpoint, entries: scanned, complete: true }) },
+    }).rebuildHistory('agent.example');
+    const complete = entries.map((bytes, index) => ({ index, bytes }));
+    await expect(verify(complete)).rejects.toMatchObject({ errorCategory: 'LOG_INCONSISTENT',
+      trustedTreeSize: 2, observedTreeSize: 3, cause: expect.any(Error) });
+    for (const invalid of [complete.slice(1), [...complete.slice(0, 2), { ...complete[2]!, index: 1 }],
+      [{ index: 0, bytes: BUNDLE_EXTRA_ENTRY }, ...complete.slice(1)]]) {
+      await expect(verify(invalid)).rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', transient: false });
+      await expect(store.load(ORIGIN)).resolves.toEqual(previous);
+    }
+  });
+
+  it.each(['reader', 'bundle'] as const)('distinguishes invalid proof, missing evidence, and retrieval failures at the %s boundary', async path => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    const store = value.options.trustedCheckpointStore;
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const previous = await store.load(ORIGIN);
+    const verify = (source?: C2spTlogReaderOptions['consistencyProofSource']) => path === 'reader'
+      ? rawReader(value, [issuanceBytes(), BUNDLE_EXTRA_ENTRY], { consistencyProofSource: source }).rebuildHistory('agent.example')
+      : verifyC2spStreamBundle(value.bytes, { ...value.options, consistencyProofSource: source });
+    await expect(verify({ fetchConsistencyProof: async () => [] })).rejects.toMatchObject({
+      errorCategory: 'LOG_INCONSISTENT', trustedRootHash: previous!.rootHash, observedTreeSize: 2, transient: false,
+    });
+    if (path === 'bundle') await expect(verify()).rejects.toBeInstanceOf(MissingC2spConsistencyEvidenceError);
+    for (const transient of [true, false]) {
+      const cause = new VerificationError('injected proof retrieval failure', { code: VerificationCode.TLSError, transient });
+      await expect(verify({ fetchConsistencyProof: async () => { throw cause; } })).rejects.toMatchObject({
+        code: VerificationCode.LogError, transient, cause,
+      });
+    }
+    await expect(store.load(ORIGIN)).resolves.toEqual(previous);
+  });
+
+  it.each(['invalid-proof', 'fetch', 'load', 'write'] as const)('never falls back after %s in a preferred bundle reader', async fault => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    const backing = value.options.trustedCheckpointStore;
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const previous = await backing.load(ORIGIN);
+    const cause = new VerificationError('injected outage', { code: VerificationCode.TLSError, transient: true });
+    const load = vi.fn(async () => { throw new Error('raw fallback must not run'); });
+    const store: TrustedC2spCheckpointStore = {
+      load: (...args) => fault === 'load' ? Promise.reject(cause) : backing.load(...args),
+      compareAndSwap: (...args) => fault === 'write' ? Promise.reject(cause) : backing.compareAndSwap(...args),
+    };
+    const reader = rawReader(value, [], {
+      streamSource: { load }, trustedCheckpointStore: store,
+      consistencyProofSource: { fetchConsistencyProof: async () => {
+        if (fault === 'fetch') throw cause;
+        return fault === 'invalid-proof' ? [] : [leafHash(BUNDLE_EXTRA_ENTRY)];
+      } },
+      resourceFetcher: { fetchBounded: async () => value.bytes, securityGuarantees: requiredC2spResourceFetchGuarantees },
+      streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys,
+        maxBundleLifetimeMs: 60_000, checkpointFreshnessMs: 60_000 },
+    });
+    await expect(reader.rebuildHistory('agent.example')).rejects.toMatchObject({
+      code: VerificationCode.LogError,
+      errorCategory: fault === 'invalid-proof' ? 'LOG_INCONSISTENT' : fault === 'fetch' ? 'INVALID_EVIDENCE' : 'CHECKPOINT_STORE_ERROR',
+      transient: fault === 'fetch',
+      ...(fault === 'invalid-proof' ? {} : { cause }),
+    });
+    expect(load).not.toHaveBeenCalled();
+    await expect(backing.load(ORIGIN)).resolves.toEqual(previous);
+  });
+
+  it.each([false, true])('cancellation at a gated store publication (already published=%s)', async published => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    const backing = value.options.trustedCheckpointStore;
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const previous = await backing.load(ORIGIN);
+    let started!: () => void;
+    let release!: () => void;
+    let finished!: () => void;
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const done = new Promise<void>(resolve => { finished = resolve; });
+    const store: TrustedC2spCheckpointStore = {
+      load: (...args) => backing.load(...args),
+      compareAndSwap: async (...args) => {
+        try {
+          if (published) await backing.compareAndSwap(...args);
+          started();
+          await gate;
+          return published || await backing.compareAndSwap(...args);
+        } finally { finished(); }
+      },
+    };
+    const controller = new AbortController();
+    const pending = verifyC2spStreamBundle(value.bytes, { ...value.options, trustedCheckpointStore: store,
+      signal: controller.signal, consistencyProofSource: { fetchConsistencyProof: async () => [leafHash(BUNDLE_EXTRA_ENTRY)] } });
+    await ready;
+    const reason = new Error('caller canceled at publication boundary');
+    controller.abort(reason);
+    await expect(pending).rejects.toMatchObject({ transient: true, cause: reason });
+    release();
+    await done;
+    if (!published) await expect(backing.load(ORIGIN)).resolves.toEqual(previous);
+    else {
+      await expect(backing.load(ORIGIN)).resolves.toMatchObject({ treeSize: 2 });
+      await expect(verifyC2spStreamBundle(value.bytes, value.options)).resolves.toBeDefined();
+    }
+  });
+
+  it.each(['load', 'write', 'corrupt', 'published'] as const)('fails closed on %s storage failure and reads actual state on the next invocation', async fault => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    const backing = value.options.trustedCheckpointStore;
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const previous = await backing.load(ORIGIN);
+    const cause = new VerificationError('injected storage failure', { code: VerificationCode.TLSError, transient: true });
+    const store: TrustedC2spCheckpointStore = {
+      load: async (origin, signal) => {
+        if (fault === 'load') throw cause;
+        const loaded = (await backing.load(origin, signal))!;
+        return fault === 'corrupt' ? { ...loaded, rootHash: new Uint8Array(31) } : loaded;
+      },
+      compareAndSwap: async (...args) => {
+        if (fault === 'published') await backing.compareAndSwap(...args);
+        throw cause;
+      },
+    };
+    const source = { fetchConsistencyProof: async () => [leafHash(BUNDLE_EXTRA_ENTRY)] };
+    await expect(verifyC2spStreamBundle(value.bytes, { ...value.options, trustedCheckpointStore: store, consistencyProofSource: source }))
+      .rejects.toMatchObject({ name: 'C2spCheckpointStoreError', code: VerificationCode.LogError,
+        errorCategory: 'CHECKPOINT_STORE_ERROR', transient: false, cause: fault === 'corrupt' ? expect.any(Error) : cause });
+    await expect(backing.load(ORIGIN)).resolves.toMatchObject({ treeSize: fault === 'published' ? 2 : 1 });
+    if (fault !== 'published') await expect(backing.load(ORIGIN)).resolves.toEqual(previous);
+    // A failed acknowledgment is not proof that publication failed. Reload through verification.
+    await expect(verifyC2spStreamBundle(value.bytes, { ...value.options, consistencyProofSource: source })).resolves.toBeDefined();
+    await expect(backing.load(ORIGIN)).resolves.toMatchObject({ treeSize: 2 });
+  });
+
+  it.each([{ treeSize: NaN }, { treeSize: Number.MAX_SAFE_INTEGER + 1 }, { witnessTime: new Date(NaN) },
+    { witnessTime: '2026-07-24T12:00:00Z' }, { origin: '' }, { origin: 'wrong.example' }, { rootHash: 'invalid' }, null])
+    ('rejects corrupt stored state %o before any write', async invalid => {
+      const value = fixture();
+      const compareAndSwap = vi.fn(async () => true);
+      const valid = { origin: ORIGIN, treeSize: 0, rootHash: merkleRootFromEntries([]), witnessTime: new Date(0) };
+      const store = { load: async () => invalid === null ? null : { ...valid, ...invalid }, compareAndSwap } as unknown as TrustedC2spCheckpointStore;
+      await expect(rawReader(value, [issuanceBytes()], { trustedCheckpointStore: store }).rebuildHistory('agent.example'))
+        .rejects.toBeInstanceOf(C2spCheckpointStoreError);
+      expect(compareAndSwap).not.toHaveBeenCalled();
+    });
+
+  it.each(['load', 'write'] as const)('preserves an adapter-typed %s error without another wrapper', async stage => {
+    const value = fixture();
+    const cause = new Error('adapter failure');
+    const failure = new C2spCheckpointStoreError('storage refused the operation', cause);
+    const store: TrustedC2spCheckpointStore = {
+      load: async () => { if (stage === 'load') throw failure; return undefined; },
+      compareAndSwap: async () => { throw failure; },
+    };
+    await expect(verifyC2spStreamBundle(value.bytes, { ...value.options, trustedCheckpointStore: store })).rejects.toBe(failure);
+    expect(failure.cause).toBe(cause);
+    await expect(value.options.trustedCheckpointStore.load(ORIGIN)).resolves.toBeUndefined();
+  });
+
+  it('rejects a non-boolean CAS acknowledgment without accepting evidence', async () => {
+    const value = fixture();
+    const backing = value.options.trustedCheckpointStore;
+    const store: TrustedC2spCheckpointStore = {
+      load: (...args) => backing.load(...args),
+      compareAndSwap: async () => undefined as unknown as boolean,
+    };
+    await expect(verifyC2spStreamBundle(value.bytes, { ...value.options, trustedCheckpointStore: store }))
+      .rejects.toMatchObject({ errorCategory: 'CHECKPOINT_STORE_ERROR', transient: false });
+    await expect(backing.load(ORIGIN)).resolves.toBeUndefined();
+  });
+
+  it('allows only one conflicting extension to win and checks the loser against that winner', async () => {
+    const left = fixture(BUNDLE_EXTRA_ENTRY);
+    const right = fixture(new TextEncoder().encode('conflicting extension'));
+    const backing = left.options.trustedCheckpointStore;
+    await rawReader(left, [issuanceBytes()]).rebuildHistory('agent.example');
+    let arrived = 0;
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const store: TrustedC2spCheckpointStore = {
+      load: (...args) => backing.load(...args),
+      compareAndSwap: async (...args) => {
+        if (++arrived === 2) release();
+        await gate;
+        return backing.compareAndSwap(...args);
+      },
+    };
+    const results = await Promise.allSettled([left, right].map(value => verifyC2spStreamBundle(value.bytes, {
+      ...value.options, trustedCheckpointStore: store,
+      consistencyProofSource: { fetchConsistencyProof: async () => [leafHash(value === left ? BUNDLE_EXTRA_ENTRY : new TextEncoder().encode('conflicting extension'))] },
+    })));
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    const loser = results.find(result => result.status === 'rejected') as PromiseRejectedResult;
+    expect(loser.reason).toMatchObject({ errorCategory: 'LOG_FORK', trustedTreeSize: 2, observedTreeSize: 2 });
+    const winner = results[0]!.status === 'fulfilled' ? left : right;
+    await expect(backing.load(ORIGIN)).resolves.toMatchObject({ treeSize: 2,
+      rootHash: parseCheckpoint(Buffer.from(winner.object.checkpoint as string, 'base64url').toString()).rootHash });
+  });
+});
 
 describe('C2SP stream bundles', () => {
   it.each(['abort', 'deadline'])('does not advance trust after %s during consistency fetching', async mode => {

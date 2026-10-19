@@ -1,6 +1,6 @@
-import { withVerificationBudget, waitForVerification, type VerificationOptions } from '@dnsid-ai/protocol';
+import { ArgumentError, withVerificationBudget, waitForVerification, type VerificationOptions } from '@dnsid-ai/protocol';
 import type { Checkpoint } from './checkpoint.ts';
-import { C2spTlogVerificationError } from './errors.ts';
+import { C2spTlogVerificationError, c2spLogError } from './errors.ts';
 import type { ParsedC2spTlogLr } from './lr.ts';
 import { merkleRootFromEntries, nodeHash } from './merkle.ts';
 import type { IndexedEntry } from './stream-source.ts';
@@ -13,7 +13,14 @@ export interface TrustedC2spCheckpoint {
   witnessTime: Date;
 }
 
-/** Persistence for per-origin trusted checkpoints, updated with optimistic compare-and-swap semantics. */
+/**
+ * Persistence for per-origin trusted checkpoints. Compare all four fields, including
+ * witnessed time. Validate inputs, return independent snapshots, and fail closed on
+ * lost/corrupt storage; undefined means a genuinely unseen origin, not storage loss.
+ * Durable adapters must explicitly initialize namespaces and acknowledge durable
+ * commits. An error after publication requires read-back reconciliation, not retry
+ * on the assumption that the old state remains. See the package storage contract.
+ */
 export interface TrustedC2spCheckpointStore {
   /** Returns the currently trusted checkpoint for `origin`, if any. */
   load(origin: string, signal?: AbortSignal): Promise<TrustedC2spCheckpoint | undefined>;
@@ -38,21 +45,53 @@ export interface C2spConsistencyProofSource {
 /** Signals that a valid newer checkpoint needs independent consistency evidence. */
 export class MissingC2spConsistencyEvidenceError extends C2spTlogVerificationError {}
 
+/** An authenticated checkpoint contradicts remembered log history; never authorizes a reset. */
+export class C2spCheckpointConsistencyError extends C2spTlogVerificationError {
+  readonly origin: string;
+  readonly trustedTreeSize: number;
+  readonly observedTreeSize: number;
+  readonly trustedRootHash: Uint8Array;
+  readonly observedRootHash: Uint8Array;
+
+  constructor(message: string, category: 'LOG_ROLLBACK' | 'LOG_FORK' | 'LOG_INCONSISTENT', trusted: TrustedC2spCheckpoint, observed: TrustedC2spCheckpoint, cause?: unknown) {
+    super(message, category, cause);
+    this.name = 'C2spCheckpointConsistencyError';
+    this.origin = observed.origin;
+    this.trustedTreeSize = trusted.treeSize;
+    this.observedTreeSize = observed.treeSize;
+    this.trustedRootHash = new Uint8Array(trusted.rootHash);
+    this.observedRootHash = new Uint8Array(observed.rootHash);
+  }
+}
+
+/** Storage failed. A failed CAS may already have published; reconcile before recovery. */
+export class C2spCheckpointStoreError extends C2spTlogVerificationError {
+  constructor(message: string, cause?: unknown) {
+    super(message, 'CHECKPOINT_STORE_ERROR', cause);
+    this.name = 'C2spCheckpointStoreError';
+  }
+}
+
 /** Non-persistent, per-process trusted checkpoint store. */
 export class InMemoryTrustedC2spCheckpointStore implements TrustedC2spCheckpointStore {
   private readonly checkpoints = new Map<string, TrustedC2spCheckpoint>();
 
   async load(origin: string, signal?: AbortSignal): Promise<TrustedC2spCheckpoint | undefined> {
     signal?.throwIfAborted();
+    validateOrigin(origin);
     return cloneCheckpoint(this.checkpoints.get(origin));
   }
 
   async compareAndSwap(origin: string, expected: TrustedC2spCheckpoint | undefined, candidate: TrustedC2spCheckpoint, signal?: AbortSignal): Promise<boolean> {
     signal?.throwIfAborted();
+    validateOrigin(origin);
+    if (expected !== undefined) validateCheckpoint(expected, origin);
+    validateCheckpoint(candidate, origin);
     const current = this.checkpoints.get(origin);
     if (!sameCheckpoint(current, expected)) return false;
-    if (candidate.origin !== origin) throw new C2spTlogVerificationError('trusted checkpoint origin mismatch');
-    this.checkpoints.set(origin, cloneCheckpoint(candidate)!);
+    const replacement = cloneCheckpoint(candidate)!;
+    signal?.throwIfAborted();
+    this.checkpoints.set(origin, replacement);
     return true;
   }
 }
@@ -64,8 +103,10 @@ export class InMemoryTrustedC2spCheckpointStore implements TrustedC2spCheckpoint
  * consistency proof or a complete scan matching both checkpoint prefixes.
  *
  * @returns A defensive copy of the newly trusted checkpoint.
- * @throws C2spTlogVerificationError on origin mismatch, rollback, root
- *   divergence, or missing/invalid consistency evidence.
+ * @throws ArgumentError for invalid checkpoint fields or origin mismatch.
+ * @throws C2spCheckpointConsistencyError for rollback, forks, or inconsistent growth.
+ * @throws C2spCheckpointStoreError for storage failure or malformed stored state.
+ * @throws C2spTlogVerificationError for missing/invalid candidate evidence.
  */
 export async function advanceTrustedC2spCheckpoint(
   store: TrustedC2spCheckpointStore,
@@ -74,18 +115,21 @@ export async function advanceTrustedC2spCheckpoint(
   witnessTime: Date,
   options: VerificationOptions & { consistencyProofSource?: C2spConsistencyProofSource; completeEntries?: IndexedEntry[] } = {},
 ): Promise<TrustedC2spCheckpoint> {
-  const candidate: TrustedC2spCheckpoint = {
-    origin: checkpoint.origin,
-    treeSize: checkpoint.treeSize,
-    rootHash: checkpoint.rootHash.slice(),
-    witnessTime: new Date(witnessTime),
-  };
-  if (candidate.origin !== reference.origin) throw new C2spTlogVerificationError('trusted checkpoint origin mismatch');
+  const input = { origin: checkpoint.origin, treeSize: checkpoint.treeSize, rootHash: checkpoint.rootHash, witnessTime };
+  validateCheckpoint(input, reference.origin);
+  const candidate = cloneCheckpoint(input)!;
+  const completeEntries = options.completeEntries?.map(entry => ({ ...entry, bytes: new Uint8Array(entry.bytes) }));
   return withVerificationBudget(async signal => {
     for (;;) {
-      const previous = await waitForVerification(() => store.load(reference.origin, signal), signal);
-      await waitForVerification(() => verifyCheckpointAdvance(previous, candidate, reference, { ...options, signal }), signal);
-      if (await waitForVerification(() => store.compareAndSwap(reference.origin, previous, candidate, signal), signal)) return cloneCheckpoint(candidate)!;
+      const previous = await storeOperation(async () => {
+        const loaded = await store.load(reference.origin, signal);
+        if (loaded !== undefined) validateCheckpoint(loaded, reference.origin);
+        return cloneCheckpoint(loaded);
+      }, signal);
+      await waitForVerification(() => verifyCheckpointAdvance(previous, candidate, reference, { ...options, completeEntries, signal }), signal);
+      const swapped = await storeOperation(() => store.compareAndSwap(reference.origin, cloneCheckpoint(previous), cloneCheckpoint(candidate)!, signal), signal);
+      if (typeof swapped !== 'boolean') throw new C2spCheckpointStoreError('checkpoint store returned an invalid CAS result');
+      if (swapped) return cloneCheckpoint(candidate)!;
       // Immediately resolved CAS conflicts must not starve the deadline timer.
       await waitForVerification(() => new Promise<void>(resolve => setTimeout(resolve, 0)), signal);
     }
@@ -104,8 +148,11 @@ export function verifyC2spConsistencyProof(
   toRoot: Uint8Array,
   proof: Uint8Array[],
 ): boolean {
-  if (!Number.isSafeInteger(fromSize) || !Number.isSafeInteger(toSize) || fromSize <= 0 || toSize <= 0) return false;
-  if (fromRoot.length !== 32 || toRoot.length !== 32 || proof.some(node => node.length !== 32)) return false;
+  if (!Number.isSafeInteger(fromSize) || !Number.isSafeInteger(toSize) || fromSize < 0 || toSize < 0) return false;
+  if (fromRoot.length !== 32 || toRoot.length !== 32 || !Array.isArray(proof)
+    || proof.some(node => !(node instanceof Uint8Array) || node.length !== 32)) return false;
+  if (fromSize === 0) return proof.length === 0 && equalBytes(fromRoot, merkleRootFromEntries([]))
+    && (toSize !== 0 || equalBytes(fromRoot, toRoot));
   if (fromSize === toSize) return proof.length === 0 && equalBytes(fromRoot, toRoot);
   if (toSize < fromSize) return false;
   let oldIndex = fromSize - 1;
@@ -154,21 +201,29 @@ async function verifyCheckpointAdvance(
   const completeEntries = options.completeEntries?.slice().sort((a, b) => a.index - b.index);
   if (completeEntries) verifyCompleteEntriesPrefix(completeEntries, candidate, 'candidate');
   if (!previous) return;
-  if (previous.origin !== candidate.origin) throw new C2spTlogVerificationError('trusted checkpoint origin mismatch');
-  if (candidate.treeSize < previous.treeSize) throw new C2spTlogVerificationError('C2SP checkpoint rollback detected');
+  if (candidate.treeSize < previous.treeSize) throw new C2spCheckpointConsistencyError('C2SP checkpoint rollback detected', 'LOG_ROLLBACK', previous, candidate);
   if (candidate.treeSize === previous.treeSize) {
-    if (!equalBytes(candidate.rootHash, previous.rootHash)) throw new C2spTlogVerificationError('equal-size C2SP checkpoint has a different root');
+    if (!equalBytes(candidate.rootHash, previous.rootHash)) throw new C2spCheckpointConsistencyError('equal-size C2SP checkpoint has a different root', 'LOG_FORK', previous, candidate);
     return;
   }
   if (options.consistencyProofSource) {
-    const proof = await options.consistencyProofSource.fetchConsistencyProof(reference, previous.treeSize, candidate.treeSize, options.signal);
+    let proof: Uint8Array[];
+    try {
+      proof = await options.consistencyProofSource.fetchConsistencyProof(reference, previous.treeSize, candidate.treeSize, options.signal);
+    } catch (cause) {
+      throw c2spLogError('C2SP consistency proof is unavailable', cause, true);
+    }
     if (!verifyC2spConsistencyProof(previous.treeSize, candidate.treeSize, previous.rootHash, candidate.rootHash, proof)) {
-      throw new C2spTlogVerificationError('invalid C2SP checkpoint consistency proof');
+      throw new C2spCheckpointConsistencyError('invalid C2SP checkpoint consistency proof', 'LOG_INCONSISTENT', previous, candidate);
     }
     return;
   }
   if (completeEntries) {
-    verifyCompleteEntriesPrefix(completeEntries, previous, 'previously trusted');
+    try {
+      verifyCompleteEntriesPrefix(completeEntries, previous, 'previously trusted');
+    } catch (cause) {
+      throw new C2spCheckpointConsistencyError('complete scan contradicts the previously trusted checkpoint', 'LOG_INCONSISTENT', previous, candidate, cause);
+    }
     return;
   }
   throw new MissingC2spConsistencyEvidenceError('newer C2SP checkpoint requires consistency proof or verified complete-scan prefix');
@@ -193,7 +248,30 @@ function sameCheckpoint(left: TrustedC2spCheckpoint | undefined, right: TrustedC
 }
 
 function cloneCheckpoint(value: TrustedC2spCheckpoint | undefined): TrustedC2spCheckpoint | undefined {
-  return value && { ...value, rootHash: value.rootHash.slice(), witnessTime: new Date(value.witnessTime) };
+  return value && { ...value, rootHash: new Uint8Array(value.rootHash), witnessTime: new Date(value.witnessTime) };
+}
+
+function validateOrigin(origin: string): void {
+  if (typeof origin !== 'string' || !origin.trim()) throw new ArgumentError('trusted checkpoint origin must be nonempty');
+}
+
+function validateCheckpoint(value: TrustedC2spCheckpoint, origin: string): void {
+  validateOrigin(origin);
+  if (!value || value.origin !== origin) throw new ArgumentError('trusted checkpoint origin mismatch');
+  if (!Number.isSafeInteger(value.treeSize) || value.treeSize < 0) throw new ArgumentError('trusted checkpoint tree size must be a non-negative safe integer');
+  if (!(value.rootHash instanceof Uint8Array) || value.rootHash.length !== 32) throw new ArgumentError('trusted checkpoint root must be 32 bytes');
+  if (!(value.witnessTime instanceof Date) || !Number.isSafeInteger(value.witnessTime.getTime())) throw new ArgumentError('trusted checkpoint witnessed time must be a valid Date');
+}
+
+async function storeOperation<T>(operation: () => Promise<T>, signal: AbortSignal): Promise<T> {
+  return waitForVerification(async () => {
+    try {
+      return await operation();
+    } catch (cause) {
+      if (signal.aborted && cause === signal.reason) throw c2spLogError('checkpoint operation canceled', cause, true);
+      throw cause instanceof C2spCheckpointStoreError ? cause : new C2spCheckpointStoreError('trusted checkpoint storage failed', cause);
+    }
+  }, signal);
 }
 
 function equalBytes(left: Uint8Array, right: Uint8Array): boolean {

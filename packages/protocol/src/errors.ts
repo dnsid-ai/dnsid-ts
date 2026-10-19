@@ -37,7 +37,11 @@ export type LifecycleErrorCategory =
   | 'UNSUPPORTED_EVENT'
   | 'CHAIN_CONTINUITY'
   | 'INVALID_EVIDENCE'
-  | 'INCOMPLETE_STREAM';
+  | 'INCOMPLETE_STREAM'
+  | 'LOG_ROLLBACK'
+  | 'LOG_FORK'
+  | 'LOG_INCONSISTENT'
+  | 'CHECKPOINT_STORE_ERROR';
 
 /** Thrown when raw input (e.g. a TXT record or duration string) cannot be parsed into its structured form. */
 export class ParseError extends Error {
