@@ -31,5 +31,9 @@ export const SDK_CONFORMANCE: SDKConformance = Object.freeze({
   logBindings: Object.freeze({
     'c2sp-tlog': c2spTlogConformance,
   }),
-  knownDeviations: Object.freeze([]),
+  knownDeviations: Object.freeze([
+    'Managed cross-provider rotation requires providers that can supersede the previous active key after transfer; built-in LocalKeyProvider and AwsKmsKeyProvider reject active-key supersession.',
+    'AWS KMS and CLI/in-memory key providers do not durably persist rotation key state; restart recovery requires application-managed provider state or a file-backed local key store.',
+    'Account onboarding validates bindings and reports proof readiness, but does not implement named managed creation or establish permanent registration replay claims.',
+  ]),
 });

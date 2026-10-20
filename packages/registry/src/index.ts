@@ -213,6 +213,8 @@ export interface OrganizationOnboardingResponse {
   governanceId?: string;
   gi?: { domain?: string; state?: string; gateAuthorized?: boolean };
   entityKeyStatus?: string;
+  /** Both proofs are verified and authorized; pending or absent proofs remain false. */
+  ready: boolean;
 }
 
 export interface AgentRegistration {
@@ -576,7 +578,7 @@ export class RegistryClient {
   }
 
   /** Reads existing authenticated onboarding without creating identities or retrying anonymously. */
-  async getOrganizationOnboarding(options: { signal?: AbortSignal } = {}): Promise<OrganizationOnboardingResponse> {
+  async getOrganizationOnboarding(options: { signal?: AbortSignal; organizationId?: string; governanceId?: string } = {}): Promise<OrganizationOnboardingResponse> {
     const response = await this.request('/api/v1/org/onboarding', { method: 'GET', signal: options.signal });
     if (!response.ok) {
       const error = await readErrorResponse(response);
@@ -588,14 +590,29 @@ export class RegistryClient {
     if (gi !== undefined && (!gi || typeof gi !== 'object' || Array.isArray(gi))
       || ek !== undefined && (!ek || typeof ek !== 'object' || Array.isArray(ek))) throw new ArgumentError('invalid organization onboarding proof');
     const proof = gi as Record<string, unknown> | undefined;
+    const organizationId = requiredString(raw, 'org_id', 'organization onboarding response');
+    if (!organizationId.trim() || organizationId.trim() !== organizationId || options.organizationId !== undefined && options.organizationId !== organizationId) {
+      throw new ArgumentError('organization onboarding account binding mismatch');
+    }
+    const governance = optionalString(raw, 'governance_domain');
+    const governanceId = governance === undefined ? undefined : normalizeFQDN(governance, true);
+    const proofDomain = proof && optionalString(proof, 'domain');
+    const domain = proofDomain === undefined ? undefined : normalizeFQDN(proofDomain, true);
+    if (options.governanceId !== undefined && governanceId !== normalizeFQDN(options.governanceId, true)
+      || domain !== undefined && domain !== governanceId) {
+      throw new ArgumentError('organization onboarding governance binding mismatch');
+    }
+    const entityKeyStatus = ek && optionalString(ek as Record<string, unknown>, 'status');
     return {
-      organizationId: requiredString(raw, 'org_id', 'organization onboarding response'),
-      governanceId: optionalString(raw, 'governance_domain'),
+      organizationId,
+      governanceId,
+      ready: governanceId !== undefined && domain === governanceId
+        && proof?.state === 'verified' && proof.gate_authorized === true && entityKeyStatus === 'verified',
       gi: proof && {
-        domain: optionalString(proof, 'domain'), state: optionalString(proof, 'state'),
+        domain, state: optionalString(proof, 'state'),
         gateAuthorized: proof.gate_authorized === true,
       },
-      entityKeyStatus: ek && optionalString(ek as Record<string, unknown>, 'status'),
+      entityKeyStatus,
     };
   }
 

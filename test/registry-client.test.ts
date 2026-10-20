@@ -104,12 +104,45 @@ function keyProvider(jwk: DnsIdJWK = TEST_JWK, sig = new Uint8Array([1, 2, 3])):
 }
 
 describe('RegistryClient', () => {
+  it.each([
+    [{}, false],
+    [{ gi: { domain: 'example.com', state: 'pending', gate_authorized: true }, ek: { status: 'verified' } }, false],
+    [{ gi: { domain: 'example.com', state: 'verified', gate_authorized: false }, ek: { status: 'verified' } }, false],
+    [{ gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'pending' } }, false],
+    [{ gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'verified' } }, true],
+  ])('reports proof readiness without granting trust to pending proofs', async (proofs, ready) => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: 'example.com', ...proofs }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding({ organizationId: 'org-1', governanceId: 'EXAMPLE.COM.' }))
+      .resolves.toMatchObject({ organizationId: 'org-1', governanceId: 'example.com', ready });
+  });
+
+  it.each([
+    { org_id: 'other', governance_domain: 'example.com' },
+    { org_id: 'org-1', governance_domain: 'other.example' },
+    { org_id: 'org-1', governance_domain: 'example.com', gi: { domain: 'other.example', state: 'verified', gate_authorized: true } },
+    { org_id: 'org-1', governance_domain: 'not a domain' },
+    { org_id: '  ', governance_domain: 'example.com' },
+  ])('rejects invalid or mismatched account bindings', async response => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(response));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding({ organizationId: 'org-1', governanceId: 'example.com' })).rejects.toThrow();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([401, 403, 503])('preserves onboarding HTTP %s without granting readiness', async status => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ code: 'ONBOARDING_UNAVAILABLE' }, { status }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding()).rejects.toMatchObject({ httpStatus: status });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('reads authenticated onboarding, preserving readiness and structured errors without anonymous fallback', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: 'example.com',
       gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'pending' } }));
     const registry = new RegistryClient({ baseUrl: 'https://registry.example', token: 'owner-secret', fetch });
     await expect(registry.getOrganizationOnboarding()).resolves.toEqual({ organizationId: 'org-1', governanceId: 'example.com',
-      gi: { domain: 'example.com', state: 'verified', gateAuthorized: true }, entityKeyStatus: 'pending' });
+      gi: { domain: 'example.com', state: 'verified', gateAuthorized: true }, entityKeyStatus: 'pending', ready: false });
     expect(fetch.mock.calls[0][0]).toBe('https://registry.example/api/v1/org/onboarding');
     expect(new Headers(fetch.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer owner-secret');
     fetch.mockResolvedValueOnce(Response.json({ error: 'FORBIDDEN' }, { status: 403 }));

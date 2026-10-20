@@ -73,6 +73,40 @@ If `ManagedKeyRotationActivationError` is raised, registry acceptance succeeded
 but local key-state reconciliation is incomplete. Resume with the error's exact
 rotation state; already-completed activation or supersession is not repeated.
 
+Rotation requires `persistRotation`, `setApplicationSigningPaused`,
+`setApplicationSigner`, and `verifyPublicationEvidence`. The verifier must return
+fresh protocol-verified signed TXT/ku evidence; evict old publication evidence
+before verification. Acceptance is checked against the saved bytes/hash, new
+key, and indexed log reference before publication and continuity checks.
+
+Supply stable `previousProviderReference` and `newProviderReference` values;
+`targetKeyProvider` optionally selects another provider. Recovery uses
+`resolveKeyProvider(reference)` to restore the saved providers, not current
+deployment settings. It restores the saved new signer before unpausing.
+Old rotation records without the new bindings must not be resumed automatically.
+Recovery rejects unrelated active source keys. A removed previous key is accepted
+only with saved acceptance and the exact saved target key already active; for
+cross-provider recovery, the source must have no active key. Provider lookup
+errors, including a listed but unavailable previous key, fail recovery.
+Resolvers must reopen the saved provider state, not create replacement state.
+
+Set `targetAlgorithm` (`EdDSA` or `ES256`) when changing algorithms; omission
+preserves the previous algorithm. The target's `validateKeyGeneration(algorithm)`
+checks settings/support before generation, and rotation checks the generated key
+before registry preparation. Providers without this hook must already have an
+active key using the selected algorithm. Local generation accepts either
+algorithm; AWS generation must match the configured KMS algorithm.
+
+Custom providers that can retire their active key may implement
+`activeSigningKey()` to return `null` when none exists. Without this hook,
+recovery treats an empty `listKeyIds()` as no active key and otherwise calls
+`signingKey()`; lookup errors are never treated as completed supersession.
+
+Cross-provider transfer requires a previous provider that supports superseding
+its active key after transfer. Built-in local and AWS providers currently reject
+this operation. AWS and CLI/in-memory provider state also needs application-owned
+durable recovery. These limits are declared in `SDK_CONFORMANCE.knownDeviations`.
+
 ## Node.js convenience usage
 
 ```ts
@@ -456,7 +490,7 @@ Defined in: [packages/protocol/src/types.ts:14](https://github.com/dnsid-ai/dnsi
 type CreateIdentityManagerDependencies = IdentityManagerDependencies & Required<Pick<IdentityManagerDependencies, "dnsResolver" | "fetchJson">>;
 ```
 
-Defined in: [packages/sdk/src/index.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L102)
+Defined in: [packages/sdk/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L103)
 
 Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 
@@ -843,7 +877,7 @@ Replace with the spec's canonicalization/test vectors once they land.
 function createIdentityManager(config, deps): IdentityManager;
 ```
 
-Defined in: [packages/sdk/src/index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L126)
+Defined in: [packages/sdk/src/index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L127)
 
 Creates a DNSid IdentityManager from explicitly injected runtime dependencies.
 
@@ -890,7 +924,7 @@ const verified = await idm.verifyDomain('agent.example');
 function createIdentityVerifier(config, deps): IdentityManager;
 ```
 
-Defined in: [packages/sdk/src/index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L136)
+Defined in: [packages/sdk/src/index.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L137)
 
 Creates a verification-only IdentityManager: same constructor, `config.identity` omitted.
 
@@ -1407,7 +1441,7 @@ Resumes only the durable operation, reusing its preparation key or exact complet
 function resumeManagedOperationalKeyRotation(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L162)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:211](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L211)
 
 Retries only the persisted completed bytes and activates on acceptance.
 
@@ -1467,7 +1501,7 @@ retried unless callers explicitly override shouldRetry.
 function rotateManagedOperationalKey(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L100)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L122)
 
 Runs C2SP registry-managed rotation. The registry owns managed ku publication
 and append reconciliation; local activation happens only after an accepted
@@ -1902,6 +1936,7 @@ Documented on [Core SDK: interfaces](https://docs.dnsid.ai/reference/ts/dnsid-in
 - [ManagedIssuanceCoordination](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedissuancecoordination)
 - [ManagedIssuanceRegistry](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedissuanceregistry)
 - [ManagedIssuanceState](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedissuancestate)
+- [ManagedKeyRotationCoordination](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedkeyrotationcoordination)
 - [ManagedKeyRotationRegistry](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedkeyrotationregistry)
 - [ManagedKeyRotationResult](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#managedkeyrotationresult)
 - [MigrationEvent](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#migrationevent)

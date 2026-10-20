@@ -68,6 +68,40 @@ If `ManagedKeyRotationActivationError` is raised, registry acceptance succeeded
 but local key-state reconciliation is incomplete. Resume with the error's exact
 rotation state; already-completed activation or supersession is not repeated.
 
+Rotation requires `persistRotation`, `setApplicationSigningPaused`,
+`setApplicationSigner`, and `verifyPublicationEvidence`. The verifier must return
+fresh protocol-verified signed TXT/ku evidence; evict old publication evidence
+before verification. Acceptance is checked against the saved bytes/hash, new
+key, and indexed log reference before publication and continuity checks.
+
+Supply stable `previousProviderReference` and `newProviderReference` values;
+`targetKeyProvider` optionally selects another provider. Recovery uses
+`resolveKeyProvider(reference)` to restore the saved providers, not current
+deployment settings. It restores the saved new signer before unpausing.
+Old rotation records without the new bindings must not be resumed automatically.
+Recovery rejects unrelated active source keys. A removed previous key is accepted
+only with saved acceptance and the exact saved target key already active; for
+cross-provider recovery, the source must have no active key. Provider lookup
+errors, including a listed but unavailable previous key, fail recovery.
+Resolvers must reopen the saved provider state, not create replacement state.
+
+Set `targetAlgorithm` (`EdDSA` or `ES256`) when changing algorithms; omission
+preserves the previous algorithm. The target's `validateKeyGeneration(algorithm)`
+checks settings/support before generation, and rotation checks the generated key
+before registry preparation. Providers without this hook must already have an
+active key using the selected algorithm. Local generation accepts either
+algorithm; AWS generation must match the configured KMS algorithm.
+
+Custom providers that can retire their active key may implement
+`activeSigningKey()` to return `null` when none exists. Without this hook,
+recovery treats an empty `listKeyIds()` as no active key and otherwise calls
+`signingKey()`; lookup errors are never treated as completed supersession.
+
+Cross-provider transfer requires a previous provider that supports superseding
+its active key after transfer. Built-in local and AWS providers currently reject
+this operation. AWS and CLI/in-memory provider state also needs application-owned
+durable recovery. These limits are declared in `SDK_CONFORMANCE.knownDeviations`.
+
 ## Node.js convenience usage
 
 ```ts

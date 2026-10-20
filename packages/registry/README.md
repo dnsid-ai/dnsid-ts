@@ -77,9 +77,13 @@ a terminal error, never a replacement. Explicit replacement uses a fresh key, ID
 log stream, preserving history and rejecting all previously used keys.
 
 `getOrganizationOnboarding()` reads the existing authenticated `/api/v1/org/onboarding` endpoint
-and exposes organization ID, GI proof/gate readiness, and entity-key delegation status. Managed
-setup validates readiness and all configured/saved bindings. Discovery does not return an entity
-JWKS URL and does not establish counterparty trust. Failed reads are never retried anonymously.
+and validates account/GI domains and proof-domain consistency. Pass configured or saved
+`organizationId` and `governanceId` expectations to compare bindings.
+`ready` is true only when GI is verified and gate-authorized and entity-key
+delegation is verified. Missing and pending proofs remain available with
+`ready: false`; they must not authorize setup. Discovery does not return an entity
+JWKS URL or establish counterparty trust. Authorization errors and HTTP 503
+remain errors; failed reads are never retried anonymously.
 
 These are required server contracts, not claims of deployed support. Verify them with real
 server persistence/integration tests before enabling named recovery; the existing expiring store

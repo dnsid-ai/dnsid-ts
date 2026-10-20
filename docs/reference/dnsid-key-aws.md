@@ -143,7 +143,7 @@ active/pending/retained lifecycle state and exposes public keys as JWKs.
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:306](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L306)
+Defined in: [index.ts:314](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L314)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -167,13 +167,19 @@ The previously active key transitions to retained.
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [index.ts:290](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L290)
+Defined in: [index.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L297)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -239,7 +245,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:342](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L342)
+Defined in: [index.ts:350](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L350)
 
 ###### Parameters
 
@@ -359,7 +365,7 @@ Defined in: [index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L320)
+Defined in: [index.ts:328](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L328)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -376,6 +382,32 @@ Supersedes and removes a retained key from this provider's published key set.
 ###### Implementation of
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`supersede`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#supersede)
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()
+
+```ts
+validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [index.ts:290](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L290)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`validateKeyGeneration`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#validatekeygeneration)
 
 <a id="load"></a>
 

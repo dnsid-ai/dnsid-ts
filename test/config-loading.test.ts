@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ArgumentError, DNSSECMode, DNSSECState, IdentityManager, JWKS, LogRegistry } from '@dnsid-ai/sdk';
 import { AwsKmsKeyProvider } from '@dnsid-ai/key-aws';
+import * as c2sp from '@dnsid-ai/log-c2sp-tlog';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
 import {
   constructIdentityManager,
@@ -236,6 +237,29 @@ describe('mergeLoadedConfig()', () => {
 });
 
 describe('constructIdentityManager() and convenience constructors', () => {
+  it.each([
+    { dnsid: { transport: { caBundlePath: '/unused' } } },
+    { dnsid: { transport: { privateAddressHosts: ['internal.example'] } } },
+    { dnsid: { transport: { dnsServer: '10.0.0.1' } } },
+    { keySource: { provider: 'google-kms' as const, keyRef: 'key' } },
+    { keySource: { provider: 'aws-kms' as const, keyRef: 'key', settings: { invalid: true } } },
+    { keySource: { provider: 'file' as const, settings: { invalid: true } } },
+    { keySource: {} },
+    { keySource: { keyRef: 'existing', entityKeyPath: '' } },
+    { keySource: { generation: { locator: 'key', algorithm: 'EdDSA' } } },
+  ])('rejects construction configuration before policy fetch or discovery: %j', async invalid => {
+    const network = vi.spyOn(c2sp, 'createC2spTlogVerificationRegistry')
+      .mockRejectedValue(new Error('policy fetch must not run'));
+    const discover = vi.spyOn(AwsKmsKeyProvider, 'load');
+    const loaded = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), invalid);
+    await expect(constructIdentityManager({
+      ...loaded, logTrust: { policyUrl: 'https://policy.invalid/p' },
+    }, deps)).rejects.toThrow(ArgumentError);
+    expect(network).not.toHaveBeenCalled();
+    expect(discover).not.toHaveBeenCalled();
+  });
+
+
   it('binds configuration-selected cloud keys to verified publication and rejects alias changes', async () => {
     const first = await LocalKeyProvider.generate();
     const second = await LocalKeyProvider.generate();

@@ -2479,7 +2479,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationActivationError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L85)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L107)
 
 Registry acceptance succeeded, but local key-state reconciliation did not.
 
@@ -2501,7 +2501,7 @@ new ManagedKeyRotationActivationError(
 ): ManagedKeyRotationActivationError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L88)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L110)
 
 ###### Parameters
 
@@ -2625,7 +2625,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L86)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L108)
 
 <a id="stack-3"></a>
 
@@ -2825,7 +2825,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationSubmissionError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L72)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L94)
 
 Submission failed after the completed entry bytes were fixed.
 
@@ -2848,7 +2848,7 @@ new ManagedKeyRotationSubmissionError(
 ): ManagedKeyRotationSubmissionError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L76)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L98)
 
 ###### Parameters
 
@@ -2976,7 +2976,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly retryWithSameBytes: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L74)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L96)
 
 <a id="rotation-1"></a>
 
@@ -2986,7 +2986,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:74](https://github.com/dns
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L73)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L95)
 
 <a id="stack-4"></a>
 

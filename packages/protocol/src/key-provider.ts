@@ -20,6 +20,9 @@ export interface KeyProvider {
    */
   signingKey(): Promise<DnsIdJWK>;
 
+  /** Optional explicit active-key lookup for providers that can have no active key. Errors must propagate. */
+  activeSigningKey?(): Promise<DnsIdJWK | null>;
+
   /**
    * Returns the JWK representation of a key by ID (active, pending, or retained).
    * Raises if not found.
@@ -47,7 +50,10 @@ export interface KeyProvider {
    * Generates a new key pair in the pending state.
    * Returns the new key's kid.
    */
-  generateKey(): Promise<string>;
+  generateKey(algorithm?: string): Promise<string>;
+
+  /** Validates generation settings and algorithm support without creating a key. */
+  validateKeyGeneration?(algorithm: string): Promise<void>;
 
   /**
    * Blocks new signing and drains in-flight signatures before promoting a pending key.
