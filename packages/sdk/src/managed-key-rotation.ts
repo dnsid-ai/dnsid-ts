@@ -229,6 +229,7 @@ export async function resumeManagedOperationalKeyRotation(
       return activateRotation(options, previous, target, rotation);
     }
     if (rotation.activated) throw permanentRotationError('activated rotation has no accepted submission');
+    await options.persistRotation(rotation);
     return submitManagedRotation(options, previous, target, rotation);
   } catch (cause) {
     if (cause instanceof ManagedKeyRotationSubmissionError || cause instanceof ManagedKeyRotationActivationError) throw cause;

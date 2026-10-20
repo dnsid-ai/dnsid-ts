@@ -427,10 +427,24 @@ describe('managed registry operational-key rotation', () => {
       expect(failure).toBeInstanceOf(ManagedKeyRotationSubmissionError);
       expect(failure!.rotation).toMatchObject({ entryHash: await sha256Hex(failure!.rotation.entryBytes), applicationSigningPaused: true });
       expect(registry.submissions).toHaveLength(0);
-      await expect(resumeManagedOperationalKeyRotation({
+      const submit = vi.spyOn(registry, 'submitPreparedEvent');
+      const resume = {
         rotation: failure!.rotation, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
-      })).resolves.toMatchObject({ activated: true });
+      };
+      coordination.persistRotation.mockRejectedValueOnce(new Error('recovery storage unavailable'));
+      await expect(resumeManagedOperationalKeyRotation(resume)).rejects.toMatchObject({
+        name: 'ManagedKeyRotationActivationError', rotation: failure!.rotation,
+        cause: { message: 'recovery storage unavailable' },
+      });
+      expect(registry.submissions).toHaveLength(0);
+      expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
+      coordination.persistRotation.mockClear();
+      await expect(resumeManagedOperationalKeyRotation(resume)).resolves.toMatchObject({ activated: true });
+      expect(coordination.persistRotation.mock.calls[0]![0]).toEqual(failure!.rotation);
+      expect(coordination.persistRotation.mock.invocationCallOrder[0])
+        .toBeLessThan(submit.mock.invocationCallOrder[0]!);
       expect(registry.submissions[0]!.bytes).toEqual(failure!.rotation.entryBytes);
+      expect(registry.submissions[0]!.idempotencyKey).toBe(failure!.rotation.idempotencyKey);
     },
   );
 
