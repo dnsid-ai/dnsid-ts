@@ -1,4 +1,15 @@
 
+## [0.30.0] - 2026-10-20
+
+### Bug Fixes
+
+- fix(sdk)!: validate managed recovery and onboarding bindings ([#85](https://github.com/dnsid-ai/dnsid-ts/pull/85))
+
+### Chores
+
+- ci: track main for SDK compliance workflow ([#103](https://github.com/dnsid-ai/dnsid-ts/pull/103))
+
+
 ## [0.29.0] - 2026-10-19
 
 ### Bug Fixes
