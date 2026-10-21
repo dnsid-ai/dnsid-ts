@@ -37,7 +37,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-kms": "^3.1138.0",
+    "@aws-sdk/client-kms": "^3.1151.0",
     "@dnsid-ai/protocol": "^0.31.0"
   },
   "publishConfig": {
