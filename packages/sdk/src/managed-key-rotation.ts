@@ -213,7 +213,7 @@ export async function resumeManagedOperationalKeyRotation(
 ): Promise<ManagedKeyRotationResult> {
   assertCoordination(options);
   if (typeof options.resolveKeyProvider !== 'function') throw new ArgumentError('managed rotation recovery requires resolveKeyProvider');
-  const rotation = options.rotation;
+  let rotation = options.rotation;
   try {
     assertOperationReferences(rotation.previousProviderReference, rotation.newProviderReference, rotation.idempotencyKey);
     const previous = await options.resolveKeyProvider(rotation.previousProviderReference);
@@ -223,13 +223,14 @@ export async function resumeManagedOperationalKeyRotation(
     if (rotation.submission?.state === 'rejected') {
       throw new ManagedKeyRotationSubmissionError('cannot resume a rejected managed key rotation', rotation, false);
     }
+    rotation = { ...rotation, applicationSigningPaused: true };
     await options.setApplicationSigningPaused(true);
+    if (rotation.activated && rotation.submission?.state !== 'accepted') throw permanentRotationError('activated rotation has no accepted submission');
+    await options.persistRotation(rotation);
     if (rotation.submission?.state === 'accepted') {
       await assertSubmissionMatchesRotation(rotation, rotation.submission);
       return activateRotation(options, previous, target, rotation);
     }
-    if (rotation.activated) throw permanentRotationError('activated rotation has no accepted submission');
-    await options.persistRotation(rotation);
     return submitManagedRotation(options, previous, target, rotation);
   } catch (cause) {
     if (cause instanceof ManagedKeyRotationSubmissionError || cause instanceof ManagedKeyRotationActivationError) throw cause;

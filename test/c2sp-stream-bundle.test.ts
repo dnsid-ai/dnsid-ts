@@ -631,6 +631,35 @@ describe('C2SP stream bundles', () => {
     });
   });
 
+  it('reads an event without a separately injected proof using an authenticated complete scan', async () => {
+    const value = fixture();
+    await expect(rawReader(value, [issuanceBytes(), BUNDLE_EXTRA_ENTRY]).readEvent(`${LR}@0`))
+      .resolves.toMatchObject({ type: 'ISSUANCE', domain: 'agent.example' });
+  });
+
+  it.each([false, true])('authenticates a later scan-only occurrence (invalid countersignature=%s)', async invalid => {
+    const copy = JSON.parse(ISSUANCE_ENTRY);
+    if (invalid) copy.sigs.op.sig = 'AA';
+    const entries = [issuanceBytes(), canonicalBytes(copy)];
+    const reader = rawReader(fixture(), entries);
+    if (invalid) await expect(reader.readEvent(`${LR}@1`)).rejects.toThrow('operational countersignature');
+    else await expect(reader.readEvent(`${LR}@1`)).resolves.toMatchObject({ type: 'ISSUANCE' });
+  });
+
+  it.each(['incomplete', 'wrong-root'] as const)('rejects %s scans when readEvent has no injected proof', async failure => {
+    const value = fixture();
+    const entries = [issuanceBytes(), BUNDLE_EXTRA_ENTRY];
+    const checkpoint = parseCheckpoint(new TextDecoder().decode(value.checkpoint(entries)));
+    const reader = rawReader(value, entries, {
+      streamSource: { load: async () => ({
+        checkpoint,
+        entries: [{ index: 0, bytes: issuanceBytes() }, { index: 1, bytes: new TextEncoder().encode('changed entry') }],
+        complete: failure !== 'incomplete',
+      }) },
+    });
+    await expect(reader.readEvent(`${LR}@0`)).rejects.toThrow(failure === 'incomplete' ? 'complete lifecycle evidence' : 'root');
+  });
+
   it.each([false, true])('authenticates the exact later readEvent occurrence (invalid countersignature=%s)', async invalid => {
     const first = new TextEncoder().encode(ISSUANCE_ENTRY);
     const copy = JSON.parse(ISSUANCE_ENTRY);

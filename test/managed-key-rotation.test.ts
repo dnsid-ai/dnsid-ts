@@ -448,6 +448,36 @@ describe('managed registry operational-key rotation', () => {
     },
   );
 
+  it('persists recovered acceptance before activating the key', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    const persist = coordination.persistRotation.getMockImplementation()!;
+    coordination.persistRotation.mockImplementation(async rotation => {
+      if (rotation.submission?.state === 'accepted') throw new Error('storage unavailable');
+      await persist(rotation);
+    });
+    let failure: ManagedKeyRotationSubmissionError | undefined;
+    try {
+      await rotateManagedOperationalKey({
+        domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+        idempotencyKey: 'rotation-1', ...coordination,
+      });
+    } catch (error) { failure = error as ManagedKeyRotationSubmissionError; }
+    expect(failure).toBeInstanceOf(ManagedKeyRotationSubmissionError);
+    expect(failure!.rotation.submission?.state).toBe('accepted');
+    const resume = {
+      rotation: failure!.rotation, resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+    };
+    await expect(resumeManagedOperationalKeyRotation(resume)).rejects.toThrow('recovery failed');
+    expect((await provider.signingKey()).kid).toBe('op-1');
+    expect(provider.activateCalls).toBe(0);
+    expect(registry.submissions).toHaveLength(1);
+    coordination.persistRotation.mockImplementation(persist);
+    await expect(resumeManagedOperationalKeyRotation(resume)).resolves.toMatchObject({ activated: true });
+    expect(registry.submissions).toHaveLength(1);
+  });
+
   it('returns a typed terminal rejection without resubmission', async () => {
     const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
     const registry = new RotationRegistry('op-1');

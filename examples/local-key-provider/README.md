@@ -1,5 +1,8 @@
 # Local Key Provider Example
 
+This demonstrates local provider state only, not an authorized DNSid rotation.
+For a published identity, use the [testnet key-rotation example](../key-rotation/).
+
 A simple example to demonstrate some usage of the KeyProvider interface, specifically LocalKeyProvider.
 
 The example loads a local key store (`./keys.json`) if it exists, otherwise creates it and generates a key. 

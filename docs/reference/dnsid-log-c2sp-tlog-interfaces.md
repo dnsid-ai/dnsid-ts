@@ -1232,7 +1232,7 @@ optional proofs?: Record<string, string | TlogProofV1>;
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L53)
 
-Inclusion proofs by entry index, required by `readEvent` for historical refs.
+Optional inclusion proofs by entry index; otherwise readEvent verifies a complete authenticated scan.
 
 <a id="requesttimeoutms"></a>
 

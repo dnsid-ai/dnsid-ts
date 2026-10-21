@@ -49,7 +49,7 @@ export interface C2spTlogReaderOptions {
   streamSource?: StreamSource;
   /** Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence. */
   streamBundle?: C2spStreamBundleReaderOptions;
-  /** Inclusion proofs by entry index, required by `readEvent` for historical refs. */
+  /** Optional inclusion proofs by entry index; otherwise readEvent verifies a complete authenticated scan. */
   proofs?: Record<string, TlogProofV1 | string>;
   /** @deprecated Ignored: all scopes require logical predecessor chains. */
   unchained?: boolean;
@@ -219,21 +219,23 @@ export class C2spTlogReader implements LogReader {
     }
     if (parsed.entryIndex === undefined) throw new VerificationError('C2SP event ref missing @index', { code: VerificationCode.LogError });
     const proof = this.proofs[String(parsed.entryIndex)];
-    if (!proof) throw new VerificationError('C2SP readEvent requires a proof/source for historical inclusion', { code: VerificationCode.LogError });
     const evidence = await this.loadEvidence(parsed.logPrefix, signal);
     const entry = evidence.entries.find((e) => e.index === parsed.entryIndex);
     if (!entry) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
-    const verifiedProof = verifyC2spTlogProof(entry.bytes, proof, this.options.policy, parsed.origin, parsed.scope, Date.now(), this.allowedClockSkew());
-    if (verifiedProof.index !== parsed.entryIndex) throw new VerificationError('C2SP proof index mismatch', { code: VerificationCode.LogError });
     const event = await parseC2spEventEntry(entry.bytes, this.context(parsed));
-    const proofPolicyResult = enforceCheckpointPolicy(verifiedProof.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
-    if (!proofPolicyResult.checkpointWitnessTime) throw new VerificationError('C2SP proof timestamp requires an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
-    if (event.timestamp.getTime() > proofPolicyResult.checkpointWitnessTime.getTime() + this.allowedClockSkew()) {
-      throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
+    if (proof) {
+      const verifiedProof = verifyC2spTlogProof(entry.bytes, proof, this.options.policy, parsed.origin, parsed.scope, Date.now(), this.allowedClockSkew());
+      if (verifiedProof.index !== parsed.entryIndex) throw new VerificationError('C2SP proof index mismatch', { code: VerificationCode.LogError });
+      const proofPolicyResult = enforceCheckpointPolicy(verifiedProof.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
+      if (!proofPolicyResult.checkpointWitnessTime) throw new VerificationError('C2SP proof timestamp requires an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
+      if (event.timestamp.getTime() > proofPolicyResult.checkpointWitnessTime.getTime() + this.allowedClockSkew()) {
+        throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
+      }
     }
     const entityKey = this.options.entityKey ?? this.trustedEntityKey;
     if (!entityKey) throw new VerificationError('C2SP readEvent requires a trusted entity key', { code: VerificationCode.LogError });
-    if (this.options.streamBundle) {
+    // Without a separate proof, inclusion must come from the complete scan below.
+    if (this.options.streamBundle && proof) {
       const bundled = await this.loadBundleHistory(event.domain, entityKey, signal);
       if (bundled) {
         return this.verifyOccurrence(entry, event, bundled.indexedEvents, entityKey, bundled.checkpointWitnessTime, signal);
