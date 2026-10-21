@@ -1,4 +1,16 @@
 
+## [0.31.0] - 2026-10-21
+
+### Bug Fixes
+
+- fix!: require patched Node.js releases for emSign compromise ([#108](https://github.com/dnsid-ai/dnsid-ts/pull/108))
+
+### Chores
+
+- chore(deps-dev): bump @types/node from 26.6.2 to 26.6.5 ([#87](https://github.com/dnsid-ai/dnsid-ts/pull/87))
+- chore(deps): bump taiki-e/install-action from 2.87.13 to 2.87.28 ([#106](https://github.com/dnsid-ai/dnsid-ts/pull/106))
+
+
 ## [0.30.0] - 2026-10-20
 
 ### Bug Fixes
