@@ -2,7 +2,8 @@
 
 Cryptographically verifiable identity for agents, anchored in DNS. DNSid binds an agent's identity to a domain the operator controls — a DNS TXT record plus JWKS documents — so any peer can verify who an agent is with nothing but DNS and HTTPS.
 
-Node-specific packages, subpaths, tooling, and the CLI require Node.js >= 22.0.0.
+Node-specific packages, subpaths, tooling, and the CLI require Node.js 22.23.4+ (22.x),
+24.22.1+ (24.x), or 26.12.1+.
 Packages ship dual ESM/CJS builds; the default `@dnsid-ai/sdk`
 entrypoint is also safe to bundle for browsers.
 
@@ -10,14 +11,21 @@ entrypoint is also safe to bundle for browsers.
 
 | Area | Supported/tested baseline | Notes |
 | --- | --- | --- |
-| Node.js | Node.js 22.x in CI; Node-bound package metadata requires `>=22.0.0`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
+| Node.js | Node.js 22.23.4 in CI; Node-bound package metadata requires `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
 | Browser and non-Node runtimes | Root `@dnsid-ai/sdk` entrypoint and runtime-neutral packages can be bundled when callers inject DNS, JSON fetch, cache, log, and key-provider implementations. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
 | TypeScript | `typescript` 6.0.3 from `package-lock.json`; `tsconfig.json` targets ES2022 with `module: ESNext`, `moduleResolution: bundler`, `strict: true`, and `lib: ["ES2022", "dom"]`. | Published packages include declaration files from `tsup --dts`. |
 | Module formats | ESM and CommonJS package exports. | Packages use `type: "module"` and expose both `import` (`dist/*.js`) and `require` (`dist/*.cjs`) entries. |
-| Runtime dependencies | Locked by npm lockfile v3 and installed in CI with `npm ci`. Current key versions: `@noble/hashes` 2.2.0, `jose` 6.2.4, `structured-headers` 2.0.3, `undici` 8.9.0, `uuid` 14.0.1. | Published packages declare semver ranges; applications should use their own lockfile and upgrade through normal dependency review. |
+| Runtime dependencies | Locked by npm lockfile v3 and installed in CI with `npm ci`. Current key versions: `@noble/hashes` 2.2.0, `jose` 6.2.4, `structured-headers` 2.0.3, `undici` 8.12.3, `uuid` 14.0.1. | Published packages declare semver ranges; applications should use their own lockfile and upgrade through normal dependency review. |
 | Package manager | npm with the committed `package-lock.json`. | CI uses `npm ci`; other package managers are not part of the tested baseline. |
 | OS/architecture | Ubuntu Linux x64 in GitHub Actions. | macOS, Windows, Linux arm64, and other platforms are not intentionally blocked, but they are not release-gating test targets in this repository. |
 | Examples | Example apps are development/demo workspaces, typechecked with Node-oriented tooling. | They are not published SDK packages and may carry extra demo dependencies or local-service assumptions. |
+
+The Node.js security minimums include the [compromised emSign intermediate-key
+blocklist](https://github.com/nodejs/node/pull/66871). Upgrade the deployed Node.js
+runtime and restart applications; an SDK or `undici` update alone does not apply
+this protection. Package engine requirements are advisory unless the package
+manager enforces them. Runtime-neutral packages remain browser-compatible and
+have no package-wide Node.js engine requirement.
 
 ## Install
 
