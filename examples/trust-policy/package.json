@@ -12,7 +12,7 @@
     "@dnsid-ai/log-c2sp-tlog": "^0.30.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
     "typescript": "^6.0.0"
   }
