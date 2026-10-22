@@ -1,5 +1,6 @@
 {
   "name": "@dnsid-ai/key-gcp",
+  "author": "Known Systems AI, Inc.",
   "version": "0.31.0",
   "private": true,
   "description": "Private placeholder for future DNSid Google Cloud KMS key provider integration.",

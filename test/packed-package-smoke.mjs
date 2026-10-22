@@ -35,9 +35,11 @@ await mkdir(consumerDir);
 
 run('npm', ['run', 'build']);
 
+const canonicalNotice = await readFile(path.join(root, 'NOTICE.txt'), 'utf8');
 const tarballs = [];
 for (const name of packages) {
   const manifest = JSON.parse(await readFile(path.join(root, 'packages', name, 'package.json'), 'utf8'));
+  if (manifest.author !== 'Known Systems AI, Inc.') throw new Error(`${manifest.name} must name Known Systems AI, Inc. as author`);
   if (manifest.license !== 'Apache-2.0') throw new Error(`${manifest.name} must declare the Apache-2.0 license`);
 
   const result = spawnSync('npm', ['pack', path.join(root, 'packages', name), '--json', '--pack-destination', tarballDir], {
@@ -51,12 +53,24 @@ for (const name of packages) {
   }
   const parsed = JSON.parse(result.stdout);
   const [packed] = Array.isArray(parsed) ? parsed : Object.values(parsed); // npm <=11: array; npm 12: {name: {...}}
-  if (!packed.files.some((file) => file.path === 'LICENSE')) throw new Error(`${packed.name} tarball is missing LICENSE`);
+  for (const file of ['LICENSE', 'NOTICE.txt']) {
+    if (!packed.files.some((entry) => entry.path === file)) throw new Error(`${packed.name} tarball is missing ${file}`);
+  }
   tarballs.push(path.join(tarballDir, packed.filename));
 }
 
 await writeFile(path.join(consumerDir, 'package.json'), JSON.stringify({ type: 'module', private: true }, null, 2));
 run('npm', ['install', '--ignore-scripts', '--no-audit', '--package-lock=false', ...tarballs], { cwd: consumerDir });
+
+for (const name of packages) {
+  const installed = path.join(consumerDir, 'node_modules', '@dnsid-ai', name);
+  const manifest = JSON.parse(await readFile(path.join(installed, 'package.json'), 'utf8'));
+  if (manifest.author !== 'Known Systems AI, Inc.') throw new Error(`${name} packed author is incorrect`);
+  const license = await readFile(path.join(installed, 'LICENSE'), 'utf8');
+  if (!license.startsWith('Copyright 2026 Known Systems AI, Inc.\n')) throw new Error(`${name} packed copyright is incorrect`);
+  const notice = await readFile(path.join(installed, 'NOTICE.txt'), 'utf8');
+  if (notice !== canonicalNotice) throw new Error(`${name} packed NOTICE differs from the root notice`);
+}
 
 await writeFile(path.join(consumerDir, 'esm.mjs'), `
 import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
