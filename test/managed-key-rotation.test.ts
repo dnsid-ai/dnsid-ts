@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
 import {
   JWKS,
+  type IdentityManager,
   type VerifiedDomain,
   jwkThumbprint,
   toArrayBuffer,
@@ -35,19 +36,21 @@ const LR = `c2sp-tlog:public:https://log.example/dnsid#${STREAM_ID}`;
 
 function coordinator() {
   let saved: ManagedKeyRotationResult;
+  const verifyPublicationEvidence = vi.fn(async (_domain?: string, _options?: { refresh?: boolean }) => ({
+    domain: DOMAIN, record: { lr: LR },
+    jwks: new JWKS([JSON.parse(new TextDecoder().decode(saved.entryBytes)).new_ku]),
+    logReader: { readEvent: async () => parseC2spEventEntry(saved.entryBytes, {
+      scope: 'public', logOrigin: 'log.example/dnsid', streamId: STREAM_ID, lr: LR,
+    }) },
+  } as unknown as VerifiedDomain));
   return {
     previousProviderReference: 'provider',
     newProviderReference: 'provider',
     persistRotation: vi.fn(async (rotation: ManagedKeyRotationResult) => { saved = rotation; }),
     setApplicationSigningPaused: vi.fn(async (_paused: boolean) => undefined),
     setApplicationSigner: vi.fn(async (_provider: KeyProvider, _kid: string) => undefined),
-    verifyPublicationEvidence: vi.fn(async () => ({
-      domain: DOMAIN, record: { lr: LR },
-      jwks: new JWKS([JSON.parse(new TextDecoder().decode(saved.entryBytes)).new_ku]),
-      logReader: { readEvent: async () => parseC2spEventEntry(saved.entryBytes, {
-        scope: 'public', logOrigin: 'log.example/dnsid', streamId: STREAM_ID, lr: LR,
-      }) },
-    } as unknown as VerifiedDomain)),
+    identityManager: { verifyPublicationEvidence } as unknown as IdentityManager,
+    verifyPublicationEvidence,
   };
 }
 
@@ -398,7 +401,7 @@ describe('managed registry operational-key rotation', () => {
     expect(coordination.setApplicationSigningPaused).not.toHaveBeenCalledWith(false);
   });
 
-  it.each(['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner', 'verifyPublicationEvidence'] as const)(
+  it.each(['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner', 'identityManager'] as const)(
     'requires %s before key generation', async dependency => {
       const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
       const generate = vi.spyOn(provider, 'generateKey');
@@ -535,6 +538,39 @@ describe('managed registry operational-key rotation', () => {
       signingKid: 'op-1',
       newOperationalKid: 'op-2',
     });
+  });
+
+  it('verifies fresh local publication evidence before activation', async () => {
+    const coordination = coordinator();
+    await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: new RotationKeyProvider(await key('op-1'), await key('op-2')),
+      registryClient: new RotationRegistry('op-1'), idempotencyKey: 'rotation-1', ...coordination,
+    });
+    expect(coordination.verifyPublicationEvidence).toHaveBeenCalledWith(DOMAIN, { refresh: true });
+  });
+
+  it.each([true, false])('resumes an activated rotation without network work (paused=%s)', async paused => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    const coordination = coordinator();
+    const completed = await rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', ...coordination,
+    });
+    coordination.persistRotation.mockClear();
+    coordination.setApplicationSigningPaused.mockClear();
+    coordination.setApplicationSigner.mockClear();
+    coordination.verifyPublicationEvidence.mockClear();
+    const result = await resumeManagedOperationalKeyRotation({
+      rotation: { ...completed, applicationSigningPaused: paused },
+      resolveKeyProvider: async () => provider, registryClient: registry, ...coordination,
+    });
+    expect(result).toMatchObject({ activated: true, applicationSigningPaused: false });
+    expect(coordination.verifyPublicationEvidence).not.toHaveBeenCalled();
+    expect(coordination.setApplicationSigner).toHaveBeenCalledWith(provider, 'op-2');
+    expect(coordination.setApplicationSigningPaused.mock.calls).toEqual(paused ? [[false]] : []);
+    expect(coordination.persistRotation).toHaveBeenCalledTimes(paused ? 1 : 0);
+    expect(registry.submissions).toHaveLength(1);
   });
 
   it('does not activate while pending and resumes the same bytes', async () => {

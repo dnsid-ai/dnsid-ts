@@ -6,6 +6,7 @@ import {
   VerificationError,
   jwkThumbprint,
   type DnsIdJWK,
+  type IdentityManager,
   type KeyProvider,
   type VerifiedDomain,
 } from '@dnsid-ai/protocol';
@@ -42,8 +43,16 @@ export interface ManagedKeyRotationCoordination {
   setApplicationSigningPaused: (paused: boolean) => Promise<void>;
   /** Restores the application signer before signing is resumed. */
   setApplicationSigner: (provider: KeyProvider, kid: string) => Promise<void>;
-  /** Must return fresh, protocol-verified signed TXT/ku evidence, not cached pre-rotation evidence. */
-  verifyPublicationEvidence: (domain: string) => Promise<VerifiedDomain>;
+  /**
+   * The local identity's manager. Before activation the SDK verifies fresh evidence for the
+   * manager's own publication, without counterparty acceptance.
+   */
+  identityManager: IdentityManager;
+}
+
+/** Non-exported view of the `@internal` `IdentityManager.verifyPublicationEvidence`. */
+interface LocalPublicationVerifier {
+  verifyPublicationEvidence(domain: string, options?: { refresh?: boolean }): Promise<VerifiedDomain>;
 }
 
 export interface RotateManagedOperationalKeyOptions extends ManagedKeyRotationCoordination {
@@ -207,7 +216,14 @@ export async function rotateManagedOperationalKey(
   return submitManagedRotation(options, options.keyProvider, target, rotation);
 }
 
-/** Retries only the persisted completed bytes and activates on acceptance. */
+/**
+ * Continues a persisted rotation from its saved state:
+ * - not accepted: pause signing and resubmit the exact saved bytes with the same idempotency key;
+ * - accepted, not activated: pause signing, verify the new publication, activate, and resume signing;
+ * - activated, signing paused: restore the signer and resume signing without network calls;
+ * - activated, signing resumed: restore the signer only. This state is terminal: archive it, and
+ *   start the next rotation with a new state.
+ */
 export async function resumeManagedOperationalKeyRotation(
   options: ResumeManagedOperationalKeyRotationOptions,
 ): Promise<ManagedKeyRotationResult> {
@@ -220,12 +236,16 @@ export async function resumeManagedOperationalKeyRotation(
     const target = rotation.newProviderReference === rotation.previousProviderReference
       ? previous : await options.resolveKeyProvider(rotation.newProviderReference);
     await validateSavedRotation(rotation, previous, target);
+    if (rotation.activated) {
+      if (rotation.submission?.state !== 'accepted') throw permanentRotationError('activated rotation has no accepted submission');
+      await assertSubmissionMatchesRotation(rotation, rotation.submission);
+      return restoreActivatedRotation(options, previous, target, rotation);
+    }
     if (rotation.submission?.state === 'rejected') {
       throw new ManagedKeyRotationSubmissionError('cannot resume a rejected managed key rotation', rotation, false);
     }
     rotation = { ...rotation, applicationSigningPaused: true };
     await options.setApplicationSigningPaused(true);
-    if (rotation.activated && rotation.submission?.state !== 'accepted') throw permanentRotationError('activated rotation has no accepted submission');
     await options.persistRotation(rotation);
     if (rotation.submission?.state === 'accepted') {
       await assertSubmissionMatchesRotation(rotation, rotation.submission);
@@ -287,7 +307,7 @@ async function activateRotation(
   let recoverable = rotation;
   try {
     await verifyAcceptedPublication(options, rotation);
-    if (!rotation.activated) await reconcileAcceptedRotation(previous, target, rotation);
+    await reconcileAcceptedRotation(previous, target, rotation);
     if (previous !== target && await activeKey(previous, await previous.listKeyIds())) {
       throw permanentRotationError('superseded source provider still has an active signing key');
     }
@@ -309,6 +329,33 @@ async function activateRotation(
   }
 }
 
+/** Publication was verified before activation was saved; only local signer state remains. */
+async function restoreActivatedRotation(
+  options: ManagedKeyRotationCoordination,
+  previous: KeyProvider,
+  target: KeyProvider,
+  rotation: ManagedKeyRotationResult,
+): Promise<ManagedKeyRotationResult> {
+  try {
+    if (previous !== target && await activeKey(previous, await previous.listKeyIds())) {
+      throw permanentRotationError('superseded source provider still has an active signing key');
+    }
+    await assertKeyBinding(await target.signingKey(), rotation.newKid, rotation.newThumbprint);
+    await options.setApplicationSigner(target, rotation.newKid);
+    if (!rotation.applicationSigningPaused) return rotation;
+    await options.setApplicationSigningPaused(false);
+    const completed = { ...rotation, applicationSigningPaused: false };
+    await options.persistRotation(completed);
+    return completed;
+  } catch (cause) {
+    throw new ManagedKeyRotationActivationError(
+      'managed key rotation is activated, but restoring the application signer failed; resume with this rotation state',
+      rotation,
+      cause,
+    );
+  }
+}
+
 async function reconcileAcceptedRotation(previous: KeyProvider, target: KeyProvider, rotation: ManagedKeyRotationResult): Promise<void> {
   const active = await target.signingKey();
   if (active.kid !== rotation.newKid) {
@@ -320,8 +367,11 @@ async function reconcileAcceptedRotation(previous: KeyProvider, target: KeyProvi
 }
 
 function assertCoordination(options: ManagedKeyRotationCoordination): void {
-  for (const name of ['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner', 'verifyPublicationEvidence'] as const) {
+  for (const name of ['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner'] as const) {
     if (typeof options[name] !== 'function') throw new ArgumentError(`managed rotation requires ${name}`);
+  }
+  if (typeof (options.identityManager as unknown as Partial<LocalPublicationVerifier> | undefined)?.verifyPublicationEvidence !== 'function') {
+    throw new ArgumentError('managed rotation requires identityManager');
   }
 }
 
@@ -383,7 +433,8 @@ async function validateSavedRotation(rotation: ManagedKeyRotationResult, previou
 }
 
 async function verifyAcceptedPublication(options: ManagedKeyRotationCoordination, rotation: ManagedKeyRotationResult): Promise<void> {
-  const verified = await options.verifyPublicationEvidence(rotation.domain);
+  const verified = await (options.identityManager as unknown as LocalPublicationVerifier)
+    .verifyPublicationEvidence(rotation.domain, { refresh: true });
   if (verified.domain !== rotation.domain || verified.record.lr !== rotation.logReference) {
     throw permanentRotationError('current signed publication does not match managed rotation');
   }

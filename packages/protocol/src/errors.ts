@@ -10,6 +10,8 @@ export enum VerificationCode {
   RecordInvalid = 'RecordInvalid',
   /** The identity record signature (or a bilateral binding signature) does not verify against the entity key. */
   SignatureInvalid = 'SignatureInvalid',
+  /** An application signature's key ID is absent from the signer's verified operational JWKS. Permanent. */
+  KeyNotFound = 'KeyNotFound',
   /** An HTTPS fetch of the JWKS or status endpoint failed at the transport/TLS layer. */
   TLSError = 'TLSError',
   /** The operational key is older than the identity record's `ka` maximum key age. */

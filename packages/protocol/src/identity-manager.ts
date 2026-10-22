@@ -606,10 +606,11 @@ export class IdentityManager implements RefreshingIdentityResolver {
   /**
    * Protocol-only verification used to confirm registry-managed publication of the local
    * identity. Skips counterparty acceptance, so it is restricted to `config.identity.domain`:
-   * it cannot verify a counterparty and is never an acceptance decision.
+   * it cannot verify a counterparty and is never an acceptance decision. `refresh` bypasses
+   * cached identity evidence, as `refreshDomain` does.
    * @internal
    */
-  async verifyPublicationEvidence(domain: string, options: VerificationOptions = {}): Promise<VerifiedDomain> {
+  async verifyPublicationEvidence(domain: string, options: VerificationOptions & { refresh?: boolean } = {}): Promise<VerifiedDomain> {
     const local = this.requireIdentity().domain;
     let requested: string;
     try {
@@ -620,7 +621,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
     if (requested !== local) {
       throw new ArgumentError(`publication evidence is only available for the local identity ${local}, not ${requested}`);
     }
-    return withVerificationBudget(signal => this.verifyDomainWithinBudget(requested, undefined, signal, false), options);
+    return withVerificationBudget(signal => this.verifyDomainWithinBudget(requested, undefined, signal, false, options.refresh === true), options);
   }
 
   private async verifyDomainWithinBudget(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, enforceAcceptance: boolean, refresh = false): Promise<VerifiedDomain> {

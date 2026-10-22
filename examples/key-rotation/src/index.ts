@@ -38,7 +38,7 @@ async function main() {
   const domain = manager.config.identity!.domain;
   const logReference = manager.config.identity!.logRef;
   const registryClient = await createRegistryClientFromEnvironment();
-  let paused = true; // Restart always begins closed, even if the last record says completed.
+  let paused = true; // Signing starts closed and opens only after rotation completes.
   const profile = createJoseProfile({ domain, keyProvider, identityResolver: manager });
   async function sign() {
     assert(!paused, 'application signing is paused');
@@ -62,7 +62,7 @@ async function main() {
       assert.equal(provider, keyProvider);
       assert.equal((await provider.signingKey()).kid, kid);
     },
-    verifyPublicationEvidence: (name: string) => manager.refreshDomain(name),
+    identityManager: manager,
   };
 
   if (!rotation) {
@@ -87,7 +87,8 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     rotation = await resume();
   }
-  assert(rotation.activated && !paused, 'rotation unresolved; rerun the same command to resume');
+  assert(rotation.activated && !rotation.applicationSigningPaused, 'rotation unresolved; rerun the same command to resume');
+  paused = false; // The completed state is terminal; resume does not touch signing.
   const observed = await manager.refreshDomain(domain);
   assert.equal(observed.jwks.keys.length, 1);
   assert.equal(observed.jwks.currentOperationalSigningKey().kid, rotation.newKid);
@@ -95,7 +96,7 @@ async function main() {
   const signed = await sign();
   await profile.verifyJWS(signed);
   const oldMessage = JSON.parse(await fs.readFile(path.join(directory, 'old-message.json'), 'utf8'));
-  await assert.rejects(() => profile.verifyJWS(oldMessage), { code: VerificationCode.SignatureInvalid });
+  await assert.rejects(() => profile.verifyJWS(oldMessage), { code: VerificationCode.KeyNotFound });
   console.log(`rotation verified: ${rotation.previousKid} -> ${rotation.newKid}`);
   console.log('new key signs and verifies; old key is absent from the live JWKS and provider');
 

@@ -1232,7 +1232,7 @@ optional proofs?: Record<string, string | TlogProofV1>;
 
 Defined in: [packages/log-c2sp-tlog/src/reader.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L53)
 
-Optional inclusion proofs by entry index; otherwise readEvent verifies a complete authenticated scan.
+Optional inclusion proofs by entry index; otherwise readEvent authenticates the entry with the domain's stream bundle or a complete scan.
 
 <a id="requesttimeoutms"></a>
 
@@ -2185,7 +2185,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:57](https://github.com/dnsid-a
 
 ### ScanStreamSourceOptions
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L45)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L52)
 
 Configuration for [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#scanstreamsource); the byte/size limits bound untrusted responses.
 
@@ -2199,7 +2199,7 @@ Configuration for [ScanStreamSource](https://docs.dnsid.ai/reference/ts/dnsid-lo
 authenticateCheckpoint: (checkpoint) => void | Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L48)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L55)
 
 Called with the parsed checkpoint before any entries are fetched; throw to reject it.
 
@@ -2221,7 +2221,7 @@ Called with the parsed checkpoint before any entries are fetched; throw to rejec
 optional maxCheckpointBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L57)
 
 <a id="maxentrybundlebytes-2"></a>
 
@@ -2231,7 +2231,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:50](https://github.com/
 optional maxEntryBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L51)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L58)
 
 <a id="maxtotalentrybytes-2"></a>
 
@@ -2241,7 +2241,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:51](https://github.com/
 optional maxTotalEntryBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L59)
 
 <a id="maxtreesize-2"></a>
 
@@ -2251,7 +2251,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:52](https://github.com/
 optional maxTreeSize?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L49)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L56)
 
 <a id="requesttimeoutms-2"></a>
 
@@ -2261,7 +2261,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:49](https://github.com/
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L61)
 
 Finite deadline for each resource read (default 10 seconds).
 
@@ -2273,7 +2273,7 @@ Finite deadline for each resource read (default 10 seconds).
 optional revalidate?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L46)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L53)
 
 <a id="signal-4"></a>
 
@@ -2283,7 +2283,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:46](https://github.com/
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L63)
 
 Cancels current and subsequent resource reads.
 
@@ -2509,6 +2509,47 @@ Supplies checkpoint-plus-entries evidence for a log prefix.
 
 #### Methods
 
+<a id="discoverentry-1"></a>
+
+##### discoverEntry()?
+
+```ts
+optional discoverEntry(
+   prefix, 
+   index, 
+   options?
+): Promise<IndexedEntry>;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L48)
+
+Optionally reads one raw entry without a complete scan. The entry is not authenticated;
+readers use it only to select the evidence that authenticates it.
+
+###### Parameters
+
+###### prefix
+
+`string`
+
+###### index
+
+`number`
+
+###### options?
+
+###### revalidate?
+
+`boolean`
+
+###### signal?
+
+`AbortSignal`
+
+###### Returns
+
+`Promise`\<[`IndexedEntry`](#indexedentry)\>
+
 <a id="load-2"></a>
 
 ##### load()
@@ -2517,7 +2558,7 @@ Supplies checkpoint-plus-entries evidence for a log prefix.
 load(prefix, options?): Promise<StreamEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L42)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L43)
 
 ###### Parameters
 

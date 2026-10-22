@@ -2,7 +2,7 @@ import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, 
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 import { parseC2spEventEntry, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
 import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';
-import { createDefaultC2spBoundedResourceFetcher, DEFAULT_C2SP_REQUEST_TIMEOUT_MS, ScanStreamSource, validateC2spResourceFetcher, type C2spBoundedResourceFetcher, type StreamEvidence, type StreamSource } from './stream-source.ts';
+import { createDefaultC2spBoundedResourceFetcher, DEFAULT_C2SP_REQUEST_TIMEOUT_MS, ScanStreamSource, validateC2spResourceFetcher, type C2spBoundedResourceFetcher, type IndexedEntry, type StreamEvidence, type StreamSource } from './stream-source.ts';
 import { leafHash, merkleRootFromEntries } from './merkle.ts';
 import { stitchVerifiedMigrationHistory, stitchVerifiedMigrationReferences, verifyStreamLifecycle, verifyLifecycle, type VerifiedLifecycleEvent, type MigrationVerificationResult, type StreamVerifierOptions } from './stream-verifier.ts';
 import { C2spTlogError, C2spTlogVerificationError, c2spLogError } from './errors.ts';
@@ -49,7 +49,7 @@ export interface C2spTlogReaderOptions {
   streamSource?: StreamSource;
   /** Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence. */
   streamBundle?: C2spStreamBundleReaderOptions;
-  /** Optional inclusion proofs by entry index; otherwise readEvent verifies a complete authenticated scan. */
+  /** Optional inclusion proofs by entry index; otherwise readEvent authenticates the entry with the domain's stream bundle or a complete scan. */
   proofs?: Record<string, TlogProofV1 | string>;
   /** @deprecated Ignored: all scopes require logical predecessor chains. */
   unchained?: boolean;
@@ -77,6 +77,8 @@ interface VerifiedHistory {
   completeThrough: string;
   completenessMode: string;
   indexedEvents: VerifiedLifecycleEvent[];
+  /** Entries whose inclusion this evidence authenticates, including non-lifecycle copies. */
+  authenticatedEntries: IndexedEntry[];
   /** Verified reference aligned with each stitched event; absent when a migration callback omitted prior boundaries. */
   historyReferences?: LogRef[];
   validUntilMs?: number;
@@ -218,12 +220,23 @@ export class C2spTlogReader implements LogReader {
       throw new VerificationError('C2SP event ref does not belong to this reader', { code: VerificationCode.LogError });
     }
     if (parsed.entryIndex === undefined) throw new VerificationError('C2SP event ref missing @index', { code: VerificationCode.LogError });
+    const entityKey = this.options.entityKey ?? this.trustedEntityKey;
+    if (!entityKey) throw new VerificationError('C2SP readEvent requires a trusted entity key', { code: VerificationCode.LogError });
     const proof = this.proofs[String(parsed.entryIndex)];
-    const evidence = await this.loadEvidence(parsed.logPrefix, signal);
-    const entry = evidence.entries.find((e) => e.index === parsed.entryIndex);
-    if (!entry) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
-    const event = await parseC2spEventEntry(entry.bytes, this.context(parsed));
-    if (proof) {
+    // The raw entry only names its domain; that domain's bundle or complete scan authenticates it.
+    const discovered = await this.discoverEntry(parsed.logPrefix, parsed.entryIndex, signal);
+    const event = await parseC2spEventEntry(discovered.bytes, this.context(parsed));
+    const history = await this.loadCompleteHistoryWithinBudget(event.domain, entityKey, signal);
+    let entry = discovered;
+    if (!proof) {
+      const authenticated = history.authenticatedEntries.find(e => e.index === parsed.entryIndex);
+      if (!authenticated) throw new VerificationError('C2SP entry is not in its authenticated lifecycle evidence', { code: VerificationCode.LogError });
+      if (!Buffer.from(authenticated.bytes).equals(Buffer.from(discovered.bytes))) {
+        throw new VerificationError('C2SP entry does not match its authenticated lifecycle evidence', { code: VerificationCode.LogError });
+      }
+      entry = authenticated;
+    } else {
+      // The injected proof authenticates the discovered entry.
       const verifiedProof = verifyC2spTlogProof(entry.bytes, proof, this.options.policy, parsed.origin, parsed.scope, Date.now(), this.allowedClockSkew());
       if (verifiedProof.index !== parsed.entryIndex) throw new VerificationError('C2SP proof index mismatch', { code: VerificationCode.LogError });
       const proofPolicyResult = enforceCheckpointPolicy(verifiedProof.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
@@ -232,26 +245,22 @@ export class C2spTlogReader implements LogReader {
         throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
       }
     }
-    const entityKey = this.options.entityKey ?? this.trustedEntityKey;
-    if (!entityKey) throw new VerificationError('C2SP readEvent requires a trusted entity key', { code: VerificationCode.LogError });
-    // Without a separate proof, inclusion must come from the complete scan below.
-    if (this.options.streamBundle && proof) {
-      const bundled = await this.loadBundleHistory(event.domain, entityKey, signal);
-      if (bundled) {
-        return this.verifyOccurrence(entry, event, bundled.indexedEvents, entityKey, bundled.checkpointWitnessTime, signal);
+    return this.verifyOccurrence(entry, event, history.indexedEvents, entityKey, history.checkpointWitnessTime, signal);
+  }
+
+  private async discoverEntry(logPrefix: string, index: number, signal: AbortSignal): Promise<IndexedEntry> {
+    let entry: IndexedEntry | undefined;
+    if (this.source.discoverEntry) {
+      try {
+        entry = await waitForVerification(() => this.source.discoverEntry!(logPrefix, index, { signal, revalidate: this.options.revalidate }), signal);
+      } catch (cause) {
+        throw c2spLogError('C2SP stream evidence is unavailable', cause, true);
       }
+    } else {
+      entry = (await this.loadEvidence(logPrefix, signal)).entries.find(e => e.index === index);
     }
-    if (!evidence.complete) throw new VerificationError('C2SP readEvent requires complete lifecycle evidence for event authorization', { code: VerificationCode.LogError, errorCategory: 'INCOMPLETE_STREAM' });
-    const policyResult = enforceCheckpointPolicy(evidence.checkpoint, parsed.origin, this.options.policy, parsed.scope, Date.now(), this.allowedClockSkew());
-    if (!policyResult.checkpointWitnessTime) throw new VerificationError('C2SP event timestamp requires an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
-    assertCompleteScan(evidence);
-    await advanceTrustedC2spCheckpoint(this.checkpointStore, parsed, evidence.checkpoint, policyResult.checkpointWitnessTime, {
-      signal,
-      consistencyProofSource: this.options.consistencyProofSource,
-      completeEntries: evidence.entries,
-    });
-    const verified = await verifyStreamLifecycle(evidence.entries, event.domain, { ...this.verifierOptions(parsed, entityKey, policyResult.checkpointWitnessTime), signal });
-    return this.verifyOccurrence(entry, event, verified, entityKey, policyResult.checkpointWitnessTime, signal);
+    if (!entry || entry.index !== index) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
+    return entry;
   }
 
   private async verifyOccurrence(entry: { index: number; bytes: Uint8Array }, event: LogEvent, history: VerifiedLifecycleEvent[], entityKey: DnsIdJWK, witnessTime: Date, signal: AbortSignal): Promise<LogEvent> {
@@ -331,6 +340,7 @@ export class C2spTlogReader implements LogReader {
       completeThrough: String(evidence.checkpoint.treeSize),
       completenessMode: 'full-scan',
       indexedEvents: verified,
+      authenticatedEntries: evidence.entries,
       historyReferences,
     };
   }
@@ -388,6 +398,7 @@ export class C2spTlogReader implements LogReader {
     return {
       events: verified.lifecycle,
       indexedEvents: verified.events,
+      authenticatedEntries: verified.bundle.events.map(event => ({ index: event.index, bytes: event.entryBytes })),
       checkpointWitnessTime: verified.checkpointWitnessTime,
       checkpoint: verified.bundle.checkpointBytes.slice(),
       completeThrough: String(verified.bundle.completeThroughSize),

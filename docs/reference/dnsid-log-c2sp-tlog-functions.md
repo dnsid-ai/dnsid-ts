@@ -405,7 +405,7 @@ protection must survive process restarts.
 function createDefaultC2spBoundedResourceFetcher(transport?): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L88)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L95)
 
 Creates the default public-resource fetcher. It uses connection-time SSRF
 checks, rejects redirects, requires HTTP 200, and bounds the decoded body
@@ -464,7 +464,7 @@ Managed verification prefers signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L99)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L106)
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -1360,7 +1360,7 @@ Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.
 function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarantees;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L77)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L84)
 
 Returns a copy of the capabilities required by the safe standard-resource factory.
 
@@ -1628,7 +1628,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L111)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L118)
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 

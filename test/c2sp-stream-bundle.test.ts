@@ -31,6 +31,7 @@ import {
   parseC2spTlogTrustProfile,
   parseSignedNoteVerifierKey,
   requiredC2spResourceFetchGuarantees,
+  ScanStreamSource,
   signedC2spEventBytes,
   verifyC2spStreamBundle,
 } from '@dnsid-ai/log-c2sp-tlog';
@@ -657,7 +658,7 @@ describe('C2SP stream bundles', () => {
         complete: failure !== 'incomplete',
       }) },
     });
-    await expect(reader.readEvent(`${LR}@0`)).rejects.toThrow(failure === 'incomplete' ? 'complete lifecycle evidence' : 'root');
+    await expect(reader.readEvent(`${LR}@0`)).rejects.toThrow(failure === 'incomplete' ? 'incomplete' : 'root');
   });
 
   it.each([false, true])('authenticates the exact later readEvent occurrence (invalid countersignature=%s)', async invalid => {
@@ -952,6 +953,44 @@ describe('C2SP stream bundles', () => {
       .verifyBilateralBinding({ agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku))
       .rejects.toThrow('unavailable');
     expect(fetchBounded).toHaveBeenCalledOnce();
+  });
+
+  it('reads an event through the domain bundle without a complete scan', async () => {
+    const value = fixture();
+    const load = vi.fn(async () => { throw new Error('complete scan'); });
+    const discoverEntry = vi.fn(async (_prefix: string, index: number): Promise<{ index: number; bytes: Uint8Array }> => ({ index, bytes: issuanceBytes() }));
+    const fetchBounded = vi.fn(async () => value.bytes);
+    const reader = new C2spTlogReader(LR, {
+      policy: parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes)),
+      entityKey: value.options.entityKey,
+      streamSource: { load, discoverEntry },
+      resourceFetcher: { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
+      streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys, maxBundleLifetimeMs: 60000, checkpointFreshnessMs: 60000 },
+    });
+    await expect(reader.readEvent(`${LR}@0`)).resolves.toMatchObject({ type: 'ISSUANCE', domain: 'agent.example' });
+    expect(discoverEntry).toHaveBeenCalledOnce();
+    expect(fetchBounded).toHaveBeenCalledOnce();
+    expect(load).not.toHaveBeenCalled();
+    const other = JSON.parse(ISSUANCE_ENTRY);
+    other.sigs.op.sig = 'AA';
+    discoverEntry.mockResolvedValueOnce({ index: 0, bytes: canonicalBytes(other) });
+    await expect(reader.readEvent(`${LR}@0`)).rejects.toThrow('does not match its authenticated lifecycle evidence');
+  });
+
+  it('discovers one raw entry from one entry bundle', async () => {
+    const prefix = 'https://log.example/dnsid';
+    const entries = Array.from({ length: 44 }, (_, i) => new TextEncoder().encode(`entry ${256 + i}`));
+    const fetchBounded = vi.fn(async (url: string) => {
+      if (url === checkpointPath(prefix)) return new TextEncoder().encode(`origin\n300\n${Buffer.alloc(32).toString('base64')}\n`);
+      if (url === entryBundlePath(prefix, 1, 44)) return encodeEntryBundle(entries);
+      throw new Error(`unexpected URL ${url}`);
+    });
+    const authenticateCheckpoint = vi.fn();
+    const source = new ScanStreamSource({ authenticateCheckpoint }, { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees });
+    await expect(source.discoverEntry(prefix, 260)).resolves.toEqual({ index: 260, bytes: entries[4] });
+    expect(authenticateCheckpoint).toHaveBeenCalledOnce();
+    expect(fetchBounded).toHaveBeenCalledTimes(2);
+    await expect(source.discoverEntry(prefix, 300)).rejects.toThrow('outside checkpoint size');
   });
 
   it('fails closed instead of falling back for status 600', async () => {
