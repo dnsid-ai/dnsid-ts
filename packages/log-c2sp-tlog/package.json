@@ -1,5 +1,6 @@
 {
   "name": "@dnsid-ai/log-c2sp-tlog",
+  "author": "Known Systems AI, Inc.",
   "version": "0.31.0",
   "description": "DNSid C2SP tiled transparency log binding.",
   "type": "module",
@@ -22,9 +23,11 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE.txt"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/copy-notice.mjs",
     "build": "tsup src/index.ts src/writer.ts src/version.ts --format esm,cjs --dts --clean",
     "typecheck": "tsc --noEmit"
   },

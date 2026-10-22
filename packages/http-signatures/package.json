@@ -1,5 +1,6 @@
 {
   "name": "@dnsid-ai/http-signatures",
+  "author": "Known Systems AI, Inc.",
   "version": "0.31.0",
   "description": "DNSid HTTP Message Signatures profile helpers.",
   "type": "module",
@@ -12,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE.txt"
   ],
   "repository": {
     "type": "git",
@@ -30,6 +32,7 @@
     "identity"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/copy-notice.mjs",
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "typecheck": "tsc --noEmit"
   },

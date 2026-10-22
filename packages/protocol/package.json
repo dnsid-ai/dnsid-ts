@@ -1,5 +1,6 @@
 {
   "name": "@dnsid-ai/protocol",
+  "author": "Known Systems AI, Inc.",
   "version": "0.31.0",
   "description": "DNSid protocol core contracts, TXT record parsing, JWKS validation, and identity verification engine.",
   "type": "module",
@@ -12,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE.txt"
   ],
   "repository": {
     "type": "git",
@@ -31,6 +33,7 @@
     "verification"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/copy-notice.mjs",
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "typecheck": "tsc --noEmit"
   },

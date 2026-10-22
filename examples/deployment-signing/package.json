@@ -1,5 +1,6 @@
 {
   "name": "@dnsid-ai/example-deployment-signing",
+  "author": "Known Systems AI, Inc.",
   "version": "0.0.1",
   "type": "module",
   "private": true,

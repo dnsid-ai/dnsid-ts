@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Generated from the root notice by workspace prepack hooks.
+packages/*/NOTICE.txt
 .testnet/
 .dnsid
 **/**/keys.json
