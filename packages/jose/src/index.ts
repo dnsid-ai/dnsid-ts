@@ -307,7 +307,7 @@ export class JoseProfile {
     }
     const sigKey = vd.jwks.keyById(kid);
     if (!sigKey) {
-      throw new VerificationError('JWT kid not found in issuer JWKS', { code: VerificationCode.SignatureInvalid });
+      throw new VerificationError('JWT kid not found in issuer JWKS', { code: VerificationCode.KeyNotFound });
     }
 
     const alg = header['alg'] as string | undefined;
@@ -406,7 +406,7 @@ export class JoseProfile {
     const vd = await waitForVerification(() => this.identityResolver.verifyDomain(domain, options.peerCert, { signal: options.signal }), options.signal!);
     const sigKey = vd.jwks.keyById(kid);
     if (!sigKey) {
-      throw new VerificationError('JWS kid not found in signer JWKS', { code: VerificationCode.SignatureInvalid });
+      throw new VerificationError('JWS kid not found in signer JWKS', { code: VerificationCode.KeyNotFound });
     }
 
     const alg = header['alg'] as string | undefined;

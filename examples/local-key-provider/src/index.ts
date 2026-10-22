@@ -26,9 +26,7 @@ console.log('new active key:', await keyProvider.signingKey());
 // Construct JWKS manually (IdentityManager handles this for us but out of scope for this example)
 // This is what should be hosted at `https://<fqdn>/.well-known/jwks.json`
 const jwks = {
-  keys: await Promise.all(
-    (await keyProvider.listKeyIds()).map(kid => keyProvider.jwk(kid))
-  ),
+  keys: [await keyProvider.signingKey()],
 };
 console.log('\npublic JWKS:', jwks);
 

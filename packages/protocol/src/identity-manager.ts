@@ -603,13 +603,19 @@ export class IdentityManager implements RefreshingIdentityResolver {
     return withVerificationBudget(signal => this.verifyDomainWithinBudget(domain, peerCert, signal, true, true), options);
   }
 
+  /** Verifies fresh publication of this manager's own identity, without application-peer or counterparty acceptance checks. */
+  async verifyLocalPublication(options: VerificationOptions = {}): Promise<VerifiedDomain> {
+    return this.verifyPublicationEvidence(this.requireIdentity().domain, { ...options, refresh: true });
+  }
+
   /**
    * Protocol-only verification used to confirm registry-managed publication of the local
    * identity. Skips counterparty acceptance, so it is restricted to `config.identity.domain`:
-   * it cannot verify a counterparty and is never an acceptance decision.
+   * it cannot verify a counterparty and is never an acceptance decision. `refresh` bypasses
+   * cached identity evidence, as `refreshDomain` does.
    * @internal
    */
-  async verifyPublicationEvidence(domain: string, options: VerificationOptions = {}): Promise<VerifiedDomain> {
+  async verifyPublicationEvidence(domain: string, options: VerificationOptions & { refresh?: boolean } = {}): Promise<VerifiedDomain> {
     const local = this.requireIdentity().domain;
     let requested: string;
     try {
@@ -620,7 +626,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
     if (requested !== local) {
       throw new ArgumentError(`publication evidence is only available for the local identity ${local}, not ${requested}`);
     }
-    return withVerificationBudget(signal => this.verifyDomainWithinBudget(requested, undefined, signal, false), options);
+    return withVerificationBudget(signal => this.verifyDomainWithinBudget(requested, undefined, signal, false, options.refresh === true), options);
   }
 
   private async verifyDomainWithinBudget(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, enforceAcceptance: boolean, refresh = false): Promise<VerifiedDomain> {
@@ -631,8 +637,8 @@ export class IdentityManager implements RefreshingIdentityResolver {
     }
 
     // Shared/coalesced work ends here; everything below is per-invocation policy.
-    const result = await this.verifyReusableIdentity(domain, peerCert, signal, refresh);
-    verifyMtlsPeer(result.record, domain, peerCert);
+    const result = await this.verifyReusableIdentity(domain, peerCert, signal, refresh, enforceAcceptance);
+    if (enforceAcceptance) verifyMtlsPeer(result.record, domain, peerCert);
     if (enforceAcceptance) this.enforceCounterpartyAcceptance(result);
     this.requireFreshEvidence(result);
     return result;
@@ -652,7 +658,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
     );
   }
 
-  private async verifyReusableIdentity(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, refresh = false): Promise<VerifiedDomain> {
+  private async verifyReusableIdentity(domain: string, peerCert: TLSCertificate | undefined, signal: AbortSignal, refresh: boolean, enforceAcceptance: boolean): Promise<VerifiedDomain> {
     if (refresh) {
       const existing = this.inFlightRefreshes.get(domain);
       const result = await this.joinShared(existing ?? this.startShared(this.inFlightRefreshes, domain, child => this.verifyDomainUncached(domain, child, true)), signal);
@@ -661,7 +667,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
     }
     const cached = this.cache.get(domain);
     if (cached) {
-      verifyMtlsPeer(cached.record, domain, peerCert);
+      if (enforceAcceptance) verifyMtlsPeer(cached.record, domain, peerCert);
       const statusCheckIntervalMs = (this.config.verification.statusCheckInterval ?? 0) * 1000;
       if (statusCheckIntervalMs > 0 && Date.now() - cached.lastStatusCheckAt.getTime() < statusCheckIntervalMs) {
         return cached;
