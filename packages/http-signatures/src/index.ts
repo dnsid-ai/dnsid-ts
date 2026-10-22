@@ -499,7 +499,7 @@ export class HttpSignaturesProfile {
     const vd = await waitForVerification(() => this.identityResolver.verifyDomain(domain, opts.peerCert, { signal: opts.signal }), opts.signal!);
     const sigKey = vd.jwks.keyById(kid);
     if (!sigKey) {
-      throw new VerificationError('request kid not found in signer JWKS', { code: VerificationCode.SignatureInvalid });
+      throw new VerificationError('request kid not found in signer JWKS', { code: VerificationCode.KeyNotFound });
     }
 
     const hasBody = req.body !== null;

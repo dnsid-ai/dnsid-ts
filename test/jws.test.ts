@@ -157,6 +157,16 @@ describe('JoseProfile.verifyJWS()', () => {
     expect((err as VerificationError).code).toBe(VerificationCode.SignatureInvalid);
   });
 
+  it('throws KeyNotFound when the signer JWKS has no key with the kid', async () => {
+    const { signer, verifier } = await setup();
+    const parts = (await signer.createJWS(PAYLOAD)).split('.');
+    const header = JSON.parse(new TextDecoder().decode(fromBase64Url(parts[0]!)));
+    header.kid = 'signer.example.com#retired-key';
+    const newHeaderB64 = toBase64Url(new TextEncoder().encode(JSON.stringify(header)));
+    await expect(verifier.verifyJWS(`${newHeaderB64}.${parts[1]}.${parts[2]}`))
+      .rejects.toMatchObject({ code: VerificationCode.KeyNotFound });
+  });
+
   it('throws VerificationError when alg is not in application-layer allowlist', async () => {
     const { signer, verifier } = await setup();
     const jws = await signer.createJWS(PAYLOAD);

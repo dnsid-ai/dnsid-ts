@@ -238,7 +238,7 @@ Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS 
 const C2SP_ENTRIES_PER_BUNDLE: 256 = 256;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L67)
 
 C2SP tlog-tiles fixes full entry bundles at 256 entries.
 
@@ -289,7 +289,7 @@ Pinned versions (URL or commit) of each C2SP specification this package implemen
 const DEFAULT_C2SP_MAX_CHECKPOINT_BYTES: 1048576 = 1_048_576;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L69)
 
 ***
 
@@ -301,7 +301,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:62](https://github.com/
 const DEFAULT_C2SP_MAX_ENTRY_BUNDLE_BYTES: 16777472 = 16_777_472;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L64)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L71)
 
 256 * (2-byte prefix + 65,535-byte entry).
 
@@ -339,7 +339,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:22](https://github.com/
 const DEFAULT_C2SP_MAX_TOTAL_ENTRY_BYTES: 268435456 = 268_435_456;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L72)
 
 ***
 
@@ -351,7 +351,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:65](https://github.com/
 const DEFAULT_C2SP_MAX_TREE_SIZE: 1000000 = 1_000_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L68)
 
 ***
 
@@ -363,7 +363,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:61](https://github.com/
 const DEFAULT_C2SP_REQUEST_TIMEOUT_MS: 10000 = 10_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L66)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L73)
 
 ***
 

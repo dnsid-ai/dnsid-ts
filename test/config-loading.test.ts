@@ -272,7 +272,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
       keySource: { provider: 'aws-kms', keyRef: 'alias/agent', settings: { region: 'us-east-1' } },
     });
     await expect(constructIdentityManager(loaded, deps)).resolves.toBeDefined();
-    expect(verify).toHaveBeenCalledWith('alice.example.com');
+    expect(verify).toHaveBeenCalledWith('alice.example.com', { refresh: true });
     load.mockResolvedValue(second as unknown as AwsKmsKeyProvider);
     await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/authorized key rotation/);
     verify.mockResolvedValue({ jwks: new JWKS([secondKey]) } as never);

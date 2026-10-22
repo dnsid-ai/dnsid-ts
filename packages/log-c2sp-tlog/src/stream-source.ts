@@ -39,7 +39,14 @@ export interface IndexedEntry { index: number; bytes: Uint8Array }
 export interface StreamEvidence { checkpoint: Checkpoint; entries: IndexedEntry[]; complete: boolean }
 
 /** Supplies checkpoint-plus-entries evidence for a log prefix. */
-export interface StreamSource { load(prefix: string, options?: { signal?: AbortSignal; revalidate?: boolean }): Promise<StreamEvidence> }
+export interface StreamSource {
+  load(prefix: string, options?: { signal?: AbortSignal; revalidate?: boolean }): Promise<StreamEvidence>;
+  /**
+   * Optionally reads one raw entry without a complete scan. The entry is not authenticated;
+   * readers use it only to select the evidence that authenticates it.
+   */
+  discoverEntry?(prefix: string, index: number, options?: { signal?: AbortSignal; revalidate?: boolean }): Promise<IndexedEntry>;
+}
 
 /** Configuration for {@link ScanStreamSource}; the byte/size limits bound untrusted responses. */
 export interface ScanStreamSourceOptions {
@@ -153,6 +160,25 @@ export class ScanStreamSource implements StreamSource {
   async load(prefix: string, options: { signal?: AbortSignal; revalidate?: boolean } = {}): Promise<StreamEvidence> {
     const signal = options.signal && this.options.signal ? AbortSignal.any([options.signal, this.options.signal]) : options.signal ?? this.options.signal;
     return withVerificationBudget(child => this.loadWithinBudget(prefix, child, options.revalidate ?? this.options.revalidate), { signal });
+  }
+
+  /** Reads the entry at `index` from its one entry bundle under an authenticated checkpoint; the entry itself is not authenticated. */
+  async discoverEntry(prefix: string, index: number, options: { signal?: AbortSignal; revalidate?: boolean } = {}): Promise<IndexedEntry> {
+    const signal = options.signal && this.options.signal ? AbortSignal.any([options.signal, this.options.signal]) : options.signal ?? this.options.signal;
+    const revalidate = options.revalidate ?? this.options.revalidate;
+    return withVerificationBudget(async child => {
+      const checkpoint = parseCheckpoint(new TextDecoder().decode(await this.bytes(checkpointPath(prefix), this.maxCheckpointBytes, child, revalidate)));
+      await this.options.authenticateCheckpoint(checkpoint);
+      if (!Number.isSafeInteger(index) || index < 0 || index >= checkpoint.treeSize) {
+        throw new C2spTlogVerificationError(`C2SP entry index ${index} is outside checkpoint size ${checkpoint.treeSize}`);
+      }
+      const bundleIndex = Math.floor(index / C2SP_ENTRIES_PER_BUNDLE);
+      const want = Math.min(C2SP_ENTRIES_PER_BUNDLE, checkpoint.treeSize - bundleIndex * C2SP_ENTRIES_PER_BUNDLE);
+      const path = entryBundlePath(prefix, bundleIndex, want === C2SP_ENTRIES_PER_BUNDLE ? undefined : want);
+      const bundle = parseEntryBundle(await this.bytes(path, this.maxEntryBundleBytes, child, revalidate));
+      if (bundle.length !== want) throw new C2spTlogVerificationError('entry bundle width mismatch');
+      return { index, bytes: bundle[index % C2SP_ENTRIES_PER_BUNDLE]! };
+    }, { signal });
   }
 
   private async loadWithinBudget(prefix: string, signal: AbortSignal, revalidate?: boolean): Promise<StreamEvidence> {

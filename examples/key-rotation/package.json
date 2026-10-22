@@ -1,0 +1,13 @@
+{
+  "name": "@dnsid-ai/example-key-rotation",
+  "author": "Known Systems AI, Inc.",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": { "@dnsid-ai/sdk": "^0.31.0" },
+  "devDependencies": { "tsx": "^4.23.15" }
+}
