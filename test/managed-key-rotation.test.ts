@@ -49,7 +49,7 @@ function coordinator() {
     persistRotation: vi.fn(async (rotation: ManagedKeyRotationResult) => { saved = rotation; }),
     setApplicationSigningPaused: vi.fn(async (_paused: boolean) => undefined),
     setApplicationSigner: vi.fn(async (_provider: KeyProvider, _kid: string) => undefined),
-    identityManager: { verifyPublicationEvidence } as unknown as IdentityManager,
+    identityManager: { verifyLocalPublication: verifyPublicationEvidence } as unknown as IdentityManager,
     verifyPublicationEvidence,
   };
 }
@@ -546,7 +546,7 @@ describe('managed registry operational-key rotation', () => {
       domain: DOMAIN, logReference: LR, keyProvider: new RotationKeyProvider(await key('op-1'), await key('op-2')),
       registryClient: new RotationRegistry('op-1'), idempotencyKey: 'rotation-1', ...coordination,
     });
-    expect(coordination.verifyPublicationEvidence).toHaveBeenCalledWith(DOMAIN, { refresh: true });
+    expect(coordination.verifyPublicationEvidence).toHaveBeenCalledWith();
   });
 
   it.each([true, false])('resumes an activated rotation without network work (paused=%s)', async paused => {

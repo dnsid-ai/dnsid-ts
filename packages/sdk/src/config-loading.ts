@@ -22,7 +22,6 @@ import {
   type KeyProvider,
   type LogRegistry,
   type TransportConfig,
-  type VerifiedDomain,
 } from '@dnsid-ai/protocol';
 import {
   createC2spTlogVerificationRegistry,
@@ -377,9 +376,7 @@ export async function constructIdentityManager(loaded: LoadedConfig, deps: Ident
   const manager = await createNodeIdentityManager((loaded.dnsid ?? {}) as DnsidConfig, filled);
   // Injected providers are bound by their owning workflow; configuration-selected keys are not.
   if (identity && !deps.keyProvider && filled.keyProvider) {
-    const verified = await (manager as unknown as {
-      verifyPublicationEvidence(domain: string): Promise<VerifiedDomain>;
-    }).verifyPublicationEvidence(manager.config.identity!.domain);
+    const verified = await manager.verifyLocalPublication();
     const selected = await filled.keyProvider!.signingKey();
     const published = verified.jwks.currentOperationalSigningKey();
     if (selected.kid !== published.kid || selected.alg !== published.alg

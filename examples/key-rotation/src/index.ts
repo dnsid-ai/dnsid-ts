@@ -3,11 +3,11 @@ import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  createJoseProfile, resumeManagedOperationalKeyRotation, rotateManagedOperationalKey, VerificationCode,
-  type KeyProvider, type ManagedKeyRotationResult,
+  createJoseProfile, resumeManagedOperationalKeyRotation, rotateManagedOperationalKey, validateDnsidConfig, VerificationCode,
+  type KeyProvider, type ManagedKeyRotationResult, type VerifiedDomain,
 } from '@dnsid-ai/sdk';
 import {
-  constructIdentityManager, createRegistryClientFromEnvironment, loadEnvironment, LocalKeyProvider,
+  constructIdentityManager, createNodeIdentityManager, createRegistryClientFromEnvironment, loadEnvironment, LocalKeyProvider,
 } from '@dnsid-ai/sdk/node';
 
 async function main() {
@@ -34,12 +34,22 @@ async function main() {
   assert(loaded.dnsid?.identity?.domain?.endsWith('.test')
     && loaded.dnsid.identity.logRef?.startsWith('c2sp-tlog:testnet:'), 'this example only rotates testnet identities');
   // Inject the saved provider: recovery must not select a different deployment key.
-  const manager = await constructIdentityManager(loaded, { keyProvider });
+  const restoring = rotation?.activated === true;
+  const manager = restoring
+    ? await createNodeIdentityManager(validateDnsidConfig(loaded.dnsid), { keyProvider })
+    : await constructIdentityManager(loaded, { keyProvider });
   const domain = manager.config.identity!.domain;
   const logReference = manager.config.identity!.logRef;
   const registryClient = await createRegistryClientFromEnvironment();
   let paused = true; // Signing starts closed and opens only after rotation completes.
-  const profile = createJoseProfile({ domain, keyProvider, identityResolver: manager });
+  let publication: VerifiedDomain;
+  // Self-checks use the local publication, not counterparty acceptance policy.
+  const profile = createJoseProfile({ domain, keyProvider, identityResolver: {
+    async verifyDomain(requested) {
+      assert.equal(requested, domain);
+      return publication;
+    },
+  } });
   async function sign() {
     assert(!paused, 'application signing is paused');
     return profile.createJWS(new TextEncoder().encode('rotation example'));
@@ -66,7 +76,7 @@ async function main() {
   };
 
   if (!rotation) {
-    const before = await manager.refreshDomain(domain);
+    const before = publication = await manager.verifyLocalPublication();
     assert.equal(before.record.lr, logReference, 'CLI log reference does not match publication');
     assert.equal((await keyProvider.signingKey()).kid, before.jwks.currentOperationalSigningKey().kid);
     paused = false;
@@ -89,7 +99,11 @@ async function main() {
   }
   assert(rotation.activated && !rotation.applicationSigningPaused, 'rotation unresolved; rerun the same command to resume');
   paused = false; // The completed state is terminal; resume does not touch signing.
-  const observed = await manager.refreshDomain(domain);
+  if (restoring) {
+    console.log('saved rotation restored; no network checks');
+    return;
+  }
+  const observed = publication = await manager.verifyLocalPublication();
   assert.equal(observed.jwks.keys.length, 1);
   assert.equal(observed.jwks.currentOperationalSigningKey().kid, rotation.newKid);
   assert(!(await keyProvider.listKeyIds()).includes(rotation.previousKid));

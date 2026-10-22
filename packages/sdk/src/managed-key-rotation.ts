@@ -8,7 +8,6 @@ import {
   type DnsIdJWK,
   type IdentityManager,
   type KeyProvider,
-  type VerifiedDomain,
 } from '@dnsid-ai/protocol';
 import type {
   KeyRotationPreparationRequest,
@@ -48,11 +47,6 @@ export interface ManagedKeyRotationCoordination {
    * manager's own publication, without counterparty acceptance.
    */
   identityManager: IdentityManager;
-}
-
-/** Non-exported view of the `@internal` `IdentityManager.verifyPublicationEvidence`. */
-interface LocalPublicationVerifier {
-  verifyPublicationEvidence(domain: string, options?: { refresh?: boolean }): Promise<VerifiedDomain>;
 }
 
 export interface RotateManagedOperationalKeyOptions extends ManagedKeyRotationCoordination {
@@ -370,7 +364,7 @@ function assertCoordination(options: ManagedKeyRotationCoordination): void {
   for (const name of ['persistRotation', 'setApplicationSigningPaused', 'setApplicationSigner'] as const) {
     if (typeof options[name] !== 'function') throw new ArgumentError(`managed rotation requires ${name}`);
   }
-  if (typeof (options.identityManager as unknown as Partial<LocalPublicationVerifier> | undefined)?.verifyPublicationEvidence !== 'function') {
+  if (typeof options.identityManager?.verifyLocalPublication !== 'function') {
     throw new ArgumentError('managed rotation requires identityManager');
   }
 }
@@ -433,8 +427,7 @@ async function validateSavedRotation(rotation: ManagedKeyRotationResult, previou
 }
 
 async function verifyAcceptedPublication(options: ManagedKeyRotationCoordination, rotation: ManagedKeyRotationResult): Promise<void> {
-  const verified = await (options.identityManager as unknown as LocalPublicationVerifier)
-    .verifyPublicationEvidence(rotation.domain, { refresh: true });
+  const verified = await options.identityManager.verifyLocalPublication();
   if (verified.domain !== rotation.domain || verified.record.lr !== rotation.logReference) {
     throw permanentRotationError('current signed publication does not match managed rotation');
   }

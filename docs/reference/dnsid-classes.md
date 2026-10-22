@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1083](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1083)
+Defined in: [packages/protocol/src/identity-manager.ts:1088](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1088)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1069](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1069)
+Defined in: [packages/protocol/src/identity-manager.ts:1074](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1074)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1292,6 +1292,28 @@ and is never cached; a denial leaves valid protocol evidence cached.
 ###### Implementation of
 
 [`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#refreshingidentityresolver).[`verifyDomain`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verifydomain-2)
+
+<a id="verifylocalpublication"></a>
+
+##### verifyLocalPublication()
+
+```ts
+verifyLocalPublication(options?): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:607](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L607)
+
+Verifies fresh publication of this manager's own identity, without application-peer or counterparty acceptance checks.
+
+###### Parameters
+
+###### options?
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions) = `{}`
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](#verifieddomain)\>
 
 <a id="writesignedevent"></a>
 
@@ -2479,7 +2501,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationActivationError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L116)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L110)
 
 Registry acceptance succeeded, but local key-state reconciliation did not.
 
@@ -2501,7 +2523,7 @@ new ManagedKeyRotationActivationError(
 ): ManagedKeyRotationActivationError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L119)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L113)
 
 ###### Parameters
 
@@ -2625,7 +2647,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L117)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L111)
 
 <a id="stack-3"></a>
 
@@ -2825,7 +2847,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedKeyRotationSubmissionError
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L103)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L97)
 
 Submission failed after the completed entry bytes were fixed.
 
@@ -2848,7 +2870,7 @@ new ManagedKeyRotationSubmissionError(
 ): ManagedKeyRotationSubmissionError;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L107)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L101)
 
 ###### Parameters
 
@@ -2976,7 +2998,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly retryWithSameBytes: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L105)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L99)
 
 <a id="rotation-1"></a>
 
@@ -2986,7 +3008,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:105](https://github.com/dn
 readonly rotation: ManagedKeyRotationResult;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L104)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L98)
 
 <a id="stack-4"></a>
 

@@ -1008,7 +1008,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1083](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1083)
+Defined in: [packages/protocol/src/identity-manager.ts:1088](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1088)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1076,7 +1076,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1069](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1069)
+Defined in: [packages/protocol/src/identity-manager.ts:1074](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1074)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1292,6 +1292,28 @@ and is never cached; a denial leaves valid protocol evidence cached.
 ###### Implementation of
 
 [`RefreshingIdentityResolver`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#refreshingidentityresolver).[`verifyDomain`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#verifydomain-2)
+
+<a id="verifylocalpublication"></a>
+
+##### verifyLocalPublication()
+
+```ts
+verifyLocalPublication(options?): Promise<VerifiedDomain>;
+```
+
+Defined in: [packages/protocol/src/identity-manager.ts:607](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L607)
+
+Verifies fresh publication of this manager's own identity, without application-peer or counterparty acceptance checks.
+
+###### Parameters
+
+###### options?
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#verificationoptions) = `{}`
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](#verifieddomain)\>
 
 <a id="writesignedevent"></a>
 

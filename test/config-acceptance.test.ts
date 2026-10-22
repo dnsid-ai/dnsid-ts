@@ -30,11 +30,11 @@ const identity: IdentityConfig = {
 const keyProvider = { signingKey: vi.fn() } as unknown as KeyProvider;
 const OTHER_PIN = 'A'.repeat(42) + 'A';
 
-async function setup() {
+async function setup(policyFlags?: string) {
   const pair = await generateKeyPair('ES256');
   const raw = await exportJWK(pair.publicKey);
   const operationalKey = { ...raw, kty: raw.kty!, kid: 'op', alg: 'ES256', use: 'sig' } as DnsIdJWK;
-  const fixture = await currentProfileFixture('agent.example.com', operationalKey);
+  const fixture = await currentProfileFixture('agent.example.com', operationalKey, policyFlags);
   const entityPin = await jwkThumbprint(fixture.entityKey);
   const manager = (config: DnsidConfig, fetchJson: JsonFetcher = fixture.fetchJson, cache?: InMemoryIdentityCache) =>
     new IdentityManager(config, { logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson, cache });
@@ -259,8 +259,8 @@ describe('counterparty acceptance', () => {
     expect(Object.keys(vd).some(key => /trust|accept/i.test(key))).toBe(false);
   });
 
-  it('publication confirmation succeeds on protocol evidence while public verifyDomain(localDomain) still rejects', async () => {
-    const { fixture } = await setup();
+  it('publication confirmation needs no application peer while public verifyDomain(localDomain) still rejects', async () => {
+    const { fixture } = await setup('mtls');
     const idm = new IdentityManager(
       { identity, verification: { trustedEntities: [] } },
       { keyProvider, logRegistry: fixture.logRegistry, dnsResolver: fixture.dnsResolver, fetchJson: fixture.fetchJson },
@@ -273,7 +273,8 @@ describe('counterparty acceptance', () => {
       registryClient: new RegistryClient({ baseUrl: 'https://registry.example', fetch: registryFetch }),
       identityManager: idm,
     })).resolves.toMatchObject({ ownerName: '_dnsid.agent.example.com' });
-    await expect(idm.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.CounterpartyNotAccepted });
+    await expect(idm.verifyLocalPublication()).resolves.toMatchObject({ domain: 'agent.example.com' });
+    await expect(idm.verifyDomain('agent.example.com')).rejects.toMatchObject({ code: VerificationCode.TLSError });
   });
 
   it('publication evidence is not a counterparty acceptance bypass', async () => {

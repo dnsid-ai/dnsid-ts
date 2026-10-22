@@ -860,7 +860,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1115)
+Defined in: [packages/protocol/src/identity-manager.ts:1120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1120)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1453,7 +1453,7 @@ Resumes only the durable operation, reusing its preparation key or exact complet
 function resumeManagedOperationalKeyRotation(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:227](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L227)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:221](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L221)
 
 Continues a persisted rotation from its saved state:
 - not accepted: pause signing and resubmit the exact saved bytes with the same idempotency key;
@@ -1518,7 +1518,7 @@ retried unless callers explicitly override shouldRetry.
 function rotateManagedOperationalKey(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L131)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L125)
 
 Runs C2SP registry-managed rotation. The registry owns managed ku publication
 and append reconciliation; local activation happens only after an accepted
@@ -1649,7 +1649,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1152](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1152)
+Defined in: [packages/protocol/src/identity-manager.ts:1157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1157)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
