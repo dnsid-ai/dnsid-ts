@@ -1,4 +1,15 @@
 
+## [0.32.0] - 2026-10-22
+
+### Bug Fixes
+
+- fix!: verify log reads and persist managed rotation recovery ([#111](https://github.com/dnsid-ai/dnsid-ts/pull/111))
+
+### Chores
+
+- chore: standardize legal entity naming ([#113](https://github.com/dnsid-ai/dnsid-ts/pull/113))
+
+
 ## [0.31.0] - 2026-10-21
 
 ### Bug Fixes
