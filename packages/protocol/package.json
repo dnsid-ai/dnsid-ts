@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/protocol",
   "author": "Known Systems AI, Inc.",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "DNSid protocol core contracts, TXT record parsing, JWKS validation, and identity verification engine.",
   "type": "module",
   "types": "./dist/index.d.ts",
