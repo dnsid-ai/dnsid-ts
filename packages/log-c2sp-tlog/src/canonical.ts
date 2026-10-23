@@ -1,7 +1,8 @@
 import { C2spTlogParseError } from './errors.ts';
 import { parseJsonNoDuplicateMembers as parseStrictJson } from '@dnsid-ai/protocol';
 
-const textDecoder = new TextDecoder('utf-8', { fatal: true });
+// ignoreBOM keeps a leading U+FEFF, so BOM-prefixed entry bytes fail the canonical comparison.
+const textDecoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 /**
  * Serializes a JSON value to its RFC 8785 (JCS-style) canonical form:
