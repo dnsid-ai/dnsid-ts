@@ -188,15 +188,23 @@ async function verifyStreamWithinBudget(entries: IndexedEntry[], domain: string,
   if (entries.length > 1_000_000 || entries.reduce((total, entry) => total + entry.bytes.length, 0) > 256 * 1024 * 1024) throw new C2spTlogVerificationError('lifecycle input exceeds resource limits');
   const sorted = entries.slice().sort((a, b) => a.index - b.index);
   const trustedThumbprint = options.signerKey ? await jwkThumbprint(options.signerKey) : undefined;
-  const migrationState: MigrationSelectionState = { failed: false };
+  const migrationState: MigrationSelectionState = { failed: false, verified: new Map() };
   const lifecycleOptions: StreamVerifierOptions = options.verifyMigration ? {
     ...options,
     verifyMigration: async (event) => {
-      if (migrationState.event === event && migrationState.result) return migrationState.result;
+      // Genesis-selection retries re-parse entries: reuse each prior-log verification once.
+      const cacheKey = JSON.stringify([event.domain, event.previousLog, event.newLog, event.finalEntryRef, event.signingKid, event.sig]);
+      const cached = migrationState.verified.get(cacheKey);
+      if (cached) {
+        migrationState.event = event;
+        migrationState.result = cached;
+        return cached;
+      }
       migrationState.event = event;
       migrationState.result = undefined;
       try {
         migrationState.result = await waitForVerification(() => options.verifyMigration!(event, { signal: options.signal }), options.signal!);
+        migrationState.verified.set(cacheKey, migrationState.result);
         return migrationState.result;
       } catch (error) {
         migrationState.failed = true;
@@ -273,6 +281,7 @@ interface MigrationSelectionState {
   event?: Extract<LogEvent, { type: 'MIGRATION' }>;
   result?: MigrationVerificationResult;
   failed: boolean;
+  verified: Map<string, MigrationVerificationResult>;
 }
 
 async function selectStreamLifecycle(
@@ -405,7 +414,8 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
           : role === 'op' ? envelope.ku
             : role === 'new_ae' ? envelope.new_ek
               : envelope.new_ku;
-      assertSupportedLifecycleJwk(key);
+      if (role === 'new_ae') assertStrictLifecycleJwk(key, 'new_ek');
+      else assertSupportedLifecycleJwk(key);
       if (signature.kid !== key.kid || !await verifyWithKey(signedC2spEntryBytes(bytes), fromBase64Url(signature.sig), key)) return false;
     }
     return true;

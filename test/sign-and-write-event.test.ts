@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   ArgumentError,
+  jwkThumbprint,
   DNSSECState,
   DnsIdTxtRecord,
   DomainLog,
@@ -180,7 +181,12 @@ describe('IdentityManager.signAndWriteEvent()', () => {
 
   it('signs ENTITY_KEY_ROTATION as previous entity then new entity with the entity key provider', async () => {
     const { manager, kp, entityKp } = makeManagerWithLog(['NewEntity']);
-    const newEntityKey: DnsIdJWK = { ...ENTITY_KEY, kid: 'entity-key-2' };
+    const newEntityKey: DnsIdJWK = {
+      kty: 'EC', kid: 'entity-key-2', alg: 'ES256', use: 'sig', crv: 'P-256',
+      x: 'WbbXwVYGdJoP4Xm3qCkGvBRcRvKtEfXDbWvPk3StZWI',
+      y: 'SnJYqE5Z9qHrRKpU3hN3xL8LcjXGW5nN0cP7d9fF5u0',
+    };
+    const newEntityThumbprint = await jwkThumbprint(newEntityKey);
     (entityKp.jwk as ReturnType<typeof vi.fn>).mockImplementation((kid: string) => Promise.resolve(kid === newEntityKey.kid ? newEntityKey : ENTITY_KEY));
     const event: LogEvent = {
       type: 'ENTITY_KEY_ROTATION',
@@ -190,7 +196,7 @@ describe('IdentityManager.signAndWriteEvent()', () => {
       newEntityKid: newEntityKey.kid,
       newEntityAlg: 'ES256',
       newEntityPublicKey: newEntityKey,
-      newEntityThumbprint: EC_THUMBPRINT,
+      newEntityThumbprint,
       timestamp: new Date(),
     };
     expect(manager.requiredLogSignatures(event)).toEqual(['PreviousEntity', 'NewEntity']);
@@ -201,6 +207,18 @@ describe('IdentityManager.signAndWriteEvent()', () => {
     expect(event.signingKid).toBe('entity-key-1');
     expect(event.sig).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(event.newEntityProof).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it('refuses an ENTITY_KEY_ROTATION that does not change the entity key', async () => {
+    const { manager, entityKp } = makeManagerWithLog(['NewEntity']);
+    const event: LogEvent = {
+      type: 'ENTITY_KEY_ROTATION', domain: BASE_CONFIG.domain,
+      previousEntityKid: ENTITY_KEY.kid, previousEntityThumbprint: EC_THUMBPRINT,
+      newEntityKid: 'entity-key-2', newEntityAlg: 'ES256', newEntityPublicKey: { ...ENTITY_KEY, kid: 'entity-key-2' }, newEntityThumbprint: EC_THUMBPRINT,
+      timestamp: new Date(),
+    };
+    await expect(manager.signAndWriteEvent(event)).rejects.toThrow('must differ from the previous entity key');
+    expect(entityKp.signKey).not.toHaveBeenCalled();
   });
 
   it('refuses entity-rotation roles on other event types', async () => {

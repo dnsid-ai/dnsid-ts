@@ -1258,4 +1258,7 @@ async function assertEntityRotationNewKeyMetadata(event: Extract<LogEvent, { typ
     || event.newEntityThumbprint !== await jwkThumbprint(event.newEntityPublicKey)) {
     throw new ArgumentError('ENTITY_KEY_ROTATION new entity key metadata mismatch');
   }
+  if (event.newEntityThumbprint === event.previousEntityThumbprint) {
+    throw new ArgumentError('ENTITY_KEY_ROTATION new entity key must differ from the previous entity key');
+  }
 }

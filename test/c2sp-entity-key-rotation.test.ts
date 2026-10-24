@@ -261,6 +261,25 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
     await expect(verifyStream(stream.entries, k.e1)).rejects.toMatchObject({ errorCategory: 'TERMINAL_STATE' });
   });
 
+  it.each([
+    ['new_ek_thumb does not match new_ek', (envelope: Record<string, unknown>, k: Awaited<ReturnType<typeof keys>>) => { envelope.new_ek_thumb = k.e3.thumbprint; }],
+    ['new_ek_thumb equals prev_ek_thumb', (envelope: Record<string, unknown>) => { envelope.new_ek_thumb = envelope.prev_ek_thumb; }],
+  ])('11: an authenticated rotation whose %s is a fatal invalid payload', async (_name, mutate) => {
+    const k = await keys();
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(k.e2, { mutate: envelope => mutate(envelope, k), apply: false });
+    await expect(verifyStream(stream.entries, k.e1)).rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', message: 'authenticated lifecycle candidate is malformed' });
+  });
+
+  it.each(['d', 'p'])('11: a rotation whose new_ek carries private member %s is skipped as unauthenticated', async member => {
+    const k = await keys();
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(k.e2, { mutate: envelope => { envelope.new_ek = { ...(envelope.new_ek as object), [member]: 'AAAA' }; }, apply: false });
+    await expect(verifyStream(stream.entries, k.e1)).resolves.toHaveLength(1);
+  });
+
   it('chains the lifecycle state hash through the rotated entity thumbprint', async () => {
     const k = await keys();
     const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);

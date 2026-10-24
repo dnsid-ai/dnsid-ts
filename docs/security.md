@@ -36,7 +36,7 @@ The SDK's managed rotation path rotates the operational `ku` key as an immediate
 
 ### Entity-key rotation
 
-On `c2sp-tlog` the `ek` key can be rotated with an `ENTITY_KEY_ROTATION` lifecycle event signed by both the previous entity key (authorization) and the new entity key (proof of possession). Verifiers then require the record `ek` to be the entity key current at the end of the verified history, and only that key authorizes later REVOCATION, RETIREMENT and DELEGATION events. Rotating away from a key does not undo what it signed while it was current; treat a compromised entity key as an incident, not routine rotation. Relying-party pins on `ek` are not migrated by a rotation and reject the new key until updated. Verifiers from releases without this support reject rotated identities, so upgrade them before rotating.
+On `c2sp-tlog` the `ek` key can be rotated with an `ENTITY_KEY_ROTATION` lifecycle event signed by both the previous entity key (authorization) and the new entity key (proof of possession). Verifiers then require the record `ek` to be the entity key current at the end of the verified history, and only that key authorizes later REVOCATION, RETIREMENT and DELEGATION events. Rotating away from a key does not undo what it signed while it was current, and a holder of a superseded entity key can still append a conflicting branch from before the rotation, which makes the identity fail verification; treat a compromised entity key as an incident, not routine rotation. Relying-party pins on `ek` are not migrated by a rotation and reject the new key until updated. Verifiers from releases without this support reject rotated identities, so upgrade them before rotating.
 
 ### JWTs after signing-key rotation
 
