@@ -280,6 +280,27 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
     await expect(verifyStream(stream.entries, k.e1)).resolves.toHaveLength(1);
   });
 
+  it.each([
+    ['new_ek has no kid', { mutate: (envelope: Record<string, unknown>) => { const { kid: _kid, ...key } = envelope.new_ek as Record<string, unknown>; envelope.new_ek = key; } }],
+    ['new_ek has an empty kid', { mutate: (envelope: Record<string, unknown>) => { envelope.new_ek = { ...(envelope.new_ek as object), kid: '' }; } }],
+    ['new_ae names another kid', { next: { kid: 'other' } }],
+  ])('a rotation where %s cannot authenticate and is skipped (amendment 4)', async (_name, options) => {
+    const k = await keys();
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(k.e2, { ...options, apply: false });
+    await expect(verifyStream(stream.entries, k.e1)).resolves.toHaveLength(1);
+    await expect(verifyStream(stream.entries)).resolves.toHaveLength(1);
+  });
+
+  it('an authenticated rotation whose new_ek lacks alg is fatal (amendment 3)', async () => {
+    const k = await keys();
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(k.e2, { mutate: envelope => { const { alg: _alg, ...key } = envelope.new_ek as Record<string, unknown>; envelope.new_ek = key; }, apply: false });
+    await expect(verifyStream(stream.entries, k.e1)).rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', message: 'authenticated lifecycle candidate is malformed' });
+  });
+
   it('chains the lifecycle state hash through the rotated entity thumbprint', async () => {
     const k = await keys();
     const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);

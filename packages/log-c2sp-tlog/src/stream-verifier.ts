@@ -257,7 +257,8 @@ async function entityKeysReaching(entries: IndexedEntry[], domain: string, optio
       if (authorization.domain !== domain || authorization.type !== 'ENTITY_KEY_ROTATION') continue;
       const envelope = JSON.parse(new TextDecoder().decode(entry.bytes)) as Record<string, unknown>;
       const signatures = parseC2spSignatures(envelope.sigs, 'ENTITY_KEY_ROTATION');
-      const newKey = assertSupportedLifecycleJwk(envelope.new_ek as DnsIdJWK, 'new_ek');
+      const newKey = newEntityVerificationKey(envelope.new_ek);
+      if (!newKey) continue;
       const next = await jwkThumbprint(newKey);
       if (typeof envelope.prev_ek_thumb !== 'string' || envelope.new_ek_thumb !== next || signatures.new_ae!.kid !== newKey.kid) continue;
       if (!await verifyWithKey(signedC2spEntryBytes(entry.bytes), fromBase64Url(signatures.new_ae!.sig), newKey)) continue;
@@ -399,6 +400,18 @@ async function selectStreamLifecycle(
   return selected;
 }
 
+const PRIVATE_JWK_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k'];
+
+/** Public Ed25519 or P-256 key material of `new_ek` for authenticating `new_ae`, or undefined when it cannot authenticate. */
+function newEntityVerificationKey(value: unknown): DnsIdJWK | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const key = value as Record<string, unknown>;
+  if (typeof key.kid !== 'string' || !key.kid || PRIVATE_JWK_MEMBERS.some(member => key[member] !== undefined)) return undefined;
+  if (key.kty === 'OKP' && key.crv === 'Ed25519' && typeof key.x === 'string') return { kty: 'OKP', crv: 'Ed25519', x: key.x, kid: key.kid } as DnsIdJWK;
+  if (key.kty === 'EC' && key.crv === 'P-256' && typeof key.x === 'string' && typeof key.y === 'string') return { kty: 'EC', crv: 'P-256', x: key.x, y: key.y, kid: key.kid } as DnsIdJWK;
+  return undefined;
+}
+
 async function envelopeKeyThumbprint(value: unknown): Promise<string | undefined> {
   try { return await jwkThumbprint(value as DnsIdJWK); } catch { return undefined; }
 }
@@ -414,8 +427,18 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
           : role === 'op' ? envelope.ku
             : role === 'new_ae' ? envelope.new_ek
               : envelope.new_ku;
-      if (role === 'new_ae') assertStrictLifecycleJwk(key, 'new_ek');
-      else assertSupportedLifecycleJwk(key);
+      if (role === 'new_ae') {
+        // new_ae authenticates with new_ek's key material alone (Amendments 3
+        // and 4): a new_ek without a kid, with a kid new_ae does not name, or
+        // with private members cannot authenticate and is skipped as noise.
+        // Its alg/use/coordinate checks are structural, so an authenticated
+        // rotation that fails them is fatal invalid evidence, not noise.
+        const verificationKey = newEntityVerificationKey(key);
+        if (!verificationKey || signature.kid !== key.kid
+          || !await verifyWithKey(signedC2spEntryBytes(bytes), fromBase64Url(signature.sig), verificationKey)) return false;
+        continue;
+      }
+      assertSupportedLifecycleJwk(key);
       if (signature.kid !== key.kid || !await verifyWithKey(signedC2spEntryBytes(bytes), fromBase64Url(signature.sig), key)) return false;
     }
     return true;
