@@ -56,7 +56,11 @@ export interface PreparedC2spVerificationContext {
   expectedGovernanceId?: string;
   /** Trusted accountable-entity key. Required when countersigning or serializing ISSUANCE. */
   entityKey?: DnsIdJWK;
-  /** Trusted initial operational key. Required when countersigning or serializing ISSUANCE. */
+  /**
+   * Trusted initial operational key. Required when countersigning or serializing
+   * ISSUANCE. For ENTITY_KEY_ROTATION, the active operational key the new entity
+   * key must differ from.
+   */
   operationalKey?: DnsIdJWK;
   previousOperationalKey?: DnsIdJWK;
   /**
@@ -375,6 +379,7 @@ async function keyForRole(prepared: PreparedC2spTlogEvent, role: C2spSignerRole,
     return embedded;
   }
   if (role === 'NewOperational') return asJwk(envelope.new_ku, 'new_ku');
+  if (role === 'NewEntity' || role === 'PreviousEntity') await assertEntityRotationExpectations(envelope, context);
   if (role === 'NewEntity') return assertStrictLifecycleJwk(asJwk(envelope.new_ek, 'new_ek'), 'new_ek');
   if (role === 'PreviousEntity') {
     if (!context.previousEntityKey) throw new C2spTlogVerificationError('PreviousEntity signing requires the trusted previous entity key');
@@ -385,6 +390,24 @@ async function keyForRole(prepared: PreparedC2spTlogEvent, role: C2spSignerRole,
   }
   if (context.previousOperationalKey) return context.previousOperationalKey;
   throw new C2spTlogVerificationError('PreviousOperational signing requires the trusted previous operational key');
+}
+
+/**
+ * Refuses an ENTITY_KEY_ROTATION every verifier would reject: one that does not
+ * continue from the trusted current entity key, or whose new key is the trusted
+ * current entity or operational key.
+ */
+async function assertEntityRotationExpectations(envelope: Readonly<C2spJsonEvent>, context: PreparedC2spVerificationContext): Promise<void> {
+  const current = context.previousEntityKey ?? context.entityKey;
+  if (current && await jwkThumbprint(current) !== envelope.prev_ek_thumb) {
+    throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION prev_ek_thumb does not match the trusted previous entity key');
+  }
+  if (current && envelope.new_ek_thumb === await jwkThumbprint(current)) {
+    throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION new entity key must differ from the current entity key');
+  }
+  if (context.operationalKey && envelope.new_ek_thumb === await jwkThumbprint(context.operationalKey)) {
+    throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION new entity key must differ from the active operational key');
+  }
 }
 
 async function assertIssuanceExpectations(

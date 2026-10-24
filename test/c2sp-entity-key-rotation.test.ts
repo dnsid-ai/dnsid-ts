@@ -284,7 +284,7 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
     ['new_ek has no kid', { mutate: (envelope: Record<string, unknown>) => { const { kid: _kid, ...key } = envelope.new_ek as Record<string, unknown>; envelope.new_ek = key; } }],
     ['new_ek has an empty kid', { mutate: (envelope: Record<string, unknown>) => { envelope.new_ek = { ...(envelope.new_ek as object), kid: '' }; } }],
     ['new_ae names another kid', { next: { kid: 'other' } }],
-  ])('a rotation where %s cannot authenticate and is skipped (amendment 4)', async (_name, options) => {
+  ])('a rotation where %s cannot authenticate and is skipped', async (_name, options) => {
     const k = await keys();
     const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
     await stream.issuance(k.e1, k.o1);
@@ -293,7 +293,7 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
     await expect(verifyStream(stream.entries)).resolves.toHaveLength(1);
   });
 
-  it('an authenticated rotation whose new_ek lacks alg is fatal (amendment 3)', async () => {
+  it('an authenticated rotation whose new_ek lacks alg is fatal', async () => {
     const k = await keys();
     const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
     await stream.issuance(k.e1, k.o1);
@@ -335,7 +335,56 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
   });
 });
 
-describe('genesis selection anchored on the record ek (amendment 1)', () => {
+describe('ENTITY_KEY_ROTATION key types, forks and migration', () => {
+  it('rotates between ES256 and Ed25519 entity keys', async () => {
+    const k = await keys();
+    const ed = await testKey('entity-ed', 'EdDSA');
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(ed);
+    await stream.entityKeyRotation(k.e3);
+    await expect(verifyStream(stream.entries, k.e3)).resolves.toHaveLength(3);
+    const edNew = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await edNew.issuance(k.e1, k.o1);
+    await edNew.entityKeyRotation(ed, { mutate: envelope => { envelope.new_ek = { ...(envelope.new_ek as object), x: 'AAAA' }; }, apply: false });
+    await expect(verifyStream(edNew.entries, k.e1)).resolves.toHaveLength(1);
+  });
+
+  it('rejects a fork signed by the superseded entity key from before the rotation', async () => {
+    const k = await keys();
+    const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await stream.issuance(k.e1, k.o1);
+    const fork = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await fork.issuance(k.e1, k.o1);
+    await stream.entityKeyRotation(k.e2);
+    await fork.revocation();
+    const entries = [...stream.entries, fork.entries[1]!];
+    for (const record of [k.e1, k.e2, undefined]) {
+      await expect(verifyStream(entries, record)).rejects.toMatchObject({ errorCategory: 'CHAIN_CONTINUITY' });
+    }
+  });
+
+  it('continues a MIGRATION genesis through a later ENTITY_KEY_ROTATION', async () => {
+    const k = await keys();
+    const priorContext = { ...CONTEXT, logOrigin: 'old.example/dnsid', lr: `c2sp-tlog:testnet:https://old.example/dnsid#${STREAM_ID}` };
+    const prior = new LifecycleStreamBuilder(FQDN, priorContext);
+    await prior.issuance(k.e1, k.o1);
+    await prior.entityKeyRotation(k.e2);
+    const priorHistory = (await verifyStreamLifecycle(indexed(prior.entries), FQDN, { ...priorContext, signerKey: k.e2.publicJwk, checkpointIntegrationTimeMs: CHECKPOINT_TIME })).map(item => item.event);
+    const destination = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    destination.entity = k.e2;
+    await destination.migration(k.e2, k.o1, priorContext.lr, `${priorContext.lr}@1`);
+    await destination.entityKeyRotation(k.e3);
+    await destination.revocation();
+    const verifyMigration = async () => ({ entityKey: k.e2.publicJwk, activeOperationalKey: k.o1.publicJwk, priorHistory });
+    const selected = await verifyStreamLifecycle(indexed(destination.entries), FQDN, { ...CONTEXT, signerKey: k.e3.publicJwk, checkpointIntegrationTimeMs: CHECKPOINT_TIME, verifyMigration });
+    expect(selected.map(item => item.event.type)).toEqual(['MIGRATION', 'ENTITY_KEY_ROTATION', 'REVOCATION']);
+    await expect(verifyStreamLifecycle(indexed(destination.entries), FQDN, { ...CONTEXT, signerKey: k.e2.publicJwk, checkpointIntegrationTimeMs: CHECKPOINT_TIME, verifyMigration }))
+      .rejects.toThrow('current entity key does not match record ek');
+  });
+});
+
+describe('genesis selection anchored on the record ek', () => {
   it('still skips a spam ISSUANCE without any ENTITY_KEY_ROTATION', async () => {
     const k = await keys();
     const spam = new LifecycleStreamBuilder(FQDN, CONTEXT);
@@ -430,6 +479,17 @@ describe('ENTITY_KEY_ROTATION prepared-event signing', () => {
     await expect(verifyStream([...stream.entries, bytes], k.e2)).resolves.toHaveLength(2);
     await expect(parsePreparedC2spTlogEvent(bytes, CONTEXT.lr, { previousEntityKey: k.e1.publicJwk })).resolves.toMatchObject({ requiredSignatures: ['PreviousEntity', 'NewEntity'] });
     await expect(parsePreparedC2spTlogEvent(bytes, CONTEXT.lr, { previousEntityKey: k.e3.publicJwk })).rejects.toThrow('prev_ek_thumb does not match');
+  });
+
+  it('refuses rotations every verifier would reject', async () => {
+    const { k, stream } = await prepared();
+    const chain = stream.chain();
+    const toOperational = prepareC2spTlogEventForSigning(await rotationEvent(k.e1, k.o1), CONTEXT.lr, { sequence: chain.seq!, previousEventId: chain.prevEventId, previousStateHash: chain.prevStateHash });
+    await expect(signPreparedC2spTlogEvent(toOperational, 'PreviousEntity', signingProvider(k.e1), { previousEntityKey: k.e1.publicJwk, operationalKey: k.o1.publicJwk }))
+      .rejects.toThrow('must differ from the active operational key');
+    const staged = prepareC2spTlogEventForSigning(await rotationEvent(k.e1, k.e2), CONTEXT.lr, { sequence: chain.seq!, previousEventId: chain.prevEventId, previousStateHash: chain.prevStateHash });
+    await expect(signPreparedC2spTlogEvent(staged, 'NewEntity', signingProvider(k.e2), { entityKey: k.e3.publicJwk }))
+      .rejects.toThrow('prev_ek_thumb does not match');
   });
 
   it('refuses mismatched or missing signing keys', async () => {

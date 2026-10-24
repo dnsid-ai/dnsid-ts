@@ -477,12 +477,14 @@ export class IdentityManager implements RefreshingIdentityResolver {
         throw new ArgumentError('ENTITY_KEY_ROTATION previous entity key metadata mismatch');
       }
       await assertEntityRotationNewKeyMetadata(event);
+      await this.assertEntityRotationAvoidsOperationalKey(event);
       event.signingKid = key.kid;
       event.sig = toBase64Url(await keyProvider.signKey(key.kid, canonical));
     } else if (role === 'NewEntity') {
       if (event.type !== 'ENTITY_KEY_ROTATION') throw new ArgumentError('new-entity signature is only valid for ENTITY_KEY_ROTATION');
       const key = await keyProvider.jwk(event.newEntityKid);
       await assertEntityRotationNewKeyMetadata(event);
+      await this.assertEntityRotationAvoidsOperationalKey(event);
       if (event.newEntityKid !== key.kid
         || event.newEntityAlg !== key.alg
         || event.newEntityThumbprint !== await jwkThumbprint(key)) {
@@ -506,6 +508,14 @@ export class IdentityManager implements RefreshingIdentityResolver {
     if (role === 'NewOperational') return event.type === 'KEY_ROTATION' && !!event.newOperationalProof;
     if (role === 'NewEntity') return event.type === 'ENTITY_KEY_ROTATION' && !!event.newEntityProof;
     return !!event.sig;
+  }
+
+  /** Every verifier rejects a new entity key equal to the active operational key, so refuse to sign one. */
+  private async assertEntityRotationAvoidsOperationalKey(event: Extract<LogEvent, { type: 'ENTITY_KEY_ROTATION' }>): Promise<void> {
+    if (!this.keyProvider) return;
+    if (await jwkThumbprint(await this.keyProvider.signingKey()) === event.newEntityThumbprint) {
+      throw new ArgumentError('ENTITY_KEY_ROTATION new entity key must differ from the active operational key');
+    }
   }
 
   private async assertIssuanceEntityKey(event: Extract<LogEvent, { type: 'ISSUANCE' }>, key: DnsIdJWK): Promise<void> {

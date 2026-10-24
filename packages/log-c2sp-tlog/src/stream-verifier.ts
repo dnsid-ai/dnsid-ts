@@ -428,8 +428,7 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
             : role === 'new_ae' ? envelope.new_ek
               : envelope.new_ku;
       if (role === 'new_ae') {
-        // new_ae authenticates with new_ek's key material alone (Amendments 3
-        // and 4): a new_ek without a kid, with a kid new_ae does not name, or
+        // new_ae authenticates with new_ek's key material alone: a new_ek without a kid, with a kid new_ae does not name, or
         // with private members cannot authenticate and is skipped as noise.
         // Its alg/use/coordinate checks are structural, so an authenticated
         // rotation that fails them is fatal invalid evidence, not noise.

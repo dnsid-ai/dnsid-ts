@@ -221,6 +221,20 @@ describe('IdentityManager.signAndWriteEvent()', () => {
     expect(entityKp.signKey).not.toHaveBeenCalled();
   });
 
+  it('refuses an ENTITY_KEY_ROTATION to the active operational key', async () => {
+    const { manager, entityKp } = makeManagerWithLog(['NewEntity']);
+    const operationalAsEntity: DnsIdJWK = { ...EC_KEY, kid: 'entity-key-2' };
+    const event: LogEvent = {
+      type: 'ENTITY_KEY_ROTATION', domain: BASE_CONFIG.domain,
+      previousEntityKid: ENTITY_KEY.kid, previousEntityThumbprint: 'previous-thumbprint',
+      newEntityKid: 'entity-key-2', newEntityAlg: 'ES256', newEntityPublicKey: operationalAsEntity, newEntityThumbprint: EC_THUMBPRINT,
+      timestamp: new Date(),
+    };
+    (entityKp.jwk as ReturnType<typeof vi.fn>).mockImplementation((kid: string) => Promise.resolve({ ...ENTITY_KEY, kid }));
+    await expect(manager.signEventWithProvider(event, 'NewEntity', entityKp)).rejects.toThrow('must differ from the active operational key');
+    expect(entityKp.signKey).not.toHaveBeenCalled();
+  });
+
   it('refuses entity-rotation roles on other event types', async () => {
     const { manager, entityKp } = makeManagerWithLog();
     await expect(manager.signEventWithProvider(makeIssuance(), 'NewEntity', entityKp)).rejects.toThrow('not an authorized signer role');

@@ -5,14 +5,15 @@ import { canonicalBytes, c2spEventId, eventToC2spEnvelope, signedC2spEntryBytes,
 /** ES256 lifecycle key with its private half, for building signed test streams. */
 export interface TestKey { publicJwk: DnsIdJWK; privateKey: CryptoKey; thumbprint: string }
 
-export async function testKey(kid: string): Promise<TestKey> {
-  const pair = await generateKeyPair('ES256', { extractable: true });
-  const publicJwk = { ...await exportJWK(pair.publicKey), kid, alg: 'ES256' } as DnsIdJWK;
+export async function testKey(kid: string, alg: 'ES256' | 'EdDSA' = 'ES256'): Promise<TestKey> {
+  const pair = await generateKeyPair(alg, { extractable: true });
+  const publicJwk = { ...await exportJWK(pair.publicKey), kid, alg } as DnsIdJWK;
   return { publicJwk, privateKey: pair.privateKey as CryptoKey, thumbprint: await jwkThumbprint(publicJwk) };
 }
 
 export async function signBytes(bytes: Uint8Array, key: TestKey): Promise<string> {
-  return toBase64Url(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key.privateKey, toArrayBuffer(bytes))));
+  const algorithm = key.publicJwk.alg === 'EdDSA' ? { name: 'Ed25519' } : { name: 'ECDSA', hash: 'SHA-256' };
+  return toBase64Url(new Uint8Array(await crypto.subtle.sign(algorithm, key.privateKey, toArrayBuffer(bytes))));
 }
 
 type Context = Required<Pick<C2spEventContext, 'scope' | 'logOrigin' | 'streamId' | 'lr'>>;
@@ -62,6 +63,21 @@ export class LifecycleStreamBuilder {
       this.lastApplied = bytes;
       this.state = { fqdn: this.fqdn, status: 'ACTIVE', entity_thumb: entity.thumbprint, operational_thumb: operational.thumbprint };
     }
+    return bytes;
+  }
+
+  /** Destination-stream MIGRATION genesis, signed by the entity key current at the end of the prior history. */
+  async migration(entity: TestKey, operational: TestKey, previousLog: string, finalEntryRef: string): Promise<Uint8Array> {
+    const event: LogEvent = {
+      type: 'MIGRATION', domain: this.fqdn, timestamp: this.nextTimestamp(),
+      previousLog, newLog: this.context.lr, finalEntryRef,
+    };
+    const bytes = await this.append(event, { seq: 0 }, { ae: [entity] }, {});
+    this.entity = entity;
+    this.operational = operational;
+    this.sequence = 0;
+    this.lastApplied = bytes;
+    this.state = { fqdn: this.fqdn, status: 'ACTIVE', entity_thumb: entity.thumbprint, operational_thumb: operational.thumbprint };
     return bytes;
   }
 
