@@ -11,6 +11,8 @@ interface BaseLogEvent {
   operationalCountersig?: string;
   /** Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_ROTATION. */
   newOperationalProof?: string;
+  /** Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION. */
+  newEntityProof?: string;
 }
 
 // ---- Core Events ----
@@ -84,6 +86,25 @@ export interface KeyRotationEvent extends BaseLogEvent {
   timestamp: Date;
 }
 
+/**
+ * Rotation to a new accountable-entity (record-signing) key. Continuity from
+ * the entity key active before the event, mirroring {@link KeyRotationEvent}
+ * for operational keys. `signingKid`/`sig` carry the previous entity key's
+ * authorization (`prev_ae`); `newEntityProof` carries the new entity key's
+ * proof of possession (`new_ae`).
+ */
+export interface EntityKeyRotationEvent extends BaseLogEvent {
+  type: 'ENTITY_KEY_ROTATION';
+  domain: string;
+  previousEntityKid: string;
+  previousEntityThumbprint: string;
+  newEntityKid: string;
+  newEntityAlg: string;
+  newEntityThumbprint: string;
+  newEntityPublicKey: DnsIdJWK;
+  timestamp: Date;
+}
+
 export interface RevocationEvent extends BaseLogEvent {
   type: 'REVOCATION';
   domain: string;
@@ -122,6 +143,7 @@ export interface DelegationEvent extends BaseLogEvent {
 export type LogEvent =
   | IssuanceEvent
   | KeyRotationEvent
+  | EntityKeyRotationEvent
   | RevocationEvent
   | RetirementEvent
   | MigrationEvent

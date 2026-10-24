@@ -11,7 +11,7 @@ export function c2spEventId(signedBytes: Uint8Array): string {
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const MAX_ENTRY_BYTES = 0xffff;
-const SUPPORTED = new Set(['ISSUANCE', 'KEY_ROTATION', 'REVOCATION', 'RETIREMENT', 'MIGRATION', 'DELEGATION']);
+const SUPPORTED = new Set(['ISSUANCE', 'KEY_ROTATION', 'ENTITY_KEY_ROTATION', 'REVOCATION', 'RETIREMENT', 'MIGRATION', 'DELEGATION']);
 const SIGNATURE_RE = /^[A-Za-z0-9_-]+$/;
 
 /** Log binding and chaining context stamped into (and expected of) a c2sp-tlog event envelope. */
@@ -20,8 +20,19 @@ export interface C2spEventContext { scope?: string; logOrigin?: string; streamId
 export type C2spJsonEvent = Record<string, unknown>;
 /** One envelope signature: signing key ID and unpadded base64url signature. */
 export interface C2spSignatureValue { kid: string; sig: string }
-/** Envelope `sigs` object keyed by signer role: accountable entity, operational countersignature, previous/new operational key. */
-export interface C2spSignatures { ae?: C2spSignatureValue; op?: C2spSignatureValue; prev_op?: C2spSignatureValue; new_op?: C2spSignatureValue }
+/**
+ * Envelope `sigs` object keyed by signer role: accountable entity,
+ * operational countersignature, previous/new operational key (KEY_ROTATION),
+ * and previous/new entity key (ENTITY_KEY_ROTATION).
+ */
+export interface C2spSignatures {
+  ae?: C2spSignatureValue;
+  op?: C2spSignatureValue;
+  prev_op?: C2spSignatureValue;
+  new_op?: C2spSignatureValue;
+  prev_ae?: C2spSignatureValue;
+  new_ae?: C2spSignatureValue;
+}
 
 /**
  * Converts a protocol {@link LogEvent} into its c2sp-tlog JSON envelope
@@ -60,6 +71,20 @@ export function eventToC2spEnvelope(event: LogEvent, context: C2spEventContext =
         throw new C2spTlogParseError('KEY_ROTATION lifecycle-key algorithm metadata mismatch');
       }
       Object.assign(obj, { prev_thumb: event.previousOperationalThumbprint, new_ku: event.newOperationalPublicKey, new_thumb: event.newOperationalThumbprint });
+      break;
+    case 'ENTITY_KEY_ROTATION':
+      assertStrictLifecycleJwk(event.newEntityPublicKey, 'new_ek');
+      if (event.newEntityAlg !== event.newEntityPublicKey.alg || event.newEntityKid !== event.newEntityPublicKey.kid) {
+        throw new C2spTlogParseError('ENTITY_KEY_ROTATION lifecycle-key metadata mismatch');
+      }
+      if (typeof event.previousEntityThumbprint !== 'string' || !event.previousEntityThumbprint
+        || typeof event.newEntityThumbprint !== 'string' || !event.newEntityThumbprint) {
+        throw new C2spTlogParseError('ENTITY_KEY_ROTATION requires prev_ek_thumb and new_ek_thumb');
+      }
+      if (event.newEntityThumbprint === event.previousEntityThumbprint) {
+        throw new C2spTlogParseError('ENTITY_KEY_ROTATION new_ek_thumb must differ from prev_ek_thumb');
+      }
+      Object.assign(obj, { prev_ek_thumb: event.previousEntityThumbprint, new_ek: event.newEntityPublicKey, new_ek_thumb: event.newEntityThumbprint });
       break;
     case 'REVOCATION': obj.reason = event.reason; break;
     case 'RETIREMENT': break;
@@ -133,6 +158,26 @@ export async function c2spEnvelopeToEvent(obj: unknown): Promise<LogEvent> {
         ...chain,
       } as LogEvent;
     }
+    case 'ENTITY_KEY_ROTATION': {
+      const newKey = asJwk(e.new_ek, 'new_ek');
+      assertStrictLifecycleJwk(newKey, 'new_ek');
+      const previousThumbprint = asString(e.prev_ek_thumb, 'prev_ek_thumb');
+      const newThumbprint = asString(e.new_ek_thumb, 'new_ek_thumb');
+      if (await jwkThumbprint(newKey) !== newThumbprint) throw new C2spTlogParseError('ENTITY_KEY_ROTATION new_ek_thumb does not match new_ek');
+      if (newThumbprint === previousThumbprint) throw new C2spTlogParseError('ENTITY_KEY_ROTATION new_ek_thumb must differ from prev_ek_thumb');
+      if (sigs.new_ae!.kid !== newKey.kid) throw new C2spTlogParseError('ENTITY_KEY_ROTATION new_ae kid does not match new_ek');
+      return {
+        type, domain, timestamp,
+        previousEntityKid: sigs.prev_ae!.kid,
+        previousEntityThumbprint: previousThumbprint,
+        newEntityKid: newKey.kid,
+        newEntityAlg: asString(newKey.alg, 'new_ek.alg'),
+        newEntityPublicKey: newKey,
+        newEntityThumbprint: newThumbprint,
+        signingKid: sigs.prev_ae!.kid, sig: sigs.prev_ae!.sig, newEntityProof: sigs.new_ae!.sig,
+        ...chain,
+      } as LogEvent;
+    }
     case 'REVOCATION':
       return { type, domain, timestamp, reason: asRevocationReason(e.reason), signingKid: sigs.ae!.kid, sig: sigs.ae!.sig, ...chain } as LogEvent;
     case 'RETIREMENT':
@@ -162,8 +207,9 @@ export async function parseC2spEventEntry(bytes: Uint8Array, context: C2spEventC
 
 /**
  * Extracts the authorizing signature of a stored entry: the accountable-entity
- * signature (`sigs.ae`), or the previous operational key's signature
- * (`sigs.prev_op`) for `KEY_ROTATION` events.
+ * signature (`sigs.ae`), the previous operational key's signature
+ * (`sigs.prev_op`) for `KEY_ROTATION` events, or the previous entity key's
+ * signature (`sigs.prev_ae`) for `ENTITY_KEY_ROTATION` events.
  *
  * @returns The event type, agent FQDN, signing key id, and signature value.
  * @throws C2spTlogParseError when the entry is oversized, non-canonical, an
@@ -182,7 +228,7 @@ export function parseC2spAuthorization(bytes: Uint8Array, context: C2spEventCont
   const type = asString(event.type, 'type');
   if (!SUPPORTED.has(type)) throw new C2spTlogParseError(`unsupported DNSid lifecycle event type: ${type}`);
   if (!event.sigs || typeof event.sigs !== 'object' || Array.isArray(event.sigs)) throw new C2spTlogParseError('C2SP event missing sigs object');
-  const role = type === 'KEY_ROTATION' ? 'prev_op' : 'ae';
+  const role = type === 'KEY_ROTATION' ? 'prev_op' : type === 'ENTITY_KEY_ROTATION' ? 'prev_ae' : 'ae';
   const signature = parseSignatureValue((event.sigs as Record<string, unknown>)[role], `sigs.${role}`);
   return { type: type as LogEvent['type'], domain: asString(event.fqdn, 'fqdn'), kid: signature.kid, signature: signature.sig };
 }
@@ -254,6 +300,12 @@ function signaturesFromEvent(event: LogEvent): C2spSignatures {
       ...(event.newOperationalProof ? { new_op: { kid: event.newOperationalKid, sig: event.newOperationalProof } } : {}),
     };
   }
+  if (event.type === 'ENTITY_KEY_ROTATION') {
+    return {
+      ...(event.sig ? { prev_ae: { kid: event.signingKid ?? event.previousEntityKid, sig: event.sig } } : {}),
+      ...(event.newEntityProof ? { new_ae: { kid: event.newEntityKid, sig: event.newEntityProof } } : {}),
+    };
+  }
   return event.sig ? { ae: { kid: event.signingKid ?? '', sig: event.sig } } : {};
 }
 
@@ -276,13 +328,15 @@ function requireC2spIssuanceEvent(event: Extract<LogEvent, { type: 'ISSUANCE' }>
 
 /**
  * Signature roles a lifecycle event type must carry: `ae`+`op` for ISSUANCE,
- * `prev_op`+`new_op` for KEY_ROTATION, `ae` for every other supported type.
+ * `prev_op`+`new_op` for KEY_ROTATION, `prev_ae`+`new_ae` for
+ * ENTITY_KEY_ROTATION, `ae` for every other supported type.
  *
  * @throws C2spTlogParseError for unsupported event types.
  */
 export function requiredC2spSignatureNames(type: string): Array<keyof C2spSignatures> {
   if (type === 'ISSUANCE') return ['ae', 'op'];
   if (type === 'KEY_ROTATION') return ['prev_op', 'new_op'];
+  if (type === 'ENTITY_KEY_ROTATION') return ['prev_ae', 'new_ae'];
   if (SUPPORTED.has(type)) return ['ae'];
   throw new C2spTlogParseError(`unsupported DNSid lifecycle event type: ${type}`);
 }
@@ -303,6 +357,8 @@ export function parseC2spSignatures(value: unknown, type: string, requireComplet
   if (raw.op !== undefined) parsed.op = parseSignatureValue(raw.op, 'sigs.op');
   if (raw.prev_op !== undefined) parsed.prev_op = parseSignatureValue(raw.prev_op, 'sigs.prev_op');
   if (raw.new_op !== undefined) parsed.new_op = parseSignatureValue(raw.new_op, 'sigs.new_op');
+  if (raw.prev_ae !== undefined) parsed.prev_ae = parseSignatureValue(raw.prev_ae, 'sigs.prev_ae');
+  if (raw.new_ae !== undefined) parsed.new_ae = parseSignatureValue(raw.new_ae, 'sigs.new_ae');
   const allowed = new Set<string>(requiredC2spSignatureNames(type));
   for (const key of Object.keys(raw)) if (!allowed.has(key)) throw new C2spTlogParseError(`unexpected signature role: ${key}`);
   if (requireComplete) {
@@ -399,6 +455,31 @@ export function assertSupportedLifecycleJwk(key: DnsIdJWK, name = 'lifecycle key
     return key;
   }
   throw new C2spTlogParseError(`${name} uses unsupported lifecycle-key algorithm: ${String(key.alg)}`);
+}
+
+const PRIVATE_JWK_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k'];
+
+/**
+ * Full signing-JWK validation applied to an ENTITY_KEY_ROTATION `new_ek`:
+ * {@link assertSupportedLifecycleJwk} plus a non-empty `kid` and `alg`, no
+ * private or symmetric key members of any kind, and 32-byte base64url
+ * coordinates. Existing `ek` / `new_ku` validation is unchanged.
+ *
+ * @returns The validated key, unchanged.
+ * @throws C2spTlogParseError when the key is not a supported public signing JWK.
+ */
+export function assertStrictLifecycleJwk(key: DnsIdJWK, name = 'lifecycle key'): DnsIdJWK {
+  if (!key || typeof key !== 'object' || Array.isArray(key)) throw new C2spTlogParseError(`missing ${name}`);
+  const raw = key as unknown as Record<string, unknown>;
+  if (typeof raw.kid !== 'string' || !raw.kid) throw new C2spTlogParseError(`${name} JWK is missing kid`);
+  if (typeof raw.alg !== 'string' || !raw.alg) throw new C2spTlogParseError(`${name} JWK is missing alg`);
+  if (PRIVATE_JWK_MEMBERS.some(member => raw[member] !== undefined)) throw new C2spTlogParseError(`${name} must contain only public key material`);
+  assertSupportedLifecycleJwk(key, name);
+  const coordinates = key.kty === 'EC' ? [key.x, key.y] : [key.x];
+  if (coordinates.some(value => typeof value !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value))) {
+    throw new C2spTlogParseError(`${name} public key coordinates must be 32-byte unpadded base64url`);
+  }
+  return key;
 }
 
 function lifecycleJwksShareKeyMaterial(a: DnsIdJWK, b: DnsIdJWK): boolean {

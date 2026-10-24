@@ -59,6 +59,7 @@ export type {
   C2spIssuanceEvent,
   IssuanceKeySlot,
   KeyRotationEvent,
+  EntityKeyRotationEvent,
   RevocationEvent,
   RetirementEvent,
   MigrationEvent,

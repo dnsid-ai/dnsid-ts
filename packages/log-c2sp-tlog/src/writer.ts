@@ -13,6 +13,7 @@ import {
   canonicalizeUnknownC2spEnvelope,
   c2spEventId,
   assertSupportedLifecycleJwk,
+  assertStrictLifecycleJwk,
   eventToC2spEnvelope,
   parseC2spEventEntry,
   parseC2spSignatures,
@@ -25,8 +26,11 @@ import { assertCanonicalJsonBytes, canonicalBytes, parseJsonNoDuplicateMembers }
 import { C2spTlogParseError, C2spTlogVerificationError, c2spLogError } from './errors.ts';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 
-/** Role a signature is produced under when signing a prepared lifecycle event. */
-export type C2spSignerRole = 'Entity' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational';
+/**
+ * Role a signature is produced under when signing a prepared lifecycle event.
+ * `PreviousEntity` and `NewEntity` sign an ENTITY_KEY_ROTATION (`prev_ae`, `new_ae`).
+ */
+export type C2spSignerRole = 'Entity' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational' | 'PreviousEntity' | 'NewEntity';
 
 /** Chain metadata linking a non-genesis event to its predecessor in the stream. */
 export interface C2spChain {
@@ -55,6 +59,12 @@ export interface PreparedC2spVerificationContext {
   /** Trusted initial operational key. Required when countersigning or serializing ISSUANCE. */
   operationalKey?: DnsIdJWK;
   previousOperationalKey?: DnsIdJWK;
+  /**
+   * Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
+   * or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
+   * equal the event's `prev_ek_thumb`.
+   */
+  previousEntityKey?: DnsIdJWK;
 }
 
 /** Options for {@link signPreparedC2spTlogEvent}. */
@@ -77,6 +87,8 @@ const ROLE_TO_SIGNATURE: Record<C2spSignerRole, keyof C2spSignatures> = {
   OperationalCountersignature: 'op',
   PreviousOperational: 'prev_op',
   NewOperational: 'new_op',
+  PreviousEntity: 'prev_ae',
+  NewEntity: 'new_ae',
 };
 
 const SIGNATURE_TO_ROLE: Record<keyof C2spSignatures, C2spSignerRole> = {
@@ -84,6 +96,8 @@ const SIGNATURE_TO_ROLE: Record<keyof C2spSignatures, C2spSignerRole> = {
   op: 'OperationalCountersignature',
   prev_op: 'PreviousOperational',
   new_op: 'NewOperational',
+  prev_ae: 'PreviousEntity',
+  new_ae: 'NewEntity',
 };
 
 /**
@@ -361,6 +375,14 @@ async function keyForRole(prepared: PreparedC2spTlogEvent, role: C2spSignerRole,
     return embedded;
   }
   if (role === 'NewOperational') return asJwk(envelope.new_ku, 'new_ku');
+  if (role === 'NewEntity') return assertStrictLifecycleJwk(asJwk(envelope.new_ek, 'new_ek'), 'new_ek');
+  if (role === 'PreviousEntity') {
+    if (!context.previousEntityKey) throw new C2spTlogVerificationError('PreviousEntity signing requires the trusted previous entity key');
+    if (await jwkThumbprint(context.previousEntityKey) !== envelope.prev_ek_thumb) {
+      throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION prev_ek_thumb does not match the trusted previous entity key');
+    }
+    return context.previousEntityKey;
+  }
   if (context.previousOperationalKey) return context.previousOperationalKey;
   throw new C2spTlogVerificationError('PreviousOperational signing requires the trusted previous operational key');
 }

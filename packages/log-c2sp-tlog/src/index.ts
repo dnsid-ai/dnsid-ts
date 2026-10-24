@@ -6,7 +6,7 @@
  * (tlog-checkpoint, tlog-tiles, signed-note, tlog-cosignature, and related
  * documents; see {@link C2SP_TLOG_SPECIFICATIONS}). A stream in such a log
  * records an agent's identity-record lifecycle events (ISSUANCE, KEY_ROTATION,
- * REVOCATION, ...) as canonical JSON entries in a Merkle tree, authenticated
+ * ENTITY_KEY_ROTATION, REVOCATION, ...) as canonical JSON entries in a Merkle tree, authenticated
  * by witnessed checkpoints under a local trust policy.
  *
  * Key entry points: {@link createC2spTlogVerificationRegistry} for generic

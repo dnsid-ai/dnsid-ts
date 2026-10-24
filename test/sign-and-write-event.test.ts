@@ -178,6 +178,36 @@ describe('IdentityManager.signAndWriteEvent()', () => {
     expect(event.newOperationalProof).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
+  it('signs ENTITY_KEY_ROTATION as previous entity then new entity with the entity key provider', async () => {
+    const { manager, kp, entityKp } = makeManagerWithLog(['NewEntity']);
+    const newEntityKey: DnsIdJWK = { ...ENTITY_KEY, kid: 'entity-key-2' };
+    (entityKp.jwk as ReturnType<typeof vi.fn>).mockImplementation((kid: string) => Promise.resolve(kid === newEntityKey.kid ? newEntityKey : ENTITY_KEY));
+    const event: LogEvent = {
+      type: 'ENTITY_KEY_ROTATION',
+      domain: BASE_CONFIG.domain,
+      previousEntityKid: ENTITY_KEY.kid,
+      previousEntityThumbprint: EC_THUMBPRINT,
+      newEntityKid: newEntityKey.kid,
+      newEntityAlg: 'ES256',
+      newEntityPublicKey: newEntityKey,
+      newEntityThumbprint: EC_THUMBPRINT,
+      timestamp: new Date(),
+    };
+    expect(manager.requiredLogSignatures(event)).toEqual(['PreviousEntity', 'NewEntity']);
+    await manager.signAndWriteEvent(event);
+    expect(entityKp.signKey).toHaveBeenCalledTimes(2);
+    expect((entityKp.signKey as ReturnType<typeof vi.fn>).mock.calls.map(call => call[0])).toEqual(['entity-key-1', 'entity-key-2']);
+    expect(kp.signKey).not.toHaveBeenCalled();
+    expect(event.signingKid).toBe('entity-key-1');
+    expect(event.sig).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(event.newEntityProof).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it('refuses entity-rotation roles on other event types', async () => {
+    const { manager, entityKp } = makeManagerWithLog();
+    await expect(manager.signEventWithProvider(makeIssuance(), 'NewEntity', entityKp)).rejects.toThrow('not an authorized signer role');
+  });
+
   it('sets signingKid on the event from the entity key', async () => {
     const { manager } = makeManagerWithLog();
     const event = makeIssuance();

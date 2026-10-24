@@ -1,7 +1,7 @@
 import type { AgentStatusState, LogRef } from './types.ts';
 import type { LogEvent } from './log-events.ts';
 
-export type LogSignerRole = 'Entity' | 'Operational' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational';
+export type LogSignerRole = 'Entity' | 'Operational' | 'OperationalCountersignature' | 'PreviousOperational' | 'NewOperational' | 'PreviousEntity' | 'NewEntity';
 
 /** Verified proof boundary accepted for a complete lifecycle-state decision. */
 export interface LoggedStateEvidence {
@@ -68,10 +68,17 @@ export interface LogReader {
    */
   keyTimestamp(domain: string, keyThumbprint: string): Promise<Date>;
 
-  /** Verifies draft-01 bilateral ISSUANCE binding for the current TXT record. */
+  /**
+   * Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+   * The record `ek` key must be the entity key current at the end of the
+   * verified history: the ISSUANCE key, or the key installed by the latest
+   * ENTITY_KEY_ROTATION when the method supports entity-key continuity.
+   */
   verifyBilateralBinding(record: unknown, entityKey: unknown, operationalKey: unknown): Promise<{
     initialOperationalThumbprint: string;
     initialEntityThumbprint: string;
+    /** Entity key current at the end of the verified history, when the method reports it. */
+    currentEntityThumbprint?: string;
     timestamp: Date;
   }>;
 

@@ -1,6 +1,6 @@
 import { withVerificationBudget, waitForVerification, type VerificationOptions, DomainLog, verifyWithKey, fromBase64Url, jwkThumbprint, VerificationError, VerificationCode, type C2spIssuanceEvent, type LogEvent, type DnsIdJWK, type LogRef } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr } from './lr.ts';
-import { assertSupportedLifecycleJwk, c2spEventId, parseC2spSignatures, parseC2spAuthorization, parseC2spEventEntry, signedC2spEntryBytes, type C2spEventContext } from './event-codec.ts';
+import { assertStrictLifecycleJwk, assertSupportedLifecycleJwk, c2spEventId, parseC2spSignatures, parseC2spAuthorization, parseC2spEventEntry, signedC2spEntryBytes, type C2spEventContext } from './event-codec.ts';
 import { leafHash, sha256 } from './merkle.ts';
 import { canonicalBytes } from './canonical.ts';
 import { b64url } from './base64.ts';
@@ -24,7 +24,12 @@ export interface MigrationVerificationResult {
 export interface StreamVerifierOptions extends C2spEventContext, VerificationOptions {
   /** @deprecated Ignored: every scope requires the logical predecessor chain. */
   unchained?: boolean;
-  /** Trusted accountable-entity key the lifecycle's entity key must match. */
+  /**
+   * Trusted accountable-entity key (the record `ek`). The entity key current at
+   * the end of the verified lifecycle (the genesis key, or the key installed by
+   * the latest ENTITY_KEY_ROTATION) must match it; stream verification selects
+   * the first authenticated genesis whose history ends at this key.
+   */
   signerKey?: DnsIdJWK;
   /** Latest acceptable event timestamp (checkpoint witness time plus skew), in epoch milliseconds. Required. */
   checkpointIntegrationTimeMs?: number;
@@ -35,8 +40,9 @@ export interface StreamVerifierOptions extends C2spEventContext, VerificationOpt
 /**
  * Stitches a verified prior-log history onto the current log's events for an
  * inbound MIGRATION: the current events must begin with the MIGRATION, the
- * prior history must establish the imported entity and active operational
- * keys (and contain the ISSUANCE genesis), and the combined lifecycle must
+ * prior history must establish the imported active operational key and, as
+ * its end-of-history entity key, the imported entity key (and contain the
+ * ISSUANCE genesis), and the combined lifecycle must
  * snapshot cleanly.
  *
  * @returns The prior history followed by the current events, in order.
@@ -73,8 +79,9 @@ export async function stitchVerifiedMigrationHistory(
   if (!priorIssuance || priorIssuance.type !== 'ISSUANCE') {
     throw new C2spTlogVerificationError('MIGRATION prior history has no ISSUANCE genesis', 'INVALID_MIGRATION');
   }
-  const priorEntityKey = priorIssuance.entityKey?.jwk ?? priorIssuance.initialEntityPublicKey;
-  if (!priorEntityKey || await jwkThumbprint(priorEntityKey) !== await jwkThumbprint(migration.entityKey)) {
+  // The MIGRATION imports the entity key current at the END of the prior history
+  // (the ISSUANCE key unless an ENTITY_KEY_ROTATION moved it).
+  if (!priorSnapshot.entityKeyThumbprint || priorSnapshot.entityKeyThumbprint !== await jwkThumbprint(migration.entityKey)) {
     throw new C2spTlogVerificationError('MIGRATION prior history does not establish the imported entity key', 'INVALID_MIGRATION');
   }
   const stitched = [...migration.priorHistory, ...currentEvents];
@@ -155,6 +162,13 @@ function assertReferenceBelongsToLog(reference: LogRef, logReference: LogRef): v
  * valid signatures for every role under verified predecessor authority is
  * treated as a lifecycle violation, not skipped.
  *
+ * With `signerKey` (the record `ek`), genesis selection is anchored on it:
+ * authenticated genesis candidates are tried in log order and the first whose
+ * replayed history ends with `signerKey` as its current entity key is
+ * accepted; a candidate whose history ends at another key is skipped as noise.
+ * Without ENTITY_KEY_ROTATION this selects the genesis whose own entity key is
+ * `signerKey`, exactly as before.
+ *
  * @returns The accepted events in log order.
  * @throws C2spTlogVerificationError when the resulting lifecycle is invalid
  *   (for example no ISSUANCE event survives).
@@ -163,90 +177,221 @@ export async function verifyStreamLifecycle(entries: IndexedEntry[], domain: str
   return withVerificationBudget(signal => verifyStreamWithinBudget(entries, domain, { ...options, signal }), options);
 }
 
+/** A genesis candidate whose replayed history does not end at the trusted entity key. */
+class GenesisAnchorMiss extends Error {
+  constructor(readonly genesisId: string, readonly rotatedAway: boolean) {
+    super('genesis candidate does not reach the trusted entity key');
+  }
+}
+
 async function verifyStreamWithinBudget(entries: IndexedEntry[], domain: string, options: StreamVerifierOptions): Promise<VerifiedLifecycleEvent[]> {
   if (entries.length > 1_000_000 || entries.reduce((total, entry) => total + entry.bytes.length, 0) > 256 * 1024 * 1024) throw new C2spTlogVerificationError('lifecycle input exceeds resource limits');
-  const selected: VerifiedLifecycleEvent[] = [];
-  const appliedEntries = new Map<string, { signed: string; entityKey: DnsIdJWK; operationalKey: DnsIdJWK }>();
-  let entityKey: DnsIdJWK | undefined;
-  let activeOperationalKey: DnsIdJWK | undefined;
-  let migrationEvent: Extract<LogEvent, { type: 'MIGRATION' }> | undefined;
-  let migrationResult: MigrationVerificationResult | undefined;
-  let migrationVerificationFailed = false;
+  const sorted = entries.slice().sort((a, b) => a.index - b.index);
+  const trustedThumbprint = options.signerKey ? await jwkThumbprint(options.signerKey) : undefined;
+  const migrationState: MigrationSelectionState = { failed: false };
   const lifecycleOptions: StreamVerifierOptions = options.verifyMigration ? {
     ...options,
     verifyMigration: async (event) => {
-      if (migrationEvent === event && migrationResult) return migrationResult;
-      migrationEvent = event;
+      if (migrationState.event === event && migrationState.result) return migrationState.result;
+      migrationState.event = event;
+      migrationState.result = undefined;
       try {
-        migrationResult = await waitForVerification(() => options.verifyMigration!(event, { signal: options.signal }), options.signal!);
-        return migrationResult;
+        migrationState.result = await waitForVerification(() => options.verifyMigration!(event, { signal: options.signal }), options.signal!);
+        return migrationState.result;
       } catch (error) {
-        migrationVerificationFailed = true;
+        migrationState.failed = true;
         throw error;
       }
     },
   } : options;
-  for (const entry of entries.slice().sort((a, b) => a.index - b.index)) {
-    if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
-    let signedBytes: Uint8Array;
-    let envelope: Record<string, unknown>;
+  // Genesis selection anchored on the trusted (record ek) entity key: accept
+  // the first authenticated genesis, in log order, whose replayed history ends
+  // at that key. Without ENTITY_KEY_ROTATION this selects exactly the genesis
+  // whose own entity key is the trusted key.
+  const reachable = trustedThumbprint === undefined ? undefined : await entityKeysReaching(sorted, domain, options, trustedThumbprint);
+  const skippedGenesis = new Set<string>();
+  const misses: GenesisAnchorMiss[] = [];
+  for (;;) {
+    let selected: VerifiedLifecycleEvent[];
     try {
-      if (parseC2spAuthorization(entry.bytes, options).domain !== domain) continue;
-      signedBytes = signedC2spEntryBytes(entry.bytes);
-      envelope = JSON.parse(new TextDecoder().decode(signedBytes));
+      selected = await selectStreamLifecycle(sorted, domain, options, lifecycleOptions, migrationState, trustedThumbprint, reachable, skippedGenesis);
+    } catch (error) {
+      if (!(error instanceof GenesisAnchorMiss)) throw error;
+      if (skippedGenesis.has(error.genesisId)) throw new C2spTlogVerificationError('lifecycle genesis selection did not converge');
+      skippedGenesis.add(error.genesisId);
+      misses.push(error);
+      if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
+      continue;
+    }
+    if (selected.length === 0 && misses.length === 1 && misses[0]!.rotatedAway) {
+      // The single authenticated genesis rotated its entity key away from the record ek.
+      throw new C2spTlogVerificationError(`c2sp-tlog current entity key does not match record ek for ${domain}`);
+    }
+    // An empty selection reports the pre-existing "no ISSUANCE" failure.
+    await verifyLifecycle(selected, lifecycleOptions);
+    return selected;
+  }
+}
+
+/**
+ * Thumbprints of every entity key from which a chain of ENTITY_KEY_ROTATION
+ * entries (each carrying a valid `new_ae` by its new key) can lead to the
+ * trusted key, including the trusted key itself. A replay can only end at the
+ * trusted key from a genesis whose entity key is in this set, so any other
+ * genesis is skipped without replay, exactly as the pinned filter skipped it.
+ */
+async function entityKeysReaching(entries: IndexedEntry[], domain: string, options: StreamVerifierOptions, trustedThumbprint: string): Promise<Set<string>> {
+  const rotations: Array<{ previous: string; next: string }> = [];
+  for (const entry of entries) {
+    if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
+    try {
+      const authorization = parseC2spAuthorization(entry.bytes, options);
+      if (authorization.domain !== domain || authorization.type !== 'ENTITY_KEY_ROTATION') continue;
+      const envelope = JSON.parse(new TextDecoder().decode(entry.bytes)) as Record<string, unknown>;
+      const signatures = parseC2spSignatures(envelope.sigs, 'ENTITY_KEY_ROTATION');
+      const newKey = assertSupportedLifecycleJwk(envelope.new_ek as DnsIdJWK, 'new_ek');
+      const next = await jwkThumbprint(newKey);
+      if (typeof envelope.prev_ek_thumb !== 'string' || envelope.new_ek_thumb !== next || signatures.new_ae!.kid !== newKey.kid) continue;
+      if (!await verifyWithKey(signedC2spEntryBytes(entry.bytes), fromBase64Url(signatures.new_ae!.sig), newKey)) continue;
+      rotations.push({ previous: envelope.prev_ek_thumb, next });
     } catch { continue; }
-    const entryId = c2spEventId(signedBytes);
-    const signed = b64url(signedBytes);
-    const applied = appliedEntries.get(entryId);
-    if (applied) {
-      if (applied.signed !== signed) throw new C2spTlogVerificationError('logical event ID collision');
-      continue;
+  }
+  const reachable = new Set([trustedThumbprint]);
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const rotation of rotations) {
+      if (reachable.has(rotation.next) && !reachable.has(rotation.previous)) {
+        reachable.add(rotation.previous);
+        changed = true;
+      }
     }
-    if (selected.length > 0) {
-      const prior = appliedEntries.get(envelope.prev_event_id as string);
-      if (!await hasAllRoleSignatures(entry.bytes, prior?.entityKey ?? entityKey!, prior?.operationalKey ?? activeOperationalKey!)) continue;
-    }
-    let event: LogEvent;
-    try { event = await parseC2spEventEntry(entry.bytes, options); }
-    catch {
-      if (selected.length > 0) throw new C2spTlogVerificationError('authenticated lifecycle candidate is malformed');
-      continue;
-    }
-    if (event.domain !== domain) continue;
-    const candidate = { index: entry.index, leafHash: leafHash(entry.bytes), bytes: entry.bytes, event };
-    if (selected.length === 0) {
+  }
+  return reachable;
+}
+
+interface MigrationSelectionState {
+  event?: Extract<LogEvent, { type: 'MIGRATION' }>;
+  result?: MigrationVerificationResult;
+  failed: boolean;
+}
+
+async function selectStreamLifecycle(
+  sorted: IndexedEntry[],
+  domain: string,
+  options: StreamVerifierOptions,
+  anchoredOptions: StreamVerifierOptions,
+  migrationState: MigrationSelectionState,
+  trustedThumbprint: string | undefined,
+  reachable: Set<string> | undefined,
+  skippedGenesis: Set<string>,
+): Promise<VerifiedLifecycleEvent[]> {
+  // Prefix replays never anchor on the trusted key; only the complete history does.
+  const lifecycleOptions: StreamVerifierOptions = { ...anchoredOptions, signerKey: undefined };
+  const selected: VerifiedLifecycleEvent[] = [];
+  const appliedEntries = new Map<string, { signed: string; entityKey: DnsIdJWK; operationalKey: DnsIdJWK }>();
+  let entityKey: DnsIdJWK | undefined;
+  let activeOperationalKey: DnsIdJWK | undefined;
+  let genesisId: string | undefined;
+  let genesisEntityThumbprint: string | undefined;
+  let reachedTrusted = false;
+  const anchorMiss = async (): Promise<GenesisAnchorMiss> => new GenesisAnchorMiss(
+    genesisId!,
+    entityKey !== undefined && await jwkThumbprint(entityKey) !== genesisEntityThumbprint,
+  );
+  try {
+    for (const entry of sorted) {
+      if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
+      let signedBytes: Uint8Array;
+      let envelope: Record<string, unknown>;
       try {
-        await verifyLifecycle([candidate], lifecycleOptions);
-      } catch (error) {
-        if (event.type === 'MIGRATION' && (!options.verifyMigration || migrationVerificationFailed)) {
-          if (error instanceof C2spTlogVerificationError && error.errorCategory === 'INVALID_MIGRATION') throw error;
-          throw new C2spTlogVerificationError('MIGRATION requires verifiable prior-log history', 'INVALID_MIGRATION');
-        }
+        if (parseC2spAuthorization(entry.bytes, options).domain !== domain) continue;
+        signedBytes = signedC2spEntryBytes(entry.bytes);
+        envelope = JSON.parse(new TextDecoder().decode(signedBytes));
+      } catch { continue; }
+      const entryId = c2spEventId(signedBytes);
+      const signed = b64url(signedBytes);
+      const applied = appliedEntries.get(entryId);
+      if (applied) {
+        if (applied.signed !== signed) throw new C2spTlogVerificationError('logical event ID collision');
         continue;
       }
-      selected.push(candidate);
-      if (event.type === 'ISSUANCE') {
-        assertC2spIssuanceEvent(event);
-        entityKey = event.initialEntityPublicKey;
-        activeOperationalKey = event.initialOperationalPublicKey;
-      } else if (event.type === 'MIGRATION' && migrationResult) {
-        entityKey = migrationResult.entityKey;
-        activeOperationalKey = migrationResult.activeOperationalKey;
+      if (selected.length === 0 && skippedGenesis.has(entryId)) continue;
+      if (selected.length > 0) {
+        const prior = appliedEntries.get(envelope.prev_event_id as string);
+        if (!await hasAllRoleSignatures(entry.bytes, prior?.entityKey ?? entityKey!, prior?.operationalKey ?? activeOperationalKey!)) continue;
+        // An authenticated rotation into the trusted key carries that key's own
+        // new_ae signature: from here on this history is the trusted key's to
+        // answer for, so its failures are reported rather than skipped.
+        if (trustedThumbprint !== undefined && !reachedTrusted && envelope.type === 'ENTITY_KEY_ROTATION'
+          && await envelopeKeyThumbprint(envelope.new_ek) === trustedThumbprint) reachedTrusted = true;
       }
-      appliedEntries.set(entryId, { signed, entityKey: entityKey!, operationalKey: activeOperationalKey! });
-      continue;
+      let event: LogEvent;
+      try { event = await parseC2spEventEntry(entry.bytes, options); }
+      catch {
+        if (selected.length > 0) throw new C2spTlogVerificationError('authenticated lifecycle candidate is malformed');
+        continue;
+      }
+      if (event.domain !== domain) continue;
+      const candidate = { index: entry.index, leafHash: leafHash(entry.bytes), bytes: entry.bytes, event };
+      if (selected.length === 0) {
+        try {
+          await verifyLifecycle([candidate], lifecycleOptions);
+        } catch (error) {
+          if (event.type === 'MIGRATION' && (!options.verifyMigration || migrationState.failed)) {
+            if (error instanceof C2spTlogVerificationError && error.errorCategory === 'INVALID_MIGRATION') throw error;
+            throw new C2spTlogVerificationError('MIGRATION requires verifiable prior-log history', 'INVALID_MIGRATION');
+          }
+          continue;
+        }
+        let genesisEntityKey: DnsIdJWK | undefined;
+        let genesisOperationalKey: DnsIdJWK | undefined;
+        if (event.type === 'ISSUANCE') {
+          assertC2spIssuanceEvent(event);
+          genesisEntityKey = event.initialEntityPublicKey;
+          genesisOperationalKey = event.initialOperationalPublicKey;
+        } else if (event.type === 'MIGRATION' && migrationState.result) {
+          genesisEntityKey = migrationState.result.entityKey;
+          genesisOperationalKey = migrationState.result.activeOperationalKey;
+        }
+        const thumbprint = genesisEntityKey ? await jwkThumbprint(genesisEntityKey) : undefined;
+        // A genesis that cannot reach the trusted key is noise, skipped as the pinned filter skipped it.
+        if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
+        selected.push(candidate);
+        entityKey = genesisEntityKey;
+        activeOperationalKey = genesisOperationalKey;
+        genesisId = entryId;
+        genesisEntityThumbprint = thumbprint;
+        reachedTrusted = trustedThumbprint === undefined || genesisEntityThumbprint === trustedThumbprint;
+        appliedEntries.set(entryId, { signed, entityKey: entityKey!, operationalKey: activeOperationalKey! });
+        continue;
+      }
+      if (!entityKey || !activeOperationalKey) {
+        throw new C2spTlogVerificationError('lifecycle keys were not established by genesis', 'INVALID_EVIDENCE');
+      }
+      // ponytail: replay validation is O(n²), bounded by history/input limits and the shared deadline.
+      await verifyLifecycle([...selected, candidate], lifecycleOptions);
+      selected.push(candidate);
+      if (event.type === 'KEY_ROTATION') activeOperationalKey = event.newOperationalPublicKey;
+      if (event.type === 'ENTITY_KEY_ROTATION') {
+        entityKey = event.newEntityPublicKey;
+        if (trustedThumbprint !== undefined && event.newEntityThumbprint === trustedThumbprint) reachedTrusted = true;
+      }
+      appliedEntries.set(entryId, { signed, entityKey, operationalKey: activeOperationalKey });
     }
-    if (!entityKey || !activeOperationalKey) {
-      throw new C2spTlogVerificationError('lifecycle keys were not established by genesis', 'INVALID_EVIDENCE');
-    }
-    // ponytail: replay validation is O(n²), bounded by history/input limits and the shared deadline.
-    await verifyLifecycle([...selected, candidate], lifecycleOptions);
-    selected.push(candidate);
-    if (event.type === 'KEY_ROTATION') activeOperationalKey = event.newOperationalPublicKey;
-    appliedEntries.set(entryId, { signed, entityKey, operationalKey: activeOperationalKey });
+  } catch (error) {
+    // A genesis that never held the trusted key is noise: its failures are not ours to report.
+    if (genesisId !== undefined && !reachedTrusted && !(error instanceof GenesisAnchorMiss)) throw await anchorMiss();
+    throw error;
   }
-  await verifyLifecycle(selected, lifecycleOptions);
+  if (genesisId !== undefined && trustedThumbprint !== undefined
+    && (!entityKey || await jwkThumbprint(entityKey) !== trustedThumbprint)) {
+    throw await anchorMiss();
+  }
   return selected;
+}
+
+async function envelopeKeyThumbprint(value: unknown): Promise<string | undefined> {
+  try { return await jwkThumbprint(value as DnsIdJWK); } catch { return undefined; }
 }
 
 /** All roles authenticate a new payload before signed chain/transition errors become fatal. */
@@ -255,7 +400,11 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
     const envelope = JSON.parse(new TextDecoder().decode(bytes));
     const signatures = parseC2spSignatures(envelope.sigs, envelope.type);
     for (const [role, signature] of Object.entries(signatures)) {
-      const key = role === 'ae' ? entityKey : role === 'prev_op' ? operationalKey : role === 'op' ? envelope.ku : envelope.new_ku;
+      const key = role === 'ae' || role === 'prev_ae' ? entityKey
+        : role === 'prev_op' ? operationalKey
+          : role === 'op' ? envelope.ku
+            : role === 'new_ae' ? envelope.new_ek
+              : envelope.new_ku;
       assertSupportedLifecycleJwk(key);
       if (signature.kid !== key.kid || !await verifyWithKey(signedC2spEntryBytes(bytes), fromBase64Url(signature.sig), key)) return false;
     }
@@ -266,8 +415,10 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
 /**
  * Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
  * inbound MIGRATION), every event signature must verify against the entity or
- * operational key active at that point, KEY_ROTATION must prove possession of
- * the new key, every scope must carry consistent seq/prev_* fields,
+ * operational key active at that point, KEY_ROTATION and ENTITY_KEY_ROTATION
+ * must prove possession of the new key, every scope must carry consistent
+ * seq/prev_* fields, `signerKey` (when given) must be the entity key current
+ * at the end of `events`,
  * and nothing may follow a terminal REVOCATION/RETIREMENT. MIGRATION is valid
  * only as verified inbound genesis in the destination stream.
  *
@@ -285,6 +436,9 @@ async function verifyLifecycleWithinBudget(events: VerifiedLifecycleEvent[], opt
   let prevState: unknown = null;
   let entityKey: DnsIdJWK | undefined;
   let activeOperationalKey: DnsIdJWK | undefined;
+  // signerKey anchors the entity key current at the END of `events`. Without an
+  // ENTITY_KEY_ROTATION that is the genesis key, checked at genesis as before.
+  const anchorAtGenesis = !events.some(item => item.event.type === 'ENTITY_KEY_ROTATION');
   for (let pos = 0; pos < events.length; pos++) {
     if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
     const item = events[pos]!;
@@ -313,7 +467,7 @@ async function verifyLifecycleWithinBudget(events: VerifiedLifecycleEvent[], opt
       entityKey = event.initialEntityPublicKey;
       activeOperationalKey = event.initialOperationalPublicKey;
       await assertDistinctLifecycleKeys(entityKey, activeOperationalKey, 'ISSUANCE');
-      if (options.signerKey && await jwkThumbprint(options.signerKey) !== event.initialEntityThumbprint) {
+      if (anchorAtGenesis && options.signerKey && await jwkThumbprint(options.signerKey) !== event.initialEntityThumbprint) {
         throw new C2spTlogVerificationError('ISSUANCE entity key does not match trusted entity key');
       }
       await verifyEventSignature(item, event.sig, entityKey, 'invalid ISSUANCE entity signature');
@@ -329,7 +483,7 @@ async function verifyLifecycleWithinBudget(events: VerifiedLifecycleEvent[], opt
       assertSupportedLifecycleJwk(entityKey, 'MIGRATION entity key');
       assertSupportedLifecycleJwk(activeOperationalKey, 'MIGRATION operational key');
       await assertDistinctLifecycleKeys(entityKey, activeOperationalKey, 'MIGRATION');
-      if (options.signerKey && await jwkThumbprint(options.signerKey) !== await jwkThumbprint(entityKey)) throw new C2spTlogVerificationError('MIGRATION entity key does not match trusted entity key');
+      if (anchorAtGenesis && options.signerKey && await jwkThumbprint(options.signerKey) !== await jwkThumbprint(entityKey)) throw new C2spTlogVerificationError('MIGRATION entity key does not match trusted entity key');
       if (event.signingKid !== entityKey.kid) throw new C2spTlogVerificationError('MIGRATION signature kid does not match entity key');
       await verifyEventSignature(item, event.sig, entityKey, 'invalid MIGRATION entity signature');
       prevState = await activeState(event.domain, entityKey, activeOperationalKey);
@@ -349,6 +503,20 @@ async function verifyLifecycleWithinBudget(events: VerifiedLifecycleEvent[], opt
         if (!event.newOperationalProof) throw new C2spTlogVerificationError('KEY_ROTATION missing new operational proof of possession');
         await verifyEventSignature(item, event.newOperationalProof, event.newOperationalPublicKey, 'invalid KEY_ROTATION new-key proof of possession');
         activeOperationalKey = event.newOperationalPublicKey;
+      } else if (event.type === 'ENTITY_KEY_ROTATION') {
+        const entityThumbprint = await jwkThumbprint(entityKey);
+        if (event.signingKid !== entityKey.kid) throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION signature kid does not match entity key');
+        if (event.previousEntityThumbprint !== entityThumbprint) {
+          throw new C2spTlogVerificationError('authenticated ENTITY_KEY_ROTATION does not continue from the active entity key', 'KEY_CONTINUITY');
+        }
+        await assertEntityRotationKeyMetadata(event);
+        if (event.newEntityThumbprint === entityThumbprint || event.newEntityThumbprint === await jwkThumbprint(activeOperationalKey)) {
+          throw new C2spTlogVerificationError('authenticated ENTITY_KEY_ROTATION new key binding is invalid', 'KEY_CONTINUITY');
+        }
+        await verifyEventSignature(item, event.sig, entityKey, 'invalid ENTITY_KEY_ROTATION previous entity signature');
+        if (!event.newEntityProof) throw new C2spTlogVerificationError('ENTITY_KEY_ROTATION missing new entity proof of possession');
+        await verifyEventSignature(item, event.newEntityProof, event.newEntityPublicKey, 'invalid ENTITY_KEY_ROTATION new entity proof of possession');
+        entityKey = event.newEntityPublicKey;
       } else {
         if (event.signingKid !== entityKey.kid) throw new C2spTlogVerificationError(`${event.type} signature kid does not match entity key`);
         await verifyEventSignature(item, event.sig, entityKey, `invalid ${event.type} entity signature`);
@@ -359,6 +527,9 @@ async function verifyLifecycleWithinBudget(events: VerifiedLifecycleEvent[], opt
       prevState = await nextState(prevState, event, entityKey, activeOperationalKey);
     }
     if (event.type === 'REVOCATION' || event.type === 'RETIREMENT') terminal = true;
+  }
+  if (!anchorAtGenesis && options.signerKey && (!entityKey || await jwkThumbprint(options.signerKey) !== await jwkThumbprint(entityKey))) {
+    throw new C2spTlogVerificationError(`c2sp-tlog current entity key does not match record ek for ${events[0]!.event.domain}`);
   }
 }
 
@@ -411,6 +582,19 @@ async function assertRotationKeyMetadata(event: Extract<LogEvent, { type: 'KEY_R
   assertSupportedLifecycleJwk(event.newOperationalPublicKey, 'KEY_ROTATION new operational key');
   if (event.newOperationalThumbprint !== await jwkThumbprint(event.newOperationalPublicKey)) throw new C2spTlogVerificationError('KEY_ROTATION new thumbprint does not match public key', 'KEY_CONTINUITY');
   if (event.newOperationalKid !== event.newOperationalPublicKey.kid || event.newOperationalAlg !== event.newOperationalPublicKey.alg) throw new C2spTlogVerificationError('KEY_ROTATION new key metadata mismatch', 'KEY_CONTINUITY');
+}
+
+async function assertEntityRotationKeyMetadata(event: Extract<LogEvent, { type: 'ENTITY_KEY_ROTATION' }>): Promise<void> {
+  try {
+    assertStrictLifecycleJwk(event.newEntityPublicKey, 'ENTITY_KEY_ROTATION new entity key');
+  } catch (cause) {
+    throw new C2spTlogVerificationError('authenticated ENTITY_KEY_ROTATION new key binding is invalid', 'KEY_CONTINUITY', cause);
+  }
+  if (event.newEntityThumbprint !== await jwkThumbprint(event.newEntityPublicKey)
+    || event.newEntityKid !== event.newEntityPublicKey.kid
+    || event.newEntityAlg !== event.newEntityPublicKey.alg) {
+    throw new C2spTlogVerificationError('authenticated ENTITY_KEY_ROTATION new key binding is invalid', 'KEY_CONTINUITY');
+  }
 }
 
 async function assertDistinctLifecycleKeys(entityKey: DnsIdJWK, operationalKey: DnsIdJWK, eventType: string): Promise<void> {

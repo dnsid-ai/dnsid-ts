@@ -34,6 +34,10 @@ DNSid has two key roles in draft-01 records:
 
 The SDK's managed rotation path rotates the operational `ku` key as an immediate cutover. `rotateOperationalKey()` generates a pending key, publishes a JWKS containing only the new operational key, writes a `KEY_ROTATION` lifecycle event linking the previous and new key material, activates the new key, and then supersedes the previous key in the configured `KeyProvider`. Draft-01 operational JWKS validation expects exactly one current signing key, so this SDK release does not support publishing old and new operational signing keys together for JWT overlap.
 
+### Entity-key rotation
+
+On `c2sp-tlog` the `ek` key can be rotated with an `ENTITY_KEY_ROTATION` lifecycle event signed by both the previous entity key (authorization) and the new entity key (proof of possession). Verifiers then require the record `ek` to be the entity key current at the end of the verified history, and only that key authorizes later REVOCATION, RETIREMENT and DELEGATION events. Rotating away from a key does not undo what it signed while it was current; treat a compromised entity key as an incident, not routine rotation. Relying-party pins on `ek` are not migrated by a rotation and reject the new key until updated. Verifiers from releases without this support reject rotated identities, so upgrade them before rotating.
+
 ### JWTs after signing-key rotation
 
 DNSid JOSE JWTs carry the signing key's bare `kid` in the JWT header. Verification resolves the issuer's current DNSid identity, reads the issuer's current published JWKS, finds that `kid`, checks the JWT time claims, checks algorithm/key consistency, and verifies the signature.

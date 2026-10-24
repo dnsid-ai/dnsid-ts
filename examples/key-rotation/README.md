@@ -4,6 +4,10 @@ Rotate the operational `ku` key using a file-backed local provider and the DNSid
 local testnet. The accountable-entity `ek` key and signed TXT record do not change.
 No KMS, hosted registry, or application server is needed.
 
+Rotating the `ek` key itself is a different lifecycle event,
+`ENTITY_KEY_ROTATION`, signed by the previous and the new entity key; see
+[Entity-key continuity](../../packages/log-c2sp-tlog/README.md#entity-key-continuity).
+
 ## Run
 
 Install the DNSid CLI and start Docker. Use a CLI containing the local lifecycle

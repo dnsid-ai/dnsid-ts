@@ -2,6 +2,7 @@ import { createHash, createPrivateKey, generateKeyPairSync, sign as signEd25519,
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { correctedBundle } from './helpers/corrected-c2sp-bundle.ts';
+import { LifecycleStreamBuilder, testKey } from './helpers/entity-rotation-stream.ts';
 
 import { jwkThumbprint, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type LogEvent } from '@dnsid-ai/protocol';
 import {
@@ -1092,5 +1093,55 @@ describe('C2SP stream bundles', () => {
     oversizedTree.options.maxTreeSize = 1;
     await expect(verifyC2spStreamBundle(oversizedTree.bytes, oversizedTree.options))
       .rejects.toThrow('tree-size maximum');
+  });
+});
+
+describe('C2spTlogReader entity-key continuity', () => {
+  const context = { scope: 'testnet', logOrigin: ORIGIN, streamId: 'test-instance', lr: LR };
+
+  async function rotatedStream() {
+    const keys = { e1: await testKey('entity-1'), e2: await testKey('entity-2'), o1: await testKey('op-1'), x: await testKey('spam') };
+    const spam = new LifecycleStreamBuilder('agent.example', context);
+    await spam.issuance(keys.x, keys.o1);
+    const stream = new LifecycleStreamBuilder('agent.example', context);
+    await stream.issuance(keys.e1, keys.o1);
+    await stream.entityKeyRotation(keys.e2);
+    return { keys, entries: [...spam.entries, ...stream.entries] };
+  }
+
+  it('binds the record ek to the entity key current at the end of history', async () => {
+    const { keys, entries } = await rotatedStream();
+    const reader = rawReader(fixture(), entries, { entityKey: keys.e2.publicJwk, checkpointMaxAge: 60_000 });
+    await expect(reader.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: 'example.com' }, keys.e2.publicJwk, keys.o1.publicJwk)).resolves.toMatchObject({
+      initialEntityThumbprint: keys.e1.thumbprint,
+      currentEntityThumbprint: keys.e2.thumbprint,
+      initialOperationalThumbprint: keys.o1.thumbprint,
+    });
+    await expect(reader.verifyNonRevocation('agent.example', new Date())).resolves.toMatchObject({ loggedState: 'ACTIVE', historyStart: `${LR}@1`, historyEnd: `${LR}@2` });
+    await expect(reader.readEvent(`${LR}@2`)).resolves.toMatchObject({ type: 'ENTITY_KEY_ROTATION', newEntityThumbprint: keys.e2.thumbprint });
+    await expect(reader.readEvent(`${LR}@1`)).resolves.toMatchObject({ type: 'ISSUANCE' });
+  });
+
+  it('rejects the ISSUANCE key as record ek after a rotation', async () => {
+    const { keys, entries } = await rotatedStream();
+    const single = rawReader(fixture(), entries.slice(1), { entityKey: undefined });
+    await expect(single.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: 'example.com' }, keys.e1.publicJwk, keys.o1.publicJwk))
+      .rejects.toThrow('current entity key does not match record ek for agent.example');
+    // A spam genesis that cannot reach the record key is skipped without replay.
+    const withSpam = rawReader(fixture(), entries, { entityKey: undefined });
+    await expect(withSpam.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: 'example.com' }, keys.e1.publicJwk, keys.o1.publicJwk))
+      .rejects.toThrow('current entity key does not match record ek for agent.example');
+  });
+
+  it('reports the unchanged ISSUANCE key as current without a rotation', async () => {
+    const e1 = await testKey('entity-1');
+    const o1 = await testKey('op-1');
+    const stream = new LifecycleStreamBuilder('agent.example', context);
+    await stream.issuance(e1, o1);
+    const reader = rawReader(fixture(), stream.entries, { entityKey: undefined });
+    await expect(reader.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: 'example.com' }, e1.publicJwk, o1.publicJwk)).resolves.toMatchObject({
+      initialEntityThumbprint: e1.thumbprint,
+      currentEntityThumbprint: e1.thumbprint,
+    });
   });
 });

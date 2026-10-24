@@ -148,6 +148,9 @@ export class DomainLog {
     let activeKeyThumbprint = '';
     let keyBoundAt = new Date(0);
     let governanceId = '';
+    let entityKey: DnsIdJWK | null = null;
+    let entityKeyThumbprint = '';
+    let entityKeyBoundAt = new Date(0);
     const eventsUpTo: LogEvent[] = [];
     let pastSnapshotBoundary = false;
 
@@ -184,8 +187,8 @@ export class DomainLog {
           }
           // Prefer draft-01's operational slot, then the c2sp-tlog representation,
           // with the pre-draft-01 fields retained as a final compatibility fallback.
-          const entityKey = event.entityKey?.jwk ?? event.initialEntityPublicKey ?? null;
-          const entityKeyThumbprint = event.entityKey?.thumbprint ?? event.initialEntityThumbprint ?? '';
+          entityKey = event.entityKey?.jwk ?? event.initialEntityPublicKey ?? null;
+          entityKeyThumbprint = event.entityKey?.thumbprint ?? event.initialEntityThumbprint ?? '';
           activeKey = event.operationalKey?.jwk ?? event.initialOperationalPublicKey ?? event.publicKey ?? null;
           activeKeyThumbprint = event.operationalKey?.thumbprint ?? event.initialOperationalThumbprint ?? event.thumbprint ?? '';
           if (!entityKey || !activeKey || !entityKeyThumbprint || !activeKeyThumbprint
@@ -196,7 +199,28 @@ export class DomainLog {
           }
           state = 'ACTIVE';
           keyBoundAt = event.timestamp;
+          entityKeyBoundAt = event.timestamp;
           governanceId = event.governanceId;
+          break;
+        case 'ENTITY_KEY_ROTATION':
+          if (state !== 'ACTIVE') {
+            throw lifecycleError('ENTITY_KEY_ROTATION outside an ACTIVE issuance', 'KEY_CONTINUITY');
+          }
+          if (event.previousEntityThumbprint !== entityKeyThumbprint) {
+            throw lifecycleError('ENTITY_KEY_ROTATION does not continue from the active entity key', 'KEY_CONTINUITY');
+          }
+          if (!event.newEntityPublicKey || !event.newEntityThumbprint
+            || event.newEntityThumbprint !== synchronousJwkThumbprint(event.newEntityPublicKey, 'KEY_CONTINUITY')
+            || event.newEntityThumbprint === entityKeyThumbprint
+            || event.newEntityThumbprint === activeKeyThumbprint
+            || (entityKey && sameJwkMaterial(entityKey, event.newEntityPublicKey))
+            || (activeKey && sameJwkMaterial(activeKey, event.newEntityPublicKey))) {
+            throw lifecycleError('ENTITY_KEY_ROTATION new key binding is invalid', 'KEY_CONTINUITY');
+          }
+          // The operational key and its ka bound are unchanged by an entity-key rotation.
+          entityKey = event.newEntityPublicKey;
+          entityKeyThumbprint = event.newEntityThumbprint;
+          entityKeyBoundAt = event.timestamp;
           break;
         case 'KEY_ROTATION':
           if (state !== 'ACTIVE') {
@@ -265,6 +289,9 @@ export class DomainLog {
       governanceId,
       snapshotAt: at,
       events: eventsUpTo,
+      entityKey: entityKey ?? undefined,
+      entityKeyThumbprint,
+      entityKeyBoundAt,
     });
   }
 }
@@ -323,6 +350,15 @@ export class DomainSnapshot {
   readonly governanceId: string;
   readonly snapshotAt: Date;
   readonly events: LogEvent[];
+  /**
+   * Accountable-entity key current at `snapshotAt`: the ISSUANCE key, or the
+   * key installed by the latest ENTITY_KEY_ROTATION at or before `snapshotAt`.
+   */
+  readonly entityKey?: DnsIdJWK;
+  /** RFC 7638 thumbprint of {@link entityKey}. */
+  readonly entityKeyThumbprint?: string;
+  /** Timestamp of the event that installed {@link entityKey} (ISSUANCE or ENTITY_KEY_ROTATION). */
+  readonly entityKeyBoundAt?: Date;
 
   constructor(fields: {
     domain: string;
@@ -333,6 +369,9 @@ export class DomainSnapshot {
     governanceId: string;
     snapshotAt: Date;
     events: LogEvent[];
+    entityKey?: DnsIdJWK;
+    entityKeyThumbprint?: string;
+    entityKeyBoundAt?: Date;
   }) {
     this.domain = fields.domain;
     this.historicalState = fields.historicalState;
@@ -342,5 +381,8 @@ export class DomainSnapshot {
     this.governanceId = fields.governanceId;
     this.snapshotAt = fields.snapshotAt;
     this.events = fields.events;
+    this.entityKey = fields.entityKey;
+    this.entityKeyThumbprint = fields.entityKeyThumbprint;
+    this.entityKeyBoundAt = fields.entityKeyBoundAt;
   }
 }

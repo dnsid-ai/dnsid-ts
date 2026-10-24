@@ -53,7 +53,11 @@ export interface C2spTlogReaderOptions {
   proofs?: Record<string, TlogProofV1 | string>;
   /** @deprecated Ignored: all scopes require logical predecessor chains. */
   unchained?: boolean;
-  /** Trusted accountable-entity key for lifecycle verification. */
+  /**
+   * Trusted accountable-entity key (the record `ek`) for lifecycle verification.
+   * Genesis selection accepts the first authenticated genesis whose verified
+   * history ends with this key as its current entity key.
+   */
   entityKey?: DnsIdJWK;
   /** Accepted timestamp clock skew in milliseconds (default zero). */
   allowedClockSkew?: number;
@@ -136,7 +140,9 @@ export class C2spTlogReader implements LogReader {
   }
 
   additionalSignerRoles(event: LogEvent): LogSignerRole[] {
-    return event.type === 'KEY_ROTATION' ? ['NewOperational'] : [];
+    if (event.type === 'KEY_ROTATION') return ['NewOperational'];
+    if (event.type === 'ENTITY_KEY_ROTATION') return ['NewEntity'];
+    return [];
   }
 
   async keyTimestamp(domain: string, keyThumbprint: string): Promise<Date> {
@@ -147,13 +153,23 @@ export class C2spTlogReader implements LogReader {
     throw new VerificationError('key thumbprint not found in C2SP lifecycle history', { code: VerificationCode.LogError });
   }
 
-  async verifyBilateralBinding(record: unknown, entityKey: unknown, operationalKey: unknown): Promise<{ initialOperationalThumbprint: string; initialEntityThumbprint: string; timestamp: Date }> {
+  /**
+   * Verifies the bilateral ISSUANCE binding for the current TXT record. The
+   * record `ek` key must equal the entity key current at the end of the
+   * verified history: the ISSUANCE key, or the key installed by the latest
+   * ENTITY_KEY_ROTATION. ISSUANCE `fqdn` and `gi` must match the record.
+   *
+   * @returns The ISSUANCE operational and entity thumbprints, the current
+   *   entity thumbprint, and the ISSUANCE timestamp.
+   * @throws VerificationError (LogError) when the binding does not hold.
+   */
+  async verifyBilateralBinding(record: unknown, entityKey: unknown, operationalKey: unknown): Promise<{ initialOperationalThumbprint: string; initialEntityThumbprint: string; currentEntityThumbprint: string; timestamp: Date }> {
     const dnsRecord = record as Partial<DnsIdTxtRecord> & { domain?: string; fqdn?: string };
     const domain = dnsRecord.domain ?? dnsRecord.fqdn ?? dnsRecord.agentFQDN;
     if (!domain) throw new VerificationError('cannot infer domain for bilateral binding', { code: VerificationCode.LogError });
     if (!entityKey || !operationalKey) throw new VerificationError('entity and operational keys are required for C2SP bilateral binding', { code: VerificationCode.LogError });
     const entity = entityKey as DnsIdJWK;
-    const initialEntityThumbprint = await jwkThumbprint(entity);
+    const recordEntityThumbprint = await jwkThumbprint(entity);
     const verifiedHistory = await this.loadCompleteHistory(domain, entity);
     const history = verifiedHistory.events;
     this.trustedEntityKey = entity;
@@ -161,7 +177,10 @@ export class C2spTlogReader implements LogReader {
     if (!issuance || issuance.type !== 'ISSUANCE') throw new VerificationError('ISSUANCE not found', { code: VerificationCode.LogError });
     assertC2spIssuanceEvent(issuance);
     if (issuance.domain !== domain || issuance.governanceId !== dnsRecord.gi) throw new VerificationError('ISSUANCE does not match current domain and governance ID', { code: VerificationCode.LogError });
-    if (issuance.initialEntityThumbprint !== initialEntityThumbprint) throw new VerificationError('ISSUANCE entity key does not match current ek key', { code: VerificationCode.LogError });
+    const currentEntityThumbprint = currentEntityKeyThumbprint(history);
+    if (currentEntityThumbprint !== recordEntityThumbprint) {
+      throw new VerificationError(`c2sp-tlog current entity key does not match record ek for ${domain}`, { code: VerificationCode.LogError });
+    }
     const currentOperationalThumbprint = await jwkThumbprint(operationalKey as DnsIdJWK);
     const recordedOperational = history.some((e) => e.type === 'ISSUANCE'
       ? e.initialOperationalThumbprint === currentOperationalThumbprint
@@ -170,7 +189,7 @@ export class C2spTlogReader implements LogReader {
     const snapshot = latestSnapshot(domain, history);
     if (snapshot.historicalState !== 'ACTIVE') throw new VerificationError(`domain ${domain} is ${snapshot.historicalState}`, { code: VerificationCode.LogError });
     if (snapshot.activeKeyThumbprint !== currentOperationalThumbprint) throw new VerificationError('current operational key mismatch', { code: VerificationCode.LogError });
-    return { initialOperationalThumbprint: issuance.initialOperationalThumbprint, initialEntityThumbprint: issuance.initialEntityThumbprint, timestamp: issuance.timestamp };
+    return { initialOperationalThumbprint: issuance.initialOperationalThumbprint, initialEntityThumbprint: issuance.initialEntityThumbprint, currentEntityThumbprint, timestamp: issuance.timestamp };
   }
 
   async verifyOperationalContinuity(domain: string, initialOperationalThumbprint: string, currentOperationalThumbprint: string): Promise<void> {
@@ -269,7 +288,9 @@ export class C2spTlogReader implements LogReader {
     if (position < 0 || history[position]!.index > entry.index || !Buffer.from(signedC2spEntryBytes(history[position]!.bytes)).equals(Buffer.from(signed))) {
       throw new VerificationError('C2SP event is not authorized by its lifecycle history', { code: VerificationCode.LogError });
     }
-    await verifyLifecycle([...history.slice(0, position), { ...entry, event, leafHash: leafHash(entry.bytes) }], { ...this.verifierOptions(this.parsed, entityKey, witnessTime), signal });
+    // The complete history was anchored on the trusted entity key when it was
+    // loaded; a prefix replay may end before a later ENTITY_KEY_ROTATION.
+    await verifyLifecycle([...history.slice(0, position), { ...entry, event, leafHash: leafHash(entry.bytes) }], { ...this.verifierOptions(this.parsed, entityKey, witnessTime), signerKey: undefined, signal });
     return event;
   }
 
@@ -460,6 +481,16 @@ export class C2spTlogReader implements LogReader {
   private context(parsed = this.parsed): C2spEventContext {
     return { scope: parsed.scope, logOrigin: parsed.origin, streamId: parsed.streamId, lr: this.lr };
   }
+}
+
+/** Entity key thumbprint current at the end of a verified (possibly stitched) history. */
+function currentEntityKeyThumbprint(history: LogEvent[]): string | undefined {
+  let current: string | undefined;
+  for (const event of history) {
+    if (event.type === 'ISSUANCE') current = event.entityKey?.thumbprint ?? event.initialEntityThumbprint;
+    else if (event.type === 'ENTITY_KEY_ROTATION') current = event.newEntityThumbprint;
+  }
+  return current;
 }
 
 function checkpointEvidenceBytes(checkpoint: Checkpoint): Uint8Array {

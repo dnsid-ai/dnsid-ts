@@ -81,7 +81,7 @@ export interface VerifyC2spStreamBundleOptions extends ParseC2spStreamBundleOpti
   policyBytes: Uint8Array;
   /** Trusted bundle-producer keys (with key IDs) accepted for the bundle signature. */
   bundleKeys: SignedNoteKey[];
-  /** Trusted accountable-entity key for the identity record. */
+  /** Trusted accountable-entity key for the identity record: the entity key current at the end of the verified history. */
   entityKey: DnsIdJWK;
   /** Maximum allowed distance between checkpoint witness time and bundle expiry. */
   maxBundleLifetimeMs: number;

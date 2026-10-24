@@ -92,7 +92,38 @@ idempotency key to the deployment adapter. Events after genesis in every scope a
 require a `validateChain` callback backed by authoritative prior stream state;
 the SDK will not append them based only on caller-supplied chain hashes.
 
-Draft-01 ISSUANCE entries contain the recorded entity and operational public keys and carry `sigs.ae` and `sigs.op`. KEY_ROTATION entries carry both the previous-key authorization in `sigs.prev_op` and the new-key proof of possession in `sigs.new_op`. Other supported lifecycle entries carry `sigs.ae`. The draft-01 behavior supports ISSUANCE, KEY_ROTATION, REVOCATION, RETIREMENT, MIGRATION, and DELEGATION.
+Draft-01 ISSUANCE entries contain the recorded entity and operational public keys and carry `sigs.ae` and `sigs.op`. KEY_ROTATION entries carry both the previous-key authorization in `sigs.prev_op` and the new-key proof of possession in `sigs.new_op`. ENTITY_KEY_ROTATION entries carry the previous entity key's authorization in `sigs.prev_ae` and the new entity key's proof of possession in `sigs.new_ae`. Other supported lifecycle entries carry `sigs.ae`. The draft-01 behavior supports ISSUANCE, KEY_ROTATION, ENTITY_KEY_ROTATION, REVOCATION, RETIREMENT, MIGRATION, and DELEGATION.
+
+### Entity-key continuity
+
+An accountable entity, for example a registry that custodies entity keys, can
+rotate the record-signing `ek` key without breaking verification of the
+identities it signs. ENTITY_KEY_ROTATION records `prev_ek_thumb`, `new_ek_thumb`
+and the new public key `new_ek`; it is authorized by the entity key active at
+that point of the chain (`prev_ae`) and proves possession of the new key
+(`new_ae`), both over the same canonical bytes. After it, REVOCATION,
+RETIREMENT and DELEGATION must be signed by the new entity key, and a
+destination MIGRATION imports the entity key current at the end of the prior
+history.
+
+`verifyBilateralBinding` requires the record `ek` key to equal the entity key
+current at the end of the verified history (the ISSUANCE key when no rotation
+exists) and returns it as `currentEntityThumbprint` next to the ISSUANCE
+`initialEntityThumbprint`. Readers anchor genesis selection on the record
+`ek`: authenticated genesis candidates are tried in log order and the first
+whose replayed history ends at that key is accepted. An unrelated genesis can
+reach the record key only through an ENTITY_KEY_ROTATION whose `new_ae` is
+signed by that key.
+
+To write one, prepare an `ENTITY_KEY_ROTATION` event and sign its required
+roles in order, `PreviousEntity` then `NewEntity`, passing the trusted
+`previousEntityKey` as verification context. Relying-party entity-key pins are
+evaluated against the current `ek`; a rotation never changes a pin, so a pinned
+relying party rejects a rotated identity until it updates its pins.
+
+Verifiers from releases before this support treat ENTITY_KEY_ROTATION as an
+unsupported entry and keep rejecting rotated identities with the ISSUANCE
+entity-key mismatch. Upgrade every verifier before rotating entity keys.
 
 Candidate selection deduplicates exact signed payloads, not complete entry bytes.
 It accepts valid ES256 high-S/low-S variants and independently re-signed copies

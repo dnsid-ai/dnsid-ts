@@ -412,14 +412,17 @@ export class IdentityManager implements RefreshingIdentityResolver {
       ? ['Entity', 'OperationalCountersignature']
       : event.type === 'KEY_ROTATION'
         ? ['PreviousOperational']
-        : ['Entity'];
+        : event.type === 'ENTITY_KEY_ROTATION'
+          ? ['PreviousEntity', 'NewEntity']
+          : ['Entity'];
     return [...new Set([...base, ...(binding?.additionalSignerRoles?.(event) ?? [])])];
   }
 
   async signEvent(event: LogEvent, role: LogSignerRole): Promise<LogEvent> {
-    const provider = role === 'Entity' ? this.entityKeyProvider : this.keyProvider;
+    const entityRole = role === 'Entity' || role === 'PreviousEntity' || role === 'NewEntity';
+    const provider = entityRole ? this.entityKeyProvider : this.keyProvider;
     if (!provider) {
-      throw new ArgumentError(role === 'Entity'
+      throw new ArgumentError(entityRole
         ? 'draft-01 event signing requires entityKeyProvider'
         : 'local event signing requires a keyProvider');
     }
@@ -467,6 +470,25 @@ export class IdentityManager implements RefreshingIdentityResolver {
         throw new ArgumentError('KEY_ROTATION new operational key metadata mismatch');
       }
       event.newOperationalProof = toBase64Url(await keyProvider.signKey(key.kid, canonical));
+    } else if (role === 'PreviousEntity') {
+      if (event.type !== 'ENTITY_KEY_ROTATION') throw new ArgumentError('previous-entity signature is only valid for ENTITY_KEY_ROTATION');
+      const key = await keyProvider.jwk(event.previousEntityKid);
+      if (key.kid !== event.previousEntityKid || event.previousEntityThumbprint !== await jwkThumbprint(key)) {
+        throw new ArgumentError('ENTITY_KEY_ROTATION previous entity key metadata mismatch');
+      }
+      await assertEntityRotationNewKeyMetadata(event);
+      event.signingKid = key.kid;
+      event.sig = toBase64Url(await keyProvider.signKey(key.kid, canonical));
+    } else if (role === 'NewEntity') {
+      if (event.type !== 'ENTITY_KEY_ROTATION') throw new ArgumentError('new-entity signature is only valid for ENTITY_KEY_ROTATION');
+      const key = await keyProvider.jwk(event.newEntityKid);
+      await assertEntityRotationNewKeyMetadata(event);
+      if (event.newEntityKid !== key.kid
+        || event.newEntityAlg !== key.alg
+        || event.newEntityThumbprint !== await jwkThumbprint(key)) {
+        throw new ArgumentError('ENTITY_KEY_ROTATION new entity key metadata mismatch');
+      }
+      event.newEntityProof = toBase64Url(await keyProvider.signKey(key.kid, canonical));
     }
     return event;
   }
@@ -482,6 +504,7 @@ export class IdentityManager implements RefreshingIdentityResolver {
   private hasLogSignature(event: LogEvent, role: LogSignerRole): boolean {
     if (role === 'OperationalCountersignature') return !!event.operationalCountersig;
     if (role === 'NewOperational') return event.type === 'KEY_ROTATION' && !!event.newOperationalProof;
+    if (role === 'NewEntity') return event.type === 'ENTITY_KEY_ROTATION' && !!event.newEntityProof;
     return !!event.sig;
   }
 
@@ -1227,4 +1250,12 @@ export async function verifyBilateralBinding(
   // KEY_ROTATION continuity — that is verifyOperationalContinuity's job, not
   // ours. Expose the recorded initial thumbprint so the caller can chain it.
   return { initialOperationalThumbprint: operationalKey.thumbprint };
+}
+
+async function assertEntityRotationNewKeyMetadata(event: Extract<LogEvent, { type: 'ENTITY_KEY_ROTATION' }>): Promise<void> {
+  if (event.newEntityKid !== event.newEntityPublicKey.kid
+    || event.newEntityAlg !== event.newEntityPublicKey.alg
+    || event.newEntityThumbprint !== await jwkThumbprint(event.newEntityPublicKey)) {
+    throw new ArgumentError('ENTITY_KEY_ROTATION new entity key metadata mismatch');
+  }
 }
