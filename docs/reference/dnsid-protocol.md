@@ -726,7 +726,7 @@ Replace with the spec's canonicalization/test vectors once they land.
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L150)
+Defined in: [packages/protocol/src/utils.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L156)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -750,7 +750,7 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function isDomainName(value): boolean;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L90)
+Defined in: [packages/protocol/src/utils.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L96)
 
 Checks whether a string is a valid domain name (for gi consistency checks).
 Returns true if the value looks like a domain name (as opposed to a URI or other identifier).
@@ -882,7 +882,7 @@ Throws a normalized ValidationError if any key in either set is too malformed to
 function matchesDnsName(san, fqdn): boolean;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:208](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L208)
+Defined in: [packages/protocol/src/utils.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L214)
 
 RFC 9525 §4 dNSName SAN matching.
 Returns true when at least one SAN entry matches the given FQDN.
@@ -1067,7 +1067,7 @@ UTF-8 JSON with duplicate member rejection, including escaped member names.
 function parseKaDuration(ka): number;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L166)
+Defined in: [packages/protocol/src/utils.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L172)
 
 Parses a duration string (as used in the `ka` tag) to milliseconds.
 Valid values: "24h", "7d", "30d", "90d".
@@ -1092,7 +1092,7 @@ Valid values: "24h", "7d", "30d", "90d".
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L110)
+Defined in: [packages/protocol/src/utils.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L116)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
@@ -1200,7 +1200,7 @@ retried unless callers explicitly override shouldRetry.
 function toArrayBuffer(bytes): Uint8Array<ArrayBuffer>;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:181](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L181)
+Defined in: [packages/protocol/src/utils.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L187)
 
 Returns a Uint8Array<ArrayBuffer> view over the same memory — no copy.
 Required because WebCrypto's BufferSource only accepts ArrayBuffer-backed views,
@@ -1226,7 +1226,7 @@ not the default Uint8Array<ArrayBufferLike> that TypeScript infers.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L138)
+Defined in: [packages/protocol/src/utils.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L144)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 
@@ -1361,7 +1361,7 @@ function verifyWithKey(
 ): Promise<boolean>;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L228)
+Defined in: [packages/protocol/src/utils.ts:234](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L234)
 
 Verifies a signing input against a raw signature using a public JWK.
 Returns true if the signature is valid, false otherwise.

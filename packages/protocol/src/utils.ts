@@ -67,6 +67,12 @@ export function normalizeFQDN(name: string, agentFQDN = false): string {
     if (label.startsWith('-') || label.endsWith('-')) {
       throw new ValidationError(`DNS label may not begin or end with a hyphen: ${label}`);
     }
+    // UTS #46 UseSTD3ASCIIRules and CheckHyphens, which WHATWG host parsing turns off:
+    // LDH labels only, and "--" in positions 3-4 is reserved except for A-labels (RFC 5891 4.2.3.1).
+    // shortcut: the RFC 5893 Bidi rule needs Bidi_Class data; add tr46 if it must be enforced.
+    if (!/^[a-z0-9-]+$/.test(label) || (label.slice(2, 4) === '--' && !label.startsWith('xn--'))) {
+      throw new ValidationError(`DNS label is not a valid LDH or A-label: ${label}`);
+    }
     if (new TextEncoder().encode(label).length > MAX_LABEL_OCTETS) {
       throw new ValidationError(`DNS label exceeds 63 octets: ${label}`);
     }
