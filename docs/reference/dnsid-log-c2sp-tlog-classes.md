@@ -133,6 +133,22 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
 [`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
 
+<a id="failingcandidateindex"></a>
+
+##### failingCandidateIndex?
+
+```ts
+optional failingCandidateIndex?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+
+Log index of the stream candidate whose evaluation raised this failure, when stream selection can attribute it.
+
+###### Inherited from
+
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`failingCandidateIndex`](#failingcandidateindex-2)
+
 <a id="message"></a>
 
 ##### message
@@ -524,6 +540,22 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 ###### Inherited from
 
 [`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
+
+<a id="failingcandidateindex-1"></a>
+
+##### failingCandidateIndex?
+
+```ts
+optional failingCandidateIndex?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+
+Log index of the stream candidate whose evaluation raised this failure, when stream selection can attribute it.
+
+###### Inherited from
+
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`failingCandidateIndex`](#failingcandidateindex-2)
 
 <a id="message-1"></a>
 
@@ -2883,7 +2915,7 @@ new C2spTlogVerificationError(
 ): C2spTlogVerificationError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L43)
 
 ###### Parameters
 
@@ -2970,6 +3002,18 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 ###### Overrides
 
 [`C2spTlogError`](#c2sptlogerror).[`errorCategory`](#errorcategory-2)
+
+<a id="failingcandidateindex-2"></a>
+
+##### failingCandidateIndex?
+
+```ts
+optional failingCandidateIndex?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+
+Log index of the stream candidate whose evaluation raised this failure, when stream selection can attribute it.
 
 <a id="message-4"></a>
 
@@ -3338,7 +3382,7 @@ new MissingC2spConsistencyEvidenceError(
 ): MissingC2spConsistencyEvidenceError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L43)
 
 ###### Parameters
 
@@ -3425,6 +3469,22 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 ###### Inherited from
 
 [`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
+
+<a id="failingcandidateindex-3"></a>
+
+##### failingCandidateIndex?
+
+```ts
+optional failingCandidateIndex?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+
+Log index of the stream candidate whose evaluation raised this failure, when stream selection can attribute it.
+
+###### Inherited from
+
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`failingCandidateIndex`](#failingcandidateindex-2)
 
 <a id="message-5"></a>
 
