@@ -381,6 +381,11 @@ describe('ENTITY_KEY_ROTATION key types, forks and migration', () => {
     expect(selected.map(item => item.event.type)).toEqual(['MIGRATION', 'ENTITY_KEY_ROTATION', 'REVOCATION']);
     await expect(verifyStreamLifecycle(indexed(destination.entries), FQDN, { ...CONTEXT, signerKey: k.e2.publicJwk, checkpointIntegrationTimeMs: CHECKPOINT_TIME, verifyMigration }))
       .rejects.toThrow('current entity key does not match record ek');
+    // A malformed ISSUANCE authenticated by the MIGRATION signer is fatal.
+    const malformed = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await malformed.issuance(k.e2, k.o3, { mutate: envelope => { delete envelope.gi; }, apply: false });
+    await expect(verifyStreamLifecycle(indexed([...destination.entries, ...malformed.entries]), FQDN, { ...CONTEXT, signerKey: k.e3.publicJwk, checkpointIntegrationTimeMs: CHECKPOINT_TIME, verifyMigration }))
+      .rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', message: 'authenticated lifecycle genesis is malformed' });
   });
 });
 
@@ -479,6 +484,25 @@ describe('genesis selection anchored on the record ek', () => {
     const spam = new LifecycleStreamBuilder(FQDN, CONTEXT);
     await spam.issuance(k.x, k.o2, { mutate: envelope => { delete envelope.gi; }, apply: false });
     await expect(verifyStream([...spam.entries, ...legit.entries], k.e1)).resolves.toHaveLength(1);
+  });
+
+  it.each([
+    ['the root key after a rotation', 'e1', ['e2'], 'e2'],
+    ['an intermediate rotated-in key', 'e2', ['e2', 'e3'], 'e3'],
+    ['the record key before the legitimate genesis', 'e3', ['e2', 'e3'], 'e3'],
+  ] as const)('treats a malformed ISSUANCE authenticated by %s as fatal', async (name, signer, rotations, record) => {
+    const k = await keys();
+    const legit = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await legit.issuance(k.e1, k.o1);
+    for (const next of rotations) await legit.entityKeyRotation(k[next]);
+    const malformed = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await malformed.issuance(k[signer], k.o3, { mutate: envelope => { delete envelope.gi; }, apply: false });
+    const entries = name.includes('before') ? [...malformed.entries, ...legit.entries] : [...legit.entries, ...malformed.entries];
+    await expect(verifyStream(entries, k[record])).rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', message: 'authenticated lifecycle genesis is malformed' });
+    // The same malformed ISSUANCE under an unrelated key is noise.
+    const unrelated = new LifecycleStreamBuilder(FQDN, CONTEXT);
+    await unrelated.issuance(k.x, k.o3, { mutate: envelope => { delete envelope.gi; }, apply: false });
+    await expect(verifyStream([...legit.entries, ...unrelated.entries], k[record])).resolves.toHaveLength(1 + rotations.length);
   });
 
   it('verifies a MIGRATION prior history whose end-of-history entity key was rotated', async () => {

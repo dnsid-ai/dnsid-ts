@@ -274,6 +274,9 @@ async function selectStreamLifecycle(
   const appliedEntries = new Map<string, { signed: string; entityKey: DnsIdJWK; operationalKey: DnsIdJWK }>();
   let entityKey: DnsIdJWK | undefined;
   let activeOperationalKey: DnsIdJWK | undefined;
+  // Entity keys the identity holds or has held: those that reach the trusted
+  // key, plus the selected genesis key and every key rotated in after it.
+  const chainKeys = new Set(reachable ?? []);
   for (const entry of sorted) {
     if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
     let signedBytes: Uint8Array;
@@ -298,6 +301,16 @@ async function selectStreamLifecycle(
       const thumbprint = await envelopeKeyThumbprint(envelope.ek);
       if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
       eligibleIssuance = true;
+    }
+    if (selected.length > 0 && envelope.type === 'ISSUANCE') {
+      // A malformed ISSUANCE authenticated by any entity key of the chain is
+      // invalid evidence from the identity itself; an unrelated key's is noise.
+      const thumbprint = await envelopeKeyThumbprint(envelope.ek);
+      if (thumbprint !== undefined && chainKeys.has(thumbprint)
+        && await hasAllRoleSignatures(entry.bytes, envelope.ek as DnsIdJWK, envelope.ku as DnsIdJWK)) {
+        try { await parseC2spEventEntry(entry.bytes, options); }
+        catch (cause) { throw new C2spTlogVerificationError('authenticated lifecycle genesis is malformed', 'INVALID_EVIDENCE', cause); }
+      }
     }
     if (selected.length > 0) {
       const prior = appliedEntries.get(envelope.prev_event_id as string);
@@ -339,6 +352,7 @@ async function selectStreamLifecycle(
       selected.push(candidate);
       entityKey = genesisEntityKey;
       activeOperationalKey = genesisOperationalKey;
+      if (thumbprint !== undefined) chainKeys.add(thumbprint);
       appliedEntries.set(entryId, { signed, entityKey: entityKey!, operationalKey: activeOperationalKey! });
       continue;
     }
@@ -349,7 +363,10 @@ async function selectStreamLifecycle(
     await verifyLifecycle([...selected, candidate], lifecycleOptions);
     selected.push(candidate);
     if (event.type === 'KEY_ROTATION') activeOperationalKey = event.newOperationalPublicKey;
-    if (event.type === 'ENTITY_KEY_ROTATION') entityKey = event.newEntityPublicKey;
+    if (event.type === 'ENTITY_KEY_ROTATION') {
+      entityKey = event.newEntityPublicKey;
+      chainKeys.add(event.newEntityThumbprint);
+    }
     appliedEntries.set(entryId, { signed, entityKey, operationalKey: activeOperationalKey });
   }
   // The first eligible genesis decides: no later candidate is tried.
