@@ -55,8 +55,9 @@ export interface C2spTlogReaderOptions {
   unchained?: boolean;
   /**
    * Trusted accountable-entity key (the record `ek`) for lifecycle verification.
-   * Genesis selection accepts the first authenticated genesis whose verified
-   * history ends with this key as its current entity key.
+   * The first eligible authenticated genesis (one whose entity key is this key
+   * or reaches it through ENTITY_KEY_ROTATION) decides, and its verified
+   * history must end with this key as its current entity key.
    */
   entityKey?: DnsIdJWK;
   /** Accepted timestamp clock skew in milliseconds (default zero). */

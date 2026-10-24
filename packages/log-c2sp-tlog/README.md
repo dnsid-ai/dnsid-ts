@@ -110,10 +110,12 @@ history.
 current at the end of the verified history (the ISSUANCE key when no rotation
 exists) and returns it as `currentEntityThumbprint` next to the ISSUANCE
 `initialEntityThumbprint`. Readers anchor genesis selection on the record
-`ek`: authenticated genesis candidates are tried in log order and the first
-whose replayed history ends at that key is accepted. An unrelated genesis can
-reach the record key only through an ENTITY_KEY_ROTATION whose `new_ae` is
-signed by that key.
+`ek`: a genesis is eligible when it self-authenticates and its entity key is
+the record key or the root of an authenticated ENTITY_KEY_ROTATION chain that
+reaches it. The first eligible genesis in log order decides; if its history
+ends at another key, verification fails and later candidates are never tried.
+An unrelated genesis can reach the record key only through an
+ENTITY_KEY_ROTATION whose `new_ae` is signed by that key.
 
 To write one, prepare an `ENTITY_KEY_ROTATION` event and sign its required
 roles in order, `PreviousEntity` then `NewEntity`, passing the trusted
