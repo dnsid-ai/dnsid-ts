@@ -1174,7 +1174,7 @@ Configuration for [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-
 optional allowedClockSkew?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L64)
 
 Accepted timestamp clock skew in milliseconds (default zero).
 
@@ -1186,7 +1186,7 @@ Accepted timestamp clock skew in milliseconds (default zero).
 optional checkpointMaxAge?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L66)
 
 Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
 
@@ -1198,7 +1198,7 @@ Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
 optional consistencyProofSource?: C2spConsistencyProofSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L74)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L75)
 
 <a id="entitykey-1"></a>
 
@@ -1208,11 +1208,12 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:74](https://github.com/dnsid-a
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L62)
 
 Trusted accountable-entity key (the record `ek`) for lifecycle verification.
-Genesis selection accepts the first authenticated genesis whose verified
-history ends with this key as its current entity key.
+The first eligible authenticated genesis (one whose entity key is this key
+or reaches it through ENTITY_KEY_ROTATION) decides, and its verified
+history must end with this key as its current entity key.
 
 <a id="maxcheckpointbytes-1"></a>
 
@@ -1222,7 +1223,7 @@ history ends with this key as its current entity key.
 optional maxCheckpointBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
 
 <a id="maxentrybundlebytes-1"></a>
 
@@ -1232,7 +1233,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-a
 optional maxEntryBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L69)
 
 <a id="maxtotalentrybytes-1"></a>
 
@@ -1242,7 +1243,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-a
 optional maxTotalEntryBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L70)
 
 <a id="maxtreesize-1"></a>
 
@@ -1252,7 +1253,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-a
 optional maxTreeSize?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L66)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L67)
 
 <a id="policy"></a>
 
@@ -1286,7 +1287,7 @@ Optional inclusion proofs by entry index; otherwise readEvent authenticates the 
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L71)
 
 <a id="resourcefetcher"></a>
 
@@ -1320,7 +1321,7 @@ Revalidate required lifecycle resources instead of reusing HTTP cache entries.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L72)
 
 <a id="streambundle"></a>
 
@@ -1354,7 +1355,7 @@ Alternative raw evidence source; defaults to a complete tlog-tiles scan.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L74)
 
 <a id="unchained-1"></a>
 
@@ -1378,7 +1379,7 @@ Ignored: all scopes require logical predecessor chains.
 optional verifyMigration?: (event, options?) => Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L72)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L73)
 
 ###### Parameters
 
@@ -2798,8 +2799,8 @@ Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:33](https://github.co
 
 Trusted accountable-entity key (the record `ek`). The entity key current at
 the end of the verified lifecycle (the genesis key, or the key installed by
-the latest ENTITY_KEY_ROTATION) must match it; stream verification selects
-the first authenticated genesis whose history ends at this key.
+the latest ENTITY_KEY_ROTATION) must match it; stream verification lets
+the first eligible authenticated genesis decide.
 
 <a id="streamid-2"></a>
 

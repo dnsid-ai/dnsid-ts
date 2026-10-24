@@ -1516,7 +1516,7 @@ C2spTlogVerificationError when the role is not required, already
 function stateHash(state): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:582](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L582)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:541](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L541)
 
 Base64url hash of a lifecycle state object (domain-separated SHA-256 over canonical JSON), as used in `prev_state_hash`.
 
@@ -1922,7 +1922,7 @@ Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expec
 function verifyLifecycle(events, options?): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:460](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L460)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:419](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L419)
 
 Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
 inbound MIGRATION), every event signature must verify against the entity or
@@ -1965,7 +1965,7 @@ VerificationError (SignatureInvalid) when a signature fails to verify.
 function verifyLoggedEventSignature(item, signerKey): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:575](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L575)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L534)
 
 Verifies a single logged event's primary signature against `signerKey` over
 the entry's signed bytes.
@@ -2044,7 +2044,7 @@ function verifyStreamLifecycle(
 ): Promise<VerifiedLifecycleEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L176)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L179)
 
 Extracts and verifies the lifecycle history for one agent domain from
 entries already authenticated by the accepted completeness mechanism:
@@ -2054,12 +2054,15 @@ under [verifyLifecycle](#verifylifecycle). A malformed entry that nevertheless c
 valid signatures for every role under verified predecessor authority is
 treated as a lifecycle violation, not skipped.
 
-With `signerKey` (the record `ek`), genesis selection is anchored on it:
-authenticated genesis candidates are tried in log order and the first whose
-replayed history ends with `signerKey` as its current entity key is
-accepted; a candidate whose history ends at another key is skipped as noise.
-Without ENTITY_KEY_ROTATION this selects the genesis whose own entity key is
-`signerKey`, exactly as before.
+With `signerKey` (the record `ek`), genesis selection is anchored on it. A
+genesis candidate is eligible when it self-authenticates and its entity key
+is `signerKey` or the root of an authenticated ENTITY_KEY_ROTATION chain
+that reaches it; other candidates are skipped as noise. The first eligible
+candidate in log order decides: an authenticated but malformed eligible
+ISSUANCE is fatal, and if its history ends at another entity key
+verification fails; later candidates are never tried. Without
+ENTITY_KEY_ROTATION this selects the genesis whose own entity key is
+`signerKey`, as before.
 
 #### Parameters
 
