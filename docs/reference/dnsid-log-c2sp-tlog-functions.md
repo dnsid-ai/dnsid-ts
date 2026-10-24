@@ -1516,7 +1516,7 @@ C2spTlogVerificationError when the role is not required, already
 function stateHash(state): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:541](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L541)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:558](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L558)
 
 Base64url hash of a lifecycle state object (domain-separated SHA-256 over canonical JSON), as used in `prev_state_hash`.
 
@@ -1922,7 +1922,7 @@ Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expec
 function verifyLifecycle(events, options?): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:419](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L419)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:436](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L436)
 
 Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
 inbound MIGRATION), every event signature must verify against the entity or
@@ -1965,7 +1965,7 @@ VerificationError (SignatureInvalid) when a signature fails to verify.
 function verifyLoggedEventSignature(item, signerKey): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L534)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:551](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L551)
 
 Verifies a single logged event's primary signature against `signerKey` over
 the entry's signed bytes.
