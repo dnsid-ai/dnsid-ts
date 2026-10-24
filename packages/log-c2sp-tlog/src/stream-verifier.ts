@@ -274,100 +274,93 @@ async function selectStreamLifecycle(
   const appliedEntries = new Map<string, { signed: string; entityKey: DnsIdJWK; operationalKey: DnsIdJWK }>();
   let entityKey: DnsIdJWK | undefined;
   let activeOperationalKey: DnsIdJWK | undefined;
-  // Entity keys the identity holds or has held: those that reach the trusted
-  // key, plus the selected genesis key and every key rotated in after it.
-  const chainKeys = new Set(reachable ?? []);
   for (const entry of sorted) {
-    if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
-    let signedBytes: Uint8Array;
-    let envelope: Record<string, unknown>;
     try {
-      if (parseC2spAuthorization(entry.bytes, options).domain !== domain) continue;
-      signedBytes = signedC2spEntryBytes(entry.bytes);
-      envelope = JSON.parse(new TextDecoder().decode(signedBytes));
-    } catch { continue; }
-    const entryId = c2spEventId(signedBytes);
-    const signed = b64url(signedBytes);
-    const applied = appliedEntries.get(entryId);
-    if (applied) {
-      if (applied.signed !== signed) throw new C2spTlogVerificationError('logical event ID collision');
-      continue;
-    }
-    // An ISSUANCE that self-authenticates and can reach the trusted key is the
-    // eligible root: from here on its failures are fatal, not noise.
-    let eligibleIssuance = false;
-    if (selected.length === 0 && envelope.type === 'ISSUANCE') {
-      if (!await hasAllRoleSignatures(entry.bytes, envelope.ek as DnsIdJWK, envelope.ku as DnsIdJWK)) continue;
-      const thumbprint = await envelopeKeyThumbprint(envelope.ek);
-      if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
-      eligibleIssuance = true;
-    }
-    if (selected.length > 0 && envelope.type === 'ISSUANCE') {
-      // A malformed ISSUANCE authenticated by any entity key of the chain is
-      // invalid evidence from the identity itself; an unrelated key's is noise.
-      const thumbprint = await envelopeKeyThumbprint(envelope.ek);
-      if (thumbprint !== undefined && chainKeys.has(thumbprint)
-        && await hasAllRoleSignatures(entry.bytes, envelope.ek as DnsIdJWK, envelope.ku as DnsIdJWK)) {
-        try { await parseC2spEventEntry(entry.bytes, options); }
-        catch (cause) { throw new C2spTlogVerificationError('authenticated lifecycle genesis is malformed', 'INVALID_EVIDENCE', cause); }
-      }
-    }
-    if (selected.length > 0) {
-      const prior = appliedEntries.get(envelope.prev_event_id as string);
-      if (!await hasAllRoleSignatures(entry.bytes, prior?.entityKey ?? entityKey!, prior?.operationalKey ?? activeOperationalKey!)) continue;
-    }
-    let event: LogEvent;
-    try { event = await parseC2spEventEntry(entry.bytes, options); }
-    catch (cause) {
-      if (eligibleIssuance) throw new C2spTlogVerificationError('authenticated lifecycle genesis is malformed', 'INVALID_EVIDENCE', cause);
-      if (selected.length > 0) throw new C2spTlogVerificationError('authenticated lifecycle candidate is malformed');
-      continue;
-    }
-    if (event.domain !== domain) continue;
-    const candidate = { index: entry.index, leafHash: leafHash(entry.bytes), bytes: entry.bytes, event };
-    if (selected.length === 0) {
+      if (options.signal!.aborted) throw new C2spTlogVerificationError('lifecycle verification canceled');
+      let signedBytes: Uint8Array;
+      let envelope: Record<string, unknown>;
       try {
-        await verifyLifecycle([candidate], lifecycleOptions);
-      } catch (error) {
-        if (eligibleIssuance) throw error;
-        if (event.type === 'MIGRATION' && (!options.verifyMigration || migrationState.failed)) {
-          if (error instanceof C2spTlogVerificationError && error.errorCategory === 'INVALID_MIGRATION') throw error;
-          throw new C2spTlogVerificationError('MIGRATION requires verifiable prior-log history', 'INVALID_MIGRATION');
-        }
+        if (parseC2spAuthorization(entry.bytes, options).domain !== domain) continue;
+        signedBytes = signedC2spEntryBytes(entry.bytes);
+        envelope = JSON.parse(new TextDecoder().decode(signedBytes));
+      } catch { continue; }
+      const entryId = c2spEventId(signedBytes);
+      const signed = b64url(signedBytes);
+      const applied = appliedEntries.get(entryId);
+      if (applied) {
+        if (applied.signed !== signed) throw new C2spTlogVerificationError('logical event ID collision');
         continue;
       }
-      let genesisEntityKey: DnsIdJWK | undefined;
-      let genesisOperationalKey: DnsIdJWK | undefined;
-      if (event.type === 'ISSUANCE') {
-        assertC2spIssuanceEvent(event);
-        genesisEntityKey = event.initialEntityPublicKey;
-        genesisOperationalKey = event.initialOperationalPublicKey;
-      } else if (event.type === 'MIGRATION' && migrationState.result) {
-        genesisEntityKey = migrationState.result.entityKey;
-        genesisOperationalKey = migrationState.result.activeOperationalKey;
+      // An ISSUANCE ahead of the stream that self-authenticates under a key of
+      // the eligible chain is the eligible root: its failures are fatal, not
+      // noise. Once the stream has started, only current authority applies.
+      let eligibleIssuance = false;
+      if (selected.length === 0 && envelope.type === 'ISSUANCE') {
+        if (!await issuanceSelfAuthenticates(entry.bytes, envelope)) continue;
+        const thumbprint = await envelopeKeyThumbprint(envelope.ek);
+        if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
+        eligibleIssuance = true;
       }
-      const thumbprint = genesisEntityKey ? await jwkThumbprint(genesisEntityKey) : undefined;
-      // A genesis that cannot reach the trusted key is noise, skipped as the pinned filter skipped it.
-      if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
+      if (selected.length > 0) {
+        const prior = appliedEntries.get(envelope.prev_event_id as string);
+        if (!await hasAllRoleSignatures(entry.bytes, prior?.entityKey ?? entityKey!, prior?.operationalKey ?? activeOperationalKey!)) continue;
+      }
+      let event: LogEvent;
+      try { event = await parseC2spEventEntry(entry.bytes, options); }
+      catch (cause) {
+        if (eligibleIssuance) throw new C2spTlogVerificationError('authenticated lifecycle genesis is malformed', 'INVALID_EVIDENCE', cause);
+        if (selected.length > 0) throw new C2spTlogVerificationError('authenticated lifecycle candidate is malformed');
+        continue;
+      }
+      if (event.domain !== domain) continue;
+      const candidate = { index: entry.index, leafHash: leafHash(entry.bytes), bytes: entry.bytes, event };
+      if (selected.length === 0) {
+        try {
+          await verifyLifecycle([candidate], lifecycleOptions);
+        } catch (error) {
+          if (eligibleIssuance) throw error;
+          if (event.type === 'MIGRATION' && (!options.verifyMigration || migrationState.failed)) {
+            if (error instanceof C2spTlogVerificationError && error.errorCategory === 'INVALID_MIGRATION') throw error;
+            throw new C2spTlogVerificationError('MIGRATION requires verifiable prior-log history', 'INVALID_MIGRATION');
+          }
+          continue;
+        }
+        let genesisEntityKey: DnsIdJWK | undefined;
+        let genesisOperationalKey: DnsIdJWK | undefined;
+        if (event.type === 'ISSUANCE') {
+          assertC2spIssuanceEvent(event);
+          genesisEntityKey = event.initialEntityPublicKey;
+          genesisOperationalKey = event.initialOperationalPublicKey;
+        } else if (event.type === 'MIGRATION' && migrationState.result) {
+          genesisEntityKey = migrationState.result.entityKey;
+          genesisOperationalKey = migrationState.result.activeOperationalKey;
+        }
+        const thumbprint = genesisEntityKey ? await jwkThumbprint(genesisEntityKey) : undefined;
+        // A genesis that cannot reach the trusted key is noise, skipped as the pinned filter skipped it.
+        if (reachable && (thumbprint === undefined || !reachable.has(thumbprint))) continue;
+        selected.push(candidate);
+        entityKey = genesisEntityKey;
+        activeOperationalKey = genesisOperationalKey;
+          appliedEntries.set(entryId, { signed, entityKey: entityKey!, operationalKey: activeOperationalKey! });
+        continue;
+      }
+      if (!entityKey || !activeOperationalKey) {
+        throw new C2spTlogVerificationError('lifecycle keys were not established by genesis', 'INVALID_EVIDENCE');
+      }
+      // ponytail: replay validation is O(n²), bounded by history/input limits and the shared deadline.
+      await verifyLifecycle([...selected, candidate], lifecycleOptions);
       selected.push(candidate);
-      entityKey = genesisEntityKey;
-      activeOperationalKey = genesisOperationalKey;
-      if (thumbprint !== undefined) chainKeys.add(thumbprint);
-      appliedEntries.set(entryId, { signed, entityKey: entityKey!, operationalKey: activeOperationalKey! });
-      continue;
+      if (event.type === 'KEY_ROTATION') activeOperationalKey = event.newOperationalPublicKey;
+      if (event.type === 'ENTITY_KEY_ROTATION') entityKey = event.newEntityPublicKey;
+      appliedEntries.set(entryId, { signed, entityKey, operationalKey: activeOperationalKey });
+    } catch (error) {
+      // Attribute a fatal error to the candidate whose evaluation raised it.
+      if (error instanceof C2spTlogVerificationError || error instanceof VerificationError) {
+        const attributed = error as { failingCandidateIndex?: number };
+        attributed.failingCandidateIndex ??= entry.index;
+      }
+      throw error;
     }
-    if (!entityKey || !activeOperationalKey) {
-      throw new C2spTlogVerificationError('lifecycle keys were not established by genesis', 'INVALID_EVIDENCE');
-    }
-    // ponytail: replay validation is O(n²), bounded by history/input limits and the shared deadline.
-    await verifyLifecycle([...selected, candidate], lifecycleOptions);
-    selected.push(candidate);
-    if (event.type === 'KEY_ROTATION') activeOperationalKey = event.newOperationalPublicKey;
-    if (event.type === 'ENTITY_KEY_ROTATION') {
-      entityKey = event.newEntityPublicKey;
-      chainKeys.add(event.newEntityThumbprint);
-    }
-    appliedEntries.set(entryId, { signed, entityKey, operationalKey: activeOperationalKey });
   }
   // The first eligible genesis decides: no later candidate is tried.
   if (selected.length > 0 && trustedThumbprint !== undefined && (!entityKey || await jwkThumbprint(entityKey) !== trustedThumbprint)) {
@@ -378,7 +371,7 @@ async function selectStreamLifecycle(
 
 const PRIVATE_JWK_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k'];
 
-/** Public Ed25519 or P-256 key material of `new_ek` for authenticating `new_ae`, or undefined when it cannot authenticate. */
+/** Public Ed25519 or P-256 key material of a lifecycle JWK (`new_ek`, or a genesis `ek`/`ku`) for signature checks, or undefined when it cannot authenticate. */
 function newEntityVerificationKey(value: unknown): DnsIdJWK | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const key = value as Record<string, unknown>;
@@ -386,6 +379,25 @@ function newEntityVerificationKey(value: unknown): DnsIdJWK | undefined {
   if (key.kty === 'OKP' && key.crv === 'Ed25519' && typeof key.x === 'string') return { kty: 'OKP', crv: 'Ed25519', x: key.x, kid: key.kid } as DnsIdJWK;
   if (key.kty === 'EC' && key.crv === 'P-256' && typeof key.x === 'string' && typeof key.y === 'string') return { kty: 'EC', crv: 'P-256', x: key.x, y: key.y, kid: key.kid } as DnsIdJWK;
   return undefined;
+}
+
+/**
+ * Whether an ISSUANCE's `ae` and `op` signatures verify under the public key
+ * material of its own `ek` and `ku`, each named by a non-empty kid. JWK `alg`
+ * and `use` are structural checks, so a self-authenticated ISSUANCE that fails
+ * them is authenticated malformed evidence rather than noise.
+ */
+async function issuanceSelfAuthenticates(bytes: Uint8Array, envelope: Record<string, unknown>): Promise<boolean> {
+  try {
+    const signatures = parseC2spSignatures(JSON.parse(new TextDecoder().decode(bytes)).sigs, 'ISSUANCE');
+    const signed = signedC2spEntryBytes(bytes);
+    for (const [role, member] of [['ae', 'ek'], ['op', 'ku']] as const) {
+      const key = newEntityVerificationKey(envelope[member]);
+      const signature = signatures[role];
+      if (!key || !signature || signature.kid !== key.kid || !await verifyWithKey(signed, fromBase64Url(signature.sig), key)) return false;
+    }
+    return true;
+  } catch { return false; }
 }
 
 async function envelopeKeyThumbprint(value: unknown): Promise<string | undefined> {

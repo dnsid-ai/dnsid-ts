@@ -37,6 +37,8 @@ export class C2spTlogParseError extends C2spTlogError {
 export class C2spTlogVerificationError extends C2spTlogError {
   /** Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`. */
   readonly errorCategory: LifecycleErrorCategory;
+  /** Log index of the stream candidate whose evaluation raised this failure, when stream selection can attribute it. */
+  failingCandidateIndex?: number;
 
   constructor(message: string, errorCategory: LifecycleErrorCategory = 'INVALID_EVIDENCE', cause?: unknown) {
     super(message, { errorCategory, cause });
