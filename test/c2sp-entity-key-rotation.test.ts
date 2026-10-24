@@ -272,7 +272,7 @@ describe('ENTITY_KEY_ROTATION lifecycle conformance', () => {
     await expect(verifyStream(stream.entries, k.e1)).rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', message: 'authenticated lifecycle candidate is malformed' });
   });
 
-  it.each(['d', 'p'])('11: a rotation whose new_ek carries private member %s is skipped as unauthenticated', async member => {
+  it.each(['d', 'p', 'q', 'dp', 'dq', 'qi', 'k'])('11: a rotation whose new_ek carries private member %s is skipped as unauthenticated', async member => {
     const k = await keys();
     const stream = new LifecycleStreamBuilder(FQDN, CONTEXT);
     await stream.issuance(k.e1, k.o1);
