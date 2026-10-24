@@ -74,7 +74,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:33](https://github.com/
 
 ### C2spChain
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L32)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L36)
 
 Chain metadata linking a non-genesis event to its predecessor in the stream.
 
@@ -88,7 +88,7 @@ Chain metadata linking a non-genesis event to its predecessor in the stream.
 optional previousEventId?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L34)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L38)
 
 <a id="previousstatehash"></a>
 
@@ -98,7 +98,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:34](https://github.com/dnsid-a
 optional previousStateHash?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L35)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L39)
 
 <a id="sequence"></a>
 
@@ -108,7 +108,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:35](https://github.com/dnsid-a
 sequence: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L33)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L37)
 
 ***
 
@@ -419,9 +419,11 @@ Maximum accepted checkpoint tree size (default 1,000,000).
 
 ### C2spSignatures
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L28)
 
-Envelope `sigs` object keyed by signer role: accountable entity, operational countersignature, previous/new operational key.
+Envelope `sigs` object keyed by signer role: accountable entity,
+operational countersignature, previous/new operational key (KEY_ROTATION),
+and previous/new entity key (ENTITY_KEY_ROTATION).
 
 #### Properties
 
@@ -433,7 +435,17 @@ Envelope `sigs` object keyed by signer role: accountable entity, operational cou
 optional ae?: C2spSignatureValue;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L29)
+
+<a id="new_ae"></a>
+
+##### new\_ae?
+
+```ts
+optional new_ae?: C2spSignatureValue;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L34)
 
 <a id="new_op"></a>
 
@@ -443,7 +455,7 @@ Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dn
 optional new_op?: C2spSignatureValue;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L32)
 
 <a id="op"></a>
 
@@ -453,7 +465,17 @@ Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dn
 optional op?: C2spSignatureValue;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L30)
+
+<a id="prev_ae"></a>
+
+##### prev\_ae?
+
+```ts
+optional prev_ae?: C2spSignatureValue;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L33)
 
 <a id="prev_op"></a>
 
@@ -463,7 +485,7 @@ Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dn
 optional prev_op?: C2spSignatureValue;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L31)
 
 ***
 
@@ -858,7 +880,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:36](https://github.com/
 
 ### C2spTlogAppendOptions
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L77)
 
 Options for [writePreparedEvent](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#writepreparedevent-2); `submit` performs the deployment-specific append.
 
@@ -876,7 +898,7 @@ Options for [writePreparedEvent](https://docs.dnsid.ai/reference/ts/dnsid-log-c2
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L58)
 
 Trusted accountable-entity key. Required when countersigning or serializing ISSUANCE.
 
@@ -892,7 +914,7 @@ Trusted accountable-entity key. Required when countersigning or serializing ISSU
 optional expectedFqdn?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
 
 Locally expected DNS identity. Required when countersigning or serializing ISSUANCE.
 
@@ -908,7 +930,7 @@ Locally expected DNS identity. Required when countersigning or serializing ISSUA
 optional expectedGovernanceId?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
 
 Locally expected governance identifier. Required when countersigning or serializing ISSUANCE.
 
@@ -924,7 +946,7 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional idempotencyKey?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L80)
 
 <a id="operationalkey"></a>
 
@@ -934,13 +956,31 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:70](https://github.com/dnsid-a
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
 
 Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
 
 ###### Inherited from
 
 [`PreparedC2spVerificationContext`](#preparedc2spverificationcontext).[`operationalKey`](#operationalkey-1)
+
+<a id="previousentitykey"></a>
+
+##### previousEntityKey?
+
+```ts
+optional previousEntityKey?: DnsIdJWK;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+
+Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
+or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
+equal the event's `prev_ek_thumb`.
+
+###### Inherited from
+
+[`PreparedC2spVerificationContext`](#preparedc2spverificationcontext).[`previousEntityKey`](#previousentitykey-1)
 
 <a id="previousoperationalkey"></a>
 
@@ -950,7 +990,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
 
 ###### Inherited from
 
@@ -966,7 +1006,7 @@ submit: (entryBytes, idempotencyKey?) => Promise<{
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L79)
 
 Appends the finished entry bytes to the log and returns its assigned index.
 
@@ -994,7 +1034,7 @@ Appends the finished entry bytes to the log and returns its assigned index.
 optional validateChain?: (prepared) => Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L72)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L82)
 
 Required for non-genesis events to validate authoritative prior stream state.
 
@@ -1132,7 +1172,7 @@ Configuration for [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-
 optional allowedClockSkew?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L59)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L63)
 
 Accepted timestamp clock skew in milliseconds (default zero).
 
@@ -1144,7 +1184,7 @@ Accepted timestamp clock skew in milliseconds (default zero).
 optional checkpointMaxAge?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L65)
 
 Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
 
@@ -1156,7 +1196,7 @@ Maximum checkpoint age in milliseconds; required by `verifyNonRevocation`.
 optional consistencyProofSource?: C2spConsistencyProofSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L74)
 
 <a id="entitykey-1"></a>
 
@@ -1166,9 +1206,11 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-a
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L61)
 
-Trusted accountable-entity key for lifecycle verification.
+Trusted accountable-entity key (the record `ek`) for lifecycle verification.
+Genesis selection accepts the first authenticated genesis whose verified
+history ends with this key as its current entity key.
 
 <a id="maxcheckpointbytes-1"></a>
 
@@ -1178,7 +1220,7 @@ Trusted accountable-entity key for lifecycle verification.
 optional maxCheckpointBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L67)
 
 <a id="maxentrybundlebytes-1"></a>
 
@@ -1188,7 +1230,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:63](https://github.com/dnsid-a
 optional maxEntryBundleBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L64)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
 
 <a id="maxtotalentrybytes-1"></a>
 
@@ -1198,7 +1240,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:64](https://github.com/dnsid-a
 optional maxTotalEntryBytes?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L65)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L69)
 
 <a id="maxtreesize-1"></a>
 
@@ -1208,7 +1250,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:65](https://github.com/dnsid-a
 optional maxTreeSize?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L62)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L66)
 
 <a id="policy"></a>
 
@@ -1242,7 +1284,7 @@ Optional inclusion proofs by entry index; otherwise readEvent authenticates the 
 optional requestTimeoutMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L66)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L70)
 
 <a id="resourcefetcher"></a>
 
@@ -1276,7 +1318,7 @@ Revalidate required lifecycle resources instead of reusing HTTP cache entries.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L71)
 
 <a id="streambundle"></a>
 
@@ -1310,7 +1352,7 @@ Alternative raw evidence source; defaults to a complete tlog-tiles scan.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L73)
 
 <a id="unchained-1"></a>
 
@@ -1334,7 +1376,7 @@ Ignored: all scopes require logical predecessor chains.
 optional verifyMigration?: (event, options?) => Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L68)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L72)
 
 ###### Parameters
 
@@ -2048,7 +2090,7 @@ Defined in: [packages/log-c2sp-tlog/src/lr.ts:12](https://github.com/dnsid-ai/dn
 
 ### PreparedC2spTlogEvent
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L39)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L43)
 
 Immutable lifecycle event staged for signing and append: envelope, signed bytes, and the roles still required.
 
@@ -2062,7 +2104,7 @@ Immutable lifecycle event staged for signing and append: envelope, signed bytes,
 readonly envelope: Readonly<C2spJsonEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L45)
 
 <a id="eventid"></a>
 
@@ -2072,7 +2114,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:41](https://github.com/dnsid-a
 readonly eventId: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L43)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L47)
 
 <a id="reference-1"></a>
 
@@ -2082,7 +2124,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:43](https://github.com/dnsid-a
 readonly reference: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L40)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L44)
 
 <a id="requiredsignatures"></a>
 
@@ -2092,7 +2134,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:40](https://github.com/dnsid-a
 readonly requiredSignatures: readonly C2spSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L44)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L48)
 
 <a id="signedbytes-1"></a>
 
@@ -2102,7 +2144,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:44](https://github.com/dnsid-a
 readonly signedBytes: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L42)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L46)
 
 ***
 
@@ -2110,7 +2152,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:42](https://github.com/dnsid-a
 
 ### PreparedC2spVerificationContext
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L48)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L52)
 
 Trusted expectations a prepared event (and its existing signatures) is validated against.
 
@@ -2129,7 +2171,7 @@ Trusted expectations a prepared event (and its existing signatures) is validated
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L58)
 
 Trusted accountable-entity key. Required when countersigning or serializing ISSUANCE.
 
@@ -2141,7 +2183,7 @@ Trusted accountable-entity key. Required when countersigning or serializing ISSU
 optional expectedFqdn?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
 
 Locally expected DNS identity. Required when countersigning or serializing ISSUANCE.
 
@@ -2153,7 +2195,7 @@ Locally expected DNS identity. Required when countersigning or serializing ISSUA
 optional expectedGovernanceId?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
 
 Locally expected governance identifier. Required when countersigning or serializing ISSUANCE.
 
@@ -2165,9 +2207,23 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
 
 Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
+
+<a id="previousentitykey-1"></a>
+
+##### previousEntityKey?
+
+```ts
+optional previousEntityKey?: DnsIdJWK;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+
+Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
+or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
+equal the event's `prev_ek_thumb`.
 
 <a id="previousoperationalkey-1"></a>
 
@@ -2177,7 +2233,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
 
 ***
 
@@ -2355,7 +2411,7 @@ Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dns
 
 ### SignPreparedC2spOptions
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L71)
 
 Options for [signPreparedC2spTlogEvent](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#signpreparedc2sptlogevent).
 
@@ -2373,7 +2429,7 @@ Options for [signPreparedC2spTlogEvent](https://docs.dnsid.ai/reference/ts/dnsid
 optional entityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L58)
 
 Trusted accountable-entity key. Required when countersigning or serializing ISSUANCE.
 
@@ -2389,7 +2445,7 @@ Trusted accountable-entity key. Required when countersigning or serializing ISSU
 optional expectedFqdn?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L50)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L54)
 
 Locally expected DNS identity. Required when countersigning or serializing ISSUANCE.
 
@@ -2405,7 +2461,7 @@ Locally expected DNS identity. Required when countersigning or serializing ISSUA
 optional expectedGovernanceId?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L52)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
 
 Locally expected governance identifier. Required when countersigning or serializing ISSUANCE.
 
@@ -2421,13 +2477,31 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L56)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
 
 Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
 
 ###### Inherited from
 
 [`PreparedC2spVerificationContext`](#preparedc2spverificationcontext).[`operationalKey`](#operationalkey-1)
+
+<a id="previousentitykey-2"></a>
+
+##### previousEntityKey?
+
+```ts
+optional previousEntityKey?: DnsIdJWK;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+
+Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
+or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
+equal the event's `prev_ek_thumb`.
+
+###### Inherited from
+
+[`PreparedC2spVerificationContext`](#preparedc2spverificationcontext).[`previousEntityKey`](#previousentitykey-1)
 
 <a id="previousoperationalkey-2"></a>
 
@@ -2437,7 +2511,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L57)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
 
 ###### Inherited from
 
@@ -2451,7 +2525,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:57](https://github.com/dnsid-a
 optional replaceExisting?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L73)
 
 Allow overwriting an existing signature for the same role.
 
@@ -2604,7 +2678,7 @@ Options controlling lifecycle verification of a stream's entries.
 optional checkpointIntegrationTimeMs?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L30)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L35)
 
 Latest acceptable event timestamp (checkpoint witness time plus skew), in epoch milliseconds. Required.
 
@@ -2714,9 +2788,12 @@ Defined in: [packages/protocol/src/verification-budget.ts:6](https://github.com/
 optional signerKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L28)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L33)
 
-Trusted accountable-entity key the lifecycle's entity key must match.
+Trusted accountable-entity key (the record `ek`). The entity key current at
+the end of the verified lifecycle (the genesis key, or the key installed by
+the latest ENTITY_KEY_ROTATION) must match it; stream verification selects
+the first authenticated genesis whose history ends at this key.
 
 <a id="streamid-2"></a>
 
@@ -2770,7 +2847,7 @@ Ignored: every scope requires the logical predecessor chain.
 optional verifyMigration?: (event, options?) => Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L32)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L37)
 
 Verifies an inbound MIGRATION's prior-log history and returns the migrated keys.
 
@@ -3166,7 +3243,7 @@ entityKey: DnsIdJWK;
 
 Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L85)
 
-Trusted accountable-entity key for the identity record.
+Trusted accountable-entity key for the identity record: the entity key current at the end of the verified history.
 
 <a id="expectedfqdn-3"></a>
 

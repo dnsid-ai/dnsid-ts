@@ -53,7 +53,7 @@ Defined in: [packages/protocol/src/types.ts:45](https://github.com/dnsid-ai/dnsi
 
 ### C2spIssuanceEvent
 
-Defined in: [packages/protocol/src/log-events.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L64)
+Defined in: [packages/protocol/src/log-events.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L66)
 
 ISSUANCE shape required by the c2sp-tlog codec and verifier.
 
@@ -71,13 +71,13 @@ ISSUANCE shape required by the c2sp-tlog codec and verifier.
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L30)
+Defined in: [packages/protocol/src/log-events.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L32)
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`domain`](#domain-6)
+[`IssuanceEvent`](#issuanceevent).[`domain`](#domain-7)
 
-<a id="entitykey"></a>
+<a id="entitykey-1"></a>
 
 ##### entityKey?
 
@@ -85,13 +85,13 @@ Defined in: [packages/protocol/src/log-events.ts:30](https://github.com/dnsid-ai
 optional entityKey?: IssuanceKeySlot;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L46)
+Defined in: [packages/protocol/src/log-events.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L48)
 
 Accountable-entity record-signing key (ek) recorded in the event.
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`entityKey`](#entitykey-1)
+[`IssuanceEvent`](#issuanceevent).[`entityKey`](#entitykey-2)
 
 <a id="entitysig"></a>
 
@@ -101,7 +101,7 @@ Accountable-entity record-signing key (ek) recorded in the event.
 optional entitySig?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L50)
+Defined in: [packages/protocol/src/log-events.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L52)
 
 Entity-key signature over the canonical binding (base64url).
 
@@ -117,7 +117,7 @@ Entity-key signature over the canonical binding (base64url).
 governanceId: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L31)
+Defined in: [packages/protocol/src/log-events.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L33)
 
 ###### Inherited from
 
@@ -131,7 +131,7 @@ Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai
 initialEntityAlg: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L70)
+Defined in: [packages/protocol/src/log-events.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L72)
 
 ###### Overrides
 
@@ -145,7 +145,7 @@ Defined in: [packages/protocol/src/log-events.ts:70](https://github.com/dnsid-ai
 initialEntityKid: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L69)
+Defined in: [packages/protocol/src/log-events.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L71)
 
 c2sp-tlog encoding of the accountable entity key.
 
@@ -161,7 +161,7 @@ c2sp-tlog encoding of the accountable entity key.
 initialEntityPublicKey: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L71)
+Defined in: [packages/protocol/src/log-events.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L73)
 
 ###### Overrides
 
@@ -175,7 +175,7 @@ Defined in: [packages/protocol/src/log-events.ts:71](https://github.com/dnsid-ai
 initialEntityThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L72)
+Defined in: [packages/protocol/src/log-events.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L74)
 
 ###### Overrides
 
@@ -189,7 +189,7 @@ Defined in: [packages/protocol/src/log-events.ts:72](https://github.com/dnsid-ai
 initialOperationalAlg: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L66)
+Defined in: [packages/protocol/src/log-events.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L68)
 
 ###### Overrides
 
@@ -203,7 +203,7 @@ Defined in: [packages/protocol/src/log-events.ts:66](https://github.com/dnsid-ai
 initialOperationalKid: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L65)
+Defined in: [packages/protocol/src/log-events.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L67)
 
 c2sp-tlog encoding of the initial operational key.
 
@@ -219,7 +219,7 @@ c2sp-tlog encoding of the initial operational key.
 initialOperationalPublicKey: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L67)
+Defined in: [packages/protocol/src/log-events.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L69)
 
 ###### Overrides
 
@@ -233,7 +233,7 @@ Defined in: [packages/protocol/src/log-events.ts:67](https://github.com/dnsid-ai
 initialOperationalThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L68)
+Defined in: [packages/protocol/src/log-events.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L70)
 
 ###### Overrides
 
@@ -247,15 +247,31 @@ Defined in: [packages/protocol/src/log-events.ts:68](https://github.com/dnsid-ai
 optional kid?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L56)
+Defined in: [packages/protocol/src/log-events.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L58)
 
 ###### Deprecated
 
-superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-1).
+superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-2).
 
 ###### Inherited from
 
 [`IssuanceEvent`](#issuanceevent).[`kid`](#kid-2)
+
+<a id="newentityproof"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+[`IssuanceEvent`](#issuanceevent).[`newEntityProof`](#newentityproof-3)
 
 <a id="newoperationalproof"></a>
 
@@ -271,7 +287,7 @@ Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_RO
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`newOperationalProof`](#newoperationalproof-2)
+[`IssuanceEvent`](#issuanceevent).[`newOperationalProof`](#newoperationalproof-3)
 
 <a id="operationalcountersig"></a>
 
@@ -287,7 +303,7 @@ Base64url operational-key countersignature. Required for draft-01 ISSUANCE.
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`operationalCountersig`](#operationalcountersig-2)
+[`IssuanceEvent`](#issuanceevent).[`operationalCountersig`](#operationalcountersig-3)
 
 <a id="operationalkey"></a>
 
@@ -297,7 +313,7 @@ Base64url operational-key countersignature. Required for draft-01 ISSUANCE.
 optional operationalKey?: IssuanceKeySlot;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L48)
+Defined in: [packages/protocol/src/log-events.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L50)
 
 Initial operational key (ku) recorded in the event.
 
@@ -313,7 +329,7 @@ Initial operational key (ku) recorded in the event.
 optional operationalSig?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L52)
+Defined in: [packages/protocol/src/log-events.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L54)
 
 Operational-key countersignature over the same canonical binding (base64url).
 
@@ -329,11 +345,11 @@ Operational-key countersignature over the same canonical binding (base64url).
 optional publicKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L58)
+Defined in: [packages/protocol/src/log-events.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L60)
 
 ###### Deprecated
 
-superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-1).
+superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-2).
 
 ###### Inherited from
 
@@ -353,7 +369,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`sig`](#sig-2)
+[`IssuanceEvent`](#issuanceevent).[`sig`](#sig-3)
 
 <a id="signingkid"></a>
 
@@ -369,7 +385,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`signingKid`](#signingkid-2)
+[`IssuanceEvent`](#issuanceevent).[`signingKid`](#signingkid-3)
 
 <a id="thumbprint"></a>
 
@@ -379,7 +395,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 optional thumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L60)
+Defined in: [packages/protocol/src/log-events.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L62)
 
 ###### Deprecated
 
@@ -397,11 +413,11 @@ superseded by the slot thumbprints.
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L42)
+Defined in: [packages/protocol/src/log-events.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L44)
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`timestamp`](#timestamp-2)
+[`IssuanceEvent`](#issuanceevent).[`timestamp`](#timestamp-3)
 
 <a id="type"></a>
 
@@ -411,11 +427,11 @@ Defined in: [packages/protocol/src/log-events.ts:42](https://github.com/dnsid-ai
 type: "ISSUANCE";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L29)
+Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L31)
 
 ###### Inherited from
 
-[`IssuanceEvent`](#issuanceevent).[`type`](#type-2)
+[`IssuanceEvent`](#issuanceevent).[`type`](#type-3)
 
 ***
 
@@ -423,7 +439,7 @@ Defined in: [packages/protocol/src/log-events.ts:29](https://github.com/dnsid-ai
 
 ### DelegationEvent
 
-Defined in: [packages/protocol/src/log-events.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L111)
+Defined in: [packages/protocol/src/log-events.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L132)
 
 #### Extends
 
@@ -439,7 +455,7 @@ Defined in: [packages/protocol/src/log-events.ts:111](https://github.com/dnsid-a
 delegatee: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L114)
+Defined in: [packages/protocol/src/log-events.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L135)
 
 <a id="domain-4"></a>
 
@@ -449,7 +465,7 @@ Defined in: [packages/protocol/src/log-events.ts:114](https://github.com/dnsid-a
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L113)
+Defined in: [packages/protocol/src/log-events.ts:134](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L134)
 
 <a id="expiry-1"></a>
 
@@ -459,7 +475,25 @@ Defined in: [packages/protocol/src/log-events.ts:113](https://github.com/dnsid-a
 expiry: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L116)
+Defined in: [packages/protocol/src/log-events.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L137)
+
+<a id="newentityproof-1"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
 
 <a id="newoperationalproof-1"></a>
 
@@ -505,7 +539,7 @@ BaseLogEvent.operationalCountersig
 scope: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L115)
+Defined in: [packages/protocol/src/log-events.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L136)
 
 <a id="sig-1"></a>
 
@@ -551,7 +585,7 @@ BaseLogEvent.signingKid
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L117)
+Defined in: [packages/protocol/src/log-events.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L138)
 
 <a id="type-1"></a>
 
@@ -561,7 +595,7 @@ Defined in: [packages/protocol/src/log-events.ts:117](https://github.com/dnsid-a
 type: "DELEGATION";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L112)
+Defined in: [packages/protocol/src/log-events.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L133)
 
 ***
 
@@ -767,6 +801,206 @@ The record set and the DNSSEC validation state of the response.
 
 ***
 
+<a id="entitykeyrotationevent"></a>
+
+### EntityKeyRotationEvent
+
+Defined in: [packages/protocol/src/log-events.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L96)
+
+Rotation to a new accountable-entity (record-signing) key. Continuity from
+the entity key active before the event, mirroring [KeyRotationEvent](#keyrotationevent)
+for operational keys. `signingKid`/`sig` carry the previous entity key's
+authorization (`prev_ae`); `newEntityProof` carries the new entity key's
+proof of possession (`new_ae`).
+
+#### Extends
+
+- `BaseLogEvent`
+
+#### Properties
+
+<a id="domain-5"></a>
+
+##### domain
+
+```ts
+domain: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L98)
+
+<a id="newentityalg"></a>
+
+##### newEntityAlg
+
+```ts
+newEntityAlg: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L102)
+
+<a id="newentitykid"></a>
+
+##### newEntityKid
+
+```ts
+newEntityKid: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L101)
+
+<a id="newentityproof-2"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
+
+<a id="newentitypublickey"></a>
+
+##### newEntityPublicKey
+
+```ts
+newEntityPublicKey: DnsIdJWK;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L104)
+
+<a id="newentitythumbprint"></a>
+
+##### newEntityThumbprint
+
+```ts
+newEntityThumbprint: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L103)
+
+<a id="newoperationalproof-2"></a>
+
+##### newOperationalProof?
+
+```ts
+optional newOperationalProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L13)
+
+Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newOperationalProof
+```
+
+<a id="operationalcountersig-2"></a>
+
+##### operationalCountersig?
+
+```ts
+optional operationalCountersig?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:11](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L11)
+
+Base64url operational-key countersignature. Required for draft-01 ISSUANCE.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.operationalCountersig
+```
+
+<a id="previousentitykid"></a>
+
+##### previousEntityKid
+
+```ts
+previousEntityKid: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L99)
+
+<a id="previousentitythumbprint"></a>
+
+##### previousEntityThumbprint
+
+```ts
+previousEntityThumbprint: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L100)
+
+<a id="sig-2"></a>
+
+##### sig?
+
+```ts
+optional sig?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L9)
+
+Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.sig
+```
+
+<a id="signingkid-2"></a>
+
+##### signingKid?
+
+```ts
+optional signingKid?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L7)
+
+Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.signingKid
+```
+
+<a id="timestamp-2"></a>
+
+##### timestamp
+
+```ts
+timestamp: Date;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L105)
+
+<a id="type-2"></a>
+
+##### type
+
+```ts
+type: "ENTITY_KEY_ROTATION";
+```
+
+Defined in: [packages/protocol/src/log-events.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L97)
+
+***
+
 <a id="fetchresult"></a>
 
 ### FetchResult
@@ -906,7 +1140,7 @@ Defined in: [packages/protocol/src/types.ts:83](https://github.com/dnsid-ai/dnsi
 
 HTTPS URL for the capabilities document (`cu` tag).
 
-<a id="domain-5"></a>
+<a id="domain-6"></a>
 
 ##### domain
 
@@ -1143,7 +1377,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dn
 
 ### IssuanceEvent
 
-Defined in: [packages/protocol/src/log-events.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L28)
+Defined in: [packages/protocol/src/log-events.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L30)
 
 #### Extends
 
@@ -1155,7 +1389,7 @@ Defined in: [packages/protocol/src/log-events.ts:28](https://github.com/dnsid-ai
 
 #### Properties
 
-<a id="domain-6"></a>
+<a id="domain-7"></a>
 
 ##### domain
 
@@ -1163,9 +1397,9 @@ Defined in: [packages/protocol/src/log-events.ts:28](https://github.com/dnsid-ai
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L30)
+Defined in: [packages/protocol/src/log-events.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L32)
 
-<a id="entitykey-1"></a>
+<a id="entitykey-2"></a>
 
 ##### entityKey?
 
@@ -1173,7 +1407,7 @@ Defined in: [packages/protocol/src/log-events.ts:30](https://github.com/dnsid-ai
 optional entityKey?: IssuanceKeySlot;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L46)
+Defined in: [packages/protocol/src/log-events.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L48)
 
 Accountable-entity record-signing key (ek) recorded in the event.
 
@@ -1185,7 +1419,7 @@ Accountable-entity record-signing key (ek) recorded in the event.
 optional entitySig?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L50)
+Defined in: [packages/protocol/src/log-events.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L52)
 
 Entity-key signature over the canonical binding (base64url).
 
@@ -1197,7 +1431,7 @@ Entity-key signature over the canonical binding (base64url).
 governanceId: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L31)
+Defined in: [packages/protocol/src/log-events.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L33)
 
 <a id="initialentityalg-1"></a>
 
@@ -1207,7 +1441,7 @@ Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai
 optional initialEntityAlg?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L39)
+Defined in: [packages/protocol/src/log-events.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L41)
 
 <a id="initialentitykid-1"></a>
 
@@ -1217,7 +1451,7 @@ Defined in: [packages/protocol/src/log-events.ts:39](https://github.com/dnsid-ai
 optional initialEntityKid?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L38)
+Defined in: [packages/protocol/src/log-events.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L40)
 
 c2sp-tlog encoding of the accountable entity key.
 
@@ -1229,7 +1463,7 @@ c2sp-tlog encoding of the accountable entity key.
 optional initialEntityPublicKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L40)
+Defined in: [packages/protocol/src/log-events.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L42)
 
 <a id="initialentitythumbprint-1"></a>
 
@@ -1239,7 +1473,7 @@ Defined in: [packages/protocol/src/log-events.ts:40](https://github.com/dnsid-ai
 optional initialEntityThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L41)
+Defined in: [packages/protocol/src/log-events.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L43)
 
 <a id="initialoperationalalg-1"></a>
 
@@ -1249,7 +1483,7 @@ Defined in: [packages/protocol/src/log-events.ts:41](https://github.com/dnsid-ai
 optional initialOperationalAlg?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L34)
+Defined in: [packages/protocol/src/log-events.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L36)
 
 <a id="initialoperationalkid-1"></a>
 
@@ -1259,7 +1493,7 @@ Defined in: [packages/protocol/src/log-events.ts:34](https://github.com/dnsid-ai
 optional initialOperationalKid?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L33)
+Defined in: [packages/protocol/src/log-events.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L35)
 
 c2sp-tlog encoding of the initial operational key.
 
@@ -1271,7 +1505,7 @@ c2sp-tlog encoding of the initial operational key.
 optional initialOperationalPublicKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L35)
+Defined in: [packages/protocol/src/log-events.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L37)
 
 <a id="initialoperationalthumbprint-1"></a>
 
@@ -1281,7 +1515,7 @@ Defined in: [packages/protocol/src/log-events.ts:35](https://github.com/dnsid-ai
 optional initialOperationalThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L36)
+Defined in: [packages/protocol/src/log-events.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L38)
 
 <a id="kid-2"></a>
 
@@ -1291,13 +1525,31 @@ Defined in: [packages/protocol/src/log-events.ts:36](https://github.com/dnsid-ai
 optional kid?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L56)
+Defined in: [packages/protocol/src/log-events.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L58)
 
 ###### Deprecated
 
-superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-1).
+superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-2).
 
-<a id="newoperationalproof-2"></a>
+<a id="newentityproof-3"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
+
+<a id="newoperationalproof-3"></a>
 
 ##### newOperationalProof?
 
@@ -1315,7 +1567,7 @@ Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_RO
 BaseLogEvent.newOperationalProof
 ```
 
-<a id="operationalcountersig-2"></a>
+<a id="operationalcountersig-3"></a>
 
 ##### operationalCountersig?
 
@@ -1341,7 +1593,7 @@ BaseLogEvent.operationalCountersig
 optional operationalKey?: IssuanceKeySlot;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L48)
+Defined in: [packages/protocol/src/log-events.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L50)
 
 Initial operational key (ku) recorded in the event.
 
@@ -1353,7 +1605,7 @@ Initial operational key (ku) recorded in the event.
 optional operationalSig?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L52)
+Defined in: [packages/protocol/src/log-events.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L54)
 
 Operational-key countersignature over the same canonical binding (base64url).
 
@@ -1365,13 +1617,13 @@ Operational-key countersignature over the same canonical binding (base64url).
 optional publicKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L58)
+Defined in: [packages/protocol/src/log-events.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L60)
 
 ###### Deprecated
 
-superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-1).
+superseded by [operationalKey](#operationalkey-1)/[entityKey](#entitykey-2).
 
-<a id="sig-2"></a>
+<a id="sig-3"></a>
 
 ##### sig?
 
@@ -1389,7 +1641,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 BaseLogEvent.sig
 ```
 
-<a id="signingkid-2"></a>
+<a id="signingkid-3"></a>
 
 ##### signingKid?
 
@@ -1415,13 +1667,13 @@ BaseLogEvent.signingKid
 optional thumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L60)
+Defined in: [packages/protocol/src/log-events.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L62)
 
 ###### Deprecated
 
 superseded by the slot thumbprints.
 
-<a id="timestamp-2"></a>
+<a id="timestamp-3"></a>
 
 ##### timestamp
 
@@ -1429,9 +1681,9 @@ superseded by the slot thumbprints.
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L42)
+Defined in: [packages/protocol/src/log-events.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L44)
 
-<a id="type-2"></a>
+<a id="type-3"></a>
 
 ##### type
 
@@ -1439,7 +1691,7 @@ Defined in: [packages/protocol/src/log-events.ts:42](https://github.com/dnsid-ai
 type: "ISSUANCE";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L29)
+Defined in: [packages/protocol/src/log-events.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L31)
 
 ***
 
@@ -1447,7 +1699,7 @@ Defined in: [packages/protocol/src/log-events.ts:29](https://github.com/dnsid-ai
 
 ### IssuanceKeySlot
 
-Defined in: [packages/protocol/src/log-events.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L19)
+Defined in: [packages/protocol/src/log-events.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L21)
 
 A key slot recorded in a draft-01 bilateral ISSUANCE event (ek or ku).
 
@@ -1461,7 +1713,7 @@ A key slot recorded in a draft-01 bilateral ISSUANCE event (ek or ku).
 alg: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L25)
+Defined in: [packages/protocol/src/log-events.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L27)
 
 JWS `alg` the slot's signature is produced/verified under.
 
@@ -1473,7 +1725,7 @@ JWS `alg` the slot's signature is produced/verified under.
 jwk: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L20)
+Defined in: [packages/protocol/src/log-events.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L22)
 
 <a id="kid-3"></a>
 
@@ -1483,7 +1735,7 @@ Defined in: [packages/protocol/src/log-events.ts:20](https://github.com/dnsid-ai
 optional kid?: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L23)
+Defined in: [packages/protocol/src/log-events.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L25)
 
 <a id="thumbprint-2"></a>
 
@@ -1493,7 +1745,7 @@ Defined in: [packages/protocol/src/log-events.ts:23](https://github.com/dnsid-ai
 thumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L22)
+Defined in: [packages/protocol/src/log-events.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L24)
 
 RFC 7638 JWK thumbprint of `jwk`.
 
@@ -1564,7 +1816,7 @@ Atomically creates the intent; returns the existing operation if the create lost
 
 [`ManagedIssuanceCoordination`](#managedissuancecoordination).[`createIssuance`](#createissuance-1)
 
-<a id="domain-7"></a>
+<a id="domain-8"></a>
 
 ##### domain
 
@@ -1574,7 +1826,7 @@ domain: string;
 
 Defined in: [packages/sdk/src/managed-issuance.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L65)
 
-<a id="entitykey-2"></a>
+<a id="entitykey-3"></a>
 
 ##### entityKey
 
@@ -2008,7 +2260,7 @@ Validates generation settings and algorithm support without creating a key.
 
 ### KeyRotationEvent
 
-Defined in: [packages/protocol/src/log-events.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L75)
+Defined in: [packages/protocol/src/log-events.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L77)
 
 #### Extends
 
@@ -2016,7 +2268,7 @@ Defined in: [packages/protocol/src/log-events.ts:75](https://github.com/dnsid-ai
 
 #### Properties
 
-<a id="domain-8"></a>
+<a id="domain-9"></a>
 
 ##### domain
 
@@ -2024,7 +2276,25 @@ Defined in: [packages/protocol/src/log-events.ts:75](https://github.com/dnsid-ai
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L77)
+Defined in: [packages/protocol/src/log-events.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L79)
+
+<a id="newentityproof-4"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
 
 <a id="newoperationalalg"></a>
 
@@ -2034,7 +2304,7 @@ Defined in: [packages/protocol/src/log-events.ts:77](https://github.com/dnsid-ai
 newOperationalAlg: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L81)
+Defined in: [packages/protocol/src/log-events.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L83)
 
 <a id="newoperationalkid"></a>
 
@@ -2044,9 +2314,9 @@ Defined in: [packages/protocol/src/log-events.ts:81](https://github.com/dnsid-ai
 newOperationalKid: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L80)
+Defined in: [packages/protocol/src/log-events.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L82)
 
-<a id="newoperationalproof-3"></a>
+<a id="newoperationalproof-4"></a>
 
 ##### newOperationalProof?
 
@@ -2072,7 +2342,7 @@ BaseLogEvent.newOperationalProof
 newOperationalPublicKey: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L83)
+Defined in: [packages/protocol/src/log-events.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L85)
 
 <a id="newoperationalthumbprint"></a>
 
@@ -2082,9 +2352,9 @@ Defined in: [packages/protocol/src/log-events.ts:83](https://github.com/dnsid-ai
 newOperationalThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L82)
+Defined in: [packages/protocol/src/log-events.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L84)
 
-<a id="operationalcountersig-3"></a>
+<a id="operationalcountersig-4"></a>
 
 ##### operationalCountersig?
 
@@ -2110,7 +2380,7 @@ BaseLogEvent.operationalCountersig
 previousOperationalKid: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L78)
+Defined in: [packages/protocol/src/log-events.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L80)
 
 <a id="previousoperationalthumbprint"></a>
 
@@ -2120,9 +2390,9 @@ Defined in: [packages/protocol/src/log-events.ts:78](https://github.com/dnsid-ai
 previousOperationalThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L79)
+Defined in: [packages/protocol/src/log-events.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L81)
 
-<a id="sig-3"></a>
+<a id="sig-4"></a>
 
 ##### sig?
 
@@ -2140,7 +2410,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 BaseLogEvent.sig
 ```
 
-<a id="signingkid-3"></a>
+<a id="signingkid-4"></a>
 
 ##### signingKid?
 
@@ -2158,7 +2428,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 BaseLogEvent.signingKid
 ```
 
-<a id="timestamp-3"></a>
+<a id="timestamp-4"></a>
 
 ##### timestamp
 
@@ -2166,9 +2436,9 @@ BaseLogEvent.signingKid
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L84)
+Defined in: [packages/protocol/src/log-events.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L86)
 
-<a id="type-3"></a>
+<a id="type-4"></a>
 
 ##### type
 
@@ -2176,7 +2446,7 @@ Defined in: [packages/protocol/src/log-events.ts:84](https://github.com/dnsid-ai
 type: "KEY_ROTATION";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L76)
+Defined in: [packages/protocol/src/log-events.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L78)
 
 ***
 
@@ -2426,7 +2696,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L92)
+Defined in: [packages/protocol/src/log.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L99)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -2449,7 +2719,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L102)
+Defined in: [packages/protocol/src/log.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L109)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -2478,15 +2748,19 @@ verifyBilateralBinding(
    entityKey, 
    operationalKey
 ): Promise<{
+  currentEntityThumbprint?: string;
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
 }>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L72)
+Defined in: [packages/protocol/src/log.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L77)
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+The record `ek` key must be the entity key current at the end of the
+verified history: the ISSUANCE key, or the key installed by the latest
+ENTITY_KEY_ROTATION when the method supports entity-key continuity.
 
 ###### Parameters
 
@@ -2505,6 +2779,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 ###### Returns
 
 `Promise`\<\{
+  `currentEntityThumbprint?`: `string`;
   `initialEntityThumbprint`: `string`;
   `initialOperationalThumbprint`: `string`;
   `timestamp`: `Date`;
@@ -2518,7 +2793,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L86)
+Defined in: [packages/protocol/src/log.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L93)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -2550,7 +2825,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/log.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L79)
+Defined in: [packages/protocol/src/log.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L86)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -2756,7 +3031,7 @@ readonly activated: boolean;
 
 Defined in: [packages/sdk/src/managed-issuance.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L41)
 
-<a id="domain-9"></a>
+<a id="domain-10"></a>
 
 ##### domain
 
@@ -3097,7 +3372,7 @@ readonly applicationSigningPaused: boolean;
 
 Defined in: [packages/sdk/src/managed-key-rotation.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L86)
 
-<a id="domain-10"></a>
+<a id="domain-11"></a>
 
 ##### domain
 
@@ -3236,7 +3511,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:84](https://github.com/dns
 
 ### MigrationEvent
 
-Defined in: [packages/protocol/src/log-events.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L100)
+Defined in: [packages/protocol/src/log-events.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L121)
 
 #### Extends
 
@@ -3244,7 +3519,7 @@ Defined in: [packages/protocol/src/log-events.ts:100](https://github.com/dnsid-a
 
 #### Properties
 
-<a id="domain-11"></a>
+<a id="domain-12"></a>
 
 ##### domain
 
@@ -3252,7 +3527,7 @@ Defined in: [packages/protocol/src/log-events.ts:100](https://github.com/dnsid-a
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L102)
+Defined in: [packages/protocol/src/log-events.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L123)
 
 <a id="finalentryref"></a>
 
@@ -3262,7 +3537,25 @@ Defined in: [packages/protocol/src/log-events.ts:102](https://github.com/dnsid-a
 finalEntryRef: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L105)
+Defined in: [packages/protocol/src/log-events.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L126)
+
+<a id="newentityproof-5"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
 
 <a id="newlog"></a>
 
@@ -3272,9 +3565,9 @@ Defined in: [packages/protocol/src/log-events.ts:105](https://github.com/dnsid-a
 newLog: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L104)
+Defined in: [packages/protocol/src/log-events.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L125)
 
-<a id="newoperationalproof-4"></a>
+<a id="newoperationalproof-5"></a>
 
 ##### newOperationalProof?
 
@@ -3292,7 +3585,7 @@ Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_RO
 BaseLogEvent.newOperationalProof
 ```
 
-<a id="operationalcountersig-4"></a>
+<a id="operationalcountersig-5"></a>
 
 ##### operationalCountersig?
 
@@ -3318,9 +3611,9 @@ BaseLogEvent.operationalCountersig
 previousLog: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L103)
+Defined in: [packages/protocol/src/log-events.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L124)
 
-<a id="sig-4"></a>
+<a id="sig-5"></a>
 
 ##### sig?
 
@@ -3338,7 +3631,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 BaseLogEvent.sig
 ```
 
-<a id="signingkid-4"></a>
+<a id="signingkid-5"></a>
 
 ##### signingKid?
 
@@ -3356,7 +3649,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 BaseLogEvent.signingKid
 ```
 
-<a id="timestamp-4"></a>
+<a id="timestamp-5"></a>
 
 ##### timestamp
 
@@ -3364,9 +3657,9 @@ BaseLogEvent.signingKid
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L106)
+Defined in: [packages/protocol/src/log-events.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L127)
 
-<a id="type-4"></a>
+<a id="type-5"></a>
 
 ##### type
 
@@ -3374,7 +3667,7 @@ Defined in: [packages/protocol/src/log-events.ts:106](https://github.com/dnsid-a
 type: "MIGRATION";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L101)
+Defined in: [packages/protocol/src/log-events.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L122)
 
 ***
 
@@ -3408,7 +3701,7 @@ Publishes the pending operational JWKS at the configured ku endpoint before cont
 
 `Promise`\<`void`\>
 
-<a id="timestamp-5"></a>
+<a id="timestamp-6"></a>
 
 ##### timestamp?
 
@@ -3607,7 +3900,7 @@ Atomically creates the intent; returns the existing operation if the create lost
 
 [`ManagedIssuanceCoordination`](#managedissuancecoordination).[`createIssuance`](#createissuance-1)
 
-<a id="entitykey-3"></a>
+<a id="entitykey-4"></a>
 
 ##### entityKey
 
@@ -3845,7 +4138,7 @@ resumes signing only after durable activation.
 
 ### RetirementEvent
 
-Defined in: [packages/protocol/src/log-events.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L94)
+Defined in: [packages/protocol/src/log-events.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L115)
 
 #### Extends
 
@@ -3853,7 +4146,7 @@ Defined in: [packages/protocol/src/log-events.ts:94](https://github.com/dnsid-ai
 
 #### Properties
 
-<a id="domain-12"></a>
+<a id="domain-13"></a>
 
 ##### domain
 
@@ -3861,9 +4154,27 @@ Defined in: [packages/protocol/src/log-events.ts:94](https://github.com/dnsid-ai
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L96)
+Defined in: [packages/protocol/src/log-events.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L117)
 
-<a id="newoperationalproof-5"></a>
+<a id="newentityproof-6"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
+
+<a id="newoperationalproof-6"></a>
 
 ##### newOperationalProof?
 
@@ -3881,7 +4192,7 @@ Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_RO
 BaseLogEvent.newOperationalProof
 ```
 
-<a id="operationalcountersig-5"></a>
+<a id="operationalcountersig-6"></a>
 
 ##### operationalCountersig?
 
@@ -3899,7 +4210,7 @@ Base64url operational-key countersignature. Required for draft-01 ISSUANCE.
 BaseLogEvent.operationalCountersig
 ```
 
-<a id="sig-5"></a>
+<a id="sig-6"></a>
 
 ##### sig?
 
@@ -3917,7 +4228,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 BaseLogEvent.sig
 ```
 
-<a id="signingkid-5"></a>
+<a id="signingkid-6"></a>
 
 ##### signingKid?
 
@@ -3935,7 +4246,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 BaseLogEvent.signingKid
 ```
 
-<a id="timestamp-6"></a>
+<a id="timestamp-7"></a>
 
 ##### timestamp
 
@@ -3943,9 +4254,9 @@ BaseLogEvent.signingKid
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L97)
+Defined in: [packages/protocol/src/log-events.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L118)
 
-<a id="type-5"></a>
+<a id="type-6"></a>
 
 ##### type
 
@@ -3953,7 +4264,7 @@ Defined in: [packages/protocol/src/log-events.ts:97](https://github.com/dnsid-ai
 type: "RETIREMENT";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L95)
+Defined in: [packages/protocol/src/log-events.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L116)
 
 ***
 
@@ -4079,7 +4390,7 @@ Test hook for sleeping.
 
 ### RevocationEvent
 
-Defined in: [packages/protocol/src/log-events.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L87)
+Defined in: [packages/protocol/src/log-events.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L108)
 
 #### Extends
 
@@ -4087,7 +4398,7 @@ Defined in: [packages/protocol/src/log-events.ts:87](https://github.com/dnsid-ai
 
 #### Properties
 
-<a id="domain-13"></a>
+<a id="domain-14"></a>
 
 ##### domain
 
@@ -4095,9 +4406,27 @@ Defined in: [packages/protocol/src/log-events.ts:87](https://github.com/dnsid-ai
 domain: string;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L89)
+Defined in: [packages/protocol/src/log-events.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L110)
 
-<a id="newoperationalproof-6"></a>
+<a id="newentityproof-7"></a>
+
+##### newEntityProof?
+
+```ts
+optional newEntityProof?: string;
+```
+
+Defined in: [packages/protocol/src/log-events.ts:15](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L15)
+
+Base64url new-entity-key proof of possession. Required for c2sp-tlog ENTITY_KEY_ROTATION.
+
+###### Inherited from
+
+```ts
+BaseLogEvent.newEntityProof
+```
+
+<a id="newoperationalproof-7"></a>
 
 ##### newOperationalProof?
 
@@ -4115,7 +4444,7 @@ Base64url new-operational-key proof of possession. Required for c2sp-tlog KEY_RO
 BaseLogEvent.newOperationalProof
 ```
 
-<a id="operationalcountersig-6"></a>
+<a id="operationalcountersig-7"></a>
 
 ##### operationalCountersig?
 
@@ -4145,9 +4474,9 @@ reason:
   | "cessationOfOperation";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L91)
+Defined in: [packages/protocol/src/log-events.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L112)
 
-<a id="sig-6"></a>
+<a id="sig-7"></a>
 
 ##### sig?
 
@@ -4165,7 +4494,7 @@ Base64url signature. Set by IdentityManager.signAndWriteEvent; leave undefined w
 BaseLogEvent.sig
 ```
 
-<a id="signingkid-6"></a>
+<a id="signingkid-7"></a>
 
 ##### signingKid?
 
@@ -4183,7 +4512,7 @@ Set by IdentityManager.signAndWriteEvent; leave undefined when constructing.
 BaseLogEvent.signingKid
 ```
 
-<a id="timestamp-7"></a>
+<a id="timestamp-8"></a>
 
 ##### timestamp
 
@@ -4191,9 +4520,9 @@ BaseLogEvent.signingKid
 timestamp: Date;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L90)
+Defined in: [packages/protocol/src/log-events.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L111)
 
-<a id="type-6"></a>
+<a id="type-7"></a>
 
 ##### type
 
@@ -4201,7 +4530,7 @@ Defined in: [packages/protocol/src/log-events.ts:90](https://github.com/dnsid-ai
 type: "REVOCATION";
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L88)
+Defined in: [packages/protocol/src/log-events.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L109)
 
 ***
 
@@ -4217,7 +4546,7 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:52](https://github.com/dns
 
 #### Properties
 
-<a id="domain-14"></a>
+<a id="domain-15"></a>
 
 ##### domain
 

@@ -117,7 +117,7 @@ C2spTlogParseError when the bytes are not canonical.
 function c2spEnvelopeToEvent(obj): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L93)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L118)
 
 Converts a parsed c2sp-tlog JSON envelope back into a protocol
 [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent), requiring a complete `sigs` object and consistent embedded
@@ -171,7 +171,7 @@ Logical ID of canonical signed bytes; signatures and Merkle indexes are excluded
 function c2spTlogEntryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L179)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:193](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L193)
 
 Finalizes a fully signed prepared event into its canonical log entry bytes,
 re-verifying all required signatures and the entry's parseability.
@@ -232,7 +232,7 @@ UTF-8 encoding of [canonicalJson](#canonicaljson).
 function canonicalizeC2spEvent(event, context?): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L210)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L256)
 
 Serializes a fully signed event to its canonical c2sp-tlog entry bytes,
 requiring every signature the event type demands.
@@ -624,7 +624,7 @@ function eventToC2spEnvelope(
 ): C2spJsonEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L34)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L45)
 
 Converts a protocol [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent) into its c2sp-tlog JSON envelope
 (`v: 1`, `kind: 'dnsid.lifecycle'`) with per-type payload fields, the log
@@ -838,7 +838,7 @@ C2spTlogVerificationError when the origin has no policy or the policy is invalid
 function parseC2spEventEntry(bytes, context?): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L155)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:200](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L200)
 
 Parses a raw c2sp-tlog log entry (canonical JSON bytes, 1..65535 bytes) into
 a [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent), verifying the bytes are canonical and, for public scope,
@@ -907,7 +907,7 @@ function parseC2spSignatures(
 ): C2spSignatures;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L297)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:351](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L351)
 
 Parses and validates an envelope `sigs` object for an event type, rejecting
 roles the type does not allow.
@@ -1154,7 +1154,7 @@ function parsePreparedC2spTlogEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L119)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L133)
 
 Reconstructs a prepared event from canonical envelope bytes (for example
 received from another signer), verifying canonical form, the log binding,
@@ -1257,7 +1257,7 @@ C2spTlogParseError when any line or the embedded checkpoint is malformed.
 function prepareC2spTlogEvent(event, context): C2spJsonEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L229)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:275](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L275)
 
 Builds the unsigned envelope for an event about to be signed, validating the
 public-scope binding fields against `context`.
@@ -1294,7 +1294,7 @@ function prepareC2spTlogEventForSigning(
 ): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L96)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L110)
 
 Stages a lifecycle event for signing against a bound (index-free) log
 reference, deriving genesis chain metadata for public ISSUANCE and inbound
@@ -1378,10 +1378,11 @@ Returns a copy of the capabilities required by the safe standard-resource factor
 function requiredC2spSignatureNames(type): keyof C2spSignatures[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:283](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L283)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:336](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L336)
 
 Signature roles a lifecycle event type must carry: `ae`+`op` for ISSUANCE,
-`prev_op`+`new_op` for KEY_ROTATION, `ae` for every other supported type.
+`prev_op`+`new_op` for KEY_ROTATION, `prev_ae`+`new_ae` for
+ENTITY_KEY_ROTATION, `ae` for every other supported type.
 
 #### Parameters
 
@@ -1407,7 +1408,7 @@ C2spTlogParseError for unsupported event types.
 function signedC2spEntryBytes(bytes): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L197)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L243)
 
 Extracts the signed byte string of a stored entry: the canonical envelope
 with the `sigs` member removed. These are the bytes each lifecycle signature
@@ -1437,7 +1438,7 @@ C2spTlogParseError when the entry is oversized or non-canonical.
 function signedC2spEventBytes(event, context?): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L219)
+Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:265](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L265)
 
 Canonical to-be-signed bytes for `event`: its envelope without signatures.
 
@@ -1470,7 +1471,7 @@ function signPreparedC2spTlogEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L143)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L157)
 
 Adds one role's signature to a prepared event using the key provider,
 verifying the provider key matches the key the envelope requires for that
@@ -1515,7 +1516,7 @@ C2spTlogVerificationError when the role is not required, already
 function stateHash(state): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:379](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L379)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:560](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L560)
 
 Base64url hash of a lifecycle state object (domain-separated SHA-256 over canonical JSON), as used in `prev_state_hash`.
 
@@ -1543,12 +1544,13 @@ function stitchVerifiedMigrationHistory(
 ): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L47)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L53)
 
 Stitches a verified prior-log history onto the current log's events for an
 inbound MIGRATION: the current events must begin with the MIGRATION, the
-prior history must establish the imported entity and active operational
-keys (and contain the ISSUANCE genesis), and the combined lifecycle must
+prior history must establish the imported active operational key and, as
+its end-of-history entity key, the imported entity key (and contain the
+ISSUANCE genesis), and the combined lifecycle must
 snapshot cleanly.
 
 #### Parameters
@@ -1920,12 +1922,14 @@ Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expec
 function verifyLifecycle(events, options?): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:277](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L277)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:438](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L438)
 
 Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
 inbound MIGRATION), every event signature must verify against the entity or
-operational key active at that point, KEY_ROTATION must prove possession of
-the new key, every scope must carry consistent seq/prev_* fields,
+operational key active at that point, KEY_ROTATION and ENTITY_KEY_ROTATION
+must prove possession of the new key, every scope must carry consistent
+seq/prev_* fields, `signerKey` (when given) must be the entity key current
+at the end of `events`,
 and nothing may follow a terminal REVOCATION/RETIREMENT. MIGRATION is valid
 only as verified inbound genesis in the destination stream.
 
@@ -1961,7 +1965,7 @@ VerificationError (SignatureInvalid) when a signature fails to verify.
 function verifyLoggedEventSignature(item, signerKey): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:372](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L372)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L553)
 
 Verifies a single logged event's primary signature against `signerKey` over
 the entry's signed bytes.
@@ -2040,7 +2044,7 @@ function verifyStreamLifecycle(
 ): Promise<VerifiedLifecycleEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L162)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L176)
 
 Extracts and verifies the lifecycle history for one agent domain from
 entries already authenticated by the accepted completeness mechanism:
@@ -2049,6 +2053,13 @@ signed payloads are deduplicated, and each candidate must keep the accumulated l
 under [verifyLifecycle](#verifylifecycle). A malformed entry that nevertheless carries a
 valid signatures for every role under verified predecessor authority is
 treated as a lifecycle violation, not skipped.
+
+With `signerKey` (the record `ek`), genesis selection is anchored on it:
+authenticated genesis candidates are tried in log order and the first whose
+replayed history ends with `signerKey` as its current entity key is
+accepted; a candidate whose history ends at another key is skipped as noise.
+Without ENTITY_KEY_ROTATION this selects the genesis whose own entity key is
+`signerKey`, exactly as before.
 
 #### Parameters
 
@@ -2085,7 +2096,7 @@ C2spTlogVerificationError when the resulting lifecycle is invalid
 function writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L209)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:223](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L223)
 
 Appends a finalized prepared event to the log via `options.submit`, running
 the required chain validation for non-genesis events.

@@ -765,7 +765,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogBinding
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:513](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L513)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:544](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L544)
 
 Read/write binding for a c2sp-tlog stream: extends [C2spTlogReader](#c2sptlogreader)
 with the prepared-event workflow (prepare, sign per role, finalize, append).
@@ -794,7 +794,7 @@ The generic `writeEvent` is intentionally unimplemented; appends go through
 new C2spTlogBinding(lr, options): C2spTlogBinding;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 ###### Parameters
 
@@ -824,7 +824,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 ###### Inherited from
 
@@ -838,7 +838,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L105)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L109)
 
 ###### Inherited from
 
@@ -854,7 +854,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L138)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
 
 ###### Parameters
 
@@ -878,7 +878,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L133)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L137)
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -910,7 +910,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:557](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L557)
 
 ###### Parameters
 
@@ -934,7 +934,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L148)
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -965,7 +965,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:549](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L549)
 
 ###### Parameters
 
@@ -989,7 +989,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L514)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:545](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L545)
 
 ###### Parameters
 
@@ -1013,7 +1013,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:213](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L213)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L232)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -1040,7 +1040,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:276](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L276)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L297)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -1076,7 +1076,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L553)
 
 ###### Parameters
 
@@ -1110,15 +1110,19 @@ verifyBilateralBinding(
    entityKey, 
    operationalKey
 ): Promise<{
+  currentEntityThumbprint: string;
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L150)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L166)
 
-Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+Verifies the bilateral ISSUANCE binding for the current TXT record. The
+record `ek` key must equal the entity key current at the end of the
+verified history: the ISSUANCE key, or the key installed by the latest
+ENTITY_KEY_ROTATION. ISSUANCE `fqdn` and `gi` must match the record.
 
 ###### Parameters
 
@@ -1137,10 +1141,18 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 ###### Returns
 
 `Promise`\<\{
+  `currentEntityThumbprint`: `string`;
   `initialEntityThumbprint`: `string`;
   `initialOperationalThumbprint`: `string`;
   `timestamp`: `Date`;
 \}\>
+
+The ISSUANCE operational and entity thumbprints, the current
+  entity thumbprint, and the ISSUANCE timestamp.
+
+###### Throws
+
+VerificationError (LogError) when the binding does not hold.
 
 ###### Inherited from
 
@@ -1154,7 +1166,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L187)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:206](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L206)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -1190,7 +1202,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L176)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L195)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -1224,7 +1236,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:565](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L565)
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1252,7 +1264,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L561)
 
 ###### Parameters
 
@@ -1274,7 +1286,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-
 
 ### ~~C2spTlogClient~~
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:540](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L540)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:571](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L571)
 
 #### Deprecated
 
@@ -1294,7 +1306,7 @@ Use C2spTlogBinding.
 new C2spTlogClient(lr, options): C2spTlogClient;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 ###### Parameters
 
@@ -1324,7 +1336,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 ###### Inherited from
 
@@ -1338,7 +1350,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L105)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L109)
 
 ###### Inherited from
 
@@ -1354,7 +1366,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L138)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
 
 ###### Parameters
 
@@ -1378,7 +1390,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L133)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L137)
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -1406,7 +1418,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:557](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L557)
 
 ###### Parameters
 
@@ -1434,7 +1446,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L148)
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -1465,7 +1477,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:549](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L549)
 
 ###### Parameters
 
@@ -1493,7 +1505,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L514)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:545](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L545)
 
 ###### Parameters
 
@@ -1521,7 +1533,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:213](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L213)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L232)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -1548,7 +1560,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:276](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L276)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L297)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -1584,7 +1596,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:553](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L553)
 
 ###### Parameters
 
@@ -1622,15 +1634,19 @@ verifyBilateralBinding(
    entityKey, 
    operationalKey
 ): Promise<{
+  currentEntityThumbprint: string;
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L150)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L166)
 
-Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+Verifies the bilateral ISSUANCE binding for the current TXT record. The
+record `ek` key must equal the entity key current at the end of the
+verified history: the ISSUANCE key, or the key installed by the latest
+ENTITY_KEY_ROTATION. ISSUANCE `fqdn` and `gi` must match the record.
 
 ###### Parameters
 
@@ -1649,10 +1665,18 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 ###### Returns
 
 `Promise`\<\{
+  `currentEntityThumbprint`: `string`;
   `initialEntityThumbprint`: `string`;
   `initialOperationalThumbprint`: `string`;
   `timestamp`: `Date`;
 \}\>
+
+The ISSUANCE operational and entity thumbprints, the current
+  entity thumbprint, and the ISSUANCE timestamp.
+
+###### Throws
+
+VerificationError (LogError) when the binding does not hold.
 
 ###### Inherited from
 
@@ -1666,7 +1690,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L187)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:206](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L206)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -1702,7 +1726,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L176)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L195)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -1736,7 +1760,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:565](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L565)
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1764,7 +1788,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L561)
 
 ###### Parameters
 
@@ -2489,7 +2513,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogReader
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L104)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L108)
 
 LogReader for the `c2sp-tlog` method: verifies an agent's identity-record
 lifecycle against a C2SP tlog-tiles log. Evidence is loaded from a verified
@@ -2520,7 +2544,7 @@ VerificationError (LogError) from every LogReader boundary.
 new C2spTlogReader(lr, options): C2spTlogReader;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 ###### Parameters
 
@@ -2546,7 +2570,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L113)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L117)
 
 <a id="parsed-2"></a>
 
@@ -2556,7 +2580,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:113](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L105)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L109)
 
 #### Methods
 
@@ -2568,7 +2592,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:105](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L138)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
 
 ###### Parameters
 
@@ -2588,7 +2612,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:138](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L133)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L137)
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -2616,7 +2640,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L142)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L148)
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -2647,7 +2671,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:213](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L213)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L232)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -2674,7 +2698,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:276](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L276)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L297)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -2707,15 +2731,19 @@ verifyBilateralBinding(
    entityKey, 
    operationalKey
 ): Promise<{
+  currentEntityThumbprint: string;
   initialEntityThumbprint: string;
   initialOperationalThumbprint: string;
   timestamp: Date;
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:150](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L150)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L166)
 
-Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+Verifies the bilateral ISSUANCE binding for the current TXT record. The
+record `ek` key must equal the entity key current at the end of the
+verified history: the ISSUANCE key, or the key installed by the latest
+ENTITY_KEY_ROTATION. ISSUANCE `fqdn` and `gi` must match the record.
 
 ###### Parameters
 
@@ -2734,10 +2762,18 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 ###### Returns
 
 `Promise`\<\{
+  `currentEntityThumbprint`: `string`;
   `initialEntityThumbprint`: `string`;
   `initialOperationalThumbprint`: `string`;
   `timestamp`: `Date`;
 \}\>
+
+The ISSUANCE operational and entity thumbprints, the current
+  entity thumbprint, and the ISSUANCE timestamp.
+
+###### Throws
+
+VerificationError (LogError) when the binding does not hold.
 
 ###### Implementation of
 
@@ -2751,7 +2787,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L187)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:206](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L206)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -2787,7 +2823,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L176)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L195)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 

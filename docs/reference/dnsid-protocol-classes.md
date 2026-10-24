@@ -744,7 +744,7 @@ VerificationError if no events exist at or before `at`, or no ISSUANCE event fou
 
 ### DomainSnapshot
 
-Defined in: [packages/protocol/src/verified-domain.ts:316](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L316)
+Defined in: [packages/protocol/src/verified-domain.ts:343](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L343)
 
 The materialized state of a domain at a specific point in time.
 
@@ -758,7 +758,7 @@ The materialized state of a domain at a specific point in time.
 new DomainSnapshot(fields): DomainSnapshot;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:327](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L327)
+Defined in: [packages/protocol/src/verified-domain.ts:363](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L363)
 
 ###### Parameters
 
@@ -773,6 +773,18 @@ Defined in: [packages/protocol/src/verified-domain.ts:327](https://github.com/dn
 `string`
 
 ###### domain
+
+`string`
+
+###### entityKey?
+
+[`DnsIdJWK`](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidjwk)
+
+###### entityKeyBoundAt?
+
+`Date`
+
+###### entityKeyThumbprint?
 
 `string`
 
@@ -810,7 +822,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:327](https://github.com/dn
 readonly activeKey: DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L320)
+Defined in: [packages/protocol/src/verified-domain.ts:347](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L347)
 
 <a id="activekeythumbprint"></a>
 
@@ -820,7 +832,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:320](https://github.com/dn
 readonly activeKeyThumbprint: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:321](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L321)
+Defined in: [packages/protocol/src/verified-domain.ts:348](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L348)
 
 <a id="domain-1"></a>
 
@@ -830,7 +842,44 @@ Defined in: [packages/protocol/src/verified-domain.ts:321](https://github.com/dn
 readonly domain: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:317](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L317)
+Defined in: [packages/protocol/src/verified-domain.ts:344](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L344)
+
+<a id="entitykey"></a>
+
+##### entityKey?
+
+```ts
+readonly optional entityKey?: DnsIdJWK;
+```
+
+Defined in: [packages/protocol/src/verified-domain.ts:357](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L357)
+
+Accountable-entity key current at `snapshotAt`: the ISSUANCE key, or the
+key installed by the latest ENTITY_KEY_ROTATION at or before `snapshotAt`.
+
+<a id="entitykeyboundat"></a>
+
+##### entityKeyBoundAt?
+
+```ts
+readonly optional entityKeyBoundAt?: Date;
+```
+
+Defined in: [packages/protocol/src/verified-domain.ts:361](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L361)
+
+Timestamp of the event that installed [entityKey](#entitykey) (ISSUANCE or ENTITY_KEY_ROTATION).
+
+<a id="entitykeythumbprint"></a>
+
+##### entityKeyThumbprint?
+
+```ts
+readonly optional entityKeyThumbprint?: string;
+```
+
+Defined in: [packages/protocol/src/verified-domain.ts:359](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L359)
+
+RFC 7638 thumbprint of [entityKey](#entitykey).
 
 <a id="events-1"></a>
 
@@ -840,7 +889,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:317](https://github.com/dn
 readonly events: LogEvent[];
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:325](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L325)
+Defined in: [packages/protocol/src/verified-domain.ts:352](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L352)
 
 <a id="governanceid-1"></a>
 
@@ -850,7 +899,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:325](https://github.com/dn
 readonly governanceId: string;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L323)
+Defined in: [packages/protocol/src/verified-domain.ts:350](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L350)
 
 <a id="historicalstate"></a>
 
@@ -860,7 +909,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:323](https://github.com/dn
 readonly historicalState: AgentStatusState;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L319)
+Defined in: [packages/protocol/src/verified-domain.ts:346](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L346)
 
 Lifecycle state materialized from the verified log history at `snapshotAt`.
 
@@ -872,7 +921,7 @@ Lifecycle state materialized from the verified log history at `snapshotAt`.
 readonly keyBoundAt: Date;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:322](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L322)
+Defined in: [packages/protocol/src/verified-domain.ts:349](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L349)
 
 <a id="snapshotat-1"></a>
 
@@ -882,7 +931,7 @@ Defined in: [packages/protocol/src/verified-domain.ts:322](https://github.com/dn
 readonly snapshotAt: Date;
 ```
 
-Defined in: [packages/protocol/src/verified-domain.ts:324](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L324)
+Defined in: [packages/protocol/src/verified-domain.ts:351](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verified-domain.ts#L351)
 
 ***
 
@@ -992,7 +1041,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:401](https://github.com/d
 createTxtRecord(): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:546](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L546)
+Defined in: [packages/protocol/src/identity-manager.ts:569](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L569)
 
 Builds and signs the `_dnsid` TXT record for DNS publication.
 
@@ -1008,7 +1057,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1088](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1088)
+Defined in: [packages/protocol/src/identity-manager.ts:1111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1111)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1030,7 +1079,7 @@ Removes a domain from the IdentityManager cache.
 getEntityKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L508)
+Defined in: [packages/protocol/src/identity-manager.ts:531](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L531)
 
 Returns the accountable-entity public key set for ek JWKS publication.
 
@@ -1060,7 +1109,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:379](https://github.com/d
 getKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:501](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L501)
+Defined in: [packages/protocol/src/identity-manager.ts:524](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L524)
 
 Returns the local identity's operational public key set for ku JWKS publication.
 
@@ -1076,7 +1125,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1074](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1074)
+Defined in: [packages/protocol/src/identity-manager.ts:1097](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1097)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1102,7 +1151,7 @@ refreshDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:602](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L602)
+Defined in: [packages/protocol/src/identity-manager.ts:625](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L625)
 
 Fully verifies new identity evidence without cached-result fallback.
 
@@ -1156,7 +1205,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:406](https://github.com/d
 rotateOperationalKey(options): Promise<OperationalKeyRotationResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:516](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L516)
+Defined in: [packages/protocol/src/identity-manager.ts:539](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L539)
 
 Runs the draft-01 operational-key rotation transaction.
 
@@ -1200,7 +1249,7 @@ Signs and appends a lifecycle event to the local identity log.
 signEvent(event, role): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:419](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L419)
+Defined in: [packages/protocol/src/identity-manager.ts:421](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L421)
 
 ###### Parameters
 
@@ -1229,7 +1278,7 @@ signEventWithProvider(
 ): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:429](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L429)
+Defined in: [packages/protocol/src/identity-manager.ts:432](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L432)
 
 ###### Parameters
 
@@ -1265,7 +1314,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:597](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L597)
+Defined in: [packages/protocol/src/identity-manager.ts:620](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L620)
 
 Verifies a DNSid identity according to the protocol, then enforces configured
 `trustedEntities` acceptance. Acceptance runs per invocation, including cache hits,
@@ -1301,7 +1350,7 @@ and is never cached; a denial leaves valid protocol evidence cached.
 verifyLocalPublication(options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:607](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L607)
+Defined in: [packages/protocol/src/identity-manager.ts:630](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L630)
 
 Verifies fresh publication of this manager's own identity, without application-peer or counterparty acceptance checks.
 
@@ -1323,7 +1372,7 @@ Verifies fresh publication of this manager's own identity, without application-p
 writeSignedEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:474](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L474)
+Defined in: [packages/protocol/src/identity-manager.ts:496](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L496)
 
 ###### Parameters
 
@@ -1960,6 +2009,9 @@ verifyBilateralBinding(
 Defined in: [packages/protocol/src/log-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L79)
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
+The record `ek` key must be the entity key current at the end of the
+verified history: the ISSUANCE key, or the key installed by the latest
+ENTITY_KEY_ROTATION when the method supports entity-key continuity.
 
 ###### Parameters
 

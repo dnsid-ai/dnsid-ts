@@ -443,13 +443,14 @@ Stable, language-neutral categories used by lifecycle conformance vectors.
 type LogEvent = 
   | IssuanceEvent
   | KeyRotationEvent
+  | EntityKeyRotationEvent
   | RevocationEvent
   | RetirementEvent
   | MigrationEvent
   | DelegationEvent;
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L122)
+Defined in: [packages/protocol/src/log-events.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L143)
 
 ***
 
@@ -461,7 +462,7 @@ Defined in: [packages/protocol/src/log-events.ts:122](https://github.com/dnsid-a
 type LogEventType = LogEvent["type"];
 ```
 
-Defined in: [packages/protocol/src/log-events.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L130)
+Defined in: [packages/protocol/src/log-events.ts:152](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L152)
 
 ***
 
@@ -487,7 +488,9 @@ type LogSignerRole =
   | "Operational"
   | "OperationalCountersignature"
   | "PreviousOperational"
-  | "NewOperational";
+  | "NewOperational"
+  | "PreviousEntity"
+  | "NewEntity";
 ```
 
 Defined in: [packages/protocol/src/log.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L4)
@@ -697,7 +700,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1120)
+Defined in: [packages/protocol/src/identity-manager.ts:1143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1143)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1305,7 +1308,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1157)
+Defined in: [packages/protocol/src/identity-manager.ts:1180](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1180)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1484,6 +1487,7 @@ Documented on [Protocol core: interfaces](https://docs.dnsid.ai/reference/ts/dns
 - [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidconfig)
 - [DnsIdJWK](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsidjwk)
 - [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#dnsresolver)
+- [EntityKeyRotationEvent](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#entitykeyrotationevent)
 - [FetchResult](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#fetchresult)
 - [IdentityCache](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#identitycache)
 - [IdentityConfig](https://docs.dnsid.ai/reference/ts/dnsid-protocol-interfaces/#identityconfig)
