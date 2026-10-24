@@ -880,7 +880,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:36](https://github.com/
 
 ### C2spTlogAppendOptions
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L77)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L81)
 
 Options for [writePreparedEvent](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#writepreparedevent-2); `submit` performs the deployment-specific append.
 
@@ -946,7 +946,7 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional idempotencyKey?: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L80)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L84)
 
 <a id="operationalkey"></a>
 
@@ -956,9 +956,11 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:80](https://github.com/dnsid-a
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L64)
 
-Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
+Trusted initial operational key. Required when countersigning or serializing
+ISSUANCE. For ENTITY_KEY_ROTATION, the active operational key the new entity
+key must differ from.
 
 ###### Inherited from
 
@@ -972,7 +974,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousEntityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L71)
 
 Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
 or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
@@ -990,7 +992,7 @@ equal the event's `prev_ek_thumb`.
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L65)
 
 ###### Inherited from
 
@@ -1006,7 +1008,7 @@ submit: (entryBytes, idempotencyKey?) => Promise<{
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L79)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L83)
 
 Appends the finished entry bytes to the log and returns its assigned index.
 
@@ -1034,7 +1036,7 @@ Appends the finished entry bytes to the log and returns its assigned index.
 optional validateChain?: (prepared) => Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L82)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L86)
 
 Required for non-genesis events to validate authoritative prior stream state.
 
@@ -2207,9 +2209,11 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L64)
 
-Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
+Trusted initial operational key. Required when countersigning or serializing
+ISSUANCE. For ENTITY_KEY_ROTATION, the active operational key the new entity
+key must differ from.
 
 <a id="previousentitykey-1"></a>
 
@@ -2219,7 +2223,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousEntityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L71)
 
 Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
 or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
@@ -2233,7 +2237,7 @@ equal the event's `prev_ek_thumb`.
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L65)
 
 ***
 
@@ -2411,7 +2415,7 @@ Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dns
 
 ### SignPreparedC2spOptions
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L75)
 
 Options for [signPreparedC2spTlogEvent](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#signpreparedc2sptlogevent).
 
@@ -2477,9 +2481,11 @@ Locally expected governance identifier. Required when countersigning or serializ
 optional operationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L60)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L64)
 
-Trusted initial operational key. Required when countersigning or serializing ISSUANCE.
+Trusted initial operational key. Required when countersigning or serializing
+ISSUANCE. For ENTITY_KEY_ROTATION, the active operational key the new entity
+key must differ from.
 
 ###### Inherited from
 
@@ -2493,7 +2499,7 @@ Trusted initial operational key. Required when countersigning or serializing ISS
 optional previousEntityKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L71)
 
 Trusted entity key active before an ENTITY_KEY_ROTATION. Required to sign
 or verify its `PreviousEntity` (`prev_ae`) signature; its thumbprint must
@@ -2511,7 +2517,7 @@ equal the event's `prev_ek_thumb`.
 optional previousOperationalKey?: DnsIdJWK;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L61)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L65)
 
 ###### Inherited from
 
@@ -2525,7 +2531,7 @@ Defined in: [packages/log-c2sp-tlog/src/writer.ts:61](https://github.com/dnsid-a
 optional replaceExisting?: boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L77)
 
 Allow overwriting an existing signature for the same role.
 

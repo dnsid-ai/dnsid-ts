@@ -1041,7 +1041,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:401](https://github.com/d
 createTxtRecord(): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:569](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L569)
+Defined in: [packages/protocol/src/identity-manager.ts:579](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L579)
 
 Builds and signs the `_dnsid` TXT record for DNS publication.
 
@@ -1057,7 +1057,7 @@ Builds and signs the `_dnsid` TXT record for DNS publication.
 evictDomain(domain): void;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1111)
+Defined in: [packages/protocol/src/identity-manager.ts:1121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1121)
 
 Removes a domain from the IdentityManager cache.
 
@@ -1079,7 +1079,7 @@ Removes a domain from the IdentityManager cache.
 getEntityKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:531](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L531)
+Defined in: [packages/protocol/src/identity-manager.ts:541](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L541)
 
 Returns the accountable-entity public key set for ek JWKS publication.
 
@@ -1109,7 +1109,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:379](https://github.com/d
 getKeySet(): Promise<JWKS>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:524](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L524)
+Defined in: [packages/protocol/src/identity-manager.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L534)
 
 Returns the local identity's operational public key set for ku JWKS publication.
 
@@ -1125,7 +1125,7 @@ Returns the local identity's operational public key set for ku JWKS publication.
 loadDomainLog(vd): Promise<DomainLog>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1097](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1097)
+Defined in: [packages/protocol/src/identity-manager.ts:1107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1107)
 
 Loads the full verified event history for a domain from its bound lifecycle log.
 
@@ -1151,7 +1151,7 @@ refreshDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:625](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L625)
+Defined in: [packages/protocol/src/identity-manager.ts:635](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L635)
 
 Fully verifies new identity evidence without cached-result fallback.
 
@@ -1205,7 +1205,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:406](https://github.com/d
 rotateOperationalKey(options): Promise<OperationalKeyRotationResult>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:539](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L539)
+Defined in: [packages/protocol/src/identity-manager.ts:549](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L549)
 
 Runs the draft-01 operational-key rotation transaction.
 
@@ -1314,7 +1314,7 @@ verifyDomain(
 ): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:620](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L620)
+Defined in: [packages/protocol/src/identity-manager.ts:630](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L630)
 
 Verifies a DNSid identity according to the protocol, then enforces configured
 `trustedEntities` acceptance. Acceptance runs per invocation, including cache hits,
@@ -1350,7 +1350,7 @@ and is never cached; a denial leaves valid protocol evidence cached.
 verifyLocalPublication(options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:630](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L630)
+Defined in: [packages/protocol/src/identity-manager.ts:640](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L640)
 
 Verifies fresh publication of this manager's own identity, without application-peer or counterparty acceptance checks.
 
@@ -1372,7 +1372,7 @@ Verifies fresh publication of this manager's own identity, without application-p
 writeSignedEvent(event): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:496](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L496)
+Defined in: [packages/protocol/src/identity-manager.ts:498](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L498)
 
 ###### Parameters
 
