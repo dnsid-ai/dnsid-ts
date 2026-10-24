@@ -198,11 +198,14 @@ function validateHttpsUrl(value: string, field: string): URL {
 
 function validateHttpsUrlHost(value: string, field: string, expectedHost: string): void {
   const url = validateHttpsUrl(value, field);
-  if (normalizeFQDN(url.hostname) !== expectedHost) throw new ValidationError(`${field} host must equal agent FQDN`);
+  // A root dot in the ku/ek host is invalid: fetchers compare hosts exactly.
+  if (url.hostname.endsWith('.') || normalizeFQDN(url.hostname) !== expectedHost) throw new ValidationError(`${field} host must equal agent FQDN`);
 }
 
 function validateEkHost(value: string, giDomain: string): void {
-  const host = normalizeFQDN(validateHttpsUrl(value, 'ek').hostname);
+  const hostname = validateHttpsUrl(value, 'ek').hostname;
+  if (hostname.endsWith('.')) throw new ValidationError('ek host must not end with a root dot');
+  const host = normalizeFQDN(hostname);
   if (host !== giDomain && !host.endsWith('.' + giDomain)) throw new ValidationError('ek host must equal or be beneath gi');
 }
 
