@@ -1086,7 +1086,7 @@ Parses a bounded Structured Field dictionary without silently erasing duplicate 
 function parseKeyId(keyId): object;
 ```
 
-Defined in: [protocol/src/utils.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L110)
+Defined in: [protocol/src/utils.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L116)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
