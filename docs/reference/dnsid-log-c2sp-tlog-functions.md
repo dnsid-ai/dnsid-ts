@@ -84,7 +84,7 @@ C2spTlogVerificationError for missing/invalid candidate evidence.
 function assertCanonicalJsonBytes(bytes, value?): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L74)
 
 Asserts that `bytes` are exactly the canonical JSON serialization of `value`
 (which defaults to the parsed content of `bytes`).
@@ -208,7 +208,7 @@ C2spTlogParseError when the entry is malformed or oversized.
 function canonicalBytes(value): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L48)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L49)
 
 UTF-8 encoding of [canonicalJson](#canonicaljson).
 
@@ -265,7 +265,7 @@ C2spTlogParseError when signatures are incomplete or the entry is oversized.
 function canonicalJson(value): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:13](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L13)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L14)
 
 Serializes a JSON value to its RFC 8785 (JCS-style) canonical form:
 lexicographically sorted object members, no whitespace, valid Unicode.
@@ -1092,7 +1092,7 @@ C2spTlogParseError when a length prefix or entry is truncated.
 function parseJsonNoDuplicateMembers(bytes): unknown;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L58)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L59)
 
 Parses UTF-8 JSON bytes, rejecting duplicate object member names anywhere in
 the document.
