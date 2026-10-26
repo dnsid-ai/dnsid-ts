@@ -1705,10 +1705,11 @@ function verifyWithKey(
 ): Promise<boolean>;
 ```
 
-Defined in: [packages/protocol/src/utils.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L228)
+Defined in: [packages/protocol/src/utils.ts:262](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L262)
 
 Verifies a signing input against a raw signature using a public JWK.
-Returns true if the signature is valid, false otherwise.
+Returns true if the signature is valid, false otherwise. Ed25519 is RFC 8032 cofactorless
+verification; ES256 accepts only 64-byte r||s and accepts both low-S and high-S.
 
 #### Parameters
 

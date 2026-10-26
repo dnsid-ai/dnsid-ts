@@ -221,14 +221,49 @@ export function matchesDnsName(san: string[], fqdn: string): boolean {
   return false;
 }
 
+// Every canonical encoding of an Ed25519 point of order 1, 2, 4 or 8, plus the two sign-bit
+// variants of x = 0 (libsodium's list).
+const ED25519_SMALL_ORDER = new Set([
+  '0100000000000000000000000000000000000000000000000000000000000000',
+  '0100000000000000000000000000000000000000000000000000000000000080',
+  'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
+  'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  '0000000000000000000000000000000000000000000000000000000000000080',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa',
+]);
+
+/**
+ * Public-key rules the platform verifiers do not enforce: an Ed25519 key is a canonical
+ * (y < p) encoding of a point that is not small-order; P-256 coordinates are exactly
+ * 32 bytes (RFC 7518 §6.2.1.2). A small-order key lets its holder make one signature
+ * valid for many messages.
+ */
+function publicKeyEncodingValid(key: DnsIdJWK): boolean {
+  const decode = (v: unknown) => typeof v === 'string' ? fromBase64Url(v) : new Uint8Array();
+  if (key.kty === 'EC') return decode(key.x).length === 32 && decode(key.y).length === 32;
+  if (key.kty !== 'OKP') return true;
+  const x = decode(key.x);
+  if (x.length !== 32) return false;
+  const hex = Array.from(x, b => b.toString(16).padStart(2, '0')).join('');
+  // y >= p = 2^255 - 19, little-endian with the sign bit cleared.
+  const yAtLeastP = (x[31]! & 0x7f) === 0x7f && x.subarray(1, 31).every(b => b === 0xff) && x[0]! >= 0xed;
+  return !yAtLeastP && !ED25519_SMALL_ORDER.has(hex);
+}
+
 /**
  * Verifies a signing input against a raw signature using a public JWK.
- * Returns true if the signature is valid, false otherwise.
+ * Returns true if the signature is valid, false otherwise. Ed25519 is RFC 8032 cofactorless
+ * verification; ES256 accepts only 64-byte r||s and accepts both low-S and high-S.
  */
 export async function verifyWithKey(signingInput: string | Uint8Array, signature: Uint8Array, key: DnsIdJWK, expectedAlg?: string): Promise<boolean> {
   try {
     const alg = jwkSignatureAlg(key);
     if (expectedAlg !== undefined && alg !== expectedAlg) return false;
+    if (!publicKeyEncodingValid(key)) return false;
     const cryptoKey = await importJWK(key as unknown as JWK, alg) as CryptoKey;
     const algorithm = getVerifyAlgorithm(alg);
     const message = typeof signingInput === 'string'
