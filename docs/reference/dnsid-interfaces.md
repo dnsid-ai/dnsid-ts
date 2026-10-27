@@ -1503,7 +1503,7 @@ RFC 7638 JWK thumbprint of `jwk`.
 
 ### IssueManagedIdentityOptions
 
-Defined in: [packages/sdk/src/managed-issuance.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L64)
+Defined in: [packages/sdk/src/managed-issuance.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L65)
 
 #### Extends
 
@@ -1519,7 +1519,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:64](https://github.com/dnsid-a
 activateAcceptedIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L61)
+Defined in: [packages/sdk/src/managed-issuance.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L62)
 
 Publishes/converges status only after exact-byte log acceptance is durably bound.
 Must be idempotent because a crash can replay it before `activated` is persisted.
@@ -1546,7 +1546,7 @@ Must be idempotent because a crash can replay it before `activated` is persisted
 createIssuance: (intent) => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L54)
+Defined in: [packages/sdk/src/managed-issuance.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L55)
 
 Atomically creates the intent; returns the existing operation if the create lost a race.
 
@@ -1572,7 +1572,7 @@ Atomically creates the intent; returns the existing operation if the create lost
 domain: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L65)
+Defined in: [packages/sdk/src/managed-issuance.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L66)
 
 <a id="entitykey-2"></a>
 
@@ -1582,7 +1582,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:65](https://github.com/dnsid-a
 entityKey: DnsIdJWK;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L68)
+Defined in: [packages/sdk/src/managed-issuance.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L69)
 
 Trusted accountable-entity public key whose existing `sigs.ae` is required.
 
@@ -1594,7 +1594,7 @@ Trusted accountable-entity public key whose existing `sigs.ae` is required.
 governanceId: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L66)
+Defined in: [packages/sdk/src/managed-issuance.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L67)
 
 <a id="idempotencykey"></a>
 
@@ -1604,7 +1604,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:66](https://github.com/dnsid-a
 idempotencyKey: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L71)
+Defined in: [packages/sdk/src/managed-issuance.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L72)
 
 <a id="loadissuance"></a>
 
@@ -1614,7 +1614,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:71](https://github.com/dnsid-a
 loadIssuance: () => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L52)
+Defined in: [packages/sdk/src/managed-issuance.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L53)
 
 Loads the one durable setup operation, if it exists.
 
@@ -1634,7 +1634,7 @@ Loads the one durable setup operation, if it exists.
 optional logReference?: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L73)
+Defined in: [packages/sdk/src/managed-issuance.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L74)
 
 Optional configured reference; a registry response must match it exactly.
 
@@ -1646,7 +1646,7 @@ Optional configured reference; a registry response must match it exactly.
 operationalKeyProvider: KeyProvider;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L69)
+Defined in: [packages/sdk/src/managed-issuance.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L70)
 
 <a id="persistissuance"></a>
 
@@ -1656,7 +1656,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:69](https://github.com/dnsid-a
 persistIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L56)
+Defined in: [packages/sdk/src/managed-issuance.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L57)
 
 Atomically persists the intent, exact bytes, and every reconciliation transition.
 
@@ -1682,7 +1682,7 @@ Atomically persists the intent, exact bytes, and every reconciliation transition
 registryClient: ManagedIssuanceRegistry;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L70)
+Defined in: [packages/sdk/src/managed-issuance.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L71)
 
 ***
 
@@ -2578,7 +2578,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
 ### ManagedIssuanceCoordination
 
-Defined in: [packages/sdk/src/managed-issuance.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L50)
+Defined in: [packages/sdk/src/managed-issuance.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L51)
 
 #### Extended by
 
@@ -2595,7 +2595,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:50](https://github.com/dnsid-a
 activateAcceptedIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L61)
+Defined in: [packages/sdk/src/managed-issuance.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L62)
 
 Publishes/converges status only after exact-byte log acceptance is durably bound.
 Must be idempotent because a crash can replay it before `activated` is persisted.
@@ -2618,7 +2618,7 @@ Must be idempotent because a crash can replay it before `activated` is persisted
 createIssuance: (intent) => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L54)
+Defined in: [packages/sdk/src/managed-issuance.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L55)
 
 Atomically creates the intent; returns the existing operation if the create lost a race.
 
@@ -2640,7 +2640,7 @@ Atomically creates the intent; returns the existing operation if the create lost
 loadIssuance: () => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L52)
+Defined in: [packages/sdk/src/managed-issuance.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L53)
 
 Loads the one durable setup operation, if it exists.
 
@@ -2656,7 +2656,7 @@ Loads the one durable setup operation, if it exists.
 persistIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L56)
+Defined in: [packages/sdk/src/managed-issuance.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L57)
 
 Atomically persists the intent, exact bytes, and every reconciliation transition.
 
@@ -2676,7 +2676,7 @@ Atomically persists the intent, exact bytes, and every reconciliation transition
 
 ### ManagedIssuanceRegistry
 
-Defined in: [packages/sdk/src/managed-issuance.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L17)
+Defined in: [packages/sdk/src/managed-issuance.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L18)
 
 #### Methods
 
@@ -2688,7 +2688,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:17](https://github.com/dnsid-a
 prepareIssuance(domain, idempotencyKey): Promise<PreparedRegistryEvent>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L18)
+Defined in: [packages/sdk/src/managed-issuance.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L19)
 
 ###### Parameters
 
@@ -2716,7 +2716,7 @@ submitPreparedEvent(
 ): Promise<SubmissionResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:19](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L19)
+Defined in: [packages/sdk/src/managed-issuance.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L20)
 
 ###### Parameters
 
@@ -2742,7 +2742,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:19](https://github.com/dnsid-a
 
 ### ManagedIssuanceState
 
-Defined in: [packages/sdk/src/managed-issuance.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L22)
+Defined in: [packages/sdk/src/managed-issuance.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L23)
 
 #### Properties
 
@@ -2754,7 +2754,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:22](https://github.com/dnsid-a
 readonly activated: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L41)
+Defined in: [packages/sdk/src/managed-issuance.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L42)
 
 <a id="domain-9"></a>
 
@@ -2764,7 +2764,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:41](https://github.com/dnsid-a
 readonly domain: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L23)
+Defined in: [packages/sdk/src/managed-issuance.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L24)
 
 <a id="entitykid"></a>
 
@@ -2774,7 +2774,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:23](https://github.com/dnsid-a
 readonly entityKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L26)
+Defined in: [packages/sdk/src/managed-issuance.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L27)
 
 <a id="entitythumbprint"></a>
 
@@ -2784,7 +2784,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:26](https://github.com/dnsid-a
 readonly entityThumbprint: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L27)
+Defined in: [packages/sdk/src/managed-issuance.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L28)
 
 <a id="entrybytes"></a>
 
@@ -2794,7 +2794,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:27](https://github.com/dnsid-a
 readonly optional entryBytes?: Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L33)
+Defined in: [packages/sdk/src/managed-issuance.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L34)
 
 Exact completed canonical bytes. Undefined only for an intent.
 
@@ -2806,7 +2806,7 @@ Exact completed canonical bytes. Undefined only for an intent.
 readonly optional entryHash?: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L35)
+Defined in: [packages/sdk/src/managed-issuance.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L36)
 
 SHA-256 of entryBytes, persisted before the first submission.
 
@@ -2818,7 +2818,7 @@ SHA-256 of entryBytes, persisted before the first submission.
 readonly governanceId: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L24)
+Defined in: [packages/sdk/src/managed-issuance.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L25)
 
 <a id="idempotencykey-1"></a>
 
@@ -2828,7 +2828,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:24](https://github.com/dnsid-a
 readonly idempotencyKey: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L25)
+Defined in: [packages/sdk/src/managed-issuance.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L26)
 
 <a id="logreference-2"></a>
 
@@ -2838,7 +2838,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:25](https://github.com/dnsid-a
 readonly optional logReference?: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L31)
+Defined in: [packages/sdk/src/managed-issuance.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L32)
 
 Undefined only while the durable intent precedes remote preparation.
 
@@ -2850,7 +2850,7 @@ Undefined only while the durable intent precedes remote preparation.
 readonly operationalKid: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L28)
+Defined in: [packages/sdk/src/managed-issuance.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L29)
 
 <a id="operationalthumbprint"></a>
 
@@ -2860,7 +2860,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:28](https://github.com/dnsid-a
 readonly operationalThumbprint: string;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L29)
+Defined in: [packages/sdk/src/managed-issuance.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L30)
 
 <a id="submission"></a>
 
@@ -2870,7 +2870,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:29](https://github.com/dnsid-a
 readonly optional submission?: ManagedIssuanceSubmission;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L36)
+Defined in: [packages/sdk/src/managed-issuance.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L37)
 
 <a id="terminalfailure"></a>
 
@@ -2880,7 +2880,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:36](https://github.com/dnsid-a
 readonly optional terminalFailure?: object;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L37)
+Defined in: [packages/sdk/src/managed-issuance.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L38)
 
 ###### errorCode?
 
@@ -3546,7 +3546,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:98](https://github.com/dn
 
 ### ResumeManagedIssuanceOptions
 
-Defined in: [packages/sdk/src/managed-issuance.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L76)
+Defined in: [packages/sdk/src/managed-issuance.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L77)
 
 #### Extends
 
@@ -3562,7 +3562,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:76](https://github.com/dnsid-a
 activateAcceptedIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L61)
+Defined in: [packages/sdk/src/managed-issuance.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L62)
 
 Publishes/converges status only after exact-byte log acceptance is durably bound.
 Must be idempotent because a crash can replay it before `activated` is persisted.
@@ -3589,7 +3589,7 @@ Must be idempotent because a crash can replay it before `activated` is persisted
 createIssuance: (intent) => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L54)
+Defined in: [packages/sdk/src/managed-issuance.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L55)
 
 Atomically creates the intent; returns the existing operation if the create lost a race.
 
@@ -3615,7 +3615,7 @@ Atomically creates the intent; returns the existing operation if the create lost
 entityKey: DnsIdJWK;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L77)
+Defined in: [packages/sdk/src/managed-issuance.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L78)
 
 <a id="loadissuance-2"></a>
 
@@ -3625,7 +3625,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:77](https://github.com/dnsid-a
 loadIssuance: () => Promise<ManagedIssuanceState | undefined>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L52)
+Defined in: [packages/sdk/src/managed-issuance.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L53)
 
 Loads the one durable setup operation, if it exists.
 
@@ -3645,7 +3645,7 @@ Loads the one durable setup operation, if it exists.
 operationalKeyProvider: KeyProvider;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L78)
+Defined in: [packages/sdk/src/managed-issuance.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L79)
 
 <a id="persistissuance-2"></a>
 
@@ -3655,7 +3655,7 @@ Defined in: [packages/sdk/src/managed-issuance.ts:78](https://github.com/dnsid-a
 persistIssuance: (issuance) => Promise<void>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L56)
+Defined in: [packages/sdk/src/managed-issuance.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L57)
 
 Atomically persists the intent, exact bytes, and every reconciliation transition.
 
@@ -3681,7 +3681,7 @@ Atomically persists the intent, exact bytes, and every reconciliation transition
 registryClient: ManagedIssuanceRegistry;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L79)
+Defined in: [packages/sdk/src/managed-issuance.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L80)
 
 ***
 

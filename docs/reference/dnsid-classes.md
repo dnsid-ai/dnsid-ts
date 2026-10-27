@@ -1791,7 +1791,7 @@ Copies method selection for an immutable manager verification context.
 
 ### ManagedIssuanceActivationError
 
-Defined in: [packages/sdk/src/managed-issuance.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L94)
+Defined in: [packages/sdk/src/managed-issuance.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L95)
 
 Thrown when DNSid identity verification fails.
 
@@ -1812,7 +1812,7 @@ flag indicating whether a retry may succeed (see `retryTransientVerification`).
 new ManagedIssuanceActivationError(issuance, cause): ManagedIssuanceActivationError;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L97)
+Defined in: [packages/sdk/src/managed-issuance.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L98)
 
 ###### Parameters
 
@@ -1904,7 +1904,7 @@ Lifecycle conformance category, when the failure maps to a lifecycle state-machi
 readonly issuance: ManagedIssuanceState;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L95)
+Defined in: [packages/sdk/src/managed-issuance.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L96)
 
 <a id="message-1"></a>
 
@@ -2132,7 +2132,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ManagedIssuanceSubmissionError
 
-Defined in: [packages/sdk/src/managed-issuance.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L82)
+Defined in: [packages/sdk/src/managed-issuance.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L83)
 
 Thrown when DNSid identity verification fails.
 
@@ -2159,7 +2159,7 @@ new ManagedIssuanceSubmissionError(
 ): ManagedIssuanceSubmissionError;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L86)
+Defined in: [packages/sdk/src/managed-issuance.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L87)
 
 ###### Parameters
 
@@ -2263,7 +2263,7 @@ Lifecycle conformance category, when the failure maps to a lifecycle state-machi
 readonly issuance: ManagedIssuanceState;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L83)
+Defined in: [packages/sdk/src/managed-issuance.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L84)
 
 <a id="message-2"></a>
 
@@ -2301,7 +2301,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly retryWithSameBytes: boolean;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L84)
+Defined in: [packages/sdk/src/managed-issuance.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L85)
 
 <a id="stack-2"></a>
 

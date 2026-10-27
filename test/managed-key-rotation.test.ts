@@ -152,7 +152,7 @@ class RotationRegistry implements ManagedKeyRotationRegistry {
       previousEventId: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       previousStateHash: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     });
-    return { entryBytes: canonicalBytes(prepared.envelope), logReference: LR };
+    return { entryBytes: canonicalBytes(prepared.envelope) };
   }
 
   async submitPreparedEvent(
@@ -173,6 +173,27 @@ class RotationRegistry implements ManagedKeyRotationRegistry {
 }
 
 describe('managed registry operational-key rotation', () => {
+  it('rejects a signed lr that differs from the verified reference without a response header', async () => {
+    const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
+    const registry = new RotationRegistry('op-1');
+    const prepare = registry.prepareKeyRotation.bind(registry);
+    vi.spyOn(registry, 'prepareKeyRotation').mockImplementation(async (...args) => {
+      const raw = await prepare(...args);
+      const envelope = JSON.parse(new TextDecoder().decode(raw.entryBytes));
+      envelope.lr = 'c2sp-tlog:public:https://other.example#other';
+      return { entryBytes: canonicalBytes(envelope) };
+    });
+    const sign = vi.spyOn(provider, 'signKey');
+    const coordination = coordinator();
+    await expect(rotateManagedOperationalKey({
+      domain: DOMAIN, logReference: LR, keyProvider: provider, registryClient: registry,
+      idempotencyKey: 'rotation-1', ...coordination,
+    })).rejects.toThrow('public C2SP event lr mismatch');
+    expect(sign).not.toHaveBeenCalled();
+    expect(registry.submissions).toHaveLength(0);
+    expect(coordination.persistRotation).not.toHaveBeenCalled();
+  });
+
   it.each([false, true])('rejects an absent previous key without saved acceptance (activated=%s)', async activated => {
     const provider = new RotationKeyProvider(await key('op-1'), await key('op-2'));
     const registry = new RotationRegistry('op-1');

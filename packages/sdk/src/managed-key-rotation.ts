@@ -165,12 +165,8 @@ export async function rotateManagedOperationalKey(
       cause,
     });
   }
-  if (raw.logReference !== options.logReference) {
-    throw permanentRotationError(`registry preparation returned unexpected log reference ${raw.logReference}`);
-  }
-
   const context = { expectedFqdn: domain, previousOperationalKey: previousKey };
-  let prepared = await parsePreparedC2spTlogEvent(raw.entryBytes, raw.logReference, context);
+  let prepared = await parsePreparedC2spTlogEvent(raw.entryBytes, options.logReference, context);
   if (prepared.envelope.type !== 'KEY_ROTATION') {
     throw permanentRotationError(`registry preparation returned ${String(prepared.envelope.type)} instead of KEY_ROTATION`);
   }

@@ -8,6 +8,7 @@ import {
   type KeyProvider,
 } from '@dnsid-ai/protocol';
 import type { PreparedRegistryEvent, SubmissionResult } from '@dnsid-ai/registry';
+import { assertCanonicalJsonBytes, parseC2spTlogLr, parseJsonNoDuplicateMembers } from '@dnsid-ai/log-c2sp-tlog';
 import {
   c2spTlogEntryBytes,
   parsePreparedC2spTlogEvent,
@@ -197,10 +198,16 @@ async function prepareAndSubmit(
   };
   let prepared;
   try {
-    if (options.logReference && raw.logReference !== options.logReference) {
-      throw permanentLogError(`registry preparation returned unexpected log reference ${raw.logReference}`);
+    const envelope = parseJsonNoDuplicateMembers(raw.entryBytes);
+    assertCanonicalJsonBytes(raw.entryBytes, envelope);
+    if (!envelope || typeof envelope !== 'object' || !('lr' in envelope) || typeof envelope.lr !== 'string') {
+      throw permanentLogError('registry ISSUANCE preparation is missing a string lr');
     }
-    prepared = await parsePreparedC2spTlogEvent(raw.entryBytes, raw.logReference, context);
+    parseC2spTlogLr(envelope.lr);
+    if (options.logReference && envelope.lr !== options.logReference) {
+      throw permanentLogError(`registry preparation returned unexpected log reference ${envelope.lr}`);
+    }
+    prepared = await parsePreparedC2spTlogEvent(raw.entryBytes, envelope.lr, context);
     if (prepared.envelope.type !== 'ISSUANCE') {
       throw permanentLogError(`registry preparation returned ${String(prepared.envelope.type)} instead of ISSUANCE`);
     }
@@ -218,7 +225,7 @@ async function prepareAndSubmit(
   const entryBytes = await c2spTlogEntryBytes(prepared, context);
   const completed = {
     ...intent,
-    logReference: raw.logReference,
+    logReference: prepared.reference.lr,
     entryBytes: entryBytes.slice(),
     entryHash: await sha256Hex(entryBytes),
   };
