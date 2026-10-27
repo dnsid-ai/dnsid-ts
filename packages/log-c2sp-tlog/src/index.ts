@@ -76,7 +76,7 @@ export { createDnsidManagedVerificationRegistry } from './managed-verification-r
 export type { DnsidManagedVerificationOptions } from './managed-verification-registry.ts';
 export { parseC2spTlogTrustProfile } from './trust-profile.ts';
 export type { C2spTlogTrustProfile } from './trust-profile.ts';
-export { prepareC2spTlogEventForSigning, parsePreparedC2spTlogEvent, signPreparedC2spTlogEvent, c2spTlogEntryBytes, writePreparedEvent } from './writer.ts';
+export { prepareC2spTlogEventForSigning, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, signPreparedC2spTlogEvent, c2spTlogEntryBytes, writePreparedEvent } from './writer.ts';
 export type { C2spSignerRole, C2spChain, PreparedC2spTlogEvent, PreparedC2spVerificationContext, SignPreparedC2spOptions, C2spTlogAppendOptions } from './writer.ts';
 export { C2spTlogError, C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';
 export { C2SP_TLOG_PROFILE_VERSION, C2SP_TLOG_SPECIFICATIONS, DNSID_C2SP_METHOD_REVISION } from './version.ts';

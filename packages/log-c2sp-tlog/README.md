@@ -74,8 +74,15 @@ Public verification needs a trusted local policy and complete stream evidence. A
 
 For self-managed new identity instances, generate and persist a stream ID with
 `generateC2spTlogStreamId()` (128 random bits, 22 unpadded base64url characters).
-For registry-managed issuance, use the registry-provided bound log reference;
-do not generate a second ID or reuse a bare FQDN as the stream ID.
+For registry-managed issuance, call `parsePreparedC2spTlogIssuance(entryBytes,
+context)` from `@dnsid-ai/log-c2sp-tlog/writer` (also exported at the package
+root). Supply the locally expected FQDN, governance ID, entity key, and operational
+key in `context`. It strictly parses the signed `lr`, verifies the genesis
+ISSUANCE and existing signatures, and returns the validated prepared event with
+its bound `reference`. Do not extract `lr` yourself, generate a second ID, or
+reuse a bare FQDN as the stream ID. Later events must use
+`parsePreparedC2spTlogEvent(entryBytes, verifiedReference, context)` with the
+identity's already verified reference.
 
 For writes, construct `C2spTlogBinding` with a bound reference, call
 `prepareEvent`, and pass the prepared event between signer processes.

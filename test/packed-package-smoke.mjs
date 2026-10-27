@@ -80,8 +80,8 @@ import { OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCT
 import { RegistryClient, publishToRegistry } from '@dnsid-ai/registry';
 import { createDnsidFetch } from '@dnsid-ai/transport';
 import { WebBotAuthProfile } from '@dnsid-ai/web-bot-auth';
-import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } from '@dnsid-ai/log-c2sp-tlog';
-import { parsePreparedC2spTlogEvent } from '@dnsid-ai/log-c2sp-tlog/writer';
+import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogIssuance as parseRootIssuance } from '@dnsid-ai/log-c2sp-tlog';
+import { parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance } from '@dnsid-ai/log-c2sp-tlog/writer';
 import { C2SP_TLOG_PROFILE_VERSION } from '@dnsid-ai/log-c2sp-tlog/version';
 import {
   DNSSECState,
@@ -95,7 +95,7 @@ import {
 import { LocalKeyProvider, createNodeIdentityManager } from '@dnsid-ai/sdk/node';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 
-for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade]) {
+for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade]) {
   if (typeof value !== 'function') throw new Error('expected ESM function export');
 }
 if (DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
@@ -119,7 +119,7 @@ const sdk = require('@dnsid-ai/sdk');
 const sdkNode = require('@dnsid-ai/sdk/node');
 const keyAws = require('@dnsid-ai/key-aws');
 
-for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade]) {
+for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade]) {
   if (typeof value !== 'function') throw new Error('expected CJS function export');
 }
 if (sdk.DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');

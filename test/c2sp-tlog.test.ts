@@ -24,6 +24,7 @@ import {
   parseC2spTlogLr,
   parseC2spEventEntry,
   parsePreparedC2spTlogEvent,
+  parsePreparedC2spTlogIssuance,
   parseSignedNoteVerifierKey,
   parseTlogProofV1,
   prepareC2spTlogEventForSigning,
@@ -42,6 +43,8 @@ import {
   type PreparedC2spVerificationContext,
   type VerifiedLifecycleEvent,
 } from '@dnsid-ai/log-c2sp-tlog';
+
+import { parsePreparedC2spTlogIssuance as parsePortableIssuance } from '@dnsid-ai/log-c2sp-tlog/writer';
 
 const TEST_STREAM_ID = 'ERERERERERERERERERERER';
 const DEFAULT_CONTEXT = { scope: 'testnet', logOrigin: 'log.example/dnsid', streamId: TEST_STREAM_ID, lr: `c2sp-tlog:testnet:https://log.example/dnsid#${TEST_STREAM_ID}` };
@@ -329,6 +332,46 @@ describe('C2SP tlog helpers', () => {
     await expect(parsePreparedC2spTlogEvent(bytes, lr, issuanceVerificationContext(event))).resolves.toMatchObject({
       envelope: { fqdn: event.domain, gi: event.governanceId },
     });
+  });
+
+  it('exposes strict issuance parsing with its bound reference through both public entrypoints', async () => {
+    expect(parsePortableIssuance).toBe(parsePreparedC2spTlogIssuance);
+    const entity = await es256Key('entity');
+    const operational = await es256Key('op');
+    const event = await issuance(entity, operational);
+    const context = issuanceVerificationContext(event);
+    const lr = `c2sp-tlog:public:https://log.example/dnsid#${TEST_STREAM_ID}`;
+    const prepared = await signPreparedC2spTlogEvent(
+      prepareC2spTlogEventForSigning(event, lr),
+      'Entity', signingProvider(entity.publicJwk, entity.privateKey), context,
+    );
+    const bytes = canonicalBytes(prepared.envelope);
+    const original = bytes.slice();
+    const parsed = await parsePortableIssuance(bytes, context);
+    expect(parsed).toEqual(prepared);
+    expect(parsed.reference.lr).toBe(lr);
+    expect(bytes).toEqual(original);
+
+    for (const field of ['expectedFqdn', 'expectedGovernanceId', 'entityKey', 'operationalKey'] as const) {
+      const incomplete = { ...context };
+      delete incomplete[field];
+      await expect(parsePortableIssuance(bytes, incomplete)).rejects.toThrow(`requires trusted ${field}`);
+    }
+    await expect(parsePortableIssuance(bytes, { ...context, expectedFqdn: 'other.example.com' }))
+      .rejects.toThrow('fqdn does not match');
+    const tampered = structuredClone(prepared.envelope);
+    const sigs = tampered.sigs as { ae: { sig: string } };
+    sigs.ae.sig = (sigs.ae.sig[0] === 'A' ? 'B' : 'A') + sigs.ae.sig.slice(1);
+    await expect(parsePortableIssuance(canonicalBytes(tampered), context))
+      .rejects.toThrow('invalid existing Entity signature');
+  });
+
+  it('does not derive references for later events or non-genesis issuance', async () => {
+    const lr = `c2sp-tlog:public:https://log.example/dnsid#${TEST_STREAM_ID}`;
+    await expect(parsePortableIssuance(canonicalBytes({ lr, type: 'KEY_ROTATION', seq: 1 }), {}))
+      .rejects.toThrow('must be ISSUANCE');
+    await expect(parsePortableIssuance(canonicalBytes({ lr, type: 'ISSUANCE', seq: 1 }), {}))
+      .rejects.toThrow('must have seq=0');
   });
 
   it('matches the method specification event and Merkle vectors', async () => {

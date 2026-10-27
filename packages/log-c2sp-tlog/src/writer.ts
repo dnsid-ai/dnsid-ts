@@ -132,6 +132,41 @@ export async function parsePreparedC2spTlogEvent(
 }
 
 /**
+ * Validates prepared ISSUANCE bytes against their signed `lr`, returning the
+ * prepared event and its bound `reference` without changing the input bytes.
+ * Uses the same strict JSON, canonical JCS, binding, and existing-signature
+ * validation as {@link parsePreparedC2spTlogEvent}.
+ *
+ * All four ISSUANCE expectations in `context` are required: locally expected
+ * FQDN, governance ID, accountable-entity key, and operational key.
+ * Later events must use {@link parsePreparedC2spTlogEvent} with the identity's
+ * already verified reference instead of deriving one from the event.
+ *
+ * @throws C2spTlogParseError for malformed bytes, references, or non-genesis ISSUANCE.
+ * @throws C2spTlogVerificationError for missing or mismatched expectations or invalid signatures.
+ */
+export async function parsePreparedC2spTlogIssuance(
+  bytes: Uint8Array,
+  context: PreparedC2spVerificationContext,
+): Promise<PreparedC2spTlogEvent> {
+  assertEntrySize(bytes);
+  const envelope = parseJsonNoDuplicateMembers(bytes);
+  assertCanonicalJsonBytes(bytes, envelope);
+  if (!envelope || typeof envelope !== 'object' || !('lr' in envelope) || typeof envelope.lr !== 'string') {
+    throw new C2spTlogParseError('prepared ISSUANCE is missing a string lr');
+  }
+  if (!('type' in envelope) || envelope.type !== 'ISSUANCE') {
+    throw new C2spTlogParseError('prepared event must be ISSUANCE');
+  }
+  if (!('seq' in envelope) || envelope.seq !== 0) {
+    throw new C2spTlogParseError('prepared ISSUANCE must have seq=0');
+  }
+  const prepared = await parsePreparedC2spTlogEvent(bytes, envelope.lr, context);
+  await assertIssuanceExpectations(prepared, context, true);
+  return prepared;
+}
+
+/**
  * Adds one role's signature to a prepared event using the key provider,
  * verifying the provider key matches the key the envelope requires for that
  * role and that existing signatures remain valid.
