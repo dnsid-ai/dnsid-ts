@@ -36,6 +36,122 @@ bodies over 1 MiB; bodies are bounded while reading without changing their bytes
 Injected identity resolvers must honor cancellation and enforce bounded I/O.
 `fl=logchk` remains caller-owned operation policy.
 
+## Negotiated response authentication
+
+Request signatures alone do not authenticate the responder. Enable the RFC 9421
+§5 response profile explicitly:
+
+```ts
+import { createResponseSignatureTransport } from '@dnsid-ai/transport';
+
+const responseTransport = createResponseSignatureTransport(transportConfig);
+const signedFetch = httpSignatures.createSignedFetch({
+  fetch: globalThis.fetch, // Used only when responseSignature is absent.
+  responseTransport,
+  timeoutMs: 30_000,
+  signing: {
+    responseSignature: {
+      expectedDomain: 'service.example', // Local agent policy, not necessarily the URL host.
+      additionalComponents: ['content-type'],
+    },
+  },
+});
+const response = await signedFetch('https://gateway.example/operation');
+```
+
+The client emits one `sig1` negotiation with a fresh 32-byte base64url challenge,
+requests timestamps, and covers `accept-signature` in its request signature. The
+response must cover status, originating request method/authority/target,
+negotiation and both request signature fields, content digest, cache policy, and
+selected additions. The client snapshots each invocation's policy and request,
+verifies the requested label against the expected agent before returning **any**
+response, including HTTP errors and redirects, and preserves exact response bytes.
+A gateway cannot substitute a differently signed request with the same challenge.
+
+`responseTransport` is required in this mode. Ordinary fetch cannot disable hidden
+transport retries or expose the current peer certificate and is rejected before
+sending. The trusted transport contract requires one send without redirects,
+retries/replay, caches, or transparent content decoding; it must honor the request
+abort signal. The Node implementation meets that contract and returns the actual
+connection's certificate. Custom transports must provide equivalent guarantees;
+a discovery certificate or a previous connection's certificate is not a substitute.
+`fl=mtls` requires the current server peer, including DNSid cache hits. Configured
+entity acceptance and all normal DNSid status/lifecycle checks still apply on every
+verification. `expectedDomain` does not replace `trustedEntities` policy.
+
+The send, bounded read, and verification share a finite budget (default 30 seconds).
+Requests use `redirect: 'manual'` and `cache: 'no-store'`; the SDK never automatically
+resends an operation. Start explicit attempts from the **unsigned original**, with
+fresh preparation. HTTPS is mandatory; response authentication occurs **after**
+request data is sent, not before disclosure of sensitive data.
+
+### Standalone helpers and server use
+
+```ts
+// Client: retain BOTH snapshots, without later mutation.
+const policy = { expectedDomain: 'service.example', additionalComponents: ['content-type'] };
+const prepared = await httpSignatures.createSignedHttpRequest(unsignedRequest, {
+  responseSignature: policy,
+});
+const savedRequest = prepared.clone();
+const { response, peerCert } = await responseTransport(prepared);
+const identity = await httpSignatures.verifySignedHttpResponse(
+  savedRequest, response, policy, peerCert, { timeoutMs: 30_000 },
+);
+
+// Server, before sending headers/content:
+const caller = await serverProfile.verifySignedHttpRequest(incomingRequest, { peerCert: callerPeer });
+// Apply application authorization before processing the request.
+const signedResponse = await serverProfile.signRequestedHttpResponse(incomingRequest, finalResponse);
+```
+
+Standalone callers are responsible for retaining the unmodified prepared request
+and the original local policy snapshot until verification completes. Standalone
+request preparation neither sends nor verifies a response. `verifySignedHttpResponse`
+returns `VerifiedDomain`; only after success may the response be used as
+authenticated. Its optional fifth argument accepts `{ timeoutMs, signal }`.
+
+Without `Accept-Signature`, the server helper returns the identical response and
+makes no key-provider call, even in a verification-only profile. Otherwise it
+strictly validates the complete negotiation, signs with the current operational
+key, preserves unrelated signature labels, and rejects label collisions. It sets
+SHA-256 `Content-Digest` and adds `Cache-Control: no-store` without deleting other
+directives. It returns a new response only after signing succeeds; errors never
+fall back to unsigned success. Server applications should sign application error
+responses too. Finalize content coding/covered metadata before signing and do not
+modify covered bytes afterward.
+
+Only **covered** metadata is authenticated. `Content-Type`, `Content-Encoding`,
+and `Location` are not covered by default. Request their coverage when the
+application relies on them, or use a trusted interpretation. A digest authenticates
+content bytes, not the meaning supplied by an uncovered content type or encoding.
+
+### Limits and content ownership
+
+Negotiation and each signature header are limited to 16 KiB, signature dictionaries
+to 16 labels, component lists to 64 entries, and response challenges to 1024 encoded
+characters (at least 32 decoded bytes, canonical unpadded base64url). Enabled request
+preparation and response helpers read at most 1 MiB of content under a finite budget.
+Standalone response helpers default to 30 seconds. Limits reject the complete
+operation, not a subset of candidates. Owned response resources are canceled on
+verification failure, cancellation, or oversized content. Successful verification
+preserves the original response, including exact content bytes. Host transports
+must enforce their own finite HTTP header/input limits before constructing messages.
+
+A supplied empty body is distinct from unavailable ordinary content. HEAD and
+204/205/304 responses use the semantically empty digest; supplied nonempty content
+on these no-content responses is rejected. Ordinary content must be available.
+Informational responses, protocol upgrades, and tunnels are not authenticated by
+these helpers. Native WHATWG `Response` cannot represent informational responses;
+the Node transport rejects upgrades and tunnel establishment. Raw coded content
+can be authenticated; transparently decoded bytes fail digest verification rather
+than being substituted for the signed representation.
+
+Native conformance cases `NR01`–`NR26` in `test/http-response-signing.test.ts`
+follow the shared negotiated-response table in order. Live HTTPS checks in
+`test/http-response-transport.test.ts` also cover raw bytes, current peers,
+redirect/replay prevention, upgrades/tunnels, and resource cleanup.
+
 `@dnsid-ai/sdk` also re-exports this package as `httpSignatures` and exports `HttpSignaturesProfile` / `createHttpSignaturesProfile` directly.
 
 DNSid profile for RFC 9421 HTTP Message Signatures.
@@ -57,7 +173,7 @@ Content-Digest (RFC 9530) helpers — for reuse by other profiles such as
 
 ### HttpSignaturesProfile
 
-Defined in: [http-signatures/src/index.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L251)
+Defined in: [http-signatures/src/index.ts:421](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L421)
 
 DNSid profile for RFC 9421 HTTP Message Signatures.
 
@@ -78,7 +194,7 @@ for construction.
 new HttpSignaturesProfile(opts): HttpSignaturesProfile;
 ```
 
-Defined in: [http-signatures/src/index.ts:271](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L271)
+Defined in: [http-signatures/src/index.ts:441](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L441)
 
 ###### Parameters
 
@@ -104,12 +220,16 @@ ArgumentError if `opts.domain` is not a valid agent FQDN.
 createSignedFetch(opts): FetchLike;
 ```
 
-Defined in: [http-signatures/src/index.ts:358](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L358)
+Defined in: [http-signatures/src/index.ts:719](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L719)
 
 Wraps a fetch implementation so every request is signed before being sent.
 
 Streaming (ReadableStream) request bodies are rejected with ArgumentError because
-signing requires buffering the body to compute its digest.
+signing requires buffering the body to compute its digest. With responseSignature,
+requires responseTransport and verifies every response (including errors) under one
+finite budget before returning it. Retains invocation-local request/policy snapshots;
+disables redirects and caching and never retries. Ordinary fetch is used only in
+request-only mode.
 
 ###### Parameters
 
@@ -129,14 +249,17 @@ signing requires buffering the body to compute its digest.
 createSignedHttpRequest(req, opts?): Promise<Request>;
 ```
 
-Defined in: [http-signatures/src/index.ts:295](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L295)
+Defined in: [http-signatures/src/index.ts:468](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L468)
 
 Returns a copy of the request signed with the agent's current operational key.
 
 Covers `@method`, `@authority`, and `@target-uri` by default; when the request has a body,
 a SHA-256 `Content-Digest` header is added and covered as well. The `keyid` signature
 parameter is `"{domain}#{kid}"`, `created` is now, and a fresh nonce is included.
-The input request is not mutated.
+The input request is not mutated. With responseSignature, prepares Accept-Signature and
+covers it, but does not send or verify a response. Retain the prepared request and
+original policy unmodified for verifySignedHttpResponse. Prepare each new attempt from
+the unsigned original, never from a previously negotiated request.
 
 ###### Parameters
 
@@ -160,6 +283,35 @@ Extra covered components, label, tag, and expiry.
 
 ArgumentError if the signing key kid contains `#` or an additional component is invalid.
 
+<a id="signrequestedhttpresponse"></a>
+
+##### signRequestedHttpResponse()
+
+```ts
+signRequestedHttpResponse(request, response): Promise<Response>;
+```
+
+Defined in: [http-signatures/src/index.ts:554](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L554)
+
+Fulfills one strict Accept-Signature request using the current operational key.
+Returns the original response without key access when negotiation is absent.
+Inputs are not mutated; changes are published only after successful signing.
+The caller must finalize content coding and verify/authorize the request first.
+
+###### Parameters
+
+###### request
+
+`Request`
+
+###### response
+
+`Response`
+
+###### Returns
+
+`Promise`\<`Response`\>
+
 <a id="verifysignedhttprequest"></a>
 
 ##### verifySignedHttpRequest()
@@ -168,7 +320,7 @@ ArgumentError if the signing key kid contains `#` or an additional component is 
 verifySignedHttpRequest(req, opts?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [http-signatures/src/index.ts:390](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L390)
+Defined in: [http-signatures/src/index.ts:778](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L778)
 
 Verifies an inbound signed request and returns the signer's verified DNSid identity.
 
@@ -207,6 +359,54 @@ VerificationError with VerificationCode.SignatureInvalid for missing headers,
         headers or ambiguous label/tag selection. Identity resolution failures propagate
         from the IdentityResolver.
 
+<a id="verifysignedhttpresponse"></a>
+
+##### verifySignedHttpResponse()
+
+```ts
+verifySignedHttpResponse(
+   request, 
+   response, 
+   opts, 
+   peerCert?, 
+   budget?
+): Promise<VerifiedDomain>;
+```
+
+Defined in: [http-signatures/src/index.ts:605](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L605)
+
+Verifies the requested response label against the originating request and local policy.
+Standalone callers MUST retain an unmodified prepared request and policy snapshot.
+Preserves response bytes on success; cancels owned response resources on rejection.
+Uncovered metadata, including Content-Type and Location, is not authenticated.
+Current-peer evidence is required for fl=mtls, including identity-cache hits.
+
+###### Parameters
+
+###### request
+
+`Request`
+
+###### response
+
+`Response`
+
+###### opts
+
+[`ResponseSignatureOptions`](#responsesignatureoptions)
+
+###### peerCert?
+
+[`TLSCertificate`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#tlscertificate)
+
+###### budget?
+
+[`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions) = `{}`
+
+###### Returns
+
+`Promise`\<[`VerifiedDomain`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#verifieddomain)\>
+
 <a id="fromidentitymanager"></a>
 
 ##### fromIdentityManager()
@@ -215,7 +415,7 @@ VerificationError with VerificationCode.SignatureInvalid for missing headers,
 static fromIdentityManager(identityManager, httpMessageSignatures?): HttpSignaturesProfile;
 ```
 
-Defined in: [http-signatures/src/index.ts:253](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L253)
+Defined in: [http-signatures/src/index.ts:423](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L423)
 
 Creates a profile from a SigningIdentityManager, reusing its domain, key provider, and resolver.
 
@@ -239,7 +439,7 @@ Creates a profile from a SigningIdentityManager, reusing its domain, key provide
 
 ### CreateSignedFetchOptions
 
-Defined in: [http-signatures/src/index.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L232)
+Defined in: [http-signatures/src/index.ts:398](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L398)
 
 Options for [HttpSignaturesProfile.createSignedFetch](#createsignedfetch).
 
@@ -253,7 +453,7 @@ Options for [HttpSignaturesProfile.createSignedFetch](#createsignedfetch).
 fetch: FetchLike;
 ```
 
-Defined in: [http-signatures/src/index.ts:234](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L234)
+Defined in: [http-signatures/src/index.ts:400](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L400)
 
 Underlying fetch implementation invoked with the signed request.
 
@@ -265,7 +465,7 @@ Underlying fetch implementation invoked with the signed request.
 optional prepareRequest?: (request) => Request | Promise<Request>;
 ```
 
-Defined in: [http-signatures/src/index.ts:238](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L238)
+Defined in: [http-signatures/src/index.ts:408](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L408)
 
 Hook to transform each request (e.g. add headers) before it is signed.
 
@@ -279,6 +479,18 @@ Hook to transform each request (e.g. add headers) before it is signed.
 
 `Request` \| `Promise`\<`Request`\>
 
+<a id="responsetransport"></a>
+
+##### responseTransport?
+
+```ts
+optional responseTransport?: ResponseSignatureTransport;
+```
+
+Defined in: [http-signatures/src/index.ts:402](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L402)
+
+Required when response authentication is enabled; ordinary fetch cannot disable hidden retries or expose peer evidence.
+
 <a id="signing"></a>
 
 ##### signing?
@@ -289,9 +501,21 @@ optional signing?:
   | ((request) => HttpSigningOptions | undefined);
 ```
 
-Defined in: [http-signatures/src/index.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L236)
+Defined in: [http-signatures/src/index.ts:406](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L406)
 
 Signing options, or a per-request callback returning them (undefined means profile defaults).
+
+<a id="timeoutms"></a>
+
+##### timeoutMs?
+
+```ts
+optional timeoutMs?: number;
+```
+
+Defined in: [http-signatures/src/index.ts:404](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L404)
+
+Overall send/read/verification budget in response mode. Default: 30 seconds.
 
 ***
 
@@ -299,7 +523,7 @@ Signing options, or a per-request callback returning them (undefined means profi
 
 ### HttpSignaturesProfileConfig
 
-Defined in: [http-signatures/src/index.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L209)
+Defined in: [http-signatures/src/index.ts:363](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L363)
 
 Tuning knobs for signature freshness checks during verification.
 
@@ -313,7 +537,7 @@ Tuning knobs for signature freshness checks during verification.
 optional clockSkew?: number;
 ```
 
-Defined in: [http-signatures/src/index.ts:213](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L213)
+Defined in: [http-signatures/src/index.ts:367](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L367)
 
 Allowed clock skew in seconds when checking `created`. Default: 5.
 
@@ -325,7 +549,7 @@ Allowed clock skew in seconds when checking `created`. Default: 5.
 optional maxAge?: number;
 ```
 
-Defined in: [http-signatures/src/index.ts:211](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L211)
+Defined in: [http-signatures/src/index.ts:365](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L365)
 
 Maximum age of an HTTP message signature's `created` parameter in seconds. Default: 300.
 
@@ -335,7 +559,7 @@ Maximum age of an HTTP message signature's `created` parameter in seconds. Defau
 
 ### HttpSignaturesProfileOptions
 
-Defined in: [http-signatures/src/index.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L217)
+Defined in: [http-signatures/src/index.ts:371](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L371)
 
 Constructor options for [HttpSignaturesProfile](#httpsignaturesprofile).
 
@@ -349,7 +573,7 @@ Constructor options for [HttpSignaturesProfile](#httpsignaturesprofile).
 domain: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L219)
+Defined in: [http-signatures/src/index.ts:373](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L373)
 
 The signing agent's FQDN; becomes the domain half of the `keyid` parameter (`"{domain}#{kid}"`).
 
@@ -361,7 +585,7 @@ The signing agent's FQDN; becomes the domain half of the `keyid` parameter (`"{d
 optional httpMessageSignatures?: HttpSignaturesProfileConfig;
 ```
 
-Defined in: [http-signatures/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L225)
+Defined in: [http-signatures/src/index.ts:379](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L379)
 
 Verification freshness tuning; defaults apply when omitted.
 
@@ -373,7 +597,7 @@ Verification freshness tuning; defaults apply when omitted.
 identityResolver: IdentityResolver;
 ```
 
-Defined in: [http-signatures/src/index.ts:223](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L223)
+Defined in: [http-signatures/src/index.ts:377](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L377)
 
 Resolves and verifies signer domains when verifying inbound requests.
 
@@ -385,7 +609,7 @@ Resolves and verifies signer domains when verifying inbound requests.
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [http-signatures/src/index.ts:221](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L221)
+Defined in: [http-signatures/src/index.ts:375](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L375)
 
 Provides the agent's operational signing key. Omit for a verification-only profile.
 
@@ -395,7 +619,7 @@ Provides the agent's operational signing key. Omit for a verification-only profi
 
 ### HttpSigningOptions
 
-Defined in: [http-signatures/src/index.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L55)
+Defined in: [http-signatures/src/index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L63)
 
 Options for signing an HTTP request with [HttpSignaturesProfile.createSignedHttpRequest](#createsignedhttprequest).
 
@@ -409,7 +633,7 @@ Options for signing an HTTP request with [HttpSignaturesProfile.createSignedHttp
 optional additionalComponents?: ComponentIdentifier[];
 ```
 
-Defined in: [http-signatures/src/index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L61)
+Defined in: [http-signatures/src/index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L69)
 
 Covered components to sign in addition to the profile defaults
 (`@method`, `@authority`, `@target-uri`, and `content-digest` when a body is present).
@@ -423,7 +647,7 @@ Duplicates of already-covered components are ignored.
 optional expiresInSeconds?: number;
 ```
 
-Defined in: [http-signatures/src/index.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L67)
+Defined in: [http-signatures/src/index.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L75)
 
 If set, adds an `expires` signature parameter this many seconds after `created`.
 
@@ -435,9 +659,21 @@ If set, adds an `expires` signature parameter this many seconds after `created`.
 optional label?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L63)
+Defined in: [http-signatures/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L71)
 
 Signature label used as the `Signature` / `Signature-Input` dictionary key. Default: `sig1`.
+
+<a id="responsesignature"></a>
+
+##### responseSignature?
+
+```ts
+optional responseSignature?: ResponseSignatureOptions;
+```
+
+Defined in: [http-signatures/src/index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L77)
+
+Require negotiated response authentication; request signing alone does not authenticate the responder.
 
 <a id="tag"></a>
 
@@ -447,7 +683,7 @@ Signature label used as the `Signature` / `Signature-Input` dictionary key. Defa
 optional tag?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L65)
+Defined in: [http-signatures/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L73)
 
 Optional RFC 9421 `tag` signature parameter identifying the application/profile.
 
@@ -457,7 +693,7 @@ Optional RFC 9421 `tag` signature parameter identifying the application/profile.
 
 ### HttpVerificationOptions
 
-Defined in: [http-signatures/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L71)
+Defined in: [http-signatures/src/index.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L81)
 
 Options for verifying an HTTP request with [HttpSignaturesProfile.verifySignedHttpRequest](#verifysignedhttprequest).
 
@@ -475,7 +711,7 @@ Options for verifying an HTTP request with [HttpSignaturesProfile.verifySignedHt
 optional peerCert?: TLSCertificate;
 ```
 
-Defined in: [http-signatures/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L73)
+Defined in: [http-signatures/src/index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L83)
 
 Trusted current application peer, never the JWKS endpoint certificate.
 
@@ -487,7 +723,7 @@ Trusted current application peer, never the JWKS endpoint certificate.
 optional requiredComponents?: ComponentIdentifier[];
 ```
 
-Defined in: [http-signatures/src/index.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L78)
+Defined in: [http-signatures/src/index.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L88)
 
 Covered components the signature must include, matched exactly (name and params).
 Default: `@method`, `@authority`, `@target-uri`, matched by name only.
@@ -500,7 +736,7 @@ Default: `@method`, `@authority`, `@target-uri`, matched by name only.
 optional requiredTag?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L80)
+Defined in: [http-signatures/src/index.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L90)
 
 If set, exactly one signature with this `tag` parameter must be present and is the one verified.
 
@@ -518,7 +754,7 @@ Defined in: [protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/
 
 [`VerificationOptions`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#verificationoptions).[`signal`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#signal-1)
 
-<a id="timeoutms"></a>
+<a id="timeoutms-1"></a>
 
 ##### timeoutMs?
 
@@ -536,11 +772,47 @@ Overall invocation budget, including all discovery and evidence. Default: 30 sec
 
 ***
 
+<a id="responsesignatureoptions"></a>
+
+### ResponseSignatureOptions
+
+Defined in: [http-signatures/src/index.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L55)
+
+Local policy for opt-in, request-bound DNSid response authentication.
+
+#### Properties
+
+<a id="additionalcomponents-1"></a>
+
+##### additionalComponents?
+
+```ts
+optional additionalComponents?: ComponentIdentifier[];
+```
+
+Defined in: [http-signatures/src/index.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L59)
+
+Additional response metadata to authenticate, in caller order.
+
+<a id="expecteddomain"></a>
+
+##### expectedDomain
+
+```ts
+expectedDomain: string;
+```
+
+Defined in: [http-signatures/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L57)
+
+Expected DNSid agent, independent of the endpoint host and received metadata.
+
+***
+
 <a id="signatureparams"></a>
 
 ### SignatureParams
 
-Defined in: [http-signatures/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L87)
+Defined in: [http-signatures/src/index.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L97)
 
 Parsed or to-be-serialized RFC 9421 signature parameters: the covered components plus
 the parameters of one `Signature-Input` dictionary member.
@@ -555,7 +827,7 @@ the parameters of one `Signature-Input` dictionary member.
 optional alg?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L95)
+Defined in: [http-signatures/src/index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L105)
 
 `alg` parameter (RFC 9421 algorithm identifier, e.g. `ed25519`).
 
@@ -567,7 +839,7 @@ Defined in: [http-signatures/src/index.ts:95](https://github.com/dnsid-ai/dnsid-
 components: ComponentIdentifier[];
 ```
 
-Defined in: [http-signatures/src/index.ts:91](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L91)
+Defined in: [http-signatures/src/index.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L101)
 
 Ordered covered components included in the signature base.
 
@@ -579,7 +851,7 @@ Ordered covered components included in the signature base.
 optional created?: number;
 ```
 
-Defined in: [http-signatures/src/index.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L97)
+Defined in: [http-signatures/src/index.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L107)
 
 `created` parameter (Unix seconds).
 
@@ -591,7 +863,7 @@ Defined in: [http-signatures/src/index.ts:97](https://github.com/dnsid-ai/dnsid-
 optional expires?: number;
 ```
 
-Defined in: [http-signatures/src/index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L99)
+Defined in: [http-signatures/src/index.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L109)
 
 `expires` parameter (Unix seconds).
 
@@ -603,7 +875,7 @@ Defined in: [http-signatures/src/index.ts:99](https://github.com/dnsid-ai/dnsid-
 optional keyId?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L93)
+Defined in: [http-signatures/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L103)
 
 `keyid` parameter; the DNSid profile uses the compound `"{domain}#{kid}"` convention.
 
@@ -615,7 +887,7 @@ Defined in: [http-signatures/src/index.ts:93](https://github.com/dnsid-ai/dnsid-
 label: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L89)
+Defined in: [http-signatures/src/index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L99)
 
 Dictionary key labeling this signature in the `Signature` / `Signature-Input` headers.
 
@@ -627,7 +899,7 @@ Dictionary key labeling this signature in the `Signature` / `Signature-Input` he
 optional nonce?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L104)
+Defined in: [http-signatures/src/index.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L114)
 
 `nonce` parameter. Callers can record seen nonces to implement replay
 detection; verification itself does not check for reuse.
@@ -640,7 +912,7 @@ detection; verification itself does not check for reuse.
 optional parameters?: SignatureParameter[];
 ```
 
-Defined in: [http-signatures/src/index.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L112)
+Defined in: [http-signatures/src/index.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L122)
 
 Ordered RFC 8941 signature parameters. Parsed values always populate this list, including
 unknown extensions. When supplied for a newly constructed value, it is the serialization
@@ -654,7 +926,7 @@ source of truth; otherwise the typed fields above are serialized in profile orde
 optional tag?: string;
 ```
 
-Defined in: [http-signatures/src/index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L106)
+Defined in: [http-signatures/src/index.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L116)
 
 `tag` parameter identifying the application/profile.
 
@@ -690,7 +962,7 @@ An RFC 9421 covered-component identifier: either a plain component name
 type FetchLike = (input, init?) => Promise<Response>;
 ```
 
-Defined in: [http-signatures/src/index.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L229)
+Defined in: [http-signatures/src/index.ts:383](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L383)
 
 A fetch-compatible function, e.g. the global `fetch` or a wrapper around it.
 
@@ -724,10 +996,42 @@ type HttpMessage =
 };
 ```
 
-Defined in: [http-signatures/src/index.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L119)
+Defined in: [http-signatures/src/index.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L129)
 
 An HTTP message to sign or verify: a Request, a Response, or a Response paired with the
 Request it answers (needed to resolve components with the `req` parameter).
+
+***
+
+<a id="responsesignaturetransport"></a>
+
+### ResponseSignatureTransport
+
+```ts
+type ResponseSignatureTransport = (request) => Promise<{
+  peerCert?: TLSCertificate;
+  response: Response;
+}>;
+```
+
+Defined in: [http-signatures/src/index.ts:390](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L390)
+
+Trusted single-send transport for negotiated responses. It MUST NOT redirect, retry,
+replay, cache, or decode content. It must honor request cancellation and release
+resources on failure. Peer evidence must come from this send's application connection.
+
+#### Parameters
+
+##### request
+
+`Request`
+
+#### Returns
+
+`Promise`\<\{
+  `peerCert?`: [`TLSCertificate`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#tlscertificate);
+  `response`: `Response`;
+\}\>
 
 ***
 
@@ -753,7 +1057,7 @@ An ordered RFC 8941 bare-item signature parameter retained during parsing.
 const DEFAULT_CLOCK_SKEW_SECONDS: 5 = 5;
 ```
 
-Defined in: [http-signatures/src/index.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L124)
+Defined in: [http-signatures/src/index.ts:134](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L134)
 
 Default allowed clock skew when checking `created` against the current time, in seconds.
 
@@ -767,7 +1071,7 @@ Default allowed clock skew when checking `created` against the current time, in 
 const DEFAULT_SIGNATURE_MAX_AGE_SECONDS: 300 = 300;
 ```
 
-Defined in: [http-signatures/src/index.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L122)
+Defined in: [http-signatures/src/index.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L132)
 
 Default maximum accepted age of a signature's `created` parameter, in seconds.
 
@@ -781,7 +1085,7 @@ Default maximum accepted age of a signature's `created` parameter, in seconds.
 const JOSE_TO_HTTP_SIG_ALG: Readonly<Record<string, string>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L131)
+Defined in: [http-signatures/src/index.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L141)
 
 JOSE algorithm name to RFC 9421 HTTP signature algorithm identifier mapping supported by DNSid.
 
@@ -795,7 +1099,7 @@ JOSE algorithm name to RFC 9421 HTTP signature algorithm identifier mapping supp
 const KNOWN_DERIVED_COMPONENTS: Set<string>;
 ```
 
-Defined in: [http-signatures/src/index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L126)
+Defined in: [http-signatures/src/index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L136)
 
 RFC 9421 derived component names accepted by this package (`@query-param` additionally requires a `name` parameter).
 
@@ -809,7 +1113,7 @@ RFC 9421 derived component names accepted by this package (`@query-param` additi
 function buildSignatureInput(msg, params): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:751](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L751)
+Defined in: [http-signatures/src/index.ts:1109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1109)
 
 Builds the RFC 9421 signature base for a message: one `"component": value` line per
 covered component, terminated by the canonical `"@signature-params"` line.
@@ -846,7 +1150,7 @@ ArgumentError if a covered component is invalid or cannot be resolved from the
 function constantTimeEqual(a, b): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L197)
+Defined in: [http-signatures/src/index.ts:207](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L207)
 
 Constant-time comparison of two Uint8Arrays. Returns true if equal.
 
@@ -874,7 +1178,7 @@ Constant-time comparison of two Uint8Arrays. Returns true if equal.
 function createHttpSignaturesProfile(opts): HttpSignaturesProfile;
 ```
 
-Defined in: [http-signatures/src/index.ts:583](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L583)
+Defined in: [http-signatures/src/index.ts:941](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L941)
 
 Creates a DNSid RFC 9421 HTTP Message Signatures profile for the given agent.
 
@@ -916,7 +1220,7 @@ const signer = await httpSignatures.verifySignedHttpRequest(incomingRequest);
 function generateNonce(byteLength?): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L157)
+Defined in: [http-signatures/src/index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L167)
 
 Generates a cryptographically random base64url nonce for HTTP message signatures.
 
@@ -940,7 +1244,7 @@ Generates a cryptographically random base64url nonce for HTTP message signatures
 function hasComponentNamed(components, name): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:612](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L612)
+Defined in: [http-signatures/src/index.ts:970](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L970)
 
 Checks whether a component with the given name is present, ignoring parameters.
 
@@ -968,7 +1272,7 @@ Checks whether a component with the given name is present, ignoring parameters.
 function isLowercaseHttpFieldName(name): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:152](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L152)
+Defined in: [http-signatures/src/index.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L162)
 
 Checks whether a string is a valid lowercase HTTP field name (RFC 9110 token).
 
@@ -992,7 +1296,7 @@ Checks whether a string is a valid lowercase HTTP field name (RFC 9110 token).
 function joseAlgToHttpSigAlg(joseAlg): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L143)
+Defined in: [http-signatures/src/index.ts:153](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L153)
 
 Maps a JWK/JOSE algorithm name to the corresponding RFC 9421 HTTP Message Signature algorithm identifier.
 
@@ -1020,7 +1324,7 @@ ArgumentError if the JOSE algorithm has no mapping (see [JOSE\_TO\_HTTP\_SIG\_AL
 function parseContentDigest(headerValue): object;
 ```
 
-Defined in: [http-signatures/src/index.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L173)
+Defined in: [http-signatures/src/index.ts:183](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L183)
 
 Parses a Content-Digest structured field header value (RFC 9530 Dictionary).
 
@@ -1062,7 +1366,7 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseDictionaryField(headerValue): Dictionary;
 ```
 
-Defined in: [http-signatures/src/index.ts:856](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L856)
+Defined in: [http-signatures/src/index.ts:1214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1214)
 
 Parses a bounded Structured Field dictionary without silently erasing duplicate members.
 
@@ -1134,7 +1438,7 @@ ArgumentError if the key ID is malformed.
 function parseSha256ContentDigest(headerValue, components?): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:1155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1155)
+Defined in: [http-signatures/src/index.ts:1518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1518)
 
 Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members.
 
@@ -1162,7 +1466,7 @@ Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported 
 function parseSignature(headerValue): Map<string, Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:925](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L925)
+Defined in: [http-signatures/src/index.ts:1283](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1283)
 
 Parses a `Signature` header (RFC 8941 Dictionary of byte sequences) into raw signature
 bytes keyed by label.
@@ -1192,7 +1496,7 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 function parseSignatureInput(headerValue): Map<string, SignatureParams>;
 ```
 
-Defined in: [http-signatures/src/index.ts:880](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L880)
+Defined in: [http-signatures/src/index.ts:1238](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1238)
 
 Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
 signature params, preserving component and parameter order for canonical
@@ -1227,7 +1531,7 @@ function readBoundedBody(
 ): Promise<ArrayBuffer>;
 ```
 
-Defined in: [http-signatures/src/index.ts:953](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L953)
+Defined in: [http-signatures/src/index.ts:1311](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1311)
 
 Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses.
 
@@ -1259,7 +1563,7 @@ Reads bounded exact bytes under the shared deadline. Preserves requests; consume
 function sameComponent(a, b): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:602](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L602)
+Defined in: [http-signatures/src/index.ts:960](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L960)
 
 Checks whether two component identifiers are equivalent: same name and identical parameters.
 
@@ -1287,7 +1591,7 @@ Checks whether two component identifiers are equivalent: same name and identical
 function serializeComponentIdentifier(component): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:728](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L728)
+Defined in: [http-signatures/src/index.ts:1086](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1086)
 
 Serializes a component identifier as it appears in the signature base and `Signature-Input` header (quoted name plus parameters).
 
@@ -1311,7 +1615,7 @@ Serializes a component identifier as it appears in the signature base and `Signa
 function serializeStructuredFieldValue(value): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:723](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L723)
+Defined in: [http-signatures/src/index.ts:1081](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1081)
 
 Serializes a bare value as an RFC 8941 structured field Item (bytes become `:base64:` byte sequences).
 
@@ -1344,7 +1648,7 @@ function setDictionaryMember(
 ): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:990](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L990)
+Defined in: [http-signatures/src/index.ts:1348](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1348)
 
 Sets one member of a structured-field Dictionary header (e.g. `Signature`, `Signature-Input`)
 to `label=value`, replacing any existing member with that label and preserving the rest.
@@ -1386,7 +1690,7 @@ function signHttpMessage<T>(
 ): Promise<T>;
 ```
 
-Defined in: [http-signatures/src/index.ts:777](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L777)
+Defined in: [http-signatures/src/index.ts:1135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1135)
 
 Signs an HTTP message per RFC 9421 with the key provider's current operational key.
 
@@ -1451,7 +1755,7 @@ ArgumentError if a covered component cannot be resolved (see [buildSignatureInpu
 function validateComponentIdentifier(component): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:623](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L623)
+Defined in: [http-signatures/src/index.ts:981](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L981)
 
 Validates a component identifier: the name must be a known derived component
 ([KNOWN\_DERIVED\_COMPONENTS](#known_derived_components)) or a lowercase HTTP field name, and `@query-param`

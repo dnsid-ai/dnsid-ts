@@ -1,4 +1,10 @@
 
+## [Unreleased]
+
+### Features
+
+- feat(http-signatures): add opt-in RFC 9421 negotiated DNSid response signatures, strict server signing, expected-domain response verification, and bounded single-send HTTPS transport with current-peer evidence.
+
 ## [0.32.0] - 2026-10-27
 
 ### Bug Fixes
