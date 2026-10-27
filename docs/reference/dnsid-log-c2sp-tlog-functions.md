@@ -23,7 +23,7 @@ function advanceTrustedC2spCheckpoint(
 ): Promise<TrustedC2spCheckpoint>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L111)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L114)
 
 Advances the stored trusted checkpoint for a log origin to `checkpoint`,
 guarding against split-view and rollback attacks: a same-size checkpoint
@@ -405,7 +405,7 @@ protection must survive process restarts.
 function createDefaultC2spBoundedResourceFetcher(transport?): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L95)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L96)
 
 Creates the default public-resource fetcher. It uses connection-time SSRF
 checks, rejects redirects, requires HTTP 200, and bounds the decoded body
@@ -464,7 +464,7 @@ Managed verification prefers signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L106)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L107)
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -531,7 +531,7 @@ function enforceCheckpointPolicy(
 ): CheckpointPolicyResult;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L114)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L115)
 
 Enforces the local trust policy on a parsed checkpoint: origin and scope
 match, a valid signature from an accepted log key, and a satisfied witness
@@ -804,7 +804,7 @@ RFC 6962 interior node hash: SHA-256(0x01 || left || right).
 function normalizedOriginPolicy(policy, origin): NormalizedOriginPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L63)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L64)
 
 Resolves and validates the policy for `origin`: parses key strings, checks
 signature types (0x01 for log keys, 0x04 for witness cosignature keys),
@@ -872,7 +872,7 @@ C2spTlogParseError when the entry is oversized, non-canonical, or malformed.
 function parseC2spPolicyFile(text): C2spTlogPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L136)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L140)
 
 Parses a C2SP tlog-policy file (`log`, `witness`, `group`, and exactly one
 `quorum` directive) into a [C2spTlogPolicy](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy) keyed by log-key origin.
@@ -1360,7 +1360,7 @@ Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.
 function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarantees;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L84)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L85)
 
 Returns a copy of the capabilities required by the safe standard-resource factory.
 
@@ -1628,7 +1628,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L118)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L119)
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 
@@ -1690,7 +1690,7 @@ function verifyC2spConsistencyProof(
 ): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L144)
+Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L162)
 
 Verifies an RFC 6962 consistency proof that the tree of size `fromSize` with
 root `fromRoot` is a prefix of the tree of size `toSize` with root `toRoot`.

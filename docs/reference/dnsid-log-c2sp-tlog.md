@@ -46,7 +46,7 @@ const registry = await createC2spTlogVerificationRegistry({
 });
 ```
 
-The factory fetches the policy with SSRF-safe destination checks, rejects redirects, requires HTTP 200, bounds decoded responses during reading, and uses the same bounded resource fetcher for log evidence. The example above supplies no bundle keys, so it uses a complete-log scan. With an independently distributed `trustProfile`, or `policyDocument`/`policyUrl` plus direct `bundleVerifierKeys`, set `maxBundleLifetimeMs` to enable bundle verification (and `checkpointMaxAge` for non-revocation); the default reader then prefers `{lr log-prefix}/streams/{fqdn}?format=bundle` and shares its verified lifecycle snapshot across binding, continuity, and key-age checks. A missing or temporarily unavailable endpoint falls back to the bounded complete-log scan. A valid newer bundle also falls back when no consistency-proof source is available, allowing the complete scan to verify both roots independently. Malformed, expired, invalid, rollback, or conflicting bundle evidence never falls back. Set `requireStreamBundle` to disable fallback.
+The factory fetches the policy with SSRF-safe destination checks, rejects redirects, requires HTTP 200, bounds decoded responses during reading, and uses the same bounded resource fetcher for log evidence. The example above supplies no bundle keys, so it uses a complete-log scan. With an independently distributed `trustProfile`, or `policyDocument`/`policyUrl` plus direct `bundleVerifierKeys`, set `maxBundleLifetimeMs` to enable bundle verification (and `checkpointMaxAge` for non-revocation); the default reader then prefers `{lr log-prefix}/streams/{fqdn}?format=bundle` and shares its verified lifecycle snapshot across binding, continuity, and key-age checks. A missing or temporarily unavailable endpoint falls back to the bounded complete-log scan. For growth from nonempty trusted state, the built-in reader verifies consistency from candidate-authenticated hash tiles. `requireStreamBundle` disables availability fallback, not tile reads. Tile or explicit proof-source failures never trigger a scan or another consistency source. Malformed, expired, invalid, rollback, or conflicting bundle evidence never falls back.
 
 For an explicit application decision to trust DNSid-managed DNSid logs, use the separately named managed factory:
 
@@ -56,7 +56,7 @@ import { createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog'
 const registry = await createDnsidManagedVerificationRegistry();
 ```
 
-It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai`, `https://log.dnsid.ai`, or `https://log.partners.dnsid.ai`. Development, production, and partners all use bundle-first verification with bounded raw-scan fallback when bundle evidence is unavailable or consistency evidence requires a complete scan. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
+It selects reviewed trust bundled with the SDK only for exact canonical `public` references to `https://log.dev.dnsid.ai`, `https://log.dnsid.ai`, or `https://log.partners.dnsid.ai`. Development, production, and partners all use bundle-first verification with hash-tile checkpoint consistency and bounded raw-scan fallback only when bundle evidence is unavailable. Unknown scopes and prefixes fail closed. The generic factory never selects managed roots when trust is omitted.
 
 Set `checkpointMaxAge` when using `verifyNonRevocation`; omitting it makes that operation fail closed. Non-revocation always refreshes evidence instead of relying on the lifecycle snapshot retained by `VerifiedDomain`. `allowedClockSkew` defaults to zero. The factory installs an in-memory trusted-checkpoint store by default; that protects against rollback only for the process lifetime. Inject a durable `trustedCheckpointStore` when protection must survive restarts. A custom `resourceFetcher` must implement the bounded fetch contract and explicitly report all required security guarantees.
 
@@ -209,7 +209,7 @@ type C2spTlogQuorumRule =
 };
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L9)
+Defined in: [packages/log-c2sp-tlog/src/policy.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L10)
 
 Witness-quorum requirement for accepting a checkpoint: no witnesses, a single
 named witness, or a threshold over nested member rules.
@@ -238,7 +238,7 @@ Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS 
 const C2SP_ENTRIES_PER_BUNDLE: 256 = 256;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L67)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L68)
 
 C2SP tlog-tiles fixes full entry bundles at 256 entries.
 
@@ -289,7 +289,7 @@ Pinned versions (URL or commit) of each C2SP specification this package implemen
 const DEFAULT_C2SP_MAX_CHECKPOINT_BYTES: 1048576 = 1_048_576;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L69)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L70)
 
 ***
 
@@ -301,7 +301,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/
 const DEFAULT_C2SP_MAX_ENTRY_BUNDLE_BYTES: 16777472 = 16_777_472;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L71)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L72)
 
 256 * (2-byte prefix + 65,535-byte entry).
 
@@ -339,7 +339,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:22](https://github.com/
 const DEFAULT_C2SP_MAX_TOTAL_ENTRY_BYTES: 268435456 = 268_435_456;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L72)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L73)
 
 ***
 
@@ -351,7 +351,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/
 const DEFAULT_C2SP_MAX_TREE_SIZE: 1000000 = 1_000_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L68)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L69)
 
 ***
 
@@ -363,7 +363,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:68](https://github.com/
 const DEFAULT_C2SP_REQUEST_TIMEOUT_MS: 10000 = 10_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L73)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L74)
 
 ***
 

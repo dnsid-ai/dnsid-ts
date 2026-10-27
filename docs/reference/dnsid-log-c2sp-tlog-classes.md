@@ -765,7 +765,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogBinding
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:513](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L513)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:517](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L517)
 
 Read/write binding for a c2sp-tlog stream: extends [C2spTlogReader](#c2sptlogreader)
 with the prepared-event workflow (prepare, sign per role, finalize, append).
@@ -910,7 +910,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
 
 ###### Parameters
 
@@ -965,7 +965,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
 
 ###### Parameters
 
@@ -989,7 +989,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L514)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
 
 ###### Parameters
 
@@ -1076,7 +1076,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
 
 ###### Parameters
 
@@ -1224,7 +1224,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:538](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L538)
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1252,7 +1252,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
 
 ###### Parameters
 
@@ -1274,7 +1274,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-
 
 ### ~~C2spTlogClient~~
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:540](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L540)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:544](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L544)
 
 #### Deprecated
 
@@ -1406,7 +1406,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
 
 ###### Parameters
 
@@ -1465,7 +1465,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
 
 ###### Parameters
 
@@ -1493,7 +1493,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:514](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L514)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L518)
 
 ###### Parameters
 
@@ -1584,7 +1584,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L522)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L526)
 
 ###### Parameters
 
@@ -1736,7 +1736,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:538](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L538)
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1764,7 +1764,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:530](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L530)
+Defined in: [packages/log-c2sp-tlog/src/reader.ts:534](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L534)
 
 ###### Parameters
 
@@ -3630,7 +3630,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ScanStreamSource
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L140)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L141)
 
 StreamSource that performs a complete scan of a C2SP tlog-tiles log: it
 fetches the checkpoint, authenticates it via the configured callback, then
@@ -3650,7 +3650,7 @@ downloads every fixed-geometry entry bundle up to the checkpoint tree size.
 new ScanStreamSource(options, resourceFetcher?): ScanStreamSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L147)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L148)
 
 ###### Parameters
 
@@ -3680,7 +3680,7 @@ discoverEntry(
 ): Promise<IndexedEntry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L166)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L167)
 
 Reads the entry at `index` from its one entry bundle under an authenticated checkpoint; the entry itself is not authenticated.
 
@@ -3720,7 +3720,7 @@ Reads the entry at `index` from its one entry bundle under an authenticated chec
 load(prefix, options?): Promise<StreamEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:160](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L160)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L161)
 
 Loads and authenticates the checkpoint, then every entry of the log at `prefix` (`complete` is always true).
 

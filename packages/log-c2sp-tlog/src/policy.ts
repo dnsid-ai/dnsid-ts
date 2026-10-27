@@ -1,5 +1,6 @@
 import { C2spTlogVerificationError } from './errors.ts';
 import type { Checkpoint } from './checkpoint.ts';
+import { sha256 } from './merkle.ts';
 import { parseSignedNoteVerifierKey, verifiedCosignatureTimestamp, verifyCheckpointSignature, type SignedNoteKey } from './signed-note.ts';
 
 /**
@@ -115,6 +116,9 @@ export function enforceCheckpointPolicy(checkpoint: Checkpoint, origin: string, 
   if (!Number.isSafeInteger(maxClockSkewMs) || maxClockSkewMs < 0) throw new C2spTlogVerificationError('maximum clock skew must be a non-negative integer');
   if (policy.scope !== undefined && policy.scope !== scope) throw new C2spTlogVerificationError(`C2SP policy scope ${policy.scope} does not match ${scope}`);
   if (checkpoint.origin !== origin) throw new C2spTlogVerificationError(`checkpoint origin mismatch: ${checkpoint.origin}`);
+  if (checkpoint.treeSize === 0 && !Buffer.from(checkpoint.rootHash).equals(Buffer.from(sha256()))) {
+    throw new C2spTlogVerificationError('empty C2SP checkpoint must have the empty-tree root');
+  }
   const p = normalizedOriginPolicy(policy, origin);
   const acceptedLogKeys = scope === 'public' ? p.logKeys.filter((key) => key.signatureType?.[0] === 0x01) : p.logKeys;
   if (!acceptedLogKeys.some((k) => verifyCheckpointSignature(checkpoint, k))) throw new C2spTlogVerificationError('checkpoint missing accepted log signature');

@@ -3,6 +3,7 @@ import { createSsrfSafeFetch, type FetchLike, type TransportConfig } from '@dnsi
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import { C2spTlogError, C2spTlogVerificationError } from './errors.ts';
 import { checkpointPath, entryBundlePath, parseEntryBundle } from './tiles.ts';
+import { authenticatedTilePrefixRoot } from './hash-tiles.ts';
 
 /** Security properties required by the standard-resource verification factory. */
 export interface C2spResourceFetchGuarantees {
@@ -179,6 +180,12 @@ export class ScanStreamSource implements StreamSource {
       if (bundle.length !== want) throw new C2spTlogVerificationError('entry bundle width mismatch');
       return { index, bytes: bundle[index % C2SP_ENTRIES_PER_BUNDLE]! };
     }, { signal });
+  }
+
+  /** @internal Verifies a checkpoint prefix from bounded, candidate-authenticated hash tiles. */
+  async consistencyRoot(prefix: string, candidate: Pick<Checkpoint, 'treeSize' | 'rootHash'>, trustedSize: number, signal: AbortSignal, revalidate?: boolean): Promise<Uint8Array> {
+    if (candidate.treeSize > this.maxTreeSize) throw new C2spTlogVerificationError(`checkpoint tree size exceeds configured maximum ${this.maxTreeSize}`);
+    return authenticatedTilePrefixRoot(prefix, candidate, trustedSize, (url, maximum) => this.bytes(url, maximum, signal, revalidate));
   }
 
   private async loadWithinBudget(prefix: string, signal: AbortSignal, revalidate?: boolean): Promise<StreamEvidence> {
