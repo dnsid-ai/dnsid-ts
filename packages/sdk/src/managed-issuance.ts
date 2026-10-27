@@ -11,6 +11,7 @@ import type { PreparedRegistryEvent, SubmissionResult } from '@dnsid-ai/registry
 import {
   c2spTlogEntryBytes,
   parsePreparedC2spTlogEvent,
+  parsePreparedC2spTlogIssuance,
   signPreparedC2spTlogEvent,
 } from '@dnsid-ai/log-c2sp-tlog/writer';
 
@@ -197,12 +198,9 @@ async function prepareAndSubmit(
   };
   let prepared;
   try {
-    if (options.logReference && raw.logReference !== options.logReference) {
-      throw permanentLogError(`registry preparation returned unexpected log reference ${raw.logReference}`);
-    }
-    prepared = await parsePreparedC2spTlogEvent(raw.entryBytes, raw.logReference, context);
-    if (prepared.envelope.type !== 'ISSUANCE') {
-      throw permanentLogError(`registry preparation returned ${String(prepared.envelope.type)} instead of ISSUANCE`);
+    prepared = await parsePreparedC2spTlogIssuance(raw.entryBytes, context);
+    if (options.logReference && prepared.reference.lr !== options.logReference) {
+      throw permanentLogError(`registry preparation returned unexpected log reference ${prepared.reference.lr}`);
     }
     const existingSignatures = prepared.envelope.sigs as { ae?: unknown } | undefined;
     if (!existingSignatures?.ae) throw permanentLogError('registry ISSUANCE preparation is missing the accountable-entity signature');
@@ -218,7 +216,7 @@ async function prepareAndSubmit(
   const entryBytes = await c2spTlogEntryBytes(prepared, context);
   const completed = {
     ...intent,
-    logReference: raw.logReference,
+    logReference: prepared.reference.lr,
     entryBytes: entryBytes.slice(),
     entryHash: await sha256Hex(entryBytes),
   };

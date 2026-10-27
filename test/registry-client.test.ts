@@ -796,7 +796,7 @@ describe('RegistryClient', () => {
     })).rejects.toThrow(/unexpected profile DNSid1/);
   });
 
-  it('prepares and submits exact C2SP key-rotation bytes', async () => {
+  it.each([undefined, 'c2sp-tlog:public:https://other.example#other'])('prepares and submits exact C2SP key-rotation bytes regardless of the header (%s)', async logReferenceHeader => {
     const preparedBytes = new TextEncoder().encode('{"type":"KEY_ROTATION"}');
     const completedBytes = new TextEncoder().encode('{"type":"KEY_ROTATION","sigs":{}}');
     const completedHash = await sha256Hex(completedBytes);
@@ -808,7 +808,9 @@ describe('RegistryClient', () => {
           previous_key_id: 'old-key',
           public_key: TEST_JWK,
         });
-        return new Response(preparedBytes, { headers: { 'DNSID-Log-Reference': 'c2sp-tlog:test:stream' } });
+        return new Response(preparedBytes, {
+          headers: logReferenceHeader ? { 'DNSID-Log-Reference': logReferenceHeader } : undefined,
+        });
       }
       expect(url).toBe('https://registry.example/api/v1/agent/agent.example.com/tlog/events');
       expect(new Uint8Array(init?.body as ArrayBuffer)).toEqual(completedBytes);
@@ -823,7 +825,6 @@ describe('RegistryClient', () => {
       previousKeyId: 'old-key', publicKey: TEST_JWK,
     }, 'rotation-1')).resolves.toEqual({
       entryBytes: preparedBytes,
-      logReference: 'c2sp-tlog:test:stream',
     });
     await expect(registry.submitPreparedEvent('agent.example.com', completedBytes, 'rotation-1')).resolves.toMatchObject({
       state: 'accepted', entryHash: completedHash, index: 7,
@@ -865,7 +866,7 @@ describe('RegistryClient', () => {
       .rejects.toThrow(message);
   });
 
-  it('prepares ISSUANCE without parsing or reserializing the canonical response', async () => {
+  it.each([undefined, 'c2sp-tlog:testnet:https://other.example#other'])('preserves ISSUANCE response bytes regardless of the header (%s)', async logReferenceHeader => {
     const preparedBytes = new TextEncoder().encode('{"v":1, "signed_extension":"preserve whitespace"}\n');
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe('https://registry.example/api/v1/agent/agent.example.com/tlog/issuance/prepare');
@@ -874,7 +875,7 @@ describe('RegistryClient', () => {
       expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('issuance-1');
       expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer agent-token');
       return new Response(preparedBytes, {
-        headers: { 'DNSID-Log-Reference': 'c2sp-tlog:testnet:https://log.example/dnsid#agent.example.com' },
+        headers: logReferenceHeader ? { 'DNSID-Log-Reference': logReferenceHeader } : undefined,
       });
     }) as unknown as typeof fetch;
     const registry = new RegistryClient({
@@ -885,7 +886,6 @@ describe('RegistryClient', () => {
 
     await expect(registry.prepareIssuance('agent.example.com', 'issuance-1')).resolves.toEqual({
       entryBytes: preparedBytes,
-      logReference: 'c2sp-tlog:testnet:https://log.example/dnsid#agent.example.com',
     });
   });
 
@@ -916,12 +916,6 @@ describe('RegistryClient', () => {
     await expect(call(registry, ' idempotency-key')).rejects.toThrow('surrounding whitespace');
     await expect(call(registry, 'é'.repeat(101))).rejects.toThrow('200 UTF-8 bytes');
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('requires the bound log reference on an ISSUANCE preparation response', async () => {
-    const fetchMock = vi.fn(async () => new Response(new Uint8Array([1]))) as unknown as typeof fetch;
-    await expect(client(fetchMock).prepareIssuance('agent.example.com', 'issuance-1'))
-      .rejects.toThrow('DNSID-Log-Reference is required');
   });
 
   it.each([

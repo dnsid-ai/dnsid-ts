@@ -252,9 +252,9 @@ export interface PublishedRecord {
   raw?: unknown;
 }
 
+/** Untrusted exact response bytes; the log binding must validate them before signing. */
 export interface PreparedRegistryEvent {
   entryBytes: Uint8Array;
-  logReference: string;
 }
 
 export interface KeyRotationPreparationRequest {
@@ -655,9 +655,7 @@ export class RegistryClient {
       undefined,
       idempotencyKey,
     );
-    const logReference = resp.headers.get('DNSID-Log-Reference');
-    if (!logReference) throw new Error('invalid registry issuance response: DNSID-Log-Reference is required');
-    return { entryBytes: new Uint8Array(await resp.arrayBuffer()), logReference };
+    return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
 
   /** Requires owner credentials (session or API key); an agent bearer token is not accepted. */
@@ -673,9 +671,7 @@ export class RegistryClient {
       previous_key_id: request.previousKeyId,
       public_key: request.publicKey,
     }), idempotencyKey);
-    const logReference = resp.headers.get('DNSID-Log-Reference');
-    if (!logReference) throw new Error('invalid registry key rotation response: DNSID-Log-Reference is required');
-    return { entryBytes: new Uint8Array(await resp.arrayBuffer()), logReference };
+    return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
 
   async submitPreparedEvent(domain: string, entryBytes: Uint8Array, idempotencyKey: string): Promise<SubmissionResult> {

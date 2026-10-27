@@ -639,7 +639,7 @@ type ManagedIssuanceSubmission =
 };
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L44)
+Defined in: [packages/sdk/src/managed-issuance.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L45)
 
 ***
 
@@ -1016,7 +1016,7 @@ Returns true if the value looks like a domain name (as opposed to a URI or other
 function issueManagedIdentity(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L109)
+Defined in: [packages/sdk/src/managed-issuance.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L110)
 
 Starts one durable managed setup operation, or resumes the already persisted one.
 
@@ -1429,7 +1429,7 @@ Returns `config.identity.domain` or throws `ArgumentError` for verification-only
 function resumeManagedIssuance(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: [packages/sdk/src/managed-issuance.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L143)
+Defined in: [packages/sdk/src/managed-issuance.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L144)
 
 Resumes only the durable operation, reusing its preparation key or exact completed bytes.
 
@@ -1453,7 +1453,7 @@ Resumes only the durable operation, reusing its preparation key or exact complet
 function resumeManagedOperationalKeyRotation(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: [packages/sdk/src/managed-key-rotation.ts:221](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L221)
+Defined in: [packages/sdk/src/managed-key-rotation.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L217)
 
 Continues a persisted rotation from its saved state:
 - not accepted: pause signing and resubmit the exact saved bytes with the same idempotency key;

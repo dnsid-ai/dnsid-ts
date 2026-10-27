@@ -171,7 +171,7 @@ Logical ID of canonical signed bytes; signatures and Merkle indexes are excluded
 function c2spTlogEntryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L179)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L214)
 
 Finalizes a fully signed prepared event into its canonical log entry bytes,
 re-verifying all required signatures and the entry's parseability.
@@ -1188,6 +1188,50 @@ C2spTlogVerificationError when expectations or existing signatures fail.
 
 ***
 
+<a id="parsepreparedc2sptlogissuance"></a>
+
+### parsePreparedC2spTlogIssuance()
+
+```ts
+function parsePreparedC2spTlogIssuance(bytes, context): Promise<PreparedC2spTlogEvent>;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L148)
+
+Validates prepared ISSUANCE bytes against their signed `lr`, returning the
+prepared event and its bound `reference` without changing the input bytes.
+Uses the same strict JSON, canonical JCS, binding, and existing-signature
+validation as [parsePreparedC2spTlogEvent](#parsepreparedc2sptlogevent).
+
+All four ISSUANCE expectations in `context` are required: locally expected
+FQDN, governance ID, accountable-entity key, and operational key.
+Later events must use [parsePreparedC2spTlogEvent](#parsepreparedc2sptlogevent) with the identity's
+already verified reference instead of deriving one from the event.
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`
+
+##### context
+
+[`PreparedC2spVerificationContext`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#preparedc2spverificationcontext)
+
+#### Returns
+
+`Promise`\<[`PreparedC2spTlogEvent`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#preparedc2sptlogevent)\>
+
+#### Throws
+
+C2spTlogParseError for malformed bytes, references, or non-genesis ISSUANCE.
+
+#### Throws
+
+C2spTlogVerificationError for missing or mismatched expectations or invalid signatures.
+
+***
+
 <a id="parsesignednoteverifierkey"></a>
 
 ### parseSignedNoteVerifierKey()
@@ -1470,7 +1514,7 @@ function signPreparedC2spTlogEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:143](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L143)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:178](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L178)
 
 Adds one role's signature to a prepared event using the key provider,
 verifying the provider key matches the key the envelope requires for that
@@ -2085,7 +2129,7 @@ C2spTlogVerificationError when the resulting lifecycle is invalid
 function writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L209)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L244)
 
 Appends a finalized prepared event to the log via `options.submit`, running
 the required chain validation for non-genesis events.

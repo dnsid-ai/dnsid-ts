@@ -20,7 +20,7 @@ import {
   type ManagedIssuanceRegistry,
   type ManagedIssuanceState,
 } from '@dnsid-ai/sdk';
-import { PreparedEventSubmissionError, type SubmissionResult } from '@dnsid-ai/registry';
+import { PreparedEventSubmissionError, RegistryClient, type PreparedRegistryEvent, type SubmissionResult } from '@dnsid-ai/registry';
 
 const DOMAIN = 'agent.example.com';
 const GOVERNANCE = 'example.com';
@@ -67,7 +67,7 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
     private readonly operational: DnsIdJWK,
   ) {}
 
-  async prepareIssuance(domain: string): Promise<{ entryBytes: Uint8Array; logReference: string }> {
+  async prepareIssuance(domain: string): Promise<PreparedRegistryEvent> {
     this.prepareCalls++;
     if (this.preparationError) throw this.preparationError;
     const event: C2spIssuanceEvent = {
@@ -95,7 +95,7 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
         operationalKey: this.operational,
       },
     );
-    return { entryBytes: canonicalBytes(prepared.envelope), logReference: LR };
+    return { entryBytes: canonicalBytes(prepared.envelope) };
   }
 
   async submitPreparedEvent(_domain: string, bytes: Uint8Array, key: string): Promise<SubmissionResult> {
@@ -112,6 +112,71 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
 }
 
 describe('managed ISSUANCE coordination', () => {
+  it.each([undefined, 'c2sp-tlog:public:https://other.example#other'])('issues from signed lr regardless of the response header (%s)', async logReferenceHeader => {
+    const entity = await key('entity');
+    const operational = await key('op');
+    const registry = new IssuanceRegistry(entity, operational.publicJwk);
+    const transport = new RegistryClient({
+      fetch: vi.fn(async () => new Response(toArrayBuffer((await registry.prepareIssuance(DOMAIN)).entryBytes), {
+        headers: logReferenceHeader ? { 'DNSID-Log-Reference': logReferenceHeader } : undefined,
+      })) as unknown as typeof fetch,
+    });
+    const result = await issueManagedIdentity({
+      domain: DOMAIN, governanceId: GOVERNANCE, entityKey: entity.publicJwk,
+      operationalKeyProvider: provider(operational),
+      registryClient: {
+        prepareIssuance: (domain, idempotencyKey) => transport.prepareIssuance(domain, idempotencyKey),
+        submitPreparedEvent: (...args) => registry.submitPreparedEvent(...args),
+      },
+      idempotencyKey: 'issuance-1',
+      loadIssuance: async () => undefined,
+      createIssuance: async () => undefined,
+      persistIssuance: async () => undefined,
+      activateAcceptedIssuance: async () => undefined,
+    });
+    expect(result).toMatchObject({ activated: true, logReference: LR });
+    expect(registry.submissions).toHaveLength(1);
+  });
+
+  it.each([
+    ['missing lr', (entry: Record<string, unknown>) => { delete entry.lr; }, 'missing a string lr'],
+    ['non-string lr', (entry: Record<string, unknown>) => { entry.lr = 7; }, 'missing a string lr'],
+    ['malformed lr', (entry: Record<string, unknown>) => { entry.lr = 'not-a-reference'; }, 'lr must start'],
+    ['indexed lr', (entry: Record<string, unknown>) => { entry.lr = `${LR}@0`; }, 'without @index'],
+    ['duplicate lr', undefined, 'duplicate'],
+    ['non-canonical JSON', undefined, 'canonical JCS'],
+  ] as const)('rejects issuance with %s before signing or submission', async (name, mutate, message) => {
+    const entity = await key('entity');
+    const operational = await key('op');
+    const registry = new IssuanceRegistry(entity, operational.publicJwk);
+    const { entryBytes } = await registry.prepareIssuance(DOMAIN);
+    const envelope = JSON.parse(new TextDecoder().decode(entryBytes));
+    mutate?.(envelope);
+    const bytes = mutate ? canonicalBytes(envelope) : new TextEncoder().encode(
+      name === 'duplicate lr'
+        ? `{"lr":"c2sp-tlog:public:https://other.example#other",${new TextDecoder().decode(entryBytes).slice(1)}`
+        : ` ${new TextDecoder().decode(entryBytes)}`,
+    );
+    vi.spyOn(registry, 'prepareIssuance').mockResolvedValue({ entryBytes: bytes });
+    const operationalProvider = provider(operational);
+    const sign = vi.spyOn(operationalProvider, 'signKey');
+    const persist = vi.fn(async (_state: ManagedIssuanceState) => undefined);
+    await expect(issueManagedIdentity({
+      domain: DOMAIN, governanceId: GOVERNANCE, entityKey: entity.publicJwk,
+      operationalKeyProvider: operationalProvider, registryClient: registry,
+      idempotencyKey: 'issuance-1',
+      loadIssuance: async () => undefined,
+      createIssuance: async () => undefined,
+      persistIssuance: persist,
+      activateAcceptedIssuance: async () => undefined,
+    })).rejects.toMatchObject({
+      transient: false, cause: { message: expect.stringContaining(message) },
+    });
+    expect(persist).toHaveBeenCalledWith(expect.objectContaining({ terminalFailure: { stage: 'preparation', errorCode: expect.any(String) } }));
+    expect(sign).not.toHaveBeenCalled();
+    expect(registry.submissions).toHaveLength(0);
+  });
+
   it('rejects idempotency keys longer than the shared 200-character limit', async () => {
     const entity = await key('entity');
     const operational = await key('op');
