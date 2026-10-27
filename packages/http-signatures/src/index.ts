@@ -51,6 +51,14 @@ export type ComponentIdentifier = string | { name: string; params?: Record<strin
 /** An ordered RFC 8941 bare-item signature parameter retained during parsing. */
 export type SignatureParameter = readonly [name: string, value: BareItem];
 
+/** Local policy for opt-in, request-bound DNSid response authentication. */
+export interface ResponseSignatureOptions {
+  /** Expected DNSid agent, independent of the endpoint host and received metadata. */
+  expectedDomain: string;
+  /** Additional response metadata to authenticate, in caller order. */
+  additionalComponents?: ComponentIdentifier[];
+}
+
 /** Options for signing an HTTP request with {@link HttpSignaturesProfile.createSignedHttpRequest}. */
 export interface HttpSigningOptions {
   /**
@@ -65,6 +73,8 @@ export interface HttpSigningOptions {
   tag?: string;
   /** If set, adds an `expires` signature parameter this many seconds after `created`. */
   expiresInSeconds?: number;
+  /** Require negotiated response authentication; request signing alone does not authenticate the responder. */
+  responseSignature?: ResponseSignatureOptions;
 }
 
 /** Options for verifying an HTTP request with {@link HttpSignaturesProfile.verifySignedHttpRequest}. */
@@ -204,6 +214,150 @@ export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 const DEFAULT_HTTP_SIGNATURE_LABEL = 'sig1';
+const RESPONSE_COMPONENTS: ComponentIdentifier[] = [
+  '@status',
+  ...['@method', '@authority', '@target-uri', 'accept-signature', 'signature-input', 'signature']
+    .map(name => ({ name, params: { req: true } })),
+  'content-digest', 'cache-control',
+];
+const MAX_RESPONSE_NONCE_LENGTH = 1024;
+
+function responseError(message: string, cause?: unknown): VerificationError {
+  return new VerificationError(message, { code: VerificationCode.SignatureInvalid, cause });
+}
+
+function copyComponents(components: ComponentIdentifier[]): ComponentIdentifier[] {
+  if (!Array.isArray(components)) throw new ArgumentError('additionalComponents must be an array');
+  return components.map(c => {
+    validateComponentIdentifier(c);
+    return typeof c === 'string' ? c : { name: c.name, params: { ...c.params } };
+  });
+}
+
+function responsePolicy(opts: ResponseSignatureOptions): { options: ResponseSignatureOptions; components: ComponentIdentifier[] } {
+  try {
+    if (!opts || typeof opts.expectedDomain !== 'string') throw new ArgumentError('expectedDomain is required');
+    const expectedDomain = normalizeFQDN(opts.expectedDomain, true);
+    if (opts.additionalComponents !== undefined && !Array.isArray(opts.additionalComponents)) throw new ArgumentError('additionalComponents must be an array');
+    const additionalComponents = opts.additionalComponents ?? [];
+    const components = [...RESPONSE_COMPONENTS, ...additionalComponents];
+    validateResponseComponents(components);
+    return { options: { expectedDomain, additionalComponents: copyComponents(additionalComponents) }, components: copyComponents(components) };
+  } catch (cause) {
+    throw new ArgumentError(`invalid response signature options: ${(cause as Error).message}`);
+  }
+}
+
+function snapshotSigningOptions(opts: HttpSigningOptions, policy: ResponseSignatureOptions): HttpSigningOptions {
+  return { ...opts, additionalComponents: opts.additionalComponents && copyComponents(opts.additionalComponents), responseSignature: policy };
+}
+
+function validateResponseComponents(components: ComponentIdentifier[]): void {
+  if (components.length > 64) throw new ArgumentError('too many response components');
+  validateComponents(components);
+  for (const component of components) {
+    const name = componentName(component);
+    if (KNOWN_DERIVED_COMPONENTS.has(name) && name !== '@status' && componentParams(component).req !== true) {
+      throw new ArgumentError('response request-derived components require req');
+    }
+  }
+}
+
+function validateNegotiatedTarget(request: Request): void {
+  if (request.headers.has('Accept-Signature')) throw new ArgumentError('Accept-Signature already exists');
+  if (new URL(request.url).protocol !== 'https:') throw new ArgumentError('negotiated responses require HTTPS');
+  const inputs = request.headers.get('Signature-Input');
+  const signatures = request.headers.get('Signature');
+  if (inputs !== null) parseSignatureInput(inputs);
+  if (signatures !== null) parseSignature(signatures);
+}
+
+function serializeNegotiation(components: ComponentIdentifier[], nonce: string): string {
+  const items: Item[] = components.map(c => [componentName(c), toStructuredParams(componentParams(c))]);
+  const value = `sig1=${serializeStructuredInnerList([items, new Map([['created', true], ['expires', true], ['nonce', nonce]] as SignatureParameter[])])}`;
+  if (value.length > 16 * 1024) throw new ArgumentError('Accept-Signature exceeds 16 KiB');
+  return value;
+}
+
+function parseNegotiation(value: string): { label: string; components: ComponentIdentifier[]; nonce: string } {
+  const dictionary = parseDictionaryField(value);
+  if (dictionary.size !== 1) throw responseError('Accept-Signature requires exactly one member');
+  const [label, member] = Array.from(dictionary)[0]!;
+  if (!isInnerList(member)) throw responseError('Accept-Signature requires an Inner List');
+  const [items, parameters] = member;
+  // The parser uses Maps; count wire occurrences so duplicate parameters cannot disappear.
+  let count = 0, quoted = false, escaped = false;
+  for (const ch of value) {
+    if (escaped) { escaped = false; continue; }
+    if (quoted && ch === '\\') { escaped = true; continue; }
+    if (ch === '"') quoted = !quoted;
+    if (!quoted && ch === ';') count++;
+  }
+  if (count !== parameters.size + items.reduce((n, item) => n + item[1].size, 0)) throw responseError('duplicate Accept-Signature parameter');
+  if (items.length > 64) throw responseError('too many requested response components');
+  const components = items.map(parseComponentItem);
+  try { validateResponseComponents(components); }
+  catch (cause) { throw responseError('unsupported response components', cause); }
+  if (RESPONSE_COMPONENTS.some(required => !components.some(c => sameComponent(c, required)))) throw responseError('missing required response coverage');
+  if (parameters.size !== 3 || parameters.get('created') !== true || parameters.get('expires') !== true) throw responseError('unsupported signature request constraints');
+  const nonce = parameters.get('nonce');
+  if (typeof nonce !== 'string' || nonce.length > MAX_RESPONSE_NONCE_LENGTH || !/^[A-Za-z0-9_-]+$/.test(nonce)) throw responseError('invalid response nonce');
+  let bytes: Uint8Array;
+  try { bytes = Uint8Array.from(atob(nonce.replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0)); }
+  catch (cause) { throw responseError('invalid response nonce encoding', cause); }
+  if (bytes.length < 32 || toBase64Url(bytes) !== nonce) throw responseError('noncanonical or short response nonce');
+  return { label, components, nonce };
+}
+
+function rejectLabelCollision(response: Response, label: string): void {
+  const inputs = response.headers.get('Signature-Input');
+  const signatures = response.headers.get('Signature');
+  if ((inputs !== null && parseSignatureInput(inputs).has(label)) || (signatures !== null && parseSignature(signatures).has(label))) {
+    throw responseError('requested response signature label already exists');
+  }
+}
+
+function requireFinalResponse(request: Request, response: Response): void {
+  if (response.status < 200 || response.status > 599 || request.method === 'CONNECT') throw responseError('not an ordinary final response');
+}
+
+function noResponseContent(request: Request, response: Response): boolean {
+  return request.method === 'HEAD' || [204, 205, 304].includes(response.status);
+}
+
+async function responseContent(request: Request, response: Response, signal: AbortSignal): Promise<ArrayBuffer> {
+  if (noResponseContent(request, response) && response.body === null) return new ArrayBuffer(0);
+  if (response.body === null || response.bodyUsed) throw responseError('response content is unavailable');
+  // Tee only inside the finite body bound, retaining the original response for the application.
+  try {
+    const body = await readBoundedBody(response.clone(), signal);
+    if (noResponseContent(request, response) && body.byteLength !== 0) throw responseError('content supplied for a no-content response');
+    return body;
+  } catch (cause) {
+    if (cause instanceof VerificationError) throw cause;
+    throw responseError('unable to read exact response content', cause);
+  }
+}
+
+function cancelResponse(response: Response): void {
+  void response.body?.cancel().catch(() => {});
+}
+
+function hasNoStore(value: string | null): boolean {
+  if (value === null) return false;
+  const directive = /\s*([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?:\s*=\s*([!#$%&'*+.^_`|~0-9A-Za-z-]+|"(?:[^"\\\r\n]|\\[\t\x20-\x7e])*"))?\s*(,|$)/gy;
+  let found = false, offset = 0;
+  while (offset < value.length) {
+    while (offset < value.length && /[\t ,]/.test(value[offset]!)) offset++;
+    if (offset === value.length) break;
+    directive.lastIndex = offset;
+    const match = directive.exec(value);
+    if (!match) return false;
+    offset = directive.lastIndex;
+    if (match[1]!.toLowerCase() === 'no-store' && match[2] === undefined) found = true;
+  }
+  return found;
+}
 
 /** Tuning knobs for signature freshness checks during verification. */
 export interface HttpSignaturesProfileConfig {
@@ -228,10 +382,26 @@ export interface HttpSignaturesProfileOptions {
 /** A fetch-compatible function, e.g. the global `fetch` or a wrapper around it. */
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
+/**
+ * Trusted single-send transport for negotiated responses. It MUST NOT redirect, retry,
+ * replay, cache, or decode content. It must honor request cancellation and release
+ * resources on failure. Peer evidence must come from this send's application connection.
+ */
+export type ResponseSignatureTransport = (request: Request) => Promise<{
+  /** Actual final response, with exact content bytes before decoding. */
+  response: Response;
+  /** Current trusted server certificate, when available. Required for fl=mtls. */
+  peerCert?: TLSCertificate;
+}>;
+
 /** Options for {@link HttpSignaturesProfile.createSignedFetch}. */
 export interface CreateSignedFetchOptions {
   /** Underlying fetch implementation invoked with the signed request. */
   fetch: FetchLike;
+  /** Required when response authentication is enabled; ordinary fetch cannot disable hidden retries or expose peer evidence. */
+  responseTransport?: ResponseSignatureTransport;
+  /** Overall send/read/verification budget in response mode. Default: 30 seconds. */
+  timeoutMs?: number;
   /** Signing options, or a per-request callback returning them (undefined means profile defaults). */
   signing?: HttpSigningOptions | ((request: Request) => HttpSigningOptions | undefined);
   /** Hook to transform each request (e.g. add headers) before it is signed. */
@@ -276,7 +446,7 @@ export class HttpSignaturesProfile {
     }
     this.keyProvider = opts.keyProvider ?? null;
     this.identityResolver = opts.identityResolver;
-    this.config = opts.httpMessageSignatures ?? {};
+    this.config = { ...opts.httpMessageSignatures };
     validateHttpSignaturesConfig(this.config);
   }
 
@@ -286,13 +456,33 @@ export class HttpSignaturesProfile {
    * Covers `@method`, `@authority`, and `@target-uri` by default; when the request has a body,
    * a SHA-256 `Content-Digest` header is added and covered as well. The `keyid` signature
    * parameter is `"{domain}#{kid}"`, `created` is now, and a fresh nonce is included.
-   * The input request is not mutated.
+   * The input request is not mutated. With responseSignature, prepares Accept-Signature and
+   * covers it, but does not send or verify a response. Retain the prepared request and
+   * original policy unmodified for verifySignedHttpResponse. Prepare each new attempt from
+   * the unsigned original, never from a previously negotiated request.
    *
    * @param req - Request to sign; its body (if any) is buffered to compute the digest.
    * @param opts - Extra covered components, label, tag, and expiry.
    * @throws ArgumentError if the signing key kid contains `#` or an additional component is invalid.
    */
   async createSignedHttpRequest(req: Request, opts?: HttpSigningOptions): Promise<Request> {
+    if (opts?.responseSignature === undefined) return this.signRequest(req, opts);
+    const policy = responsePolicy(opts.responseSignature);
+    validateNegotiatedTarget(req);
+    const saved = req.clone();
+    const options = snapshotSigningOptions(opts, policy.options);
+    return withVerificationBudget(signal => this.signRequest(new Request(saved, { signal }), options), { signal: saved.signal });
+  }
+
+  private async signRequest(req: Request, opts?: HttpSigningOptions): Promise<Request> {
+    if (opts?.responseSignature !== undefined) {
+      const policy = responsePolicy(opts.responseSignature);
+      validateNegotiatedTarget(req);
+      const headers = new Headers(req.headers);
+      headers.set('Accept-Signature', serializeNegotiation(policy.components, generateNonce()));
+      req = new Request(req.clone(), { headers, redirect: 'manual', cache: 'no-store' });
+      opts = { ...opts, additionalComponents: [...(opts.additionalComponents ?? []), 'accept-signature'] };
+    }
     const keyProvider = this.requireKeyProvider();
     const signingKey = await keyProvider.signingKey();
 
@@ -303,7 +493,9 @@ export class HttpSignaturesProfile {
     const components: ComponentIdentifier[] = ['@method', '@authority', '@target-uri'];
     let bodyBuffer: ArrayBuffer | null = null;
     if (req.body) {
-      bodyBuffer = await req.clone().arrayBuffer();
+      bodyBuffer = opts?.responseSignature === undefined
+        ? await req.clone().arrayBuffer()
+        : await readBoundedBody(req, req.signal);
     }
 
     const newHeaders = new Headers(req.headers);
@@ -340,8 +532,173 @@ export class HttpSignaturesProfile {
       components,
     };
 
+    if (opts?.responseSignature !== undefined) {
+      if (components.length > 64 || serializeSigParams(sigParams).length > 16 * 1024 - sigParams.label.length - 1) {
+        throw new ArgumentError('negotiated request signature exceeds header or component limits');
+      }
+    }
     const signed = await signHttpMessage(requestWithDigest, sigParams, keyProvider, signingKey);
+    if (opts?.responseSignature !== undefined) {
+      parseSignatureInput(signed.headers.get('Signature-Input')!);
+      parseSignature(signed.headers.get('Signature')!);
+    }
     return signed as Request;
+  }
+
+  /**
+   * Fulfills one strict Accept-Signature request using the current operational key.
+   * Returns the original response without key access when negotiation is absent.
+   * Inputs are not mutated; changes are published only after successful signing.
+   * The caller must finalize content coding and verify/authorize the request first.
+   */
+  async signRequestedHttpResponse(request: Request, response: Response): Promise<Response> {
+    const header = request.headers.get('Accept-Signature');
+    if (header === null) return response;
+    const negotiation = parseNegotiation(header);
+    requireFinalResponse(request, response);
+    rejectLabelCollision(response, negotiation.label);
+    const keyProvider = this.requireKeyProvider();
+    try {
+      return await withVerificationBudget(async signal => {
+        const body = await responseContent(request, response, signal);
+        const headers = new Headers(response.headers);
+        const hash = await crypto.subtle.digest('SHA-256', body);
+        headers.set('Content-Digest', `sha-256=:${toStdBase64(new Uint8Array(hash))}:`);
+        if (!hasNoStore(headers.get('Cache-Control'))) headers.append('Cache-Control', 'no-store');
+        if (!hasNoStore(headers.get('Cache-Control'))) throw new ArgumentError('malformed response Cache-Control');
+        const message = new Response(noResponseContent(request, response) ? null : body, {
+          status: response.status, statusText: response.statusText, headers,
+        });
+        const key = await waitForVerification(() => keyProvider.signingKey(), signal);
+        if (key.kid.includes('#')) throw new ArgumentError("signing key kid must not contain '#'");
+        const created = Math.floor(Date.now() / 1000);
+        const params: SignatureParams = {
+          label: negotiation.label,
+          components: negotiation.components,
+          keyId: `${this.domain}#${key.kid}`,
+          alg: joseAlgToHttpSigAlg(jwkSignatureAlg(key)),
+          created,
+          expires: created + (this.config.maxAge ?? DEFAULT_SIGNATURE_MAX_AGE_SECONDS),
+          nonce: negotiation.nonce,
+        };
+        assertHeaderBound(`${params.label}=${serializeSigParams(params)}`);
+        const signed = await waitForVerification(() => signHttpMessage({ message, request }, params, keyProvider, key), signal);
+        parseSignatureInput(signed.headers.get('Signature-Input')!);
+        if (!await verifyWithKey(buildSignatureInput({ message: signed, request }, params), parseSignature(signed.headers.get('Signature')!).get(params.label)!, key, jwkSignatureAlg(key))) {
+          throw responseError('requested coverage is changed by adding the response signature');
+        }
+        return signed;
+      }, { signal: request.signal });
+    } catch (error) {
+      cancelResponse(response);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifies the requested response label against the originating request and local policy.
+   * Standalone callers MUST retain an unmodified prepared request and policy snapshot.
+   * Preserves response bytes on success; cancels owned response resources on rejection.
+   * Uncovered metadata, including Content-Type and Location, is not authenticated.
+   * Current-peer evidence is required for fl=mtls, including identity-cache hits.
+   */
+  async verifySignedHttpResponse(
+    request: Request,
+    response: Response,
+    opts: ResponseSignatureOptions,
+    peerCert?: TLSCertificate,
+    budget: VerificationOptions = {},
+  ): Promise<VerifiedDomain> {
+    try {
+      const policy = responsePolicy(opts);
+      return await withVerificationBudget(async signal => {
+        requireFinalResponse(request, response);
+        if (new URL(request.url).protocol !== 'https:') throw responseError('negotiated responses require HTTPS');
+        const requested = parseNegotiation(request.headers.get('Accept-Signature') ?? '');
+        for (const component of policy.components) {
+          if (!requested.components.some(c => sameComponent(c, component))) throw responseError('saved negotiation omits local coverage');
+        }
+        const inputHeader = response.headers.get('Signature-Input') ?? '';
+        const inputs = parseSignatureInput(inputHeader);
+        for (const entry of splitDictionary(inputHeader)) {
+          parseSignatureParameterOccurrences(entry.slice(entry.indexOf('=') + 1).trim(), true);
+        }
+        const signatures = parseSignature(response.headers.get('Signature') ?? '');
+        const params = inputs.get(requested.label);
+        const signature = signatures.get(requested.label);
+        if (!params || !signature) throw responseError('missing requested response signature');
+        if (params.components.length !== requested.components.length
+          || params.components.some((c, i) => !sameComponent(c, requested.components[i]!))
+          || params.nonce !== requested.nonce) throw responseError('response coverage or nonce differs from negotiation');
+        if (params.created === undefined || params.expires === undefined || params.created >= params.expires
+          || !params.alg || !Object.values(JOSE_TO_HTTP_SIG_ALG).includes(params.alg) || !params.keyId) {
+          throw responseError('response requires timestamps, algorithm, and keyid');
+        }
+        this.checkFreshness(params);
+        let identity: { domain: string; kid: string };
+        try { identity = parseKeyId(params.keyId); }
+        catch (cause) { throw responseError('invalid response keyid', cause); }
+        if (identity.domain !== policy.options.expectedDomain) throw responseError('unexpected response signer domain');
+        const vd = await waitForVerification(() => this.identityResolver.verifyDomain(identity.domain, peerCert, { signal }), signal);
+        const key = vd.jwks.keyById(identity.kid);
+        if (!key) throw new VerificationError('response kid not found in current JWKS', { code: VerificationCode.KeyNotFound });
+        try {
+          const alg = jwkSignatureAlg(key);
+          if (joseAlgToHttpSigAlg(alg) !== params.alg
+            || !await verifyWithKey(buildSignatureInput({ message: response, request }, params), signature, key, alg)) {
+            throw responseError('invalid response signature or key algorithm');
+          }
+        } catch (cause) {
+          if (cause instanceof VerificationError) throw cause;
+          throw responseError('invalid response signature base or key', cause);
+        }
+        const digest = parseSha256ContentDigest(response.headers.get('Content-Digest') ?? '', params.components);
+        const content = await responseContent(request, response, signal);
+        const actual = new Uint8Array(await crypto.subtle.digest('SHA-256', content));
+        if (!constantTimeEqual(digest, actual)) throw responseError('response Content-Digest mismatch');
+        if (!hasNoStore(response.headers.get('Cache-Control'))) throw responseError('response requires signed no-store');
+        this.checkFreshness(params);
+        vd.assertFresh();
+        return vd;
+      }, { ...budget, signal: budget.signal ?? request.signal });
+    } catch (error) {
+      cancelResponse(response);
+      throw error;
+    }
+  }
+
+  private checkFreshness(sigParams: SignatureParams): void {
+    const maxAgeSeconds = this.config.maxAge ?? DEFAULT_SIGNATURE_MAX_AGE_SECONDS;
+    const clockSkewSeconds = this.config.clockSkew ?? DEFAULT_CLOCK_SKEW_SECONDS;
+    const now = Math.floor(Date.now() / 1000);
+    const created = sigParams.created!;
+    const expires = sigParams.expires;
+
+    if (now - created > maxAgeSeconds) {
+      throw new VerificationError('HTTP message signature has expired (created too far in the past)', {
+        code: VerificationCode.SignatureInvalid,
+      });
+    }
+    if (created > now + clockSkewSeconds) {
+      throw new VerificationError('HTTP message signature created time is in the future', {
+        code: VerificationCode.SignatureInvalid,
+      });
+    }
+    if (expires !== undefined && expires < created) {
+      throw new VerificationError('HTTP message signature expires precedes created', {
+        code: VerificationCode.SignatureInvalid,
+      });
+    }
+    if (expires !== undefined && now > expires + clockSkewSeconds) {
+      throw new VerificationError('HTTP message signature has expired (expires parameter)', {
+        code: VerificationCode.SignatureInvalid,
+      });
+    }
+    if (expires !== undefined && expires - created > maxAgeSeconds) {
+      throw new VerificationError('HTTP message signature expires lifetime exceeds maximum', {
+        code: VerificationCode.SignatureInvalid,
+      });
+    }
   }
 
   private requireKeyProvider(): KeyProvider {
@@ -353,7 +710,11 @@ export class HttpSignaturesProfile {
    * Wraps a fetch implementation so every request is signed before being sent.
    *
    * Streaming (ReadableStream) request bodies are rejected with ArgumentError because
-   * signing requires buffering the body to compute its digest.
+   * signing requires buffering the body to compute its digest. With responseSignature,
+   * requires responseTransport and verifies every response (including errors) under one
+   * finite budget before returning it. Retains invocation-local request/policy snapshots;
+   * disables redirects and caching and never retries. Ordinary fetch is used only in
+   * request-only mode.
    */
   createSignedFetch(opts: CreateSignedFetchOptions): FetchLike {
     return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -361,8 +722,35 @@ export class HttpSignaturesProfile {
       const req = init === undefined && input instanceof Request ? input.clone() : new Request(input, init);
       const preparedReq = opts.prepareRequest ? await opts.prepareRequest(req) : req;
       const signingOptions = typeof opts.signing === 'function' ? opts.signing(preparedReq) : opts.signing;
-      const signedReq = await this.createSignedHttpRequest(preparedReq, signingOptions);
-      return opts.fetch(signedReq);
+      if (signingOptions?.responseSignature === undefined) {
+        const signedReq = await this.createSignedHttpRequest(preparedReq, signingOptions);
+        return opts.fetch(signedReq);
+      }
+      const policy = responsePolicy(signingOptions.responseSignature);
+      validateNegotiatedTarget(preparedReq);
+      const transport = opts.responseTransport;
+      if (!transport) throw new ArgumentError('negotiated responses require a single-send responseTransport');
+      const snapshot = preparedReq.clone();
+      const signing = snapshotSigningOptions(signingOptions, policy.options);
+      return withVerificationBudget(async signal => {
+        const signedReq = await this.createSignedHttpRequest(new Request(snapshot, { signal }), signing);
+        const saved = signedReq.clone();
+        let response: Response | undefined;
+        try {
+          // A non-cooperative transport can settle after cancellation; dispose of that response too.
+          const pending = transport(signedReq).then(result => {
+            if (signal.aborted) { cancelResponse(result.response); throw new VerificationError('send canceled', { code: VerificationCode.RecordInvalid, transient: true }); }
+            response = result.response;
+            return result;
+          });
+          const result = await waitForVerification(() => pending, signal);
+          await this.verifySignedHttpResponse(saved, result.response, policy.options, result.peerCert, { signal });
+          return result.response;
+        } catch (error) {
+          if (response) cancelResponse(response);
+          throw error;
+        }
+      }, { signal: snapshot.signal, timeoutMs: opts.timeoutMs });
     };
   }
 
@@ -464,37 +852,7 @@ export class HttpSignaturesProfile {
       throw e;
     }
 
-    const maxAgeSeconds = this.config.maxAge ?? DEFAULT_SIGNATURE_MAX_AGE_SECONDS;
-    const clockSkewSeconds = this.config.clockSkew ?? DEFAULT_CLOCK_SKEW_SECONDS;
-    const now = Math.floor(Date.now() / 1000);
-    const created = sigParams.created;
-    const expires = sigParams.expires;
-
-    if (now - created > maxAgeSeconds) {
-      throw new VerificationError('HTTP message signature has expired (created too far in the past)', {
-        code: VerificationCode.SignatureInvalid,
-      });
-    }
-    if (created > now + clockSkewSeconds) {
-      throw new VerificationError('HTTP message signature created time is in the future', {
-        code: VerificationCode.SignatureInvalid,
-      });
-    }
-    if (expires !== undefined && expires < created) {
-      throw new VerificationError('HTTP message signature expires precedes created', {
-        code: VerificationCode.SignatureInvalid,
-      });
-    }
-    if (expires !== undefined && now > expires + clockSkewSeconds) {
-      throw new VerificationError('HTTP message signature has expired (expires parameter)', {
-        code: VerificationCode.SignatureInvalid,
-      });
-    }
-    if (expires !== undefined && expires - created > maxAgeSeconds) {
-      throw new VerificationError('HTTP message signature expires lifetime exceeds maximum', {
-        code: VerificationCode.SignatureInvalid,
-      });
-    }
+    this.checkFreshness(sigParams);
 
     const vd = await waitForVerification(() => this.identityResolver.verifyDomain(domain, opts.peerCert, { signal: opts.signal }), opts.signal!);
     const sigKey = vd.jwks.keyById(kid);
@@ -789,7 +1147,7 @@ export async function signHttpMessage<T extends Request | Response>(msg: T | { m
     const body = message.body ? await message.clone().arrayBuffer() : undefined;
     return rebuildRequest(message, headers, body) as T;
   }
-  const body = await message.clone().arrayBuffer();
+  const body = message.body ? await message.clone().arrayBuffer() : null;
   return new Response(body, { status: message.status, statusText: message.statusText, headers }) as T;
 }
 
@@ -1086,7 +1444,7 @@ function validateComponents(components: ComponentIdentifier[]): void {
   }
 }
 
-function parseSignatureParameterOccurrences(member: string): SignatureParameter[] {
+function parseSignatureParameterOccurrences(member: string, integerTimestamps = false): SignatureParameter[] {
   const close = findInnerListClose(member);
   const out: SignatureParameter[] = [];
   for (const segment of scanParameterSegments(member.slice(close + 1))) {
@@ -1100,7 +1458,12 @@ function parseSignatureParameterOccurrences(member: string): SignatureParameter[
     if (!parsedMember || !isInnerList(parsedMember) || parsedMember[1].size !== 1) {
       throw new VerificationError('malformed Signature-Input parameter', { code: VerificationCode.RecordInvalid });
     }
-    out.push(Array.from(parsedMember[1].entries())[0]!);
+    const parameter = Array.from(parsedMember[1].entries())[0]!;
+    // The library represents both RFC 8941 integers and decimals as JavaScript numbers.
+    if (integerTimestamps && ['created', 'expires'].includes(parameter[0]) && typeof parameter[1] === 'number' && segment.includes('.')) {
+      throw responseError('response timestamps must be Structured Field integers');
+    }
+    out.push(parameter);
   }
   return out;
 }
