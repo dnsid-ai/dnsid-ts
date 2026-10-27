@@ -9,11 +9,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.31.0",
-    "@dnsid-ai/transport": "^0.31.0"
+    "@dnsid-ai/sdk": "^0.32.0",
+    "@dnsid-ai/transport": "^0.32.0"
   },
   "optionalDependencies": {
-    "@dnsid-ai/key-aws": "^0.31.0"
+    "@dnsid-ai/key-aws": "^0.32.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

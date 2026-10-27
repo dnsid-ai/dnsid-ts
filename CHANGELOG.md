@@ -1,4 +1,26 @@
 
+## [0.32.0] - 2026-10-27
+
+### Bug Fixes
+
+- fix!: verify log reads and persist managed rotation recovery ([#111](https://github.com/dnsid-ai/dnsid-ts/pull/111))
+- fix: update vulnerable A2A transitive dependencies ([#119](https://github.com/dnsid-ai/dnsid-ts/pull/119))
+- fix: reject small-order Ed25519 keys and oversized P-256 coordinates ([#117](https://github.com/dnsid-ai/dnsid-ts/pull/117))
+- fix: reject BOM-prefixed C2SP entries and non-RFC https URIs in TXT records ([#114](https://github.com/dnsid-ai/dnsid-ts/pull/114))
+- fix: reject a root dot in the ku and ek hosts ([#116](https://github.com/dnsid-ai/dnsid-ts/pull/116))
+- fix: reject non-LDH and reserved-hyphen labels in normalizeFQDN ([#115](https://github.com/dnsid-ai/dnsid-ts/pull/115))
+
+### Chores
+
+- chore: standardize legal entity naming ([#113](https://github.com/dnsid-ai/dnsid-ts/pull/113))
+- ci(security): pin shared workflow to v1.2.0 and drop duplicate lint/test ([#121](https://github.com/dnsid-ai/dnsid-ts/pull/121))
+- refactor: remove prepared-event log reference header dependency ([#123](https://github.com/dnsid-ai/dnsid-ts/pull/123))
+
+### Features
+
+- feat(log-c2sp-tlog): verify checkpoint consistency with hash tiles ([#122](https://github.com/dnsid-ai/dnsid-ts/pull/122))
+
+
 ## [0.31.0] - 2026-10-21
 
 ### Bug Fixes
