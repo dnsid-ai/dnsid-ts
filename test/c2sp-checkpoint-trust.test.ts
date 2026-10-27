@@ -157,7 +157,7 @@ describe('trusted C2SP checkpoints', () => {
   });
 
   it.each([
-    { origin: '' }, { origin: 'other.example' },
+    { origin: '' }, { origin: 'other.example' }, { treeSize: 0, rootHash: firstRoot },
     ...[-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, '1', true].map(treeSize => ({ treeSize })),
     ...[new Uint8Array(31), new Uint8Array(33), 'root'].map(rootHash => ({ rootHash })),
     ...[new Date(NaN), '2026-07-24T12:00:00Z', 0].map(witnessTime => ({ witnessTime })),
@@ -230,10 +230,20 @@ describe('trusted C2SP checkpoints', () => {
     expect(verifyC2spConsistencyProof(0, 0, empty, empty, [])).toBe(true);
     const store = new InMemoryTrustedC2spCheckpointStore();
     await advanceTrustedC2spCheckpoint(store, reference, checkpoint(0, empty), witnessTime);
+    const fetchConsistencyProof = vi.fn(async () => { throw new Error('empty growth needs no proof'); });
     await advanceTrustedC2spCheckpoint(store, reference, checkpoint(1, firstRoot), witnessTime, {
-      consistencyProofSource: { fetchConsistencyProof: async () => [] },
+      consistencyProofSource: { fetchConsistencyProof },
     });
+    expect(fetchConsistencyProof).not.toHaveBeenCalled();
     await expect(store.load(reference.origin)).resolves.toMatchObject({ treeSize: 1 });
+  });
+
+  it('rejects an empty candidate with the wrong root before storage', async () => {
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const load = vi.spyOn(store, 'load');
+    await expect(advanceTrustedC2spCheckpoint(store, reference, checkpoint(0, firstRoot), witnessTime))
+      .rejects.toMatchObject({ errorCategory: 'INVALID_EVIDENCE', transient: false });
+    expect(load).not.toHaveBeenCalled();
   });
 
   it('uses atomic origin-scoped compare-and-swap snapshots', async () => {

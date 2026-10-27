@@ -7,7 +7,7 @@ import { leafHash, merkleRootFromEntries } from './merkle.ts';
 import { stitchVerifiedMigrationHistory, stitchVerifiedMigrationReferences, verifyStreamLifecycle, verifyLifecycle, type VerifiedLifecycleEvent, type MigrationVerificationResult, type StreamVerifierOptions } from './stream-verifier.ts';
 import { C2spTlogError, C2spTlogVerificationError, c2spLogError } from './errors.ts';
 import { verifyC2spTlogProof, type TlogProofV1 } from './proof.ts';
-import { advanceTrustedC2spCheckpoint, InMemoryTrustedC2spCheckpointStore, MissingC2spConsistencyEvidenceError, type C2spConsistencyProofSource, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
+import { advanceC2spCheckpoint, advanceTrustedC2spCheckpoint, InMemoryTrustedC2spCheckpointStore, MissingC2spConsistencyEvidenceError, type C2spConsistencyProofSource, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 import { DEFAULT_C2SP_MAX_STREAM_BUNDLE_BYTES, DEFAULT_C2SP_MAX_STREAM_BUNDLE_EVENTS, verifyC2spStreamBundleContents } from './stream-bundle.ts';
 import type { SignedNoteKey } from './signed-note.ts';
 import type { Checkpoint } from './checkpoint.ts';
@@ -47,7 +47,7 @@ export interface C2spTlogReaderOptions {
   resourceFetcher?: C2spBoundedResourceFetcher;
   /** Alternative raw evidence source; defaults to a complete tlog-tiles scan. */
   streamSource?: StreamSource;
-  /** Preferred verified per-domain bundle source. Raw scans are the bounded fallback for unavailable bundles or missing consistency evidence. */
+  /** Preferred verified per-domain bundles. Built-in readers use hash tiles for consistency; raw scans handle bundle availability only. */
   streamBundle?: C2spStreamBundleReaderOptions;
   /** Optional inclusion proofs by entry index; otherwise readEvent authenticates the entry with the domain's stream bundle or a complete scan. */
   proofs?: Record<string, TlogProofV1 | string>;
@@ -379,12 +379,16 @@ export class C2spTlogReader implements LogReader {
       signal,
     });
     try {
-      await advanceTrustedC2spCheckpoint(this.checkpointStore, verified.bundle.reference, verified.bundle.checkpoint, verified.checkpointWitnessTime, {
+      const source = this.source;
+      await advanceC2spCheckpoint(this.checkpointStore, verified.bundle.reference, verified.bundle.checkpoint, verified.checkpointWitnessTime, {
         signal,
         consistencyProofSource: this.options.consistencyProofSource,
-      });
+      }, source instanceof ScanStreamSource
+        ? (candidate, size, child) => source.consistencyRoot(this.parsed.logPrefix, candidate, size, child, this.options.revalidate)
+        : undefined);
     } catch (cause) {
-      if (config.required || !(cause instanceof MissingC2spConsistencyEvidenceError)) throw cause;
+      if (config.required || this.options.consistencyProofSource || this.source instanceof ScanStreamSource
+        || !(cause instanceof MissingC2spConsistencyEvidenceError)) throw cause;
       const evidence = await this.loadEvidence(this.parsed.logPrefix, signal);
       if (!evidence.complete) throw new C2spTlogVerificationError('C2SP consistency fallback requires a complete raw scan', 'INCOMPLETE_STREAM');
       const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());

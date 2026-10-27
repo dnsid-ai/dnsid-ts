@@ -22,6 +22,7 @@ import {
   createFetchBackedC2spResourceFetcher,
   encodeEntryBundle,
   entryBundlePath,
+  enforceCheckpointPolicy,
   leafHash,
   merkleRootFromEntries,
   parseCheckpoint,
@@ -33,6 +34,7 @@ import {
   requiredC2spResourceFetchGuarantees,
   ScanStreamSource,
   signedC2spEventBytes,
+  tilePath,
   verifyC2spStreamBundle,
 } from '@dnsid-ai/log-c2sp-tlog';
 
@@ -56,7 +58,7 @@ interface Fixture {
   object: Record<string, unknown>;
   options: Parameters<typeof verifyC2spStreamBundle>[1];
   bundleKeyText: string;
-  checkpoint(entries: Uint8Array[]): Uint8Array;
+  checkpoint(entries: Uint8Array[], rootHash?: Uint8Array): Uint8Array;
   resign(): Uint8Array;
 }
 
@@ -149,8 +151,8 @@ function fixture(extraEntry?: Uint8Array): Fixture {
   const treeEntries = extraEntry ? [entryBytes, extraEntry] : [entryBytes];
   const log = signedNoteKey(ORIGIN, 0x01);
   const witness = signedNoteKey('witness.example', 0x04);
-  const checkpoint = (entries: Uint8Array[]) => {
-    const checkpointBody = `${ORIGIN}\n${entries.length}\n${Buffer.from(merkleRootFromEntries(entries)).toString('base64')}\n`;
+  const checkpoint = (entries: Uint8Array[], rootHash = merkleRootFromEntries(entries)) => {
+    const checkpointBody = `${ORIGIN}\n${entries.length}\n${Buffer.from(rootHash).toString('base64')}\n`;
     const timestampBytes = Buffer.alloc(8);
     timestampBytes.writeBigUInt64BE(BigInt(nowSeconds));
     const witnessSignature = signEd25519(
@@ -312,22 +314,54 @@ async function missingConsistencyReader(rawEntries: Uint8Array[], required = fal
     rootHash: merkleRootFromEntries([new TextEncoder().encode(ISSUANCE_ENTRY)]),
     witnessTime: new Date(0),
   });
-  const registry = await createC2spTlogVerificationRegistry({
-    policyDocument: value.options.policyBytes,
-    bundleVerifierKeys: value.options.bundleKeys,
+  const source = new ScanStreamSource({ authenticateCheckpoint: () => {} }, {
+    fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees,
+  });
+  const reader = new C2spTlogReader(LR, {
+    policy: parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes)),
     resourceFetcher: { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
+    // A lower-level custom reader deliberately has no hash-tile capability.
+    streamSource: { load: source.load.bind(source) },
     trustedCheckpointStore: store,
-    checkpointMaxAge: 60_000,
-    maxBundleLifetimeMs: 60_000,
-    requireStreamBundle: required,
+    streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys,
+      maxBundleLifetimeMs: 60_000, checkpointFreshnessMs: 60_000, required },
   });
   const issuance = JSON.parse(ISSUANCE_ENTRY) as { ek: DnsIdJWK; gi: string; ku: DnsIdJWK };
   return {
     fetchBounded,
     store,
-    verify: () => (registry.newReader(LR) as C2spTlogReader)
-      .verifyBilateralBinding({ agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku),
+    verify: () => reader.verifyBilateralBinding({ agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku),
   };
+}
+
+async function networkConsistencyReader(required = false, trustedSize: number | null = 1) {
+  const value = fixture(BUNDLE_EXTRA_ENTRY);
+  const prefix = 'https://log.example/dnsid';
+  const fetchBounded = vi.fn(async (url: string, maximum: number, _options: { signal?: AbortSignal; timeoutMs: number; revalidate?: boolean }) => {
+    if (url === `${prefix}/streams/agent.example?format=bundle`) return value.bytes;
+    if (url === tilePath(prefix, 0, 0, 2)) {
+      expect(maximum).toBe(64);
+      return new Uint8Array(Buffer.concat([leafHash(issuanceBytes()), leafHash(BUNDLE_EXTRA_ENTRY)]));
+    }
+    throw new Error(`unexpected resource ${url}`);
+  });
+  const store = value.options.trustedCheckpointStore;
+  if (trustedSize !== null) await store.compareAndSwap(ORIGIN, undefined, {
+    origin: ORIGIN, treeSize: trustedSize,
+    rootHash: merkleRootFromEntries([issuanceBytes(), BUNDLE_EXTRA_ENTRY, BUNDLE_EXTRA_ENTRY].slice(0, trustedSize)),
+    witnessTime: new Date(0),
+  });
+  const registry = await createC2spTlogVerificationRegistry({
+    trustProfile: trustProfile(value),
+    resourceFetcher: { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
+    trustedCheckpointStore: store, checkpointMaxAge: 60_000, maxBundleLifetimeMs: 60_000,
+    requireStreamBundle: required,
+  });
+  return { value, store, fetchBounded, verify: () => {
+    const issuance = JSON.parse(ISSUANCE_ENTRY);
+    return (registry.newReader(LR) as C2spTlogReader).verifyBilateralBinding(
+      { agentFQDN: 'agent.example', gi: issuance.gi }, issuance.ek, issuance.ku);
+  } };
 }
 
 function rawReader(value: Fixture, entries: Uint8Array[], options: Partial<C2spTlogReaderOptions> = {}) {
@@ -345,6 +379,145 @@ function rawReader(value: Fixture, entries: Uint8Array[], options: Partial<C2spT
 }
 
 const issuanceBytes = () => new TextEncoder().encode(ISSUANCE_ENTRY);
+
+describe('C2SP network hash-tile consistency', () => {
+  it.each([false, true])('advances factory bundles through tiles without entry reads (required=%s)', async required => {
+    const value = await networkConsistencyReader(required);
+    await expect(value.verify()).resolves.toBeDefined();
+    expect(value.fetchBounded.mock.calls.map(([url]) => url)).toEqual([
+      'https://log.example/dnsid/streams/agent.example?format=bundle',
+      tilePath('https://log.example/dnsid', 0, 0, 2),
+    ]);
+    await expect(value.store.load(ORIGIN)).resolves.toMatchObject({ treeSize: 2 });
+  });
+
+  it.each(['unseen', 'empty', 'equal'] as const)('needs no consistency reads for %s trust', async state => {
+    const value = await networkConsistencyReader(true, state === 'unseen' ? null : state === 'empty' ? 0 : 2);
+    await expect(value.verify()).resolves.toBeDefined();
+    await expect(value.verify()).resolves.toBeDefined();
+    expect(value.fetchBounded.mock.calls.every(([url]) => url.endsWith('?format=bundle'))).toBe(true);
+  });
+
+  it.each([false, true])('fails closed after tile errors or a failed full retry (required=%s)', async required => {
+    for (const fault of ['short', 'long', 'corrupt', 'transport', 'retry', 'missing-capability'] as const) {
+      const value = await networkConsistencyReader(required);
+      const normal = value.fetchBounded.getMockImplementation()!;
+      const cause = new C2spTlogError('tile transport failed', { status: 503, transient: true });
+      value.fetchBounded.mockImplementation(async (url, ...args) => {
+        if (url.includes('/tile/')) {
+          if (fault === 'missing-capability') throw new MissingC2spConsistencyEvidenceError('available tile reader failed');
+          if (fault === 'retry' && url.endsWith('.p/2')) throw new C2spTlogError('partial deleted', { status: 404 });
+          if (fault === 'transport' || fault === 'retry') throw cause;
+          return new Uint8Array(fault === 'short' ? 63 : fault === 'long' ? 65 : 64);
+        }
+        return normal(url, ...args);
+      });
+      const previous = await value.store.load(ORIGIN);
+      await expect(value.verify()).rejects.toMatchObject(fault === 'transport' || fault === 'retry'
+        ? { status: 503, transient: true } : { errorCategory: 'INVALID_EVIDENCE', transient: false });
+      expect(value.fetchBounded).toHaveBeenCalledTimes(fault === 'retry' ? 3 : 2);
+      expect(value.fetchBounded.mock.calls.every(([url]) => !url.includes('/entries/') && !url.endsWith('/checkpoint'))).toBe(true);
+      await expect(value.store.load(ORIGIN)).resolves.toEqual(previous);
+    }
+  });
+
+  it.each([false, true])('recovers a partial-tile 404 through the full tile (required=%s)', async required => {
+    const value = await networkConsistencyReader(required);
+    const normal = value.fetchBounded.getMockImplementation()!;
+    value.fetchBounded.mockImplementation(async (url, ...args) => {
+      if (url.endsWith('.p/2')) throw new C2spTlogError('partial deleted', { status: 404 });
+      if (url.endsWith('/tile/0/000')) return new Uint8Array(Buffer.concat([
+        leafHash(issuanceBytes()), leafHash(BUNDLE_EXTRA_ENTRY), Buffer.alloc(254 * 32),
+      ]));
+      return normal(url, ...args);
+    });
+    await expect(value.verify()).resolves.toBeDefined();
+    expect(value.fetchBounded).toHaveBeenCalledTimes(3);
+    await expect(value.store.load(ORIGIN)).resolves.toMatchObject({ treeSize: 2 });
+  });
+
+  it.each(['rollback', 'fork', 'inconsistent'] as const)('preserves %s diagnostics at the factory binding boundary', async fault => {
+    const value = await networkConsistencyReader(true, fault === 'rollback' ? 3 : fault === 'fork' ? 2 : 1);
+    if (fault !== 'rollback') {
+      const previous = (await value.store.load(ORIGIN))!;
+      await value.store.compareAndSwap(ORIGIN, previous, { ...previous, rootHash: new Uint8Array(32) });
+    }
+    const previous = await value.store.load(ORIGIN);
+    const error = await value.verify().catch(error => error);
+    expect(error).toBeInstanceOf(C2spCheckpointConsistencyError);
+    expect(error).toMatchObject({ errorCategory: fault === 'rollback' ? 'LOG_ROLLBACK' : fault === 'fork' ? 'LOG_FORK' : 'LOG_INCONSISTENT',
+      origin: ORIGIN, trustedTreeSize: previous!.treeSize, observedTreeSize: 2,
+      trustedRootHash: previous!.rootHash, observedRootHash: merkleRootFromEntries([issuanceBytes(), BUNDLE_EXTRA_ENTRY]), transient: false });
+    expect(value.fetchBounded).toHaveBeenCalledTimes(fault === 'inconsistent' ? 2 : 1);
+    await expect(value.store.load(ORIGIN)).resolves.toEqual(previous);
+  });
+
+  it.each(['success', 'invalid', 'fetch', 'missing-capability'] as const)('uses an explicit source before tiles with no fallback: %s', async outcome => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const fetchBounded = vi.fn(async () => value.bytes);
+    const load = vi.fn(async () => { throw new Error('no raw fallback'); });
+    const cause = new C2spTlogError('proof unavailable', { status: 503, transient: true });
+    const fetchConsistencyProof = vi.fn(async () => {
+      if (outcome === 'missing-capability') throw new MissingC2spConsistencyEvidenceError('available proof source failed');
+      if (outcome === 'fetch') throw cause;
+      return outcome === 'invalid' ? [] : [leafHash(BUNDLE_EXTRA_ENTRY)];
+    });
+    const reader = new C2spTlogReader(LR, {
+      policy: parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes)),
+      entityKey: value.options.entityKey, trustedCheckpointStore: value.options.trustedCheckpointStore,
+      resourceFetcher: { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
+      streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys,
+        maxBundleLifetimeMs: 60_000, checkpointFreshnessMs: 60_000 },
+      consistencyProofSource: { fetchConsistencyProof },
+    });
+    const scan = vi.spyOn(ScanStreamSource.prototype, 'load').mockImplementation(load);
+    try {
+      const result = reader.rebuildHistory('agent.example');
+      if (outcome === 'success') await expect(result).resolves.toHaveLength(1);
+      else if (outcome === 'missing-capability') await expect(result).rejects.toBeInstanceOf(MissingC2spConsistencyEvidenceError);
+      else await expect(result).rejects.toMatchObject(outcome === 'fetch'
+        ? { status: 503, transient: true } : { errorCategory: 'LOG_INCONSISTENT', transient: false });
+      expect(fetchConsistencyProof).toHaveBeenCalledOnce();
+      expect(fetchBounded).toHaveBeenCalledOnce();
+      expect(load).not.toHaveBeenCalled();
+      await expect(value.options.trustedCheckpointStore.load(ORIGIN)).resolves.toMatchObject({ treeSize: outcome === 'success' ? 2 : 1 });
+    } finally { scan.mockRestore(); }
+  });
+
+  it('rejects a signed size-zero candidate with a nonempty root', () => {
+    const value = fixture();
+    const policy = parseC2spPolicyFile(new TextDecoder().decode(value.options.policyBytes));
+    const valid = parseCheckpoint(new TextDecoder().decode(value.checkpoint([])));
+    expect(enforceCheckpointPolicy(valid, ORIGIN, policy, 'testnet')).toBeDefined();
+    const invalid = parseCheckpoint(new TextDecoder().decode(value.checkpoint([], new Uint8Array(32))));
+    expect(() => enforceCheckpointPolicy(invalid, ORIGIN, policy, 'testnet')).toThrowError(expect.objectContaining({ errorCategory: 'INVALID_EVIDENCE' }));
+  });
+
+  it('rejects a malformed stored empty root without fetching tiles or replacing trust', async () => {
+    const value = await networkConsistencyReader(true);
+    const previous = (await value.store.load(ORIGIN))!;
+    const load = vi.spyOn(value.store, 'load').mockResolvedValue({ ...previous, treeSize: 0, rootHash: new Uint8Array(32) });
+    try {
+      await expect(value.verify()).rejects.toMatchObject({ errorCategory: 'CHECKPOINT_STORE_ERROR', transient: false, cause: expect.any(Error) });
+      expect(value.fetchBounded).toHaveBeenCalledOnce();
+    } finally { load.mockRestore(); }
+    await expect(value.store.load(ORIGIN)).resolves.toEqual(previous);
+  });
+
+  it('reuses a verified lifecycle scan before an explicit source or tiles', async () => {
+    const value = fixture(BUNDLE_EXTRA_ENTRY);
+    await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
+    const fetchConsistencyProof = vi.fn(async () => { throw new Error('scan must win'); });
+    const fetchBounded = vi.fn(async () => { throw new Error('no duplicate evidence reads'); });
+    await expect(rawReader(value, [issuanceBytes(), BUNDLE_EXTRA_ENTRY], {
+      consistencyProofSource: { fetchConsistencyProof },
+      resourceFetcher: { fetchBounded, securityGuarantees: requiredC2spResourceFetchGuarantees },
+    }).rebuildHistory('agent.example')).resolves.toHaveLength(1);
+    expect(fetchConsistencyProof).not.toHaveBeenCalled();
+    expect(fetchBounded).not.toHaveBeenCalled();
+  });
+});
 
 describe('C2SP checkpoint public boundaries', () => {
   it.each(['reader', 'bundle', 'binding', 'non-revocation', 'readEvent'] as const)('preserves rollback/fork diagnostics at the %s boundary', async path => {
@@ -404,18 +577,17 @@ describe('C2SP checkpoint public boundaries', () => {
     }
   });
 
-  it.each(['reader', 'bundle'] as const)('distinguishes invalid proof, missing evidence, and retrieval failures at the %s boundary', async path => {
+  it('distinguishes invalid proof, missing evidence, and retrieval failures at the offline bundle boundary', async () => {
     const value = fixture(BUNDLE_EXTRA_ENTRY);
     const store = value.options.trustedCheckpointStore;
     await rawReader(value, [issuanceBytes()]).rebuildHistory('agent.example');
     const previous = await store.load(ORIGIN);
-    const verify = (source?: C2spTlogReaderOptions['consistencyProofSource']) => path === 'reader'
-      ? rawReader(value, [issuanceBytes(), BUNDLE_EXTRA_ENTRY], { consistencyProofSource: source }).rebuildHistory('agent.example')
-      : verifyC2spStreamBundle(value.bytes, { ...value.options, consistencyProofSource: source });
+    const verify = (source?: C2spTlogReaderOptions['consistencyProofSource']) =>
+      verifyC2spStreamBundle(value.bytes, { ...value.options, consistencyProofSource: source });
     await expect(verify({ fetchConsistencyProof: async () => [] })).rejects.toMatchObject({
       errorCategory: 'LOG_INCONSISTENT', trustedRootHash: previous!.rootHash, observedTreeSize: 2, transient: false,
     });
-    if (path === 'bundle') await expect(verify()).rejects.toBeInstanceOf(MissingC2spConsistencyEvidenceError);
+    await expect(verify()).rejects.toBeInstanceOf(MissingC2spConsistencyEvidenceError);
     for (const transient of [true, false]) {
       const cause = new VerificationError('injected proof retrieval failure', { code: VerificationCode.TLSError, transient });
       await expect(verify({ fetchConsistencyProof: async () => { throw cause; } })).rejects.toMatchObject({
@@ -1015,7 +1187,7 @@ describe('C2SP stream bundles', () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
-  it('uses a matching complete scan as missing bundle consistency evidence', async () => {
+  it('allows a custom reader without tiles to use a matching complete scan', async () => {
     const entry = new TextEncoder().encode(ISSUANCE_ENTRY);
     const value = await missingConsistencyReader([entry, BUNDLE_EXTRA_ENTRY]);
 
@@ -1049,10 +1221,10 @@ describe('C2SP stream bundles', () => {
     await expect(value.store.load(ORIGIN)).resolves.toMatchObject({ treeSize: 1 });
   });
 
-  it('does not raw scan for missing consistency evidence when bundles are required', async () => {
+  it('rejects missing custom-reader capability when bundles are required', async () => {
     const value = await missingConsistencyReader([new TextEncoder().encode(ISSUANCE_ENTRY), BUNDLE_EXTRA_ENTRY], true);
 
-    await expect(value.verify()).rejects.toThrow('requires consistency proof');
+    await expect(value.verify()).rejects.toBeInstanceOf(MissingC2spConsistencyEvidenceError);
     expect(value.fetchBounded).toHaveBeenCalledOnce();
     await expect(value.store.load(ORIGIN)).resolves.toMatchObject({ treeSize: 1 });
   });

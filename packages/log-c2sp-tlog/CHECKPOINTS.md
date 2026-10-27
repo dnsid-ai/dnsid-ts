@@ -14,7 +14,7 @@ and these non-transient `errorCategory` values:
 | --- | --- |
 | `LOG_ROLLBACK` | Candidate tree is smaller than trusted state. |
 | `LOG_FORK` | Equal tree sizes have different roots. |
-| `LOG_INCONSISTENT` | A supplied growth proof is invalid, or a candidate-valid scan contradicts the trusted prefix. |
+| `LOG_INCONSISTENT` | An explicit growth proof is invalid, or a candidate-authenticated tile prefix or candidate-valid scan contradicts the trusted root. |
 | `CHECKPOINT_STORE_ERROR` | Storage fails or returns malformed state. |
 
 `C2spCheckpointConsistencyError` exposes `origin`, `trustedTreeSize`,
@@ -23,13 +23,22 @@ copies. Available underlying failures remain in `cause`. These fields survive
 public reader and bundle verification. A category describes the observation,
 not its cause or permission to reset trust.
 
-A scan must reproduce the candidate root with contiguous indexes before it can
-establish a trusted-prefix contradiction. Bad candidate scans are
-`INVALID_EVIDENCE`. `MissingC2spConsistencyEvidenceError` separately identifies
-absent consistency capability. Only this condition permits consistency-related
-raw-scan fallback in preferred-bundle mode. Invalid proofs, storage errors,
-retrieval failures, and cancellation do not permit that fallback. Retrieval
-failures retain their retry classification and cause.
+Growth from nonempty trusted state first reuses a verified complete scan, then
+uses an explicit proof source if configured, otherwise the built-in network
+reader uses hash tiles. Tiles must authenticate against the candidate root before
+the trusted prefix is compared. Bad tile lengths, failed tile authentication,
+and scans that cannot reproduce the candidate root with contiguous indexes are
+`INVALID_EVIDENCE`. A missing partial tile (HTTP 404) gets one full-tile retry.
+Neither tile nor proof-source failures permit a raw scan or a switch of sources.
+Retrieval failures retain their retry classification and cause.
+
+`MissingC2spConsistencyEvidenceError` separately identifies absent capability.
+Only lower-level custom readers without both a proof source and tile capability
+may use this condition for a complete-scan fallback in preferred-bundle mode.
+Required mode fails instead. Built-in network readers never use this exception.
+First contact, equal-size/equal-root checkpoints, and growth from a valid empty
+tree need no consistency reads. Every size-zero checkpoint, including stored
+state, must carry SHA-256 of the empty byte string.
 
 ## Injected storage contract
 
@@ -43,7 +52,8 @@ members or SDK environment variables for them.
 An adapter must:
 
 - Validate a nonempty matching origin, nonnegative safe-integer tree size,
-  32-byte `Uint8Array` root, and valid `Date` witnessed time. Invalid caller input
+  32-byte `Uint8Array` root (SHA-256 of empty bytes for size zero), and valid
+  `Date` witnessed time. Invalid caller input
   is `ArgumentError`; invalid stored state is `CHECKPOINT_STORE_ERROR`.
 - Return independent snapshots. Atomically compare all four fields, including
   witnessed time. An absent expected state matches only an unseen origin; a
