@@ -116,7 +116,7 @@ export async function advanceTrustedC2spCheckpoint(
   reference: ParsedC2spTlogLr,
   checkpoint: Checkpoint,
   witnessTime: Date,
-  options: AdvanceOptions = {},
+  options: VerificationOptions & { consistencyProofSource?: C2spConsistencyProofSource; completeEntries?: IndexedEntry[] } = {},
 ): Promise<TrustedC2spCheckpoint> {
   return advanceC2spCheckpoint(store, reference, checkpoint, witnessTime, options);
 }
