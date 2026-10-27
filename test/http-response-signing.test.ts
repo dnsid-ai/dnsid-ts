@@ -288,12 +288,14 @@ describe('NR12 signature label collisions', () => {
 });
 
 describe('NR13 atomic signing failures', () => {
-  it('rejects self-referential coverage rather than publish a signature invalidated by its own headers', async () => {
-    const request = await prepare({ expectedDomain: domain, additionalComponents: ['signature'] });
-    const response = await signHttpMessage(new Response('body'), { label: 'other', components: ['@status'] }, provider, key);
-    const headers = [...response.headers];
-    await expect(server.signRequestedHttpResponse(request, response)).rejects.toBeInstanceOf(VerificationError);
-    expect([...response.headers]).toEqual(headers);
+  it.each(['signature', 'signature-input'])('rejects coverage of the response %s field', async field => {
+    await expect(prepare({ expectedDomain: domain, additionalComponents: [field] })).rejects.toBeInstanceOf(ArgumentError);
+    const prepared = await prepare();
+    const headers = new Headers(prepared.headers);
+    headers.set('Accept-Signature', headers.get('Accept-Signature')!.replace(')', ` "${field}")`));
+    const response = new Response('body');
+    await expect(server.signRequestedHttpResponse(new Request(prepared, { headers }), response)).rejects.toBeInstanceOf(VerificationError);
+    expect([...response.headers]).toEqual([['content-type', 'text/plain;charset=UTF-8']]);
   });
   it.each(['provider', 'changed key', 'bounds', 'missing provider'])('does not commit headers on %s failure', async kind => {
     const request = await prepare();

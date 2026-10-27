@@ -257,8 +257,13 @@ function validateResponseComponents(components: ComponentIdentifier[]): void {
   validateComponents(components);
   for (const component of components) {
     const name = componentName(component);
-    if (KNOWN_DERIVED_COMPONENTS.has(name) && name !== '@status' && componentParams(component).req !== true) {
+    const req = componentParams(component).req === true;
+    if (KNOWN_DERIVED_COMPONENTS.has(name) && name !== '@status' && !req) {
       throw new ArgumentError('response request-derived components require req');
+    }
+    // The response signature fields are written by signing, so they cannot cover themselves.
+    if ((name === 'signature' || name === 'signature-input') && !req) {
+      throw new ArgumentError('response components cannot cover response signature fields');
     }
   }
 }
@@ -467,10 +472,8 @@ export class HttpSignaturesProfile {
    */
   async createSignedHttpRequest(req: Request, opts?: HttpSigningOptions): Promise<Request> {
     if (opts?.responseSignature === undefined) return this.signRequest(req, opts);
-    const policy = responsePolicy(opts.responseSignature);
-    validateNegotiatedTarget(req);
+    const options = snapshotSigningOptions(opts, responsePolicy(opts.responseSignature).options);
     const saved = req.clone();
-    const options = snapshotSigningOptions(opts, policy.options);
     return withVerificationBudget(signal => this.signRequest(new Request(saved, { signal }), options), { signal: saved.signal });
   }
 
@@ -585,7 +588,7 @@ export class HttpSignaturesProfile {
         const signed = await waitForVerification(() => signHttpMessage({ message, request }, params, keyProvider, key), signal);
         parseSignatureInput(signed.headers.get('Signature-Input')!);
         if (!await verifyWithKey(buildSignatureInput({ message: signed, request }, params), parseSignature(signed.headers.get('Signature')!).get(params.label)!, key, jwkSignatureAlg(key))) {
-          throw responseError('requested coverage is changed by adding the response signature');
+          throw new ArgumentError('response signing key changed during signing');
         }
         return signed;
       }, { signal: request.signal });
@@ -727,13 +730,12 @@ export class HttpSignaturesProfile {
         return opts.fetch(signedReq);
       }
       const policy = responsePolicy(signingOptions.responseSignature);
-      validateNegotiatedTarget(preparedReq);
       const transport = opts.responseTransport;
       if (!transport) throw new ArgumentError('negotiated responses require a single-send responseTransport');
       const snapshot = preparedReq.clone();
       const signing = snapshotSigningOptions(signingOptions, policy.options);
       return withVerificationBudget(async signal => {
-        const signedReq = await this.createSignedHttpRequest(new Request(snapshot, { signal }), signing);
+        const signedReq = await this.signRequest(new Request(snapshot, { signal }), signing);
         const saved = signedReq.clone();
         let response: Response | undefined;
         try {

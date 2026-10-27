@@ -289,21 +289,10 @@ This is intended for advanced consumers that already have their own runtime wiri
 
 ## Opt-in signed responses
 
-Request signing alone does not authenticate the responder. The HTTP-signature
-profile supports RFC 9421 §5 negotiation through
-`HttpSigningOptions.responseSignature: { expectedDomain, additionalComponents? }`,
-`signRequestedHttpResponse`, and `verifySignedHttpResponse`. Enabled
-`createSignedFetch` calls verify every response before returning it, including
-HTTP errors, without redirects, retries, or caching. They require a single-send
-`responseTransport`; Node provides `createResponseSignatureTransport` in
-`@dnsid-ai/transport`, including current-peer evidence for `fl=mtls`.
-
-Standalone callers must retain the unmodified prepared request and original
-local policy snapshot for verification. Only covered metadata is authenticated:
-`Content-Type`, `Content-Encoding`, and `Location` are not covered by default.
-HTTPS remains required; response authentication occurs after request data is sent.
-See [the HTTP-signature package guide](packages/http-signatures/README.md#negotiated-response-authentication)
-for APIs, limits, ownership, and examples. Request-only defaults and WBA are unchanged.
+Request signing alone does not authenticate the responder. Set
+`HttpSigningOptions.responseSignature` to require an RFC 9421 §5 signed response
+from a locally expected DNSid agent. See
+[the HTTP-signature package guide](packages/http-signatures/README.md#negotiated-response-authentication).
 
 ## Browser/runtime note
 
