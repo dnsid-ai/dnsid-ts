@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   typescript:
-    uses: dnsid-ai/github-actions/.github/workflows/security-typescript.yml@9bd2664104473f9cb51cf728ecdb561c59d0c4b4 # v1.3.0
+    uses: dnsid-ai/github-actions/.github/workflows/security-typescript.yml@b4d14ab990cee173375c13f9b0ba24105ac0b778 # v1.4.0
     permissions:
       contents: read # check out the code
       security-events: write # required by the called workflow's jobs
@@ -25,5 +25,7 @@ jobs:
       lint: false
       test: false
       # No lint/format scripts -> auto-skipped; test + typecheck run.
+      # Scan this repo's own GitHub Actions workflows with CodeQL (shared v1.4.0).
+      codeql-actions: true
       upload-sarif: true
       enforce-security: false
