@@ -132,10 +132,12 @@ export function createDnsidFetch(config: TransportConfig): FetchLike {
 
 /**
  * Creates the single-send transport consumed by HTTP signatures' responseTransport option.
- * Sends HTTPS once, without pooling/session reuse, redirects, retries, caches, or content
- * decoding. Returns the current server certificate. The signed client bounds body reads
- * to 1 MiB; standalone consumers must also bound reads and cancel rejected responses.
- * DNS and additional CA settings follow createDnsidFetch; private addresses are not filtered.
+ * Sends HTTPS once per call, without redirects, retries, caches, or content decoding, and
+ * reuses keep-alive connections across calls. Returns the certificate of the connection
+ * that carried this response. Request bodies are buffered and sent with Content-Length.
+ * The signed client bounds body reads to 8 MiB; standalone consumers must also bound reads
+ * and cancel rejected responses. DNS and additional CA settings follow createDnsidFetch;
+ * private addresses are not filtered and proxy environment variables are not used.
  */
 export function createResponseSignatureTransport(config: TransportConfig = {}): (request: Request) => Promise<{
   response: Response;
@@ -143,14 +145,18 @@ export function createResponseSignatureTransport(config: TransportConfig = {}): 
 }> {
   const lookup = config.dnsServer ? createLookup(config.dnsServer) : undefined;
   const ca = config.caBundlePath ? [...tls.rootCertificates, fs.readFileSync(config.caBundlePath, 'utf8')] : undefined;
+  const agent = new https.Agent({ keepAlive: true, lookup, ca, rejectUnauthorized: true });
   return async request => {
     const url = new URL(request.url);
     if (url.protocol !== 'https:') throw new ArgumentError('response authentication requires HTTPS');
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS * 3)]);
+    // Signed requests are already buffered for their digest; send a fixed length, not chunks.
+    const content = request.body ? Buffer.from(await request.arrayBuffer()) : null;
+    const headers = Object.fromEntries(request.headers);
+    if (content) headers['content-length'] = String(content.length);
     return new Promise((resolve, reject) => {
       const outgoing = https.request(url, {
-        agent: false, lookup, ca, signal, method: request.method,
-        headers: Object.fromEntries(request.headers), rejectUnauthorized: true,
+        agent, signal, method: request.method, headers,
       }, incoming => {
         const cert = (incoming.socket as tls.TLSSocket).getPeerCertificate();
         const peerCert: TLSCertificate = {
@@ -183,12 +189,7 @@ export function createResponseSignatureTransport(config: TransportConfig = {}): 
       outgoing.on('error', fail);
       outgoing.on('upgrade', (_response, socket) => { socket.destroy(); fail(new VerificationError('protocol upgrades are unsupported', { code: VerificationCode.SignatureInvalid })); });
       outgoing.on('connect', (_response, socket) => { socket.destroy(); fail(new VerificationError('tunnels are unsupported', { code: VerificationCode.SignatureInvalid })); });
-      if (request.body) {
-        const source = Readable.fromWeb(request.body as unknown as import('node:stream/web').ReadableStream);
-        source.on('error', error => outgoing.destroy(error));
-        outgoing.on('close', () => source.destroy());
-        source.pipe(outgoing);
-      } else outgoing.end();
+      outgoing.end(content ?? undefined);
     });
   };
 }

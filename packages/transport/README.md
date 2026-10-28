@@ -42,15 +42,16 @@ const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER 
 `createResponseSignatureTransport(config?)` returns the `responseTransport`
 function required by `HttpSignaturesProfile.createSignedFetch` when
 `signing.responseSignature` is present. It accepts a prepared `Request` and returns
-`{ response, peerCert }`. It performs exactly one HTTPS request, uses a fresh TLS
-connection (no pooling/session reuse), never follows redirects or retries, never
-caches, and preserves encoded content bytes without transparent decompression.
-The certificate comes from the actual server connection, so it can satisfy
+`{ response, peerCert }`. It performs one HTTPS request per call, reuses keep-alive
+connections across calls, never follows redirects or retries, never caches, and
+preserves encoded content bytes without transparent decompression. Request bodies
+are sent with `Content-Length`. The certificate comes from the connection that
+carried the response, so it can satisfy
 `fl=mtls`; the profile still validates its SAN against the expected DNSid agent.
 
 The transport honors the request abort signal and has a 30-second ceiling.
 The signed client supplies a shared finite send/read/verification budget and
-bounded content reads (1 MiB). Standalone transport consumers must also bound
+bounded content reads (8 MiB). Standalone transport consumers must also bound
 body reads, cancel rejected responses, and not expose unverified content.
 Protocol upgrades and tunnel establishment reject. HTTP errors and ordinary
 redirect responses are returned to the profile for signature verification.

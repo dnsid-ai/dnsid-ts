@@ -19,6 +19,8 @@ let directory: string;
 const counts = new Map<string, number>();
 const coded = gzipSync('exact representation');
 const closed: string[] = [];
+const sockets: unknown[] = [];
+const framing: (string | undefined)[] = [];
 
 beforeAll(async () => {
   const pair = await generateKeyPair('ES256');
@@ -38,6 +40,7 @@ beforeAll(async () => {
   server = createServer(tls, async (incoming, outgoing) => {
     const path = incoming.url!;
     counts.set(path, (counts.get(path) ?? 0) + 1);
+    if (path === '/reuse') { sockets.push(incoming.socket); framing.push(incoming.headers['content-length'] ?? incoming.headers['transfer-encoding']); }
     outgoing.on('close', () => closed.push(path));
     if (path === '/reset') { incoming.socket.destroy(); return; }
     if (path === '/upgrade') { outgoing.writeHead(101, { Connection: 'Upgrade', Upgrade: 'test' }); outgoing.end(); return; }
@@ -71,9 +74,16 @@ function client() {
 }
 
 describe('NR14/21 actual HTTPS current peer', () => {
-  it('uses the actual peer on repeated independent connections, without TLS session reuse', async () => {
+  it('uses the actual peer on repeated requests', async () => {
     for (let i = 0; i < 2; i++) expect(await (await client()(`${origin}/success`)).text()).toBe('intact');
     expect(counts.get('/success')).toBe(2);
+  });
+  it('reuses keep-alive connections and sends buffered bodies with Content-Length', async () => {
+    const fetch = client();
+    for (let i = 0; i < 2; i++) expect(await (await fetch(`${origin}/reuse`, { method: 'POST', body: 'abc' })).text()).toBe('intact');
+    expect(sockets).toHaveLength(2);
+    expect(sockets[0]).toBe(sockets[1]);
+    expect(framing).toEqual(['3', '3']);
   });
 });
 

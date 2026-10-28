@@ -214,13 +214,19 @@ export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 const DEFAULT_HTTP_SIGNATURE_LABEL = 'sig1';
-const RESPONSE_COMPONENTS: ComponentIdentifier[] = [
-  '@status',
-  ...['@method', '@authority', '@target-uri', 'accept-signature', 'signature-input', 'signature']
-    .map(name => ({ name, params: { req: true } })),
-  'content-digest', 'cache-control',
-];
+/** Required response coverage; the key selects the client's own request signature member. */
+function responseComponents(requestLabel: string): ComponentIdentifier[] {
+  return [
+    '@status',
+    ...['@method', '@authority', '@target-uri', 'accept-signature'].map(name => ({ name, params: { req: true } })),
+    ...['signature-input', 'signature'].map(name => ({ name, params: { req: true, key: requestLabel } })),
+    'content-digest', 'cache-control',
+  ];
+}
 const MAX_RESPONSE_NONCE_LENGTH = 1024;
+/** Fixed so peers with different maxAge settings interoperate. */
+const RESPONSE_SIGNATURE_LIFETIME_SECONDS = 60;
+const MAX_HTTP_CONTENT_BYTES = 8 * 1024 * 1024;
 
 function responseError(message: string, cause?: unknown): VerificationError {
   return new VerificationError(message, { code: VerificationCode.SignatureInvalid, cause });
@@ -234,13 +240,13 @@ function copyComponents(components: ComponentIdentifier[]): ComponentIdentifier[
   });
 }
 
-function responsePolicy(opts: ResponseSignatureOptions): { options: ResponseSignatureOptions; components: ComponentIdentifier[] } {
+function responsePolicy(opts: ResponseSignatureOptions, requestLabel = DEFAULT_HTTP_SIGNATURE_LABEL): { options: ResponseSignatureOptions; components: ComponentIdentifier[] } {
   try {
     if (!opts || typeof opts.expectedDomain !== 'string') throw new ArgumentError('expectedDomain is required');
     const expectedDomain = normalizeFQDN(opts.expectedDomain, true);
     if (opts.additionalComponents !== undefined && !Array.isArray(opts.additionalComponents)) throw new ArgumentError('additionalComponents must be an array');
     const additionalComponents = opts.additionalComponents ?? [];
-    const components = [...RESPONSE_COMPONENTS, ...additionalComponents];
+    const components = [...responseComponents(requestLabel), ...additionalComponents];
     validateResponseComponents(components);
     return { options: { expectedDomain, additionalComponents: copyComponents(additionalComponents) }, components: copyComponents(components) };
   } catch (cause) {
@@ -303,7 +309,8 @@ function parseNegotiation(value: string): { label: string; components: Component
   const components = items.map(parseComponentItem);
   try { validateResponseComponents(components); }
   catch (cause) { throw responseError('unsupported response components', cause); }
-  if (RESPONSE_COMPONENTS.some(required => !components.some(c => sameComponent(c, required)))) throw responseError('missing required response coverage');
+  const requestLabel = requestedSignatureMember(components);
+  if (responseComponents(requestLabel).some(required => !components.some(c => sameComponent(c, required)))) throw responseError('missing required response coverage');
   if (parameters.size !== 3 || parameters.get('created') !== true || parameters.get('expires') !== true) throw responseError('unsupported signature request constraints');
   const nonce = parameters.get('nonce');
   if (typeof nonce !== 'string' || nonce.length > MAX_RESPONSE_NONCE_LENGTH || !/^[A-Za-z0-9_-]+$/.test(nonce)) throw responseError('invalid response nonce');
@@ -312,6 +319,19 @@ function parseNegotiation(value: string): { label: string; components: Component
   catch (cause) { throw responseError('invalid response nonce encoding', cause); }
   if (bytes.length < 32 || toBase64Url(bytes) !== nonce) throw responseError('noncanonical or short response nonce');
   return { label, components, nonce };
+}
+
+/** Returns the one request signature member bound by matching signature-input and signature keys. */
+function requestedSignatureMember(components: ComponentIdentifier[]): string {
+  const keys = (name: string) => components
+    .filter(c => componentName(c) === name && componentParams(c).req === true && typeof componentParams(c).key === 'string')
+    .map(c => componentParams(c).key as string);
+  const inputs = keys('signature-input');
+  const signatures = keys('signature');
+  if (inputs.length !== 1 || signatures.length !== 1 || inputs[0] !== signatures[0]) {
+    throw responseError('response negotiation must bind one request signature member');
+  }
+  return inputs[0]!;
 }
 
 function rejectLabelCollision(response: Response, label: string): void {
@@ -330,12 +350,12 @@ function noResponseContent(request: Request, response: Response): boolean {
   return request.method === 'HEAD' || [204, 205, 304].includes(response.status);
 }
 
-async function responseContent(request: Request, response: Response, signal: AbortSignal): Promise<ArrayBuffer> {
-  if (noResponseContent(request, response) && response.body === null) return new ArrayBuffer(0);
+async function responseContent(request: Request, response: Response, signal: AbortSignal, signing = false): Promise<ArrayBuffer> {
+  if (noResponseContent(request, response) && (response.body === null || signing)) return new ArrayBuffer(0);
   if (response.body === null || response.bodyUsed) throw responseError('response content is unavailable');
   // Tee only inside the finite body bound, retaining the original response for the application.
   try {
-    const body = await readBoundedBody(response.clone(), signal);
+    const body = await readBoundedBody(response.clone(), signal, MAX_HTTP_CONTENT_BYTES);
     if (noResponseContent(request, response) && body.byteLength !== 0) throw responseError('content supplied for a no-content response');
     return body;
   } catch (cause) {
@@ -401,8 +421,8 @@ export type ResponseSignatureTransport = (request: Request) => Promise<{
 
 /** Options for {@link HttpSignaturesProfile.createSignedFetch}. */
 export interface CreateSignedFetchOptions {
-  /** Underlying fetch implementation invoked with the signed request. */
-  fetch: FetchLike;
+  /** Underlying fetch implementation invoked with the signed request. Required in request-only mode. */
+  fetch?: FetchLike;
   /** Required when response authentication is enabled; ordinary fetch cannot disable hidden retries or expose peer evidence. */
   responseTransport?: ResponseSignatureTransport;
   /** Overall send/read/verification budget in response mode. Default: 30 seconds. */
@@ -479,7 +499,7 @@ export class HttpSignaturesProfile {
 
   private async signRequest(req: Request, opts?: HttpSigningOptions): Promise<Request> {
     if (opts?.responseSignature !== undefined) {
-      const policy = responsePolicy(opts.responseSignature);
+      const policy = responsePolicy(opts.responseSignature, opts.label ?? DEFAULT_HTTP_SIGNATURE_LABEL);
       validateNegotiatedTarget(req);
       const headers = new Headers(req.headers);
       headers.set('Accept-Signature', serializeNegotiation(policy.components, generateNonce()));
@@ -498,7 +518,7 @@ export class HttpSignaturesProfile {
     if (req.body) {
       bodyBuffer = opts?.responseSignature === undefined
         ? await req.clone().arrayBuffer()
-        : await readBoundedBody(req, req.signal);
+        : await readBoundedBody(req, req.signal, MAX_HTTP_CONTENT_BYTES);
     }
 
     const newHeaders = new Headers(req.headers);
@@ -563,7 +583,8 @@ export class HttpSignaturesProfile {
     const keyProvider = this.requireKeyProvider();
     try {
       return await withVerificationBudget(async signal => {
-        const body = await responseContent(request, response, signal);
+        // A no-content response object's supplied body is ignored and not transmitted.
+        const body = await responseContent(request, response, signal, true);
         const headers = new Headers(response.headers);
         const hash = await crypto.subtle.digest('SHA-256', body);
         headers.set('Content-Digest', `sha-256=:${toStdBase64(new Uint8Array(hash))}:`);
@@ -581,7 +602,7 @@ export class HttpSignaturesProfile {
           keyId: `${this.domain}#${key.kid}`,
           alg: joseAlgToHttpSigAlg(jwkSignatureAlg(key)),
           created,
-          expires: created + (this.config.maxAge ?? DEFAULT_SIGNATURE_MAX_AGE_SECONDS),
+          expires: created + RESPONSE_SIGNATURE_LIFETIME_SECONDS,
           nonce: negotiation.nonce,
         };
         assertHeaderBound(`${params.label}=${serializeSigParams(params)}`);
@@ -617,13 +638,16 @@ export class HttpSignaturesProfile {
       return await withVerificationBudget(async signal => {
         requireFinalResponse(request, response);
         if (new URL(request.url).protocol !== 'https:') throw responseError('negotiated responses require HTTPS');
+        // parseNegotiation enforces the required coverage; local policy adds caller additions.
         const requested = parseNegotiation(request.headers.get('Accept-Signature') ?? '');
-        for (const component of policy.components) {
+        for (const component of policy.options.additionalComponents ?? []) {
           if (!requested.components.some(c => sameComponent(c, component))) throw responseError('saved negotiation omits local coverage');
         }
         const inputHeader = response.headers.get('Signature-Input') ?? '';
         const inputs = parseSignatureInput(inputHeader);
+        // Integer timestamp checks apply only to the requested label, not unrelated members.
         for (const entry of splitDictionary(inputHeader)) {
+          if (entry.slice(0, entry.indexOf('=')).trim() !== requested.label) continue;
           parseSignatureParameterOccurrences(entry.slice(entry.indexOf('=') + 1).trim(), true);
         }
         const signatures = parseSignature(response.headers.get('Signature') ?? '');
@@ -633,11 +657,11 @@ export class HttpSignaturesProfile {
         if (params.components.length !== requested.components.length
           || params.components.some((c, i) => !sameComponent(c, requested.components[i]!))
           || params.nonce !== requested.nonce) throw responseError('response coverage or nonce differs from negotiation');
-        if (params.created === undefined || params.expires === undefined || params.created >= params.expires
+        if (params.created === undefined || params.expires === undefined
           || !params.alg || !Object.values(JOSE_TO_HTTP_SIG_ALG).includes(params.alg) || !params.keyId) {
           throw responseError('response requires timestamps, algorithm, and keyid');
         }
-        this.checkFreshness(params);
+        this.checkResponseFreshness(params);
         let identity: { domain: string; kid: string };
         try { identity = parseKeyId(params.keyId); }
         catch (cause) { throw responseError('invalid response keyid', cause); }
@@ -660,13 +684,26 @@ export class HttpSignaturesProfile {
         const actual = new Uint8Array(await crypto.subtle.digest('SHA-256', content));
         if (!constantTimeEqual(digest, actual)) throw responseError('response Content-Digest mismatch');
         if (!hasNoStore(response.headers.get('Cache-Control'))) throw responseError('response requires signed no-store');
-        this.checkFreshness(params);
+        this.checkResponseFreshness(params);
         vd.assertFresh();
         return vd;
       }, { ...budget, signal: budget.signal ?? request.signal });
     } catch (error) {
       cancelResponse(response);
       throw error;
+    }
+  }
+
+  /** Applies the fixed response lifetime, then local created-age and clock-skew policy. */
+  private checkResponseFreshness(sigParams: SignatureParams): void {
+    const lifetime = sigParams.expires! - sigParams.created!;
+    if (!(lifetime > 0 && lifetime <= RESPONSE_SIGNATURE_LIFETIME_SECONDS)) {
+      throw new VerificationError('response signature lifetime must be 1 to 60 seconds', { code: VerificationCode.SignatureInvalid });
+    }
+    this.checkFreshness({ ...sigParams, expires: undefined });
+    const clockSkewSeconds = this.config.clockSkew ?? DEFAULT_CLOCK_SKEW_SECONDS;
+    if (Math.floor(Date.now() / 1000) > sigParams.expires! + clockSkewSeconds) {
+      throw new VerificationError('response signature has expired', { code: VerificationCode.SignatureInvalid });
     }
   }
 
@@ -726,6 +763,7 @@ export class HttpSignaturesProfile {
       const preparedReq = opts.prepareRequest ? await opts.prepareRequest(req) : req;
       const signingOptions = typeof opts.signing === 'function' ? opts.signing(preparedReq) : opts.signing;
       if (signingOptions?.responseSignature === undefined) {
+        if (!opts.fetch) throw new ArgumentError('createSignedFetch requires fetch for request-only signing');
         const signedReq = await this.createSignedHttpRequest(preparedReq, signingOptions);
         return opts.fetch(signedReq);
       }
@@ -1310,7 +1348,7 @@ function assertHeaderBound(value: string): void {
 }
 
 /** Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses. */
-export async function readBoundedBody(request: Request | Response, signal: AbortSignal, maxBytes = 1024 * 1024): Promise<ArrayBuffer> {
+export async function readBoundedBody(request: Request | Response, signal: AbortSignal, maxBytes = MAX_HTTP_CONTENT_BYTES): Promise<ArrayBuffer> {
   const reader = (request instanceof Request ? request.clone() : request).body!.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;

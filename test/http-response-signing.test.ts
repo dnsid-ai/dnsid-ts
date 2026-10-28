@@ -83,7 +83,7 @@ describe('NR02 request negotiation', () => {
   it('emits exact ordered coverage, true flags, canonical fresh challenge, and signs the field', async () => {
     const request = await prepare({ expectedDomain: 'SERVICE.Example.com.', additionalComponents: ['content-type'] });
     const header = request.headers.get('Accept-Signature')!;
-    expect(header).toMatch(/^sig1=\("@status" "@method";req "@authority";req "@target-uri";req "accept-signature";req "signature-input";req "signature";req "content-digest" "cache-control" "content-type"\);created;expires;nonce="[A-Za-z0-9_-]{43}"$/);
+    expect(header).toMatch(/^sig1=\("@status" "@method";req "@authority";req "@target-uri";req "accept-signature";req "signature-input";req;key="sig1" "signature";req;key="sig1" "content-digest" "cache-control" "content-type"\);created;expires;nonce="[A-Za-z0-9_-]{43}"$/);
     const member = parseDictionaryField(header).get('sig1')!;
     expect(member[1].get('created')).toBe(true);
     expect(member[1].get('expires')).toBe(true);
@@ -164,7 +164,7 @@ describe('NR07 server fulfills parsed negotiation', () => {
     const parsed = parseSignatureInput(response.headers.get('Signature-Input')!).get('custom')!;
     expect(parsed.components[0]).toEqual({ name: '@method', params: { req: true } });
     expect(parsed.components.at(-1)).toBe('@status');
-    expect(parsed.created).toBeTypeOf('number'); expect(parsed.expires! - parsed.created!).toBe(300);
+    expect(parsed.created).toBeTypeOf('number'); expect(parsed.expires! - parsed.created!).toBe(60);
     expect(parsed.nonce).toBe(parseDictionaryField(header).get('custom')![1].get('nonce'));
     await expect(client.verifySignedHttpResponse(request, response, policy)).resolves.toMatchObject({ domain });
   });
@@ -197,7 +197,9 @@ describe('NR09 strict complete negotiation', () => {
     ['wrong flag type', h => h.replace(';created;', ';created=1;')], ['false flag', h => h.replace(';expires;', ';expires=?0;')],
     ['missing flag', h => h.replace(';created', '')], ['constraint', h => h + ';keyid="policy"'],
     ['unsupported component', h => h.replace('"@status"', '"@unknown"')], ['unsupported parameter', h => h.replace('"@status"', '"@status";sf')],
-    ['missing required', h => h.replace('"signature-input";req ', '')], ['wrong req type', h => h.replace(';req', ';req=1')],
+    ['missing required', h => h.replace('"signature-input";req;key="sig1" ', '')],
+    ['unkeyed request signature', h => h.replace('"signature";req;key="sig1"', '"signature";req')],
+    ['mismatched member keys', h => h.replace('"signature";req;key="sig1"', '"signature";req;key="other"')], ['wrong req type', h => h.replace(';req', ';req=1')],
     ['short nonce', h => h.replace(/nonce="[^"]+"/, 'nonce="short"')],
     ['padded nonce', h => h.replace(/(nonce="[^"]+)/, '$1=')],
     ['noncanonical nonce', h => h.replace(/nonce="[^"]+"/, 'nonce="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"')],
@@ -304,7 +306,7 @@ describe('NR13 atomic signing failures', () => {
       const replacement = await generateKeyPair('ES256');
       vi.mocked(provider.sign).mockImplementation(async input => new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, replacement.privateKey, toArrayBuffer(input))));
     }
-    const response = new Response(kind === 'bounds' ? new Uint8Array(1024 * 1024 + 1) : 'body');
+    const response = new Response(kind === 'bounds' ? new Uint8Array(8 * 1024 * 1024 + 1) : 'body');
     await expect((kind === 'missing provider' ? profile(manager, false) : server).signRequestedHttpResponse(request, response)).rejects.toThrow();
     expect(response.headers.has('Content-Digest')).toBe(false); expect(response.headers.has('Cache-Control')).toBe(false); expect(response.headers.has('Signature')).toBe(false);
   });
@@ -374,8 +376,39 @@ describe('NR16 response and retained request tampering', () => {
     else if (kind === 'target') request = new Request(`https://${domain}/other?x=1`, { headers: request.headers });
     else if (kind === 'negotiation') request.headers.set('Accept-Signature', request.headers.get('Accept-Signature')!.replace('"@status" ', '"@status"  '));
     else if (kind === 'signature-input') request.headers.set(kind, request.headers.get(kind)! + ';tag="changed"');
-    else request.headers.set(kind, request.headers.get(kind)! + ', extra=:AQ==:');
+    else request.headers.set(kind, 'sig1=:AQ==:');
     await expect(client.verifySignedHttpResponse(request, response, policy)).rejects.toBeInstanceOf(VerificationError);
+  });
+  it('rejects a response lifetime above 60 seconds and ignores verifier maxAge for lifetime', async () => {
+    const { request, response } = await exchange();
+    const strict = new HttpSignaturesProfile({ domain, identityResolver: manager, httpMessageSignatures: { maxAge: 30 } });
+    await expect(strict.verifySignedHttpResponse(request, response.clone(), policy)).resolves.toMatchObject({ domain });
+    const p = params(response);
+    const long = await resign(request, response, { expires: p.created! + 61 });
+    await expect(client.verifySignedHttpResponse(request, long, policy)).rejects.toThrow('lifetime');
+  });
+  it('ignores unrelated response members with profile-invalid parameters', async () => {
+    const { request, response } = await exchange();
+    const mixed = withHeaders(response, h => {
+      h.set('Signature-Input', `${h.get('Signature-Input')}, other=("@status");created=1.0, gone=("@status");alg="rsa-pss-sha512"`);
+      h.set('Signature', `${h.get('Signature')}, other=:AQ==:, gone=:AQ==:`);
+    });
+    await expect(client.verifySignedHttpResponse(request, mixed, policy)).resolves.toMatchObject({ domain });
+  });
+  it.each([['HEAD', 200], ['GET', 205]])('signs %s %i over empty content and ignores a supplied body', async (method, status) => {
+    const request = await prepare(policy, new Request(`https://${domain}/operation?x=1`, { method }));
+    const signed = await server.signRequestedHttpResponse(request, new Response(status === 205 ? null : 'ignored', { status }));
+    expect(signed.body).toBeNull();
+    expect(signed.headers.get('Content-Digest')).toBe('sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:');
+    await expect(client.verifySignedHttpResponse(request, signed, policy)).resolves.toMatchObject({ domain });
+  });
+  it('verifies when an intermediary adds its own request signature member', async () => {
+    const request = await prepare();
+    const received = new Request(request);
+    received.headers.set('Signature-Input', `${request.headers.get('Signature-Input')}, gateway=("@method");created=1`);
+    received.headers.set('Signature', `${request.headers.get('Signature')}, gateway=:AQ==:`);
+    const response = await server.signRequestedHttpResponse(received, new Response('body'));
+    await expect(client.verifySignedHttpResponse(request, response, policy)).resolves.toMatchObject({ domain });
   });
 });
 
@@ -533,7 +566,7 @@ describe('NR25 finite resource bounds and cleanup', () => {
   it('bounds request content before sending and never falls back to unsigned transport', async () => {
     const transport = vi.fn();
     const fetch = client.createSignedFetch({ fetch: vi.fn(), responseTransport: transport, signing: { responseSignature: policy } });
-    await expect(fetch(`https://${domain}`, { method: 'POST', body: new Uint8Array(1024 * 1024 + 1) })).rejects.toThrow('size limit');
+    await expect(fetch(`https://${domain}`, { method: 'POST', body: new Uint8Array(8 * 1024 * 1024 + 1) })).rejects.toThrow('size limit');
     expect(transport).not.toHaveBeenCalled();
   });
   it('bounds standalone response signing and cancels its owned read on cancellation', async () => {
@@ -559,7 +592,7 @@ describe('NR25 finite resource bounds and cleanup', () => {
   it('bounds signed response bytes while reading and cancels the underlying stream', async () => {
     const { request, response } = await exchange();
     const cancel = vi.fn(); let sent = 0;
-    const oversized = new Response(new ReadableStream({ pull(c) { if (++sent <= 20) c.enqueue(new Uint8Array(64 * 1024)); }, cancel }), { headers: response.headers });
+    const oversized = new Response(new ReadableStream({ pull(c) { if (++sent <= 130) c.enqueue(new Uint8Array(64 * 1024)); }, cancel }), { headers: response.headers });
     await expect(client.verifySignedHttpResponse(request, oversized, policy)).rejects.toThrow('size limit');
     await new Promise(resolve => setImmediate(resolve)); expect(cancel).toHaveBeenCalled();
   });
