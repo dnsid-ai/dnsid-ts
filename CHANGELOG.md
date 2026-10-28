@@ -1,12 +1,4 @@
 
-## [Unreleased]
-
-### Features
-
-- feat(http-signatures): add opt-in RFC 9421 negotiated DNSid response signatures, strict server signing, expected-domain response verification, and bounded single-send HTTPS transport with current-peer evidence and keep-alive connection reuse.
-- feat(sdk): add `createResponseSigningMiddleware` to `@dnsid-ai/sdk/node`, Connect-style middleware that buffers and signs negotiated responses for Express, Connect, and `node:http` servers.
-- feat(http-signatures)!: raise the default buffered HTTP content bound from 1 MiB to 8 MiB to match the Go and Python SDKs.
-
 ## [0.32.0] - 2026-10-27
 
 ### Bug Fixes
