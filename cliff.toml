@@ -32,6 +32,8 @@ split_commits = false
 commit_preprocessors = [
   # This breaking PR was merged as fix: without the ! marker.
   { pattern = "\\Afix: enforce checkpoint continuity and trusted storage contracts \\(#98\\)(\\n|\\z)", replace = "fix!: enforce checkpoint continuity and trusted storage contracts (#98)${1}" },
+  # #125 raised the default content bound for request-only verification too.
+  { pattern = "\\Afeat: negotiated response signatures \\(#125\\)(\\n|\\z)", replace = "feat!: negotiated RFC 9421 response signatures, node:http response-signing middleware, and a default HTTP content bound raised from 1 MiB to 8 MiB (#125)${1}" },
   # Transform "Merge pull request #N from branch\n\nPR title" → "PR title ([#N](url))"
   { pattern = "Merge pull request #(\\d+) from [^\\n]+\\n\\n(.*)", replace = "${2} ([#${1}](https://github.com/dnsid-ai/dnsid-ts/pull/${1}))" },
   # Squash merge: first line "feat: title (#N)" → "feat: title ([#N](url))"

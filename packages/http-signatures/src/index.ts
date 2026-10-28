@@ -783,6 +783,8 @@ export class HttpSignaturesProfile {
             response = result.response;
             return result;
           });
+          // waitForVerification skips an already-aborted wait; observe a late rejection here.
+          pending.catch(() => {});
           const result = await waitForVerification(() => pending, signal);
           await this.verifySignedHttpResponse(saved, result.response, policy.options, result.peerCert, { signal });
           return result.response;

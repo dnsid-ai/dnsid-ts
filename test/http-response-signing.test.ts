@@ -601,13 +601,15 @@ describe('NR25 finite resource bounds and cleanup', () => {
     const controller = new AbortController();
     const fetch = client.createSignedFetch({ fetch: vi.fn(), timeoutMs: kind === 'deadline' ? 20 : 1000,
       responseTransport: async request => {
-        const signed = await server.signRequestedHttpResponse(request, new Response('body'));
+        // Sign outside the fetch deadline so a slow runner still produces the stalled response.
+        const signed = await server.signRequestedHttpResponse(new Request(request, { signal: null }), new Response('body'));
         const response = new Response(new ReadableStream({ cancel }), { headers: signed.headers });
         if (kind === 'cancel') setTimeout(() => controller.abort(), 5);
         return { response };
       }, signing: { responseSignature: policy } });
     await expect(fetch(`https://${domain}`, { signal: controller.signal })).rejects.toMatchObject({ transient: true });
-    await new Promise(resolve => setImmediate(resolve)); expect(cancel).toHaveBeenCalled();
+    // On a slow runner the response can arrive after the deadline and is disposed asynchronously.
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalled());
   });
   it('disposes responses arriving after cancellation of a non-cooperative transport', async () => {
     const cancel = vi.fn(); let finish!: () => void;
