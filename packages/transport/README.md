@@ -37,6 +37,30 @@ const result = await fetchJson('https://agent.example/.well-known/dnsid-status.j
 const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER });
 ```
 
+## Single-send signed-response transport
+
+`createResponseSignatureTransport(config?)` returns the `responseTransport`
+function required by `HttpSignaturesProfile.createSignedFetch` when
+`signing.responseSignature` is present. It accepts a prepared `Request` and returns
+`{ response, peerCert }`. It performs one HTTPS request per call, reuses keep-alive
+connections across calls, never follows redirects or retries, never caches, and
+preserves encoded content bytes without transparent decompression. Request bodies
+are sent with `Content-Length`. The certificate comes from the connection that
+carried the response, so it can satisfy
+`fl=mtls`; the profile still validates its SAN against the expected DNSid agent.
+
+The transport honors the request abort signal and has a 30-second ceiling.
+The signed client supplies a shared finite send/read/verification budget and
+bounded content reads (8 MiB). Standalone transport consumers must also bound
+body reads, cancel rejected responses, and not expose unverified content.
+Protocol upgrades and tunnel establishment reject. HTTP errors and ordinary
+redirect responses are returned to the profile for signature verification.
+
+Custom DNS and CA settings follow `createDnsidFetch`. Like that function, this
+transport does not filter private addresses: callers must select a trusted target
+or inject a transport with their required network-address policy. It is separate
+from WBA's SSRF-safe discovery transport and does not change that profile.
+
 Most Node applications should use this through `@dnsid-ai/sdk/node` or profile defaults.
 
 The default resolver queries the DNS servers returned by Node's `dns.getServers()` in order, using UDP with TCP fallback to capture the recursive server's remaining TXT TTL (capped at one day). `dnsServer` can override this list. On failures or empty answers it falls back to Node's native TXT lookup with TTL `0`, disabling identity caching for that result. Node's server list may omit macOS scoped/split-DNS routing, so even positive wire answers are not guaranteed to match the platform resolver in those setups. Neither path validates DNSSEC (`UNKNOWN`); SERVFAIL is a resolution error. `validated`/`required` DNSSEC modes still need an injected validating resolver. Cached verification still re-fetches status unless `verification.statusCheckInterval` is set.

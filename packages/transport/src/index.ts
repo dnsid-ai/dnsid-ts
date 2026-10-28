@@ -64,6 +64,17 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 1 * 1024 * 1024;
 const DNSID_USER_AGENT = 'dnsid-ts';
 
+function httpsTransportError(cause: unknown): VerificationError {
+  const err = cause as NodeJS.ErrnoException;
+  const isTls = err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    || err.code === 'CERT_HAS_EXPIRED'
+    || err.code === 'ERR_TLS_CERT_ALTNAME_INVALID'
+    || err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE';
+  return new VerificationError(`HTTPS fetch failed: ${err.message}`, {
+    code: VerificationCode.TLSError, transient: !isTls, cause,
+  });
+}
+
 type RequestInitWithDuplex = RequestInit & { duplex?: 'half' };
 type RequestInitWithDispatcher = RequestInitWithDuplex & { dispatcher: Dispatcher };
 
@@ -117,6 +128,70 @@ export function createDnsidFetch(config: TransportConfig): FetchLike {
   if (config.caBundlePath) connect.ca = [...tls.rootCertificates, fs.readFileSync(config.caBundlePath, 'utf8')];
 
   return createFetchWithDispatcher(new Agent({ connect }) as Dispatcher);
+}
+
+/**
+ * Creates the single-send transport consumed by HTTP signatures' responseTransport option.
+ * Sends HTTPS once per call, without redirects, retries, caches, or content decoding, and
+ * reuses keep-alive connections across calls. Returns the certificate of the connection
+ * that carried this response. Request bodies are buffered and sent with Content-Length.
+ * The signed client bounds body reads to 8 MiB; standalone consumers must also bound reads
+ * and cancel rejected responses. DNS and additional CA settings follow createDnsidFetch;
+ * private addresses are not filtered and proxy environment variables are not used.
+ */
+export function createResponseSignatureTransport(config: TransportConfig = {}): (request: Request) => Promise<{
+  response: Response;
+  peerCert: TLSCertificate;
+}> {
+  const lookup = config.dnsServer ? createLookup(config.dnsServer) : undefined;
+  const ca = config.caBundlePath ? [...tls.rootCertificates, fs.readFileSync(config.caBundlePath, 'utf8')] : undefined;
+  const agent = new https.Agent({ keepAlive: true, lookup, ca, rejectUnauthorized: true });
+  return async request => {
+    const url = new URL(request.url);
+    if (url.protocol !== 'https:') throw new ArgumentError('response authentication requires HTTPS');
+    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS * 3)]);
+    // Signed requests are already buffered for their digest; send a fixed length, not chunks.
+    const content = request.body ? Buffer.from(await request.arrayBuffer()) : null;
+    const headers = Object.fromEntries(request.headers);
+    if (content) headers['content-length'] = String(content.length);
+    return new Promise((resolve, reject) => {
+      const outgoing = https.request(url, {
+        agent, signal, method: request.method, headers,
+      }, incoming => {
+        const cert = (incoming.socket as tls.TLSSocket).getPeerCertificate();
+        const peerCert: TLSCertificate = {
+          notAfter: new Date(cert.valid_to),
+          san: (cert.subjectaltname ?? '').split(', ').filter(s => s.startsWith('DNS:')).map(s => s.slice(4)),
+        };
+        const headers = new Headers();
+        for (let i = 0; i < incoming.rawHeaders.length; i += 2) headers.append(incoming.rawHeaders[i]!, incoming.rawHeaders[i + 1]!);
+        const status = incoming.statusCode!;
+        if (status < 200 || status > 599) { incoming.destroy(); reject(new VerificationError('not a final HTTP response', { code: VerificationCode.SignatureInvalid })); return; }
+        const noBody = request.method === 'HEAD' || [204, 205, 304].includes(status);
+        const iterator = incoming[Symbol.asyncIterator]();
+        let canceled = false;
+        incoming.on('error', () => {});
+        const body = noBody ? null : new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            try {
+              const { value, done } = await iterator.next();
+              if (canceled) return;
+              if (done) controller.close();
+              else controller.enqueue(new Uint8Array(value));
+            } catch (error) { if (!canceled) controller.error(error); }
+          },
+          cancel() { canceled = true; incoming.destroy(); outgoing.destroy(); },
+        });
+        if (noBody) incoming.resume();
+        resolve({ response: new Response(body, { status, statusText: incoming.statusMessage, headers }), peerCert });
+      });
+      const fail = (cause: unknown) => reject(cause instanceof VerificationError ? cause : httpsTransportError(cause));
+      outgoing.on('error', fail);
+      outgoing.on('upgrade', (_response, socket) => { socket.destroy(); fail(new VerificationError('protocol upgrades are unsupported', { code: VerificationCode.SignatureInvalid })); });
+      outgoing.on('connect', (_response, socket) => { socket.destroy(); fail(new VerificationError('tunnels are unsupported', { code: VerificationCode.SignatureInvalid })); });
+      outgoing.end(content ?? undefined);
+    });
+  };
 }
 
 /**
@@ -783,16 +858,6 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
       }));
     });
 
-    req.on('error', (err: Error) => {
-      const nodeErr = err as NodeJS.ErrnoException;
-      const isTls = nodeErr.code === 'DEPTH_ZERO_SELF_SIGNED_CERT'
-        || nodeErr.code === 'CERT_HAS_EXPIRED'
-        || nodeErr.code === 'ERR_TLS_CERT_ALTNAME_INVALID'
-        || nodeErr.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE';
-      reject(new VerificationError(`HTTPS fetch failed: ${err.message}`, {
-        code: VerificationCode.TLSError,
-        transient: !isTls,
-      }));
-    });
+    req.on('error', (err: Error) => reject(httpsTransportError(err)));
   });
 }

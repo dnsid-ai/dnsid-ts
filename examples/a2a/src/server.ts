@@ -26,7 +26,8 @@ import {
   type TransportConfig,
   type VerifiedDomain,
 } from '@dnsid-ai/sdk';
-import { createDnsidFetch } from '@dnsid-ai/transport';
+import { createResponseSigningMiddleware } from '@dnsid-ai/sdk/node';
+import { createDnsidFetch, createResponseSignatureTransport } from '@dnsid-ai/transport';
 import {
   A2A_VERSION,
   DNSID_A2A_EXTENSION_URI,
@@ -122,6 +123,8 @@ export class EchoAgent {
     const app = express();
     app.set('trust proxy', 'loopback');
 
+    // First, so rate-limit and verification errors are signed too.
+    app.use(createResponseSigningMiddleware(this.httpProfile, { origin: new URL(this.url).origin }));
     app.use(rateLimit({ windowMs: 60_000, limit: 120 }));
     app.use(captureRawJsonBody());
     this.mountDemoRoutes(app);
@@ -136,21 +139,30 @@ export class EchoAgent {
   async createClient(
     targetBaseUrl: string,
     demo?: { trace: DemoTrace; tamper: boolean },
+    expectedDomain?: string,
   ): Promise<Client> {
     const baseFetch = createDnsidFetch(this.transport);
     const tracedFetch = demo
       ? createDemoFetch(baseFetch, demo.trace, demo.tamper)
       : baseFetch;
+    // With expectedDomain, the peer must sign every response, including the agent
+    // card and errors, with that DNSid identity's key. The tamper demo stays
+    // request-only because it rewrites requests inside the fetch function.
+    const responseSignature = expectedDomain && !demo
+      ? { expectedDomain, additionalComponents: ['content-type'] }
+      : undefined;
     const signingFetch = this.httpProfile.createSignedFetch({
       fetch: tracedFetch,
+      responseTransport: responseSignature && createResponseSignatureTransport(this.transport),
       signing: (req: Request) => req.method.toUpperCase() === 'POST'
         ? {
           label: 'a2a',
           additionalComponents: ['content-type', 'a2a-version', 'a2a-extensions'],
           expiresInSeconds: 300,
           tag: DNSID_A2A_SIGNATURE_TAG,
+          responseSignature,
         }
-        : { label: 'a2a', expiresInSeconds: 300, tag: DNSID_A2A_SIGNATURE_TAG },
+        : { label: 'a2a', expiresInSeconds: 300, tag: DNSID_A2A_SIGNATURE_TAG, responseSignature },
       prepareRequest: prepareSignedA2aRequest,
     });
 

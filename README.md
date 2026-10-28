@@ -287,6 +287,13 @@ const idm = new IdentityManager(
 
 This is intended for advanced consumers that already have their own runtime wiring, storage, transport, or dependency-injection system.
 
+## Opt-in signed responses
+
+Request signing alone does not authenticate the responder. Set
+`HttpSigningOptions.responseSignature` to require an RFC 9421 §5 signed response
+from a locally expected DNSid agent. See
+[the HTTP-signature package guide](packages/http-signatures/README.md#negotiated-response-authentication).
+
 ## Browser/runtime note
 
 Browser support should use injected browser-safe transport and key-provider implementations. Direct browser DNS/DNSSEC and key custody require explicit design; future packages may include browser transport and web-wallet key-provider integrations.
