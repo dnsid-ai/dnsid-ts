@@ -281,7 +281,11 @@ export type PreparedEventSubmissionErrorState = 'pending' | 'rejected' | 'indete
  * Structured product error from exact-byte C2SP submission.
  *
  * `retryWithSameBytes` is deliberately true only when retrying the same
- * idempotency key and byte sequence is safe and required for reconciliation.
+ * idempotency key and byte sequence is safe and required for reconciliation:
+ * code `TLOG_SUBMISSION_BUSY` (state `pending`), code
+ * `TLOG_SUBMISSION_INDETERMINATE`, or HTTP 408, 425, 429 or any 5xx whatever
+ * the code (state `indeterminate`). Code matching ignores case. Every other
+ * failure is `rejected`.
  */
 export class PreparedEventSubmissionError extends Error {
   readonly code: string;
@@ -1023,8 +1027,14 @@ function differingKnownTags(registry: DnsIdTxtRecord, expected: DnsIdTxtRecord):
 async function preparedEventSubmissionError(resp: Response): Promise<PreparedEventSubmissionError> {
   const raw = await readErrorResponse(resp);
   const code = raw.code ?? `HTTP_${resp.status}`;
-  const indeterminate = code === 'TLOG_SUBMISSION_INDETERMINATE';
-  const busy = code === 'TLOG_SUBMISSION_BUSY';
+  const normalizedCode = code.toUpperCase();
+  const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY';
+  // The entry may already be in the log when the registry, or a proxy in
+  // front of it, fails the request, so a 5xx or transient status is retried
+  // with the same bytes whatever the code.
+  const indeterminate = !busy && (
+    normalizedCode === 'TLOG_SUBMISSION_INDETERMINATE' || isIndeterminateSubmissionStatus(resp.status)
+  );
   return new PreparedEventSubmissionError({
     code,
     httpStatus: resp.status,
@@ -1033,6 +1043,10 @@ async function preparedEventSubmissionError(resp: Response): Promise<PreparedEve
     retryable: indeterminate || busy,
     retryWithSameBytes: indeterminate || busy,
   });
+}
+
+function isIndeterminateSubmissionStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
 }
 
 async function readErrorResponse(resp: Response): Promise<{ code?: string; message?: string }> {

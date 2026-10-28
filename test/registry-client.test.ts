@@ -964,6 +964,24 @@ describe('RegistryClient', () => {
     await expect(result).rejects.toBeInstanceOf(PreparedEventSubmissionError);
   });
 
+  it.each([
+    [503, JSON.stringify({ error: 'submission_indeterminate', message: 'retry later' }), 'submission_indeterminate', 'indeterminate'],
+    [409, JSON.stringify({ error: 'tlog_submission_busy' }), 'tlog_submission_busy', 'pending'],
+    [502, null, 'HTTP_502', 'indeterminate'],
+    [500, JSON.stringify({ error: 'SOMETHING_NEW' }), 'SOMETHING_NEW', 'indeterminate'],
+    [429, JSON.stringify({ error: 'rate_limited' }), 'rate_limited', 'indeterminate'],
+  ])('retries HTTP %i prepared-event submission failures with the same bytes', async (status, body, code, state) => {
+    const fetchMock = vi.fn(async () => new Response(body, { status })) as unknown as typeof fetch;
+    await expect(client(fetchMock).submitPreparedEvent('agent.example.com', new Uint8Array([1]), 'rotation-1'))
+      .rejects.toMatchObject({ code, httpStatus: status, state, retryable: true, retryWithSameBytes: true });
+  });
+
+  it('rejects 4xx prepared-event submission failures with an unknown code', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: 'SOMETHING_NEW' }), { status: 400 })) as unknown as typeof fetch;
+    await expect(client(fetchMock).submitPreparedEvent('agent.example.com', new Uint8Array([1]), 'rotation-1'))
+      .rejects.toMatchObject({ code: 'SOMETHING_NEW', httpStatus: 400, state: 'rejected', retryable: false, retryWithSameBytes: false });
+  });
+
   it('submits and reissues Live proof with the request ID as the idempotency key', async () => {
     const challengeMessage = await liveChallengeMessage('challenge-2');
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
