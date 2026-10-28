@@ -284,8 +284,8 @@ export type PreparedEventSubmissionErrorState = 'pending' | 'rejected' | 'indete
  * idempotency key and byte sequence is safe and required for reconciliation:
  * code `TLOG_SUBMISSION_BUSY` (state `pending`), code
  * `TLOG_SUBMISSION_INDETERMINATE`, or HTTP 408, 425, 429 or any 5xx whatever
- * the code (state `indeterminate`). Codes are compared case-insensitively.
- * Every other failure is `rejected`.
+ * the code (state `indeterminate`). Code matching ignores case. Every other
+ * failure is `rejected`.
  */
 export class PreparedEventSubmissionError extends Error {
   readonly code: string;
@@ -1029,9 +1029,9 @@ async function preparedEventSubmissionError(resp: Response): Promise<PreparedEve
   const code = raw.code ?? `HTTP_${resp.status}`;
   const normalizedCode = code.toUpperCase();
   const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY';
-  // The registry, or a proxy in front of it, may have appended the entry
-  // before failing, so a server-side or transient failure is retried with the
-  // exact same bytes whatever its code.
+  // The entry may already be in the log when the registry, or a proxy in
+  // front of it, fails the request, so a 5xx or transient status is retried
+  // with the same bytes whatever the code.
   const indeterminate = !busy && (
     normalizedCode === 'TLOG_SUBMISSION_INDETERMINATE' || isIndeterminateSubmissionStatus(resp.status)
   );
