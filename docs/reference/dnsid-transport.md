@@ -47,15 +47,16 @@ const safeFetch = createSsrfSafeFetch({ dnsServer: process.env.DNSID_DNS_SERVER 
 `createResponseSignatureTransport(config?)` returns the `responseTransport`
 function required by `HttpSignaturesProfile.createSignedFetch` when
 `signing.responseSignature` is present. It accepts a prepared `Request` and returns
-`{ response, peerCert }`. It performs exactly one HTTPS request, uses a fresh TLS
-connection (no pooling/session reuse), never follows redirects or retries, never
-caches, and preserves encoded content bytes without transparent decompression.
-The certificate comes from the actual server connection, so it can satisfy
+`{ response, peerCert }`. It performs one HTTPS request per call, reuses keep-alive
+connections across calls, never follows redirects or retries, never caches, and
+preserves encoded content bytes without transparent decompression. Request bodies
+are sent with `Content-Length`. The certificate comes from the connection that
+carried the response, so it can satisfy
 `fl=mtls`; the profile still validates its SAN against the expected DNSid agent.
 
 The transport honors the request abort signal and has a 30-second ceiling.
 The signed client supplies a shared finite send/read/verification budget and
-bounded content reads (1 MiB). Standalone transport consumers must also bound
+bounded content reads (8 MiB). Standalone transport consumers must also bound
 body reads, cancel rejected responses, and not expose unverified content.
 Protocol upgrades and tunnel establishment reject. HTTP errors and ordinary
 redirect responses are returned to the profile for signature verification.
@@ -373,7 +374,7 @@ Minimal WHATWG-fetch-compatible function signature returned by the fetch factori
 function createDefaultDnsResolver(config): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:286](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L286)
+Defined in: [transport/src/index.ts:287](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L287)
 
 Creates the DNS resolver used to fetch DNSid identity records (TXT).
 
@@ -448,7 +449,7 @@ const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example');
 function createDnsResolverFromServer(server): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:319](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L319)
+Defined in: [transport/src/index.ts:320](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L320)
 
 Creates a [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsresolver) that queries a specific DNS server.
 
@@ -480,7 +481,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:391](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L391)
+Defined in: [transport/src/index.ts:392](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L392)
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -514,13 +515,15 @@ function createResponseSignatureTransport(config?): (request) => Promise<{
 }>;
 ```
 
-Defined in: [transport/src/index.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L140)
+Defined in: [transport/src/index.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L142)
 
 Creates the single-send transport consumed by HTTP signatures' responseTransport option.
-Sends HTTPS once, without pooling/session reuse, redirects, retries, caches, or content
-decoding. Returns the current server certificate. The signed client bounds body reads
-to 1 MiB; standalone consumers must also bound reads and cancel rejected responses.
-DNS and additional CA settings follow createDnsidFetch; private addresses are not filtered.
+Sends HTTPS once per call, without redirects, retries, caches, or content decoding, and
+reuses keep-alive connections across calls. Returns the certificate of the connection
+that carried this response. Request bodies are buffered and sent with Content-Length.
+The signed client bounds body reads to 8 MiB; standalone consumers must also bound reads
+and cancel rejected responses. DNS and additional CA settings follow createDnsidFetch;
+private addresses are not filtered and proxy environment variables are not used.
 
 #### Parameters
 
@@ -545,7 +548,7 @@ DNS and additional CA settings follow createDnsidFetch; private addresses are no
 function createSsrfSafeFetch(config?, options?): FetchLike;
 ```
 
-Defined in: [transport/src/index.ts:211](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L211)
+Defined in: [transport/src/index.ts:212](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L212)
 
 Creates a fetch function that rejects connections to private, loopback,
 link-local, and other non-routable addresses (SSRF protection).
@@ -587,7 +590,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:354](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L354)
+Defined in: [transport/src/index.ts:355](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L355)
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -635,7 +638,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:376](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L376)
+Defined in: [transport/src/index.ts:377](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L377)
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -663,7 +666,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:520](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L520)
+Defined in: [transport/src/index.ts:521](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L521)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -695,7 +698,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:365](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L365)
+Defined in: [transport/src/index.ts:366](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L366)
 
 Splits a DNS server string into host and optional port.
 
