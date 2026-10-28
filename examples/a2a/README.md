@@ -60,12 +60,11 @@ reply: "[from: bob.test; verified sender: alice.test] hello from alice.test"
 ```
 
 Bob also signs every response, including the agent card and errors, with its
-DNSid operational key. Express writes responses through `res.write`/`res.end`,
-so `signNegotiatedResponses` in `server.ts` buffers them and signs them before
-any header is sent. The browser inspector's tamper demo stays request-only. Alice requests that signature and rejects any reply that
-is not signed by `bob.test`. Bob's server applies the response-signing
-middleware after restoring the public `https://bob.test` URL, because the
-signature covers the URL that Alice used.
+DNSid operational key. Alice requests that signature and rejects any reply that
+is not signed by `bob.test`. Bob registers `createResponseSigningMiddleware`
+from `@dnsid-ai/sdk/node` first, with `origin: 'https://bob.test'`, because the
+proxy forwards plain HTTP and the signature covers the URL that Alice used.
+The browser inspector's tamper demo stays request-only.
 
 Bob is reachable at `https://bob.test` through the testnet proxy; no peer localhost URL setup is needed.
 

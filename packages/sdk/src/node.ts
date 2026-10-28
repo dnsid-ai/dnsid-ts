@@ -14,6 +14,8 @@
  */
 export type { CreateIdentityManagerDependencies } from './index.ts';
 export { LocalKeyProvider } from './local-key-provider.ts';
+export { createResponseSigningMiddleware } from './node-response-signing.ts';
+export type { NodeMiddleware, ResponseSigningMiddlewareOptions } from './node-response-signing.ts';
 export type { LocalKeyAlgorithm } from './local-key-provider.ts';
 export { createNodeIdentityManager, createNodeIdentityVerifier } from './node-identity-manager.ts';
 export {
