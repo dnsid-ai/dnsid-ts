@@ -141,8 +141,8 @@ Structured product error from exact-byte C2SP submission.
 idempotency key and byte sequence is safe and required for reconciliation:
 code `TLOG_SUBMISSION_BUSY` (state `pending`), code
 `TLOG_SUBMISSION_INDETERMINATE`, or HTTP 408, 425, 429 or any 5xx whatever
-the code (state `indeterminate`). Codes are compared case-insensitively.
-Every other failure is `rejected`.
+the code (state `indeterminate`). Code matching ignores case. Every other
+failure is `rejected`.
 
 #### Extends
 
