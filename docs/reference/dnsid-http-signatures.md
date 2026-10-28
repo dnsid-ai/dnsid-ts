@@ -287,7 +287,7 @@ The caller must finalize content coding and verify/authorize the request first.
 verifySignedHttpRequest(req, opts?): Promise<VerifiedDomain>;
 ```
 
-Defined in: [http-signatures/src/index.ts:818](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L818)
+Defined in: [http-signatures/src/index.ts:820](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L820)
 
 Verifies an inbound signed request and returns the signer's verified DNSid identity.
 
@@ -1080,7 +1080,7 @@ RFC 9421 derived component names accepted by this package (`@query-param` additi
 function buildSignatureInput(msg, params): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:1149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1149)
+Defined in: [http-signatures/src/index.ts:1151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1151)
 
 Builds the RFC 9421 signature base for a message: one `"component": value` line per
 covered component, terminated by the canonical `"@signature-params"` line.
@@ -1145,7 +1145,7 @@ Constant-time comparison of two Uint8Arrays. Returns true if equal.
 function createHttpSignaturesProfile(opts): HttpSignaturesProfile;
 ```
 
-Defined in: [http-signatures/src/index.ts:981](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L981)
+Defined in: [http-signatures/src/index.ts:983](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L983)
 
 Creates a DNSid RFC 9421 HTTP Message Signatures profile for the given agent.
 
@@ -1211,7 +1211,7 @@ Generates a cryptographically random base64url nonce for HTTP message signatures
 function hasComponentNamed(components, name): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:1010](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1010)
+Defined in: [http-signatures/src/index.ts:1012](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1012)
 
 Checks whether a component with the given name is present, ignoring parameters.
 
@@ -1333,7 +1333,7 @@ ArgumentError if the header is malformed or uses an algorithm other than sha-256
 function parseDictionaryField(headerValue): Dictionary;
 ```
 
-Defined in: [http-signatures/src/index.ts:1254](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1254)
+Defined in: [http-signatures/src/index.ts:1256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1256)
 
 Parses a bounded Structured Field dictionary without silently erasing duplicate members.
 
@@ -1405,7 +1405,7 @@ ArgumentError if the key ID is malformed.
 function parseSha256ContentDigest(headerValue, components?): Uint8Array;
 ```
 
-Defined in: [http-signatures/src/index.ts:1558](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1558)
+Defined in: [http-signatures/src/index.ts:1560](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1560)
 
 Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported digest members.
 
@@ -1433,7 +1433,7 @@ Parses the required RFC 9530 SHA-256 digest and rejects coverage of unsupported 
 function parseSignature(headerValue): Map<string, Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [http-signatures/src/index.ts:1323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1323)
+Defined in: [http-signatures/src/index.ts:1325](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1325)
 
 Parses a `Signature` header (RFC 8941 Dictionary of byte sequences) into raw signature
 bytes keyed by label.
@@ -1463,7 +1463,7 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 function parseSignatureInput(headerValue): Map<string, SignatureParams>;
 ```
 
-Defined in: [http-signatures/src/index.ts:1278](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1278)
+Defined in: [http-signatures/src/index.ts:1280](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1280)
 
 Parses a `Signature-Input` header (RFC 8941 Dictionary of Inner Lists) into per-label
 signature params, preserving component and parameter order for canonical
@@ -1498,7 +1498,7 @@ function readBoundedBody(
 ): Promise<ArrayBuffer>;
 ```
 
-Defined in: [http-signatures/src/index.ts:1351](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1351)
+Defined in: [http-signatures/src/index.ts:1353](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1353)
 
 Reads bounded exact bytes under the shared deadline. Preserves requests; consumes responses.
 
@@ -1530,7 +1530,7 @@ Reads bounded exact bytes under the shared deadline. Preserves requests; consume
 function sameComponent(a, b): boolean;
 ```
 
-Defined in: [http-signatures/src/index.ts:1000](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1000)
+Defined in: [http-signatures/src/index.ts:1002](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1002)
 
 Checks whether two component identifiers are equivalent: same name and identical parameters.
 
@@ -1558,7 +1558,7 @@ Checks whether two component identifiers are equivalent: same name and identical
 function serializeComponentIdentifier(component): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:1126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1126)
+Defined in: [http-signatures/src/index.ts:1128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1128)
 
 Serializes a component identifier as it appears in the signature base and `Signature-Input` header (quoted name plus parameters).
 
@@ -1582,7 +1582,7 @@ Serializes a component identifier as it appears in the signature base and `Signa
 function serializeStructuredFieldValue(value): string;
 ```
 
-Defined in: [http-signatures/src/index.ts:1121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1121)
+Defined in: [http-signatures/src/index.ts:1123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1123)
 
 Serializes a bare value as an RFC 8941 structured field Item (bytes become `:base64:` byte sequences).
 
@@ -1615,7 +1615,7 @@ function setDictionaryMember(
 ): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:1388](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1388)
+Defined in: [http-signatures/src/index.ts:1390](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1390)
 
 Sets one member of a structured-field Dictionary header (e.g. `Signature`, `Signature-Input`)
 to `label=value`, replacing any existing member with that label and preserving the rest.
@@ -1657,7 +1657,7 @@ function signHttpMessage<T>(
 ): Promise<T>;
 ```
 
-Defined in: [http-signatures/src/index.ts:1175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1175)
+Defined in: [http-signatures/src/index.ts:1177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1177)
 
 Signs an HTTP message per RFC 9421 with the key provider's current operational key.
 
@@ -1722,7 +1722,7 @@ ArgumentError if a covered component cannot be resolved (see [buildSignatureInpu
 function validateComponentIdentifier(component): void;
 ```
 
-Defined in: [http-signatures/src/index.ts:1021](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1021)
+Defined in: [http-signatures/src/index.ts:1023](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/http-signatures/src/index.ts#L1023)
 
 Validates a component identifier: the name must be a known derived component
 ([KNOWN\_DERIVED\_COMPONENTS](#known_derived_components)) or a lowercase HTTP field name, and `@query-param`
