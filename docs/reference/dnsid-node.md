@@ -757,6 +757,31 @@ optional organizationId?: string;
 
 Defined in: [packages/sdk/src/config-loading.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L66)
 
+***
+
+<a id="responsesigningmiddlewareoptions"></a>
+
+### ResponseSigningMiddlewareOptions
+
+Defined in: [packages/sdk/src/node-response-signing.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L9)
+
+Options for [createResponseSigningMiddleware](#createresponsesigningmiddleware).
+
+#### Properties
+
+<a id="origin"></a>
+
+##### origin?
+
+```ts
+optional origin?: string;
+```
+
+Defined in: [packages/sdk/src/node-response-signing.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L14)
+
+Public origin the client used, such as `https://bob.test`. Set it behind a
+TLS-terminating proxy. Default: the socket's scheme and the Host header.
+
 ## Type Aliases
 
 <a id="environmentsource"></a>
@@ -780,6 +805,38 @@ type LocalKeyAlgorithm = "EdDSA" | "ES256";
 ```
 
 Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L16)
+
+***
+
+<a id="nodemiddleware"></a>
+
+### NodeMiddleware
+
+```ts
+type NodeMiddleware = (req, res, next) => void;
+```
+
+Defined in: [packages/sdk/src/node-response-signing.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L18)
+
+Connect-style middleware, usable with Express, Connect, or a plain `node:http` handler.
+
+#### Parameters
+
+##### req
+
+`IncomingMessage`
+
+##### res
+
+`ServerResponse`
+
+##### next
+
+(`err?`) => `void`
+
+#### Returns
+
+`void`
 
 ## Functions
 
@@ -1013,6 +1070,42 @@ Defined in: [packages/sdk/src/config-loading.ts:485](https://github.com/dnsid-ai
 #### Returns
 
 `Promise`\<[`RegistryClient`](https://docs.dnsid.ai/reference/ts/dnsid-registry/#registryclient)\>
+
+***
+
+<a id="createresponsesigningmiddleware"></a>
+
+### createResponseSigningMiddleware()
+
+```ts
+function createResponseSigningMiddleware(profile, options?): NodeMiddleware;
+```
+
+Defined in: [packages/sdk/src/node-response-signing.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L31)
+
+Signs responses to requests that carry Accept-Signature, for `node:http` servers.
+Requests without negotiation pass through unbuffered. Negotiated responses are
+buffered up to 8 MiB and signed with `signRequestedHttpResponse` before any header
+is sent. On a signing failure, an exceeded bound, or a `flushHeaders()` call
+(streaming, such as SSE) it sends an empty 500; it never sends the unsigned
+response. Register it before request verification, compression, and handlers
+so that it sees their final status, headers, and content coding.
+Informational responses written with `writeContinue` or `writeEarlyHints` are
+sent directly and are not signed.
+
+#### Parameters
+
+##### profile
+
+[`HttpSignaturesProfile`](https://docs.dnsid.ai/reference/ts/dnsid-http-signatures/#httpsignaturesprofile)
+
+##### options?
+
+[`ResponseSigningMiddlewareOptions`](#responsesigningmiddlewareoptions) = `{}`
+
+#### Returns
+
+[`NodeMiddleware`](#nodemiddleware)
 
 ***
 
