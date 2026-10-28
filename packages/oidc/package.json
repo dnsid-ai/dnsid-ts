@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/oidc",
   "author": "Known Systems AI, Inc.",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "DNSid OIDC federation profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -40,8 +40,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.32.0",
-    "@dnsid-ai/transport": "^0.32.0",
+    "@dnsid-ai/protocol": "^0.33.0",
+    "@dnsid-ai/transport": "^0.33.0",
     "jose": "^6.2.12"
   },
   "publishConfig": {

@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/key-aws",
   "author": "Known Systems AI, Inc.",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "DNSid AWS KMS key provider integration.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1138.0",
-    "@dnsid-ai/protocol": "^0.32.0"
+    "@dnsid-ai/protocol": "^0.33.0"
   },
   "publishConfig": {
     "access": "public"

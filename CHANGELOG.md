@@ -1,4 +1,20 @@
 
+## [0.33.0] - 2026-10-28
+
+### Bug Fixes
+
+- fix(registry): retry 5xx prepared-event submissions with the same bytes ([#131](https://github.com/dnsid-ai/dnsid-ts/pull/131))
+- fix: observe late transport rejections in negotiated fetch ([#132](https://github.com/dnsid-ai/dnsid-ts/pull/132))
+
+### Chores
+
+- ci(security): bump shared workflow to v1.3.0; consolidate CodeQL ([#124](https://github.com/dnsid-ai/dnsid-ts/pull/124))
+
+### Features
+
+- feat!: negotiated RFC 9421 response signatures, node:http response-signing middleware, and a default HTTP content bound raised from 1 MiB to 8 MiB ([#125](https://github.com/dnsid-ai/dnsid-ts/pull/125))
+
+
 ## [0.32.0] - 2026-10-27
 
 ### Bug Fixes
