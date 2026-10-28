@@ -17,7 +17,7 @@ async function sendHello({ idm, agent }: RunningEchoAgent, peerFqdn: string): Pr
   await poll(`verify ${peerFqdn}`, () => idm.verifyDomain(peerFqdn).then(() => undefined));
   console.log(`verified: ${idm.config.identity!.domain} -> ${peerFqdn}\n`);
 
-  const client = await agent.createClient(peerUrl(idm.config.identity!.kuUrl, peerFqdn));
+  const client = await agent.createClient(peerUrl(idm.config.identity!.kuUrl, peerFqdn), undefined, peerFqdn);
   const result = await client.sendMessage({
     tenant: '',
     message: textUserMessage(`hello from ${idm.config.identity!.domain}`),
@@ -25,6 +25,7 @@ async function sendHello({ idm, agent }: RunningEchoAgent, peerFqdn: string): Pr
     metadata: undefined,
   });
 
+  console.log(`response signed by: ${peerFqdn}`);
   console.log(`reply: "${messageText(result)}"`);
 }
 

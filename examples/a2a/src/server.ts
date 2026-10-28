@@ -26,7 +26,7 @@ import {
   type TransportConfig,
   type VerifiedDomain,
 } from '@dnsid-ai/sdk';
-import { createDnsidFetch } from '@dnsid-ai/transport';
+import { createDnsidFetch, createResponseSignatureTransport } from '@dnsid-ai/transport';
 import {
   A2A_VERSION,
   DNSID_A2A_EXTENSION_URI,
@@ -122,6 +122,8 @@ export class EchoAgent {
     const app = express();
     app.set('trust proxy', 'loopback');
 
+    // First, so rate-limit and verification errors are signed too.
+    app.use(signNegotiatedResponses(this.httpProfile, new URL(this.url).origin));
     app.use(rateLimit({ windowMs: 60_000, limit: 120 }));
     app.use(captureRawJsonBody());
     this.mountDemoRoutes(app);
@@ -136,21 +138,30 @@ export class EchoAgent {
   async createClient(
     targetBaseUrl: string,
     demo?: { trace: DemoTrace; tamper: boolean },
+    expectedDomain?: string,
   ): Promise<Client> {
     const baseFetch = createDnsidFetch(this.transport);
     const tracedFetch = demo
       ? createDemoFetch(baseFetch, demo.trace, demo.tamper)
       : baseFetch;
+    // With expectedDomain, the peer must sign every response, including the agent
+    // card and errors, with that DNSid identity's key. The tamper demo stays
+    // request-only because it rewrites requests inside the fetch function.
+    const responseSignature = expectedDomain && !demo
+      ? { expectedDomain, additionalComponents: ['content-type'] }
+      : undefined;
     const signingFetch = this.httpProfile.createSignedFetch({
       fetch: tracedFetch,
+      responseTransport: responseSignature && createResponseSignatureTransport(this.transport),
       signing: (req: Request) => req.method.toUpperCase() === 'POST'
         ? {
           label: 'a2a',
           additionalComponents: ['content-type', 'a2a-version', 'a2a-extensions'],
           expiresInSeconds: 300,
           tag: DNSID_A2A_SIGNATURE_TAG,
+          responseSignature,
         }
-        : { label: 'a2a', expiresInSeconds: 300, tag: DNSID_A2A_SIGNATURE_TAG },
+        : { label: 'a2a', expiresInSeconds: 300, tag: DNSID_A2A_SIGNATURE_TAG, responseSignature },
       prepareRequest: prepareSignedA2aRequest,
     });
 
@@ -464,6 +475,72 @@ function toWebRequest(req: RawBodyRequest, headers: Headers, publicOrigin: strin
     headers,
     body: req.rawBody || undefined,
   });
+}
+
+/**
+ * Buffers responses to requests that carry Accept-Signature and signs them before
+ * any header is sent. Other requests pass through unbuffered. On a signing
+ * failure it sends an empty 500 instead of the unsigned response.
+ */
+function signNegotiatedResponses(profile: HttpSignaturesProfile, publicOrigin: string): RequestHandler {
+  return (req, res, next) => {
+    if (req.headers['accept-signature'] === undefined) return next();
+    const chunks: Buffer[] = [];
+    const writeHead = res.writeHead.bind(res) as (status: number) => typeof res;
+    const end = res.end.bind(res) as (chunk?: Buffer) => typeof res;
+    let releasing = false;
+    const collect = (chunk: unknown, encoding?: unknown) => {
+      if (chunk === undefined || chunk === null || typeof chunk === 'function') return;
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string, typeof encoding === 'string' ? encoding as BufferEncoding : 'utf8'));
+    };
+    res.writeHead = ((status: number, ...args: unknown[]) => {
+      if (releasing) return writeHead(status);
+      res.statusCode = status;
+      const headers = args.find(arg => typeof arg === 'object' && arg !== null) as Record<string, string> | undefined;
+      for (const [name, value] of Object.entries(headers ?? {})) res.setHeader(name, value);
+      return res;
+    }) as typeof res.writeHead;
+    res.write = ((chunk: unknown, encoding?: unknown, callback?: unknown) => {
+      collect(chunk, encoding);
+      for (const fn of [encoding, callback]) if (typeof fn === 'function') fn();
+      return true;
+    }) as typeof res.write;
+    res.end = ((chunk?: unknown, encoding?: unknown) => {
+      collect(chunk, encoding);
+      void release();
+      return res;
+    }) as typeof res.end;
+
+    async function release(): Promise<void> {
+      const body = Buffer.concat(chunks);
+      try {
+        const headers = new Headers();
+        for (const [name, value] of Object.entries(res.getHeaders())) {
+          for (const item of Array.isArray(value) ? value : [value]) if (item !== undefined) headers.append(name, String(item));
+        }
+        const requestHeaders = new Headers(req.headers as unknown as HeadersInit);
+        requestHeaders.set('host', new URL(publicOrigin).host);
+        const noContent = req.method === 'HEAD' || [204, 205, 304].includes(res.statusCode);
+        const signed = await profile.signRequestedHttpResponse(
+          new Request(`${publicOrigin}${req.originalUrl}`, { method: req.method, headers: requestHeaders }),
+          new Response(noContent ? null : body, { status: res.statusCode, headers }),
+        );
+        // Copy back only the fields signing sets, so multi-valued fields stay intact.
+        for (const name of ['content-digest', 'cache-control', 'signature-input', 'signature']) {
+          const value = signed.headers.get(name);
+          if (value !== null) res.setHeader(name, value);
+        }
+        releasing = true;
+        end(noContent ? undefined : body);
+      } catch {
+        for (const name of res.getHeaderNames()) res.removeHeader(name);
+        res.statusCode = 500;
+        releasing = true;
+        end();
+      }
+    }
+    next();
+  };
 }
 
 class BadRequestError extends Error {
