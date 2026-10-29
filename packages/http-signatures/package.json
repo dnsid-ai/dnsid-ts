@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@dnsid-ai/protocol": "^0.34.0",
-    "structured-headers": "^2.1.0"
+    "structured-headers": "^2.1.1"
   },
   "publishConfig": {
     "access": "public"
