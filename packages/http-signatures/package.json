@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/http-signatures",
   "author": "Known Systems AI, Inc.",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "description": "DNSid HTTP Message Signatures profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -37,7 +37,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.33.0",
+    "@dnsid-ai/protocol": "^0.34.0",
     "structured-headers": "^2.1.0"
   },
   "publishConfig": {

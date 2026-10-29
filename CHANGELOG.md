@@ -1,4 +1,20 @@
 
+## [0.34.0] - 2026-10-29
+
+### Bug Fixes
+
+- fix(c2sp): fail closed on excessive JSON nesting (DEV-035) ([#135](https://github.com/dnsid-ai/dnsid-ts/pull/135))
+- fix(verification): report revoked status instead of HTTP failures ([#137](https://github.com/dnsid-ai/dnsid-ts/pull/137))
+
+### Features
+
+- feat(c2sp-tlog): verify recursive migration histories ([#136](https://github.com/dnsid-ai/dnsid-ts/pull/136))
+
+### Other
+
+- Pin shared security workflow to v1.4.0 and enable codeql-actions ([#133](https://github.com/dnsid-ai/dnsid-ts/pull/133))
+
+
 ## [0.33.0] - 2026-10-28
 
 ### Bug Fixes

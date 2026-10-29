@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.33.0"
+    "@dnsid-ai/sdk": "^0.34.0"
   },
   "devDependencies": {
     "tsx": "^4.23.15"
