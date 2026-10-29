@@ -338,7 +338,7 @@ Machine-readable classification of a DNSid verification failure, carried on [Ver
 CounterpartyNotAccepted: "CounterpartyNotAccepted";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)
+Defined in: [packages/protocol/src/errors.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L28)
 
 Configured `trustedEntities` policy denied a protocol-valid counterparty. Always permanent.
 
@@ -366,6 +366,18 @@ Defined in: [packages/protocol/src/errors.ts:6](https://github.com/dnsid-ai/dnsi
 
 DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mode requires signing.
 
+<a id="httperror"></a>
+
+##### HTTPError
+
+```ts
+HTTPError: "HTTPError";
+```
+
+Defined in: [packages/protocol/src/errors.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L18)
+
+An HTTPS endpoint returned an unexpected HTTP status. Server errors are transient.
+
 <a id="keyageexceeded"></a>
 
 ##### KeyAgeExceeded
@@ -374,7 +386,7 @@ DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mod
 KeyAgeExceeded: "KeyAgeExceeded";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L18)
+Defined in: [packages/protocol/src/errors.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L20)
 
 The operational key is older than the identity record's `ka` maximum key age.
 
@@ -398,7 +410,7 @@ An application signature's key ID is absent from the signer's verified operation
 LogError: "LogError";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L24)
+Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)
 
 A transparency log read, entry check, or consistency verification failed.
 
@@ -446,7 +458,7 @@ The identity record signature (or a bilateral binding signature) does not verify
 StatusNotActive: "StatusNotActive";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L22)
+Defined in: [packages/protocol/src/errors.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L24)
 
 The agent status document reports a state other than active (e.g. revoked or retired).
 
@@ -458,7 +470,7 @@ The agent status document reports a state other than active (e.g. revoked or ret
 StatusUnavailable: "StatusUnavailable";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L20)
+Defined in: [packages/protocol/src/errors.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L22)
 
 The agent status endpoint is unreachable or returned an unusable response.
 
@@ -560,7 +572,7 @@ type LifecycleErrorCategory =
   | "CHECKPOINT_STORE_ERROR";
 ```
 
-Defined in: [packages/protocol/src/errors.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L30)
+Defined in: [packages/protocol/src/errors.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L32)
 
 Stable, language-neutral categories used by lifecycle conformance vectors.
 
@@ -860,7 +872,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1120)
+Defined in: [packages/protocol/src/identity-manager.ts:1126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1126)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -1649,7 +1661,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/identity-manager.ts:1157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1157)
+Defined in: [packages/protocol/src/identity-manager.ts:1163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1163)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
