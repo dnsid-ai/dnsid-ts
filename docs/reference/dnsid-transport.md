@@ -481,7 +481,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:392](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L392)
+Defined in: [transport/src/index.ts:393](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L393)
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -590,7 +590,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:355](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L355)
+Defined in: [transport/src/index.ts:356](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L356)
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -624,9 +624,10 @@ The parsed JSON body and captured TLS certificate.
 
 VerificationError with `VerificationCode.TLSError` for policy or
   transport failures (non-HTTPS URL, disallowed or unsafe host, redirect
-  violations, non-200 status, oversized body, timeout, TLS/connection
-  errors); with `VerificationCode.RecordInvalid` when the body is not valid
-  JSON. Network-shaped failures are marked `transient`.
+  violations, oversized body, timeout, TLS/connection errors); with
+  `VerificationCode.HTTPError` for non-200 status; with
+  `VerificationCode.RecordInvalid` when the body is not valid JSON.
+  Network-shaped failures and HTTP server errors are marked `transient`.
 
 ***
 
@@ -638,7 +639,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:377](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L377)
+Defined in: [transport/src/index.ts:378](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L378)
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -666,7 +667,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:521](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L521)
+Defined in: [transport/src/index.ts:522](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L522)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -698,7 +699,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:366](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L366)
+Defined in: [transport/src/index.ts:367](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L367)
 
 Splits a DNS server string into host and optional port.
 

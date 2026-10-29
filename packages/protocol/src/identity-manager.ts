@@ -898,9 +898,8 @@ export class IdentityManager implements RefreshingIdentityResolver {
 
     // sg is authenticated: record-derived locations (ku, lr, su) may now be followed.
     // Identity/log work and the status fetch are independent, so run them
-    // concurrently; the first definitive failure cancels the sibling. Error
-    // precedence is fixed (identity > status > cancellation) so callers see the
-    // same code regardless of which branch finished first.
+    // concurrently. An HTTP refusal from ku may be a revoked-key tombstone:
+    // let su finish and prefer its inactive state over the HTTP failure.
     const fanout = new AbortController();
     const onAbort = () => fanout.abort();
     signal.addEventListener('abort', onAbort, { once: true });
@@ -909,7 +908,10 @@ export class IdentityManager implements RefreshingIdentityResolver {
     try {
       const cancelSiblingOnFailure = <T>(branch: Promise<T>) => branch.catch((e: unknown) => { fanout.abort(); throw e; });
       [identity, statusCheck] = await Promise.allSettled([
-        cancelSiblingOnFailure(this.verifyIdentityEvidence(domain, record, recordSigningJwks, recordSigningTlsCert, signingKey, fanout.signal, revalidate)),
+        this.verifyIdentityEvidence(domain, record, recordSigningJwks, recordSigningTlsCert, signingKey, fanout.signal, revalidate).catch((e: unknown) => {
+          if (!(e instanceof VerificationError && e.code === VerificationCode.HTTPError)) fanout.abort();
+          throw e;
+        }),
         cancelSiblingOnFailure(this.fetchActiveStatus(record.su, fanout.signal, revalidate)),
       ]);
     } finally {
@@ -917,6 +919,10 @@ export class IdentityManager implements RefreshingIdentityResolver {
     }
     // Parent cancellation wins over any sibling result.
     if (signal.aborted) throw cancellationError();
+    if (identity.status === 'rejected' && identity.reason instanceof VerificationError && identity.reason.code === VerificationCode.HTTPError &&
+        statusCheck.status === 'rejected' && statusCheck.reason instanceof VerificationError && statusCheck.reason.code === VerificationCode.StatusNotActive) {
+      throw statusCheck.reason;
+    }
     for (const settled of [identity, statusCheck]) {
       if (settled.status === 'rejected' && !isCancellation(settled.reason)) throw settled.reason;
     }

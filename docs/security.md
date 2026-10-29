@@ -137,13 +137,16 @@ Common error mapping:
 | No `_dnsid` record (NXDOMAIN or NOERROR/NODATA), after DNSSEC policy passes | Non-transient `VerificationError` with `RecordNotFound`; later verification can succeed after publication |
 | DNSSEC failed/unknown under strict policy | `VerificationError` with `DNSSECFailed` |
 | Malformed TXT record, JWKS, status, or invalid JSON | `ParseError`, `ValidationError`, or `VerificationError` with `RecordInvalid` depending on layer |
-| TLS failure, expired certificate, hostname mismatch, timeout, unsafe address, disallowed redirect, oversized response, non-200 response | `VerificationError` with `TLSError` |
+| TLS failure, expired certificate, hostname mismatch, timeout, unsafe address, disallowed redirect, oversized response | `VerificationError` with `TLSError` |
+| Non-200 response from the protocol JSON transport | `VerificationError` with `HTTPError`; HTTP server errors are transient |
 | Invalid record/JWT/JWS/HTTP signature | `VerificationError` with `SignatureInvalid` or `RecordInvalid` |
 | Expired JWT or JWT lifetime/claim violation | `VerificationError` with `RecordInvalid` |
 | Status unavailable or unusable | `VerificationError` with `StatusUnavailable` |
 | Revoked, retired, suspended, or otherwise non-active identity status | `VerificationError` with `StatusNotActive` and `agentState` |
 | Operational key older than `ka` | `VerificationError` with `KeyAgeExceeded` |
 | Lifecycle log read, continuity, or revocation-check failure | `VerificationError` with `LogError` |
+
+After authenticating the identity record signature, verification fetches operational keys and status concurrently. An operational-key HTTP failure does not cancel the status fetch: a non-active status takes precedence over that HTTP error. An HTTP 410 response alone is not proof of revocation. Other identity failures retain precedence, and caller cancellation stops both branches.
 
 ### Proxy and TLS behavior
 

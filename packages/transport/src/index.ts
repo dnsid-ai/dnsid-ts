@@ -348,9 +348,10 @@ export function createDnsResolverFromServer(server: string): DNSResolver {
  * @returns The parsed JSON body and captured TLS certificate.
  * @throws VerificationError with `VerificationCode.TLSError` for policy or
  *   transport failures (non-HTTPS URL, disallowed or unsafe host, redirect
- *   violations, non-200 status, oversized body, timeout, TLS/connection
- *   errors); with `VerificationCode.RecordInvalid` when the body is not valid
- *   JSON. Network-shaped failures are marked `transient`.
+ *   violations, oversized body, timeout, TLS/connection errors); with
+ *   `VerificationCode.HTTPError` for non-200 status; with
+ *   `VerificationCode.RecordInvalid` when the body is not valid JSON.
+ *   Network-shaped failures and HTTP server errors are marked `transient`.
  */
 export function fetchJson(url: string, opts?: HTTPSFetchOptions): Promise<FetchResult> {
   return fetchWithRedirects(url, opts ?? {}, 0);
@@ -793,7 +794,7 @@ function fetchWithRedirects(url: string, opts: HTTPSFetchOptions, depth: number)
         res.resume();
         return reject(new VerificationError(
           `unexpected HTTP status ${res.statusCode}`,
-          { code: VerificationCode.TLSError, transient: (res.statusCode ?? 0) >= 500 },
+          { code: VerificationCode.HTTPError, transient: (res.statusCode ?? 0) >= 500 },
         ));
       }
 

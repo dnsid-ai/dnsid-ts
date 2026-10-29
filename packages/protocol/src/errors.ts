@@ -14,6 +14,8 @@ export enum VerificationCode {
   KeyNotFound = 'KeyNotFound',
   /** An HTTPS fetch of the JWKS or status endpoint failed at the transport/TLS layer. */
   TLSError = 'TLSError',
+  /** An HTTPS endpoint returned an unexpected HTTP status. Server errors are transient. */
+  HTTPError = 'HTTPError',
   /** The operational key is older than the identity record's `ka` maximum key age. */
   KeyAgeExceeded = 'KeyAgeExceeded',
   /** The agent status endpoint is unreachable or returned an unusable response. */
