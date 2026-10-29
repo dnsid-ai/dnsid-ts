@@ -7,6 +7,7 @@ import {
   type C2spBoundedResourceFetcher,
 } from './stream-source.ts';
 import { parseC2spTlogTrustProfile } from './trust-profile.ts';
+import type { C2spMigrationVerificationLimits } from './reader.ts';
 import { createC2spTlogVerificationRegistry } from './verification-registry.ts';
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
@@ -49,6 +50,8 @@ const MANAGED_CATALOG = [
 
 /** Shared infrastructure for {@link createDnsidManagedVerificationRegistry}. */
 export interface DnsidManagedVerificationOptions {
+  /** Cumulative predecessor limits; defaults to depth 8, 10,000 events, and 8 MiB. */
+  migrationLimits?: C2spMigrationVerificationLimits;
   /** Bounded transport shared by every managed log reader. */
   resourceFetcher?: C2spBoundedResourceFetcher;
   /** Persistence shared by every managed log reader. The default is restart-ephemeral. */
@@ -76,6 +79,7 @@ export async function createDnsidManagedVerificationRegistry(
   const resourceFetcher = options.resourceFetcher ?? createDefaultC2spBoundedResourceFetcher();
   const trustedCheckpointStore = options.trustedCheckpointStore ?? new InMemoryTrustedC2spCheckpointStore();
   const readers = new Map<string, LogRegistry>();
+  const registry = new LogRegistry();
 
   for (const entry of MANAGED_CATALOG) {
     const catalogReference = parseC2spTlogLr(`c2sp-tlog:${entry.scope}:${entry.logPrefix}#catalog`);
@@ -90,6 +94,8 @@ export async function createDnsidManagedVerificationRegistry(
       trustProfile,
       resourceFetcher,
       trustedCheckpointStore,
+      migrationReaderFactory: (previous, child) => registry.newReader(previous, child),
+      migrationLimits: options.migrationLimits,
       checkpointMaxAge: TEN_MINUTES_MS,
       maxBundleLifetimeMs: TEN_MINUTES_MS,
       allowedClockSkew: 0,
@@ -97,7 +103,6 @@ export async function createDnsidManagedVerificationRegistry(
     }));
   }
 
-  const registry = new LogRegistry();
   registry.register('c2sp-tlog', (lr, invocation) => {
     const reference = parseC2spTlogLr(lr);
     const selected = readers.get(selector(reference.scope, reference.logPrefix));

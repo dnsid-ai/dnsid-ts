@@ -1,4 +1,4 @@
-import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRef, type LogSignerRole } from '@dnsid-ai/protocol';
+import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRegistry, type LogRef, type LogSignerRole } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
 import { parseC2spEventEntry, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
 import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';
@@ -10,7 +10,7 @@ import { verifyC2spTlogProof, type TlogProofV1 } from './proof.ts';
 import { advanceC2spCheckpoint, advanceTrustedC2spCheckpoint, InMemoryTrustedC2spCheckpointStore, MissingC2spConsistencyEvidenceError, type C2spConsistencyProofSource, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 import { DEFAULT_C2SP_MAX_STREAM_BUNDLE_BYTES, DEFAULT_C2SP_MAX_STREAM_BUNDLE_EVENTS, verifyC2spStreamBundleContents } from './stream-bundle.ts';
 import type { SignedNoteKey } from './signed-note.ts';
-import type { Checkpoint } from './checkpoint.ts';
+import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import {
   c2spTlogEntryBytes,
   parsePreparedC2spTlogEvent,
@@ -35,6 +35,23 @@ export interface C2spStreamBundleReaderOptions {
   maxEvents?: number;
   /** Disables raw-scan fallback when the bundle endpoint is unavailable. */
   required?: boolean;
+}
+
+/** Cumulative bounds for recursive migration verification. Omitted fields use finite defaults. */
+export interface C2spMigrationVerificationLimits {
+  /** Maximum migration hops (default 8). */
+  maxDepth?: number;
+  /** Maximum stitched lifecycle events, including the destination (default 10,000). */
+  maxHistoryEvents?: number;
+  /** Maximum cumulative evidence response bytes (default 8 MiB). */
+  maxResponseBytes?: number;
+}
+
+interface MigrationContext {
+  limits: Required<C2spMigrationVerificationLimits>;
+  seen: Set<string>;
+  depth: number;
+  budget: { events: number; bytes: number; active: boolean };
 }
 
 /** Configuration for {@link C2spTlogReader}; only `policy` is required. */
@@ -65,7 +82,11 @@ export interface C2spTlogReaderOptions {
   maxTotalEntryBytes?: number;
   requestTimeoutMs?: number;
   signal?: AbortSignal;
+  /** Custom prior-history verifier; takes precedence over migrationReaderFactory. */
   verifyMigration?: StreamVerifierOptions['verifyMigration'];
+  /** Resolves predecessor C2SP readers under independently trusted policy. The caller's signal, refresh request, and cumulative migration budget carry across hops. */
+  migrationReaderFactory?: LogRegistry['newReader'];
+  migrationLimits?: C2spMigrationVerificationLimits;
   trustedCheckpointStore?: TrustedC2spCheckpointStore;
   consistencyProofSource?: C2spConsistencyProofSource;
 }
@@ -82,6 +103,7 @@ interface VerifiedHistory {
   /** Verified reference aligned with each stitched event; absent when a migration callback omitted prior boundaries. */
   historyReferences?: LogRef[];
   validUntilMs?: number;
+  migration?: MigrationVerificationResult;
 }
 
 interface CachedHistory {
@@ -113,6 +135,7 @@ export class C2spTlogReader implements LogReader {
   constructor(readonly lr: string, private readonly options: C2spTlogReaderOptions) {
     this.parsed = parseC2spTlogLr(lr);
     this.validateTimeOptions();
+    migrationLimits(options.migrationLimits);
     this.resourceFetcher = options.resourceFetcher ?? (options.streamBundle ? createDefaultC2spBoundedResourceFetcher() : undefined);
     if (this.resourceFetcher) validateC2spResourceFetcher(this.resourceFetcher);
     this.source = options.streamSource ?? new ScanStreamSource({
@@ -245,7 +268,7 @@ export class C2spTlogReader implements LogReader {
         throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
       }
     }
-    return this.verifyOccurrence(entry, event, history.indexedEvents, entityKey, history.checkpointWitnessTime, signal);
+    return this.verifyOccurrence(entry, event, history.indexedEvents, entityKey, history.checkpointWitnessTime, signal, history.migration);
   }
 
   private async discoverEntry(logPrefix: string, index: number, signal: AbortSignal): Promise<IndexedEntry> {
@@ -263,17 +286,116 @@ export class C2spTlogReader implements LogReader {
     return entry;
   }
 
-  private async verifyOccurrence(entry: { index: number; bytes: Uint8Array }, event: LogEvent, history: VerifiedLifecycleEvent[], entityKey: DnsIdJWK, witnessTime: Date, signal: AbortSignal): Promise<LogEvent> {
+  private async verifyOccurrence(entry: { index: number; bytes: Uint8Array }, event: LogEvent, history: VerifiedLifecycleEvent[], entityKey: DnsIdJWK, witnessTime: Date, signal: AbortSignal, migration?: MigrationVerificationResult): Promise<LogEvent> {
     const signed = signedC2spEntryBytes(entry.bytes);
     const position = history.findIndex(item => c2spEventId(signedC2spEntryBytes(item.bytes)) === c2spEventId(signed));
     if (position < 0 || history[position]!.index > entry.index || !Buffer.from(signedC2spEntryBytes(history[position]!.bytes)).equals(Buffer.from(signed))) {
       throw new VerificationError('C2SP event is not authorized by its lifecycle history', { code: VerificationCode.LogError });
     }
-    await verifyLifecycle([...history.slice(0, position), { ...entry, event, leafHash: leafHash(entry.bytes) }], { ...this.verifierOptions(this.parsed, entityKey, witnessTime), signal });
+    await verifyLifecycle([...history.slice(0, position), { ...entry, event, leafHash: leafHash(entry.bytes) }], { ...this.verifierOptions(this.parsed, entityKey, witnessTime), signal, verifyMigration: migration ? async () => migration : undefined });
     return event;
   }
 
   async rebuildHistory(domain: string): Promise<LogEvent[]> { return (await this.loadCompleteHistory(domain)).events; }
+
+  /**
+   * Verifies every logical event and conflict through an exact signed cutoff and exports
+   * ACTIVE keys, stitched history, and aligned references. Later source events are excluded.
+   * A fully signed later copy of the last logical event is allowed. Requires a trusted
+   * entityKey or a prior bilateral binding; recursion uses this reader's cumulative limits.
+   */
+  async rebuildHistoryThrough(domain: string, finalRef: LogRef): Promise<MigrationVerificationResult> {
+    return withVerificationBudget(async signal => {
+      const entity = this.options.entityKey ?? this.trustedEntityKey;
+      if (!entity) throw new C2spTlogVerificationError('C2SP lifecycle verification requires a trusted entity key');
+      const context = this.migrationContext(true);
+      const history = await this.loadThrough(domain, finalRef, entity, signal, context);
+      return this.migrationResult(domain, history);
+    }, { signal: this.options.signal });
+  }
+
+  private migrationContext(active = false): MigrationContext {
+    return { limits: migrationLimits(this.options.migrationLimits), seen: new Set([this.parsed.lr]), depth: 0, budget: { events: 0, bytes: 0, active } };
+  }
+
+  private async loadThrough(domain: string, finalRef: LogRef, entity: DnsIdJWK, signal: AbortSignal, context: MigrationContext): Promise<VerifiedHistory> {
+    const cutoff = parseC2spTlogLr(finalRef);
+    if (cutoff.lr !== this.parsed.lr || cutoff.entryIndex === undefined || finalRef !== `${this.parsed.lr}@${cutoff.entryIndex}`) {
+      throw new C2spTlogVerificationError('MIGRATION cutoff does not exactly identify an entry in the previous log', 'INVALID_MIGRATION');
+    }
+    const history = await this.loadAndVerifyHistory(domain, entity, signal, context, cutoff.entryIndex);
+    if (cutoff.entryIndex >= Number(history.completeThrough)) throw new C2spTlogVerificationError('MIGRATION cutoff exceeds complete history', 'INVALID_MIGRATION');
+    let occurrence = history.authenticatedEntries.find(entry => entry.index === cutoff.entryIndex);
+    if (!occurrence) {
+      // Trusted bundles may omit later copies; authenticate the exact occurrence against their checkpoint prefix.
+      const evidence = await this.loadEvidence(this.parsed.logPrefix, signal, context);
+      if (!evidence.complete) throw new C2spTlogVerificationError('MIGRATION cutoff requires complete occurrence evidence', 'INVALID_MIGRATION');
+      enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
+      assertCompleteScan(evidence);
+      const prefix = evidence.entries.slice().sort((a, b) => a.index - b.index).slice(0, Number(history.completeThrough));
+      if (prefix.length !== Number(history.completeThrough) || !Buffer.from(merkleRootFromEntries(prefix.map(entry => entry.bytes))).equals(Buffer.from(parseCheckpoint(new TextDecoder().decode(history.checkpoint)).rootHash))) {
+        throw new C2spTlogVerificationError('MIGRATION cutoff occurrence does not match completeness checkpoint', 'INVALID_MIGRATION');
+      }
+      occurrence = prefix.find(entry => entry.index === cutoff.entryIndex);
+    }
+    const last = history.indexedEvents.at(-1);
+    if (!occurrence || !last || !Buffer.from(signedC2spEntryBytes(occurrence.bytes)).equals(Buffer.from(signedC2spEntryBytes(last.bytes)))) {
+      throw new C2spTlogVerificationError('MIGRATION cutoff is not the final applied logical event', 'INVALID_MIGRATION');
+    }
+    const event = await parseC2spEventEntry(occurrence.bytes, this.context());
+    try {
+      await this.verifyOccurrence(occurrence, event, history.indexedEvents, entity, history.checkpointWitnessTime, signal, history.migration);
+    } catch (cause) {
+      throw c2spLogError('MIGRATION cutoff occurrence is invalid', cause, false);
+    }
+    if (!history.historyReferences) throw new C2spTlogVerificationError('MIGRATION cutoff requires aligned history references', 'INVALID_MIGRATION');
+    history.historyReferences[history.historyReferences.length - 1] = finalRef;
+    return history;
+  }
+
+  private migrationResult(domain: string, history: VerifiedHistory): MigrationVerificationResult {
+    const snapshot = latestSnapshot(domain, history.events);
+    const issuance = history.events.find(event => event.type === 'ISSUANCE');
+    if (snapshot.historicalState !== 'ACTIVE' || !issuance || issuance.type !== 'ISSUANCE') {
+      throw new C2spTlogVerificationError('MIGRATION previous history must preserve an ACTIVE identity', 'INVALID_MIGRATION');
+    }
+    assertC2spIssuanceEvent(issuance);
+    return { entityKey: issuance.initialEntityPublicKey, activeOperationalKey: snapshot.activeKey, priorHistory: history.events, priorHistoryReferences: history.historyReferences };
+  }
+
+  private migrationVerifier(entity: DnsIdJWK, signal: AbortSignal, context: MigrationContext): NonNullable<StreamVerifierOptions['verifyMigration']> {
+    return async event => {
+      context.budget.active = true;
+      enforceMigrationBudget(context);
+      if (event.newLog !== this.parsed.lr || context.depth >= context.limits.maxDepth || context.seen.has(event.previousLog)) {
+        throw new C2spTlogVerificationError('MIGRATION cycle, discontinuity, or recursion depth exceeded', 'INVALID_MIGRATION');
+      }
+      if (this.options.verifyMigration) {
+        const result = await waitForVerification(() => this.options.verifyMigration!(event, { signal }), signal);
+        const migrations = result.priorHistory.filter(item => item.type === 'MIGRATION');
+        const seen = new Set(context.seen);
+        let current = event.previousLog;
+        for (const prior of migrations.reverse()) {
+          if (seen.has(current) || prior.newLog !== current) throw new C2spTlogVerificationError('MIGRATION prior history contains a cycle or discontinuity', 'INVALID_MIGRATION');
+          seen.add(current);
+          current = prior.previousLog;
+        }
+        if (seen.has(current) || context.depth + 1 + migrations.length > context.limits.maxDepth) throw new C2spTlogVerificationError('MIGRATION cycle or recursion depth exceeded', 'INVALID_MIGRATION');
+        context.budget.events += result.priorHistory.length;
+        context.budget.bytes += Buffer.byteLength(JSON.stringify(result));
+        enforceMigrationBudget(context);
+        return result;
+      }
+      const factory = this.options.migrationReaderFactory;
+      if (!factory) throw new C2spTlogVerificationError('MIGRATION requires verified prior-log history', 'INVALID_MIGRATION');
+      const reader = await waitForVerification(() => Promise.resolve(factory(event.previousLog, { signal, revalidate: this.options.revalidate })), signal);
+      if (!(reader instanceof C2spTlogReader) || reader.parsed.lr !== event.previousLog) {
+        throw new C2spTlogVerificationError('MIGRATION requires a matching C2SP previous-log reader', 'INVALID_MIGRATION');
+      }
+      const prior = await reader.loadThrough(event.domain, event.finalEntryRef, entity, signal, { ...context, seen: new Set([...context.seen, event.previousLog]), depth: context.depth + 1 });
+      return reader.migrationResult(event.domain, prior);
+    };
+  }
 
   private async loadCompleteHistory(domain: string, entityKey?: DnsIdJWK): Promise<VerifiedHistory> {
     return withVerificationBudget(signal => this.loadCompleteHistoryWithinBudget(domain, entityKey, signal), { signal: this.options.signal });
@@ -299,10 +421,10 @@ export class C2spTlogReader implements LogReader {
     }
   }
 
-  private async loadAndVerifyHistory(domain: string, trustedEntityKey: DnsIdJWK, signal: AbortSignal): Promise<VerifiedHistory> {
-    const bundled = await this.loadBundleHistory(domain, trustedEntityKey, signal);
+  private async loadAndVerifyHistory(domain: string, trustedEntityKey: DnsIdJWK, signal: AbortSignal, context = this.migrationContext(), cutoffIndex?: number): Promise<VerifiedHistory> {
+    const bundled = await this.loadBundleHistory(domain, trustedEntityKey, signal, context, cutoffIndex);
     if (bundled) return bundled;
-    const evidence = await this.loadEvidence(this.parsed.logPrefix, signal);
+    const evidence = await this.loadEvidence(this.parsed.logPrefix, signal, context);
     if (!evidence.complete) throw new VerificationError('C2SP stream source is incomplete for current-state verification', { code: VerificationCode.LogError, errorCategory: 'INCOMPLETE_STREAM' });
     const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
     if (!policyResult.checkpointWitnessTime) throw new VerificationError('C2SP lifecycle timestamps require an accepted timestamped witness quorum', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
@@ -313,15 +435,18 @@ export class C2spTlogReader implements LogReader {
       completeEntries: evidence.entries,
     });
     let migration: MigrationVerificationResult | undefined;
-    const verifierOptions = { ...this.verifierOptions(this.parsed, trustedEntityKey, policyResult.checkpointWitnessTime), signal };
-    if (verifierOptions.verifyMigration) {
-      const verifyMigration = verifierOptions.verifyMigration;
-      verifierOptions.verifyMigration = async (event) => {
-        migration = await waitForVerification(() => verifyMigration(event, { signal }), signal);
+    const verifyMigration = this.migrationVerifier(trustedEntityKey, signal, context);
+    const verifierOptions = {
+      ...this.verifierOptions(this.parsed, trustedEntityKey, policyResult.checkpointWitnessTime), signal,
+      verifyMigration: async (event: Extract<LogEvent, { type: 'MIGRATION' }>) => {
+        migration = await verifyMigration(event, { signal });
         return migration;
-      };
-    }
-    const verified = await verifyStreamLifecycle(evidence.entries, domain, verifierOptions);
+      },
+    };
+    const entries = cutoffIndex === undefined ? evidence.entries : evidence.entries.filter(entry => entry.index <= cutoffIndex);
+    const verified = await verifyStreamLifecycle(entries, domain, verifierOptions);
+    context.budget.events += verified.length;
+    enforceMigrationBudget(context);
     let events = verified.map((v) => v.event);
     const currentReferences = verified.map(item => `${this.parsed.lr}@${item.index}`);
     let historyReferences: LogRef[] | undefined = currentReferences;
@@ -342,10 +467,11 @@ export class C2spTlogReader implements LogReader {
       indexedEvents: verified,
       authenticatedEntries: evidence.entries,
       historyReferences,
+      migration,
     };
   }
 
-  private async loadBundleHistory(domain: string, trustedEntityKey: DnsIdJWK, signal: AbortSignal): Promise<VerifiedHistory | undefined> {
+  private async loadBundleHistory(domain: string, trustedEntityKey: DnsIdJWK, signal: AbortSignal, context: MigrationContext, cutoffIndex?: number): Promise<VerifiedHistory | undefined> {
     const config = this.options.streamBundle;
     if (!config) return undefined;
     const fqdn = normalizeFQDN(domain, true);
@@ -363,6 +489,10 @@ export class C2spTlogReader implements LogReader {
       if (!config.required && bundleFallbackAllowed(cause)) return undefined;
       throw c2spLogError('C2SP stream bundle is unavailable', cause, cause instanceof VerificationError ? cause.transient : true);
     }
+    context.budget.bytes += bytes.length;
+    enforceMigrationBudget(context);
+    let migration: MigrationVerificationResult | undefined;
+    const verifyMigration = this.migrationVerifier(trustedEntityKey, signal, context);
     const verified = await verifyC2spStreamBundleContents(bytes, {
       expectedFqdn: fqdn,
       expectedLogReference: this.lr,
@@ -375,9 +505,12 @@ export class C2spTlogReader implements LogReader {
       checkpointFreshnessMs: config.checkpointFreshnessMs,
       maxTreeSize: this.options.maxTreeSize,
       maxClockSkewMs: this.allowedClockSkew(),
-      verifyMigration: this.options.verifyMigration && (event => waitForVerification(() => this.options.verifyMigration!(event, { signal }), signal)),
+      cutoffIndex,
+      verifyMigration: async event => { migration = await verifyMigration(event, { signal }); return migration; },
       signal,
     });
+    context.budget.events += verified.events.length;
+    enforceMigrationBudget(context);
     try {
       const source = this.source;
       await advanceC2spCheckpoint(this.checkpointStore, verified.bundle.reference, verified.bundle.checkpoint, verified.checkpointWitnessTime, {
@@ -389,7 +522,7 @@ export class C2spTlogReader implements LogReader {
     } catch (cause) {
       if (config.required || this.options.consistencyProofSource || this.source instanceof ScanStreamSource
         || !(cause instanceof MissingC2spConsistencyEvidenceError)) throw cause;
-      const evidence = await this.loadEvidence(this.parsed.logPrefix, signal);
+      const evidence = await this.loadEvidence(this.parsed.logPrefix, signal, context);
       if (!evidence.complete) throw new C2spTlogVerificationError('C2SP consistency fallback requires a complete raw scan', 'INCOMPLETE_STREAM');
       const policyResult = enforceCheckpointPolicy(evidence.checkpoint, this.parsed.origin, this.options.policy, this.parsed.scope, Date.now(), this.allowedClockSkew());
       if (!policyResult.checkpointWitnessTime) throw new C2spTlogVerificationError('C2SP consistency fallback requires an accepted timestamped witness quorum');
@@ -401,6 +534,7 @@ export class C2spTlogReader implements LogReader {
     }
     return {
       events: verified.lifecycle,
+      migration,
       indexedEvents: verified.events,
       authenticatedEntries: verified.bundle.events.map(event => ({ index: event.index, bytes: event.entryBytes })),
       checkpointWitnessTime: verified.checkpointWitnessTime,
@@ -415,12 +549,18 @@ export class C2spTlogReader implements LogReader {
     };
   }
 
-  private async loadEvidence(logPrefix: string, signal: AbortSignal): Promise<StreamEvidence> {
+  private async loadEvidence(logPrefix: string, signal: AbortSignal, context?: MigrationContext): Promise<StreamEvidence> {
+    let evidence: StreamEvidence;
     try {
-      return await waitForVerification(() => this.source.load(logPrefix, { signal, revalidate: this.options.revalidate }), signal);
+      evidence = await waitForVerification(() => this.source.load(logPrefix, { signal, revalidate: this.options.revalidate }), signal);
     } catch (cause) {
       throw c2spLogError('C2SP stream evidence is unavailable', cause, true);
     }
+    if (context) {
+      context.budget.bytes += checkpointEvidenceBytes(evidence.checkpoint).length + evidence.entries.reduce((size, entry) => size + entry.bytes.length, 0);
+      enforceMigrationBudget(context);
+    }
+    return evidence;
   }
 
   private verifierOptions(parsed: ParsedC2spTlogLr, signerKey: DnsIdJWK, checkpointWitnessTime: Date): StreamVerifierOptions {
@@ -463,6 +603,20 @@ export class C2spTlogReader implements LogReader {
 
   private context(parsed = this.parsed): C2spEventContext {
     return { scope: parsed.scope, logOrigin: parsed.origin, streamId: parsed.streamId, lr: this.lr };
+  }
+}
+
+function migrationLimits(limits: C2spMigrationVerificationLimits = {}): Required<C2spMigrationVerificationLimits> {
+  const result = { maxDepth: limits.maxDepth ?? 8, maxHistoryEvents: limits.maxHistoryEvents ?? 10_000, maxResponseBytes: limits.maxResponseBytes ?? 8 * 1024 * 1024 };
+  for (const [name, value] of Object.entries(result)) {
+    if (!Number.isSafeInteger(value) || value < 1) throw new C2spTlogVerificationError(`${name} must be a positive safe integer`);
+  }
+  return result;
+}
+
+function enforceMigrationBudget(context: MigrationContext): void {
+  if (context.budget.active && (context.budget.events > context.limits.maxHistoryEvents || context.budget.bytes > context.limits.maxResponseBytes)) {
+    throw new C2spTlogVerificationError('MIGRATION cumulative history or response size exceeds configured maximum', 'INVALID_MIGRATION');
   }
 }
 

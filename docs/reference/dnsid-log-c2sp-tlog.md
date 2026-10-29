@@ -116,16 +116,43 @@ every supplied inclusion proof verifies exact complete bytes, even for ignored
 copies. `readEvent` independently authenticates every role of the requested
 occurrence; an invalid-signature replay is not valid standalone evidence.
 
-Inbound migration requires `verifyMigration` to return the verified prior-log
-history through `finalEntryRef`, plus the entity and active operational keys it
-establishes. To return `LoggedStateEvidence`, it also supplies the aligned
-`priorHistoryReferences`; these preserve prior-log bounds without deriving them
-from destination indexes. `rebuildHistory` validates imported state and returns
-one stitched history with the migration event exactly once. A missing, terminal,
-key-inconsistent, or boundary-incomplete prior history fails closed. Migration
-callbacks receive a second `{ signal }` argument and must propagate that same
-budget through recursive predecessor verification. The callback owns exact-cutoff
-proof verification and cumulative recursion/history/response limits.
+Inbound migration is verified recursively by both verification-registry factories
+and `registerC2spTlog`. The generic registry resolves predecessors under its
+configured trust policy; the managed registry selects the predecessor's own
+managed trust profile. No trust is inferred from a migration event. A registry
+restricted to one trust profile still rejects predecessors outside that profile.
+
+For directly constructed readers, set `migrationReaderFactory(lr, options)` to
+return the predecessor's `C2spTlogReader` with its independently trusted policy.
+The SDK shares the original verification signal and migration budget across hops,
+including when predecessor readers have different local limits. `migrationLimits`
+defaults to `maxDepth: 8`, `maxHistoryEvents: 10_000`, and
+`maxResponseBytes: 8 * 1024 * 1024`. Overrides must be positive safe integers.
+Event and evidence-byte limits are cumulative across imported and destination
+histories; copies consume response bytes even when they do not add logical events.
+
+`reader.rebuildHistoryThrough(domain, finalRef)` exports verified ACTIVE state as
+`MigrationVerificationResult`: entity key, active operational key, `priorHistory`,
+and aligned `priorHistoryReferences`. It requires a trusted `entityKey` (or a prior
+bilateral binding), verifies every logical event and authenticated conflict through
+the exact cutoff, and checks every role signature on that occurrence. A valid
+later copy is allowed. If a trusted bundle omitted that copy, the reader obtains
+a bounded complete scan and authenticates the occurrence against the bundle's
+checkpoint prefix. Source entries after the cutoff are not imported, including
+later revocations.
+
+`rebuildHistory` returns one stitched history with each migration applied once.
+The imported state must be ACTIVE, and the migration entity signature must verify
+with the imported entity key. Cycles, terminal sources, key mismatches, and invalid
+cutoffs fail closed. Key age stays at the original ISSUANCE or KEY_ROTATION time;
+non-revocation before the original genesis fails.
+
+The existing `verifyMigration(event, { signal })` callback remains supported and
+takes precedence over the factory, including for non-C2SP predecessors. It must
+verify exact-cutoff proofs itself and return the prior history and keys. Aligned
+`priorHistoryReferences` are required for logged-state evidence. Returned history,
+depth, cycles, and encoded response size are bounded by the reader; custom callbacks
+must also bound their own retrievals and propagate the supplied signal.
 
 Read operations and standalone stream verifiers have a 30-second overall default.
 Factory/reader `signal` settings and per-call stream-verifier options propagate
@@ -419,6 +446,7 @@ Documented on [Transparency log: interfaces](https://docs.dnsid.ai/reference/ts/
 - [C2spChain](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spchain)
 - [C2spConsistencyProofSource](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spconsistencyproofsource)
 - [C2spEventContext](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2speventcontext)
+- [C2spMigrationVerificationLimits](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spmigrationverificationlimits)
 - [C2spResourceFetchGuarantees](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spresourcefetchguarantees)
 - [C2spResourceFetchOptions](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spresourcefetchoptions)
 - [C2spScanLimits](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2spscanlimits)

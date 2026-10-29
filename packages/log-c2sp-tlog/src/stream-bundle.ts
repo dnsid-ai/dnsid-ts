@@ -96,7 +96,10 @@ export interface VerifyC2spStreamBundleOptions extends ParseC2spStreamBundleOpti
   consistencyProofSource?: C2spConsistencyProofSource;
 }
 
-type VerifyC2spStreamBundleContentsOptions = Omit<VerifyC2spStreamBundleOptions, 'trustedCheckpointStore' | 'consistencyProofSource'>;
+type VerifyC2spStreamBundleContentsOptions = Omit<VerifyC2spStreamBundleOptions, 'trustedCheckpointStore' | 'consistencyProofSource'> & {
+  /** Internal reader cutoff; later lifecycle entries are not imported. */
+  cutoffIndex?: number;
+};
 
 /** Result of successful stream bundle verification. */
 export interface VerifiedC2spStreamBundle {
@@ -241,7 +244,7 @@ export async function verifyC2spStreamBundleContents(bytes: Uint8Array, options:
       throw new C2spTlogVerificationError(`invalid stream bundle inclusion proof at index ${event.index}`);
     }
   }
-  const entries = bundle.events.map(event => ({ index: event.index, bytes: event.entryBytes }));
+  const entries = bundle.events.filter(event => options.cutoffIndex === undefined || event.index <= options.cutoffIndex).map(event => ({ index: event.index, bytes: event.entryBytes }));
   let migration: MigrationVerificationResult | undefined;
   const verified = await verifyStreamLifecycle(entries, bundle.fqdn, {
     signal: options.signal,
@@ -257,9 +260,9 @@ export async function verifyC2spStreamBundleContents(bytes: Uint8Array, options:
     }),
   });
   const expectedState = lifecycleSummary(verified);
-  if (bundle.state.eventCount !== expectedState.eventCount
+  if (options.cutoffIndex === undefined && (bundle.state.eventCount !== expectedState.eventCount
     || bundle.state.lastEventType !== expectedState.lastEventType
-    || bundle.state.loggedState !== expectedState.loggedState) {
+    || bundle.state.loggedState !== expectedState.loggedState)) {
     throw new C2spTlogVerificationError('stream bundle state does not match verified lifecycle history');
   }
   if (verified.length === 0) throw new C2spTlogVerificationError('empty stream bundle cannot prove current identity state');

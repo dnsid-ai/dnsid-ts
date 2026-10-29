@@ -1,0 +1,411 @@
+[
+  {
+    "id": "migration-source-genesis",
+    "description": "source genesis",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n1\nAIO6dMrdywdXa7v5aYQzRGpMQR94g8eowBfGmqziWnI=\n\n\u2014 log-a.example gxgyAB/BxZsqQVEcI7jkoMZcWsgeC8A7QpU/orpnGQvfzhQk8MPdJ4HqfJtCKVe1fTR9tBMBXHpXxD9pd9klF/M1LgE=\n\u2014 witness.example 2nZgLwAAAABqOdqQ5aB5dxjC0dRej6q/Azq1K6FAgNIDhPFA1JDm2ax7ObYDp42BQRXlksCDpngEZG/YjA7PgwUNbPPbXQHQ7MXKDw==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYS5leGFtcGxlCjEKQUlPNmRNcmR5d2RYYTd2NWFZUXpSR3BNUVI5NGc4ZW93QmZHbXF6aVduST0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBQi9CeFpzcVFWRWNJN2prb01aY1dzZ2VDOEE3UXBVL29ycG5HUXZmemhRazhNUGRKNEhxZkp0Q0tWZTFmVFI5dEJNQlhIcFh4RDlwZDlrbEYvTTFMZ0U9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUTVhQjVkeGpDMGRSZWo2cS9BenExSzZGQWdOSURoUEZBMUpEbTJheDdPYllEcDQyQlFSWGxrc0NEcG5nRVpHL1lqQTdQZ3dVTmJQUGJYUUhRN01YS0R3PT0K"
+              }
+            ]
+          }
+        ],
+        "target": 0,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": true,
+      "eventCount": 1,
+      "keyTimestamp": 1782003600,
+      "loggedState": "ACTIVE",
+      "beforeGenesisRejected": true,
+      "cutoffEventCount": 1
+    }
+  },
+  {
+    "id": "migration-one-hop-keeps-key-age",
+    "description": "one hop keeps key age",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n1\nAIO6dMrdywdXa7v5aYQzRGpMQR94g8eowBfGmqziWnI=\n\n\u2014 log-a.example gxgyAB/BxZsqQVEcI7jkoMZcWsgeC8A7QpU/orpnGQvfzhQk8MPdJ4HqfJtCKVe1fTR9tBMBXHpXxD9pd9klF/M1LgE=\n\u2014 witness.example 2nZgLwAAAABqOdqQ5aB5dxjC0dRej6q/Azq1K6FAgNIDhPFA1JDm2ax7ObYDp42BQRXlksCDpngEZG/YjA7PgwUNbPPbXQHQ7MXKDw==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYS5leGFtcGxlCjEKQUlPNmRNcmR5d2RYYTd2NWFZUXpSR3BNUVI5NGc4ZW93QmZHbXF6aVduST0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBQi9CeFpzcVFWRWNJN2prb01aY1dzZ2VDOEE3UXBVL29ycG5HUXZmemhRazhNUGRKNEhxZkp0Q0tWZTFmVFI5dEJNQlhIcFh4RDlwZDlrbEYvTTFMZ0U9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUTVhQjVkeGpDMGRSZWo2cS9BenExSzZGQWdOSURoUEZBMUpEbTJheDdPYllEcDQyQlFSWGxrc0NEcG5nRVpHL1lqQTdQZ3dVTmJQUGJYUUhRN01YS0R3PT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\nVd5l/o4PeKIws1EG30Iw0xZhKcW/VR8EAbztY+aj+AA=\n\n\u2014 log-b.example C3FMdYyedXuA+c3OHsi4ceIPj9uUq2JH30RqFKNpfzmTMzkyXx0czYzbBxVd55SG2BTb60g5XjS8lGfUpjNEMkRzIgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQrC5CMnEb72mM50ogLGVrG0jbvzFAVaNugrMfyrv6RGgztySBRTwHcfLEjIl0IJar3iAQl+zkRGwFA3WkfJ3DBQ==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZ0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoicmtXdk95UmNCYW1aeDVmWFcyTUpITUNlZkQzbl85WFJXM1RqRXlYbEJDYmJHMUg2ODB2R1d2MHdwbmR6WUNYd3QtQjVmc2ZoRkxFcFpOLXV0RWdSQmcifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKVmQ1bC9vNFBlS0l3czFFRzMwSXcweFpoS2NXL1ZSOEVBYnp0WSthaitBQT0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWXllZFh1QStjM09Ic2k0Y2VJUGo5dVVxMkpIMzBScUZLTnBmem1UTXpreVh4MGN6WXpiQnhWZDU1U0cyQlRiNjBnNVhqUzhsR2ZVcGpORU1rUnpJZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUXJDNUNNbkViNzJtTTUwb2dMR1ZyRzBqYnZ6RkFWYU51Z3JNZnlydjZSR2d6dHlTQlJUd0hjZkxFaklsMElKYXIzaUFRbCt6a1JHd0ZBM1drZkozREJRPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 1,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": true,
+      "eventCount": 2,
+      "keyTimestamp": 1782003600,
+      "loggedState": "ACTIVE",
+      "beforeGenesisRejected": true,
+      "cutoffEventCount": 2
+    }
+  },
+  {
+    "id": "migration-two-hop-keeps-key-age",
+    "description": "two hop keeps key age",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n1\nAIO6dMrdywdXa7v5aYQzRGpMQR94g8eowBfGmqziWnI=\n\n\u2014 log-a.example gxgyAB/BxZsqQVEcI7jkoMZcWsgeC8A7QpU/orpnGQvfzhQk8MPdJ4HqfJtCKVe1fTR9tBMBXHpXxD9pd9klF/M1LgE=\n\u2014 witness.example 2nZgLwAAAABqOdqQ5aB5dxjC0dRej6q/Azq1K6FAgNIDhPFA1JDm2ax7ObYDp42BQRXlksCDpngEZG/YjA7PgwUNbPPbXQHQ7MXKDw==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYS5leGFtcGxlCjEKQUlPNmRNcmR5d2RYYTd2NWFZUXpSR3BNUVI5NGc4ZW93QmZHbXF6aVduST0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBQi9CeFpzcVFWRWNJN2prb01aY1dzZ2VDOEE3UXBVL29ycG5HUXZmemhRazhNUGRKNEhxZkp0Q0tWZTFmVFI5dEJNQlhIcFh4RDlwZDlrbEYvTTFMZ0U9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUTVhQjVkeGpDMGRSZWo2cS9BenExSzZGQWdOSURoUEZBMUpEbTJheDdPYllEcDQyQlFSWGxrc0NEcG5nRVpHL1lqQTdQZ3dVTmJQUGJYUUhRN01YS0R3PT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\nVd5l/o4PeKIws1EG30Iw0xZhKcW/VR8EAbztY+aj+AA=\n\n\u2014 log-b.example C3FMdYyedXuA+c3OHsi4ceIPj9uUq2JH30RqFKNpfzmTMzkyXx0czYzbBxVd55SG2BTb60g5XjS8lGfUpjNEMkRzIgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQrC5CMnEb72mM50ogLGVrG0jbvzFAVaNugrMfyrv6RGgztySBRTwHcfLEjIl0IJar3iAQl+zkRGwFA3WkfJ3DBQ==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZ0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoicmtXdk95UmNCYW1aeDVmWFcyTUpITUNlZkQzbl85WFJXM1RqRXlYbEJDYmJHMUg2ODB2R1d2MHdwbmR6WUNYd3QtQjVmc2ZoRkxFcFpOLXV0RWdSQmcifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKVmQ1bC9vNFBlS0l3czFFRzMwSXcweFpoS2NXL1ZSOEVBYnp0WSthaitBQT0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWXllZFh1QStjM09Ic2k0Y2VJUGo5dVVxMkpIMzBScUZLTnBmem1UTXpreVh4MGN6WXpiQnhWZDU1U0cyQlRiNjBnNVhqUzhsR2ZVcGpORU1rUnpJZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUXJDNUNNbkViNzJtTTUwb2dMR1ZyRzBqYnZ6RkFWYU51Z3JNZnlydjZSR2d6dHlTQlJUd0hjZkxFaklsMElKYXIzaUFRbCt6a1JHd0ZBM1drZkozREJRPT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-c.example#RERERERERERERERERERERA",
+            "policy": "log log-c.example+42a8cdd3+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-c.example\n1\nexVOAZoTNwp2hkceCn/hHCVyQjdjWhU6P3GQkiWZSHA=\n\n\u2014 log-c.example QqjN0/5NowsPuEZ5Ol7p6PN/ijASMmyHEgqg3QPgZiQ8W3hHhvPLHNZpAHMMWA5c2WBO1RecCcQtYTHmTNsKjs/csAo=\n\u2014 witness.example 2nZgLwAAAABqOdqQOeFiQ7R3XiZ6wIREUr9p7kc57+yEY47pWx5vkAmuJteTwjrZ/qzbSvLsk5BDxUApSnRJzcFXTXzxeotkg6T+Bg==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWMuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1jLmV4YW1wbGUjUkVSRVJFUkVSRVJFUkVSRVJFUkVSQSIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYy5leGFtcGxlI1JFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNd0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoiTjdaRU05UThmQ2RDOUtieTRibkJ6bHpNUVFUYngzR2FWSDZMMmZLbXd6RjNxWFFibVdDeFJ3blFTQmJHOGlyNVlWcjluZVhkZUdCdy04ZVVHa29LRFEifX0sInN0cmVhbV9pZCI6IlJFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJ0cyI6MTc4MjE3NDYwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYy5leGFtcGxlCjEKZXhWT0Fab1ROd3AyaGtjZUNuL2hIQ1Z5UWpkaldoVTZQM0dRa2lXWlNIQT0KCuKAlCBsb2ctYy5leGFtcGxlIFFxak4wLzVOb3dzUHVFWjVPbDdwNlBOL2lqQVNNbXlIRWdxZzNRUGdaaVE4VzNoSGh2UExITlpwQUhNTVdBNWMyV0JPMVJlY0NjUXRZVEhtVE5zS2pzL2NzQW89CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUU9lRmlRN1IzWGlaNndJUkVVcjlwN2tjNTcreUVZNDdwV3g1dmtBbXVKdGVUd2pyWi9xemJTdkxzazVCRHhVQXBTblJKemNGWFRYenhlb3RrZzZUK0JnPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 2,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": true,
+      "eventCount": 3,
+      "keyTimestamp": 1782003600,
+      "loggedState": "ACTIVE",
+      "beforeGenesisRejected": true,
+      "cutoffEventCount": 3
+    }
+  },
+  {
+    "id": "migration-two-hop-over-depth-limit-fails",
+    "description": "two hop over depth limit fails",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n1\nAIO6dMrdywdXa7v5aYQzRGpMQR94g8eowBfGmqziWnI=\n\n\u2014 log-a.example gxgyAB/BxZsqQVEcI7jkoMZcWsgeC8A7QpU/orpnGQvfzhQk8MPdJ4HqfJtCKVe1fTR9tBMBXHpXxD9pd9klF/M1LgE=\n\u2014 witness.example 2nZgLwAAAABqOdqQ5aB5dxjC0dRej6q/Azq1K6FAgNIDhPFA1JDm2ax7ObYDp42BQRXlksCDpngEZG/YjA7PgwUNbPPbXQHQ7MXKDw==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYS5leGFtcGxlCjEKQUlPNmRNcmR5d2RYYTd2NWFZUXpSR3BNUVI5NGc4ZW93QmZHbXF6aVduST0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBQi9CeFpzcVFWRWNJN2prb01aY1dzZ2VDOEE3UXBVL29ycG5HUXZmemhRazhNUGRKNEhxZkp0Q0tWZTFmVFI5dEJNQlhIcFh4RDlwZDlrbEYvTTFMZ0U9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUTVhQjVkeGpDMGRSZWo2cS9BenExSzZGQWdOSURoUEZBMUpEbTJheDdPYllEcDQyQlFSWGxrc0NEcG5nRVpHL1lqQTdQZ3dVTmJQUGJYUUhRN01YS0R3PT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\nVd5l/o4PeKIws1EG30Iw0xZhKcW/VR8EAbztY+aj+AA=\n\n\u2014 log-b.example C3FMdYyedXuA+c3OHsi4ceIPj9uUq2JH30RqFKNpfzmTMzkyXx0czYzbBxVd55SG2BTb60g5XjS8lGfUpjNEMkRzIgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQrC5CMnEb72mM50ogLGVrG0jbvzFAVaNugrMfyrv6RGgztySBRTwHcfLEjIl0IJar3iAQl+zkRGwFA3WkfJ3DBQ==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZ0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoicmtXdk95UmNCYW1aeDVmWFcyTUpITUNlZkQzbl85WFJXM1RqRXlYbEJDYmJHMUg2ODB2R1d2MHdwbmR6WUNYd3QtQjVmc2ZoRkxFcFpOLXV0RWdSQmcifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKVmQ1bC9vNFBlS0l3czFFRzMwSXcweFpoS2NXL1ZSOEVBYnp0WSthaitBQT0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWXllZFh1QStjM09Ic2k0Y2VJUGo5dVVxMkpIMzBScUZLTnBmem1UTXpreVh4MGN6WXpiQnhWZDU1U0cyQlRiNjBnNVhqUzhsR2ZVcGpORU1rUnpJZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUXJDNUNNbkViNzJtTTUwb2dMR1ZyRzBqYnZ6RkFWYU51Z3JNZnlydjZSR2d6dHlTQlJUd0hjZkxFaklsMElKYXIzaUFRbCt6a1JHd0ZBM1drZkozREJRPT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-c.example#RERERERERERERERERERERA",
+            "policy": "log log-c.example+42a8cdd3+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-c.example\n1\nexVOAZoTNwp2hkceCn/hHCVyQjdjWhU6P3GQkiWZSHA=\n\n\u2014 log-c.example QqjN0/5NowsPuEZ5Ol7p6PN/ijASMmyHEgqg3QPgZiQ8W3hHhvPLHNZpAHMMWA5c2WBO1RecCcQtYTHmTNsKjs/csAo=\n\u2014 witness.example 2nZgLwAAAABqOdqQOeFiQ7R3XiZ6wIREUr9p7kc57+yEY47pWx5vkAmuJteTwjrZ/qzbSvLsk5BDxUApSnRJzcFXTXzxeotkg6T+Bg==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWMuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1jLmV4YW1wbGUjUkVSRVJFUkVSRVJFUkVSRVJFUkVSQSIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYy5leGFtcGxlI1JFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNd0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoiTjdaRU05UThmQ2RDOUtieTRibkJ6bHpNUVFUYngzR2FWSDZMMmZLbXd6RjNxWFFibVdDeFJ3blFTQmJHOGlyNVlWcjluZVhkZUdCdy04ZVVHa29LRFEifX0sInN0cmVhbV9pZCI6IlJFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJ0cyI6MTc4MjE3NDYwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYy5leGFtcGxlCjEKZXhWT0Fab1ROd3AyaGtjZUNuL2hIQ1Z5UWpkaldoVTZQM0dRa2lXWlNIQT0KCuKAlCBsb2ctYy5leGFtcGxlIFFxak4wLzVOb3dzUHVFWjVPbDdwNlBOL2lqQVNNbXlIRWdxZzNRUGdaaVE4VzNoSGh2UExITlpwQUhNTVdBNWMyV0JPMVJlY0NjUXRZVEhtVE5zS2pzL2NzQW89CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUU9lRmlRN1IzWGlaNndJUkVVcjlwN2tjNTcreUVZNDdwV3g1dmtBbXVKdGVUd2pyWi9xemJTdkxzazVCRHhVQXBTblJKemNGWFRYenhlb3RrZzZUK0JnPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 2,
+        "maxDepth": 1,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": false,
+      "error": "LifecycleError"
+    }
+  },
+  {
+    "id": "migration-source-revocation-after-cutoff-is-not-imported",
+    "description": "source revocation after cutoff is not imported",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n2\ndF5+djnZ1HrlJZR1akB40GLfkuPDio1x+mUuihDGQdc=\n\n\u2014 log-a.example gxgyAIp3jqhpgttz/Og8YntydREURW+2qTMqExAp3E9mo+mzYhkdtpkLq47F+5PEfQLVxM0MVVJkMZ7B1P1PqudwEgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQK+EGOnSbkBJO1MrG9Vxcr6BTjqEYmiUcuQ2SKJK5IrbxloO1NEUfGddewKkVV7pwObBDqzaQv4IO4//buHOnBA==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCks3ZHdCZXN6QmhqZVhGT2JSeDNTUVZGNG1ZZ01Hd3krcFFIandkaENjNFU9Cgpsb2ctYS5leGFtcGxlCjIKZEY1K2RqbloxSHJsSlpSMWFrQjQwR0xma3VQRGlvMXgrbVV1aWhER1FkYz0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBSXAzanFocGd0dHovT2c4WW50eWRSRVVSVysycVRNcUV4QXAzRTltbyttelloa2R0cGtMcTQ3Ris1UEVmUUxWeE0wTVZWSmtNWjdCMVAxUHF1ZHdFZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUUsrRUdPblNia0JKTzFNckc5VnhjcjZCVGpxRVltaVVjdVEyU0tKSzVJcmJ4bG9PMU5FVWZHZGRld0trVlY3cHdPYkJEcXphUXY0SU80Ly9idUhPbkJBPT0K"
+              },
+              {
+                "index": 1,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInByZXZfZXZlbnRfaWQiOiJ3ZEl3NHpaRHZfVzd2dVBBUzNfMnFyeU5PRVVkSTlsVVZQQklLV1lxVDFFIiwicHJldl9zdGF0ZV9oYXNoIjoiWVJGdlBhYjN2WlJ1UmR6Q1l3bGlQYlE0SG1jblhNZjl5cVNuVFVYR005USIsInJlYXNvbiI6ImtleUNvbXByb21pc2UiLCJzZXEiOjEsInNpZ3MiOnsiYWUiOnsia2lkIjoiZW50aXR5LTEiLCJzaWciOiJBQ3NKZzZiYnY0WVRQYi1YM1lmb0xITDZYNTFKbnhnaUJ2OUY2MmlUajRzX01OamVaUUxfZlUtb1d4Q3gtbmYxdGpIM3FkbEF2bXpqTWdzM2FfT3dEUSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjYwLCJ0eXBlIjoiUkVWT0NBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAxCkFJTzZkTXJkeXdkWGE3djVhWVF6UkdwTVFSOTRnOGVvd0JmR21xemlXbkk9Cgpsb2ctYS5leGFtcGxlCjIKZEY1K2RqbloxSHJsSlpSMWFrQjQwR0xma3VQRGlvMXgrbVV1aWhER1FkYz0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBSXAzanFocGd0dHovT2c4WW50eWRSRVVSVysycVRNcUV4QXAzRTltbyttelloa2R0cGtMcTQ3Ris1UEVmUUxWeE0wTVZWSmtNWjdCMVAxUHF1ZHdFZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUUsrRUdPblNia0JKTzFNckc5VnhjcjZCVGpxRVltaVVjdVEyU0tKSzVJcmJ4bG9PMU5FVWZHZGRld0trVlY3cHdPYkJEcXphUXY0SU80Ly9idUhPbkJBPT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\nVd5l/o4PeKIws1EG30Iw0xZhKcW/VR8EAbztY+aj+AA=\n\n\u2014 log-b.example C3FMdYyedXuA+c3OHsi4ceIPj9uUq2JH30RqFKNpfzmTMzkyXx0czYzbBxVd55SG2BTb60g5XjS8lGfUpjNEMkRzIgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQrC5CMnEb72mM50ogLGVrG0jbvzFAVaNugrMfyrv6RGgztySBRTwHcfLEjIl0IJar3iAQl+zkRGwFA3WkfJ3DBQ==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZ0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoicmtXdk95UmNCYW1aeDVmWFcyTUpITUNlZkQzbl85WFJXM1RqRXlYbEJDYmJHMUg2ODB2R1d2MHdwbmR6WUNYd3QtQjVmc2ZoRkxFcFpOLXV0RWdSQmcifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKVmQ1bC9vNFBlS0l3czFFRzMwSXcweFpoS2NXL1ZSOEVBYnp0WSthaitBQT0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWXllZFh1QStjM09Ic2k0Y2VJUGo5dVVxMkpIMzBScUZLTnBmem1UTXpreVh4MGN6WXpiQnhWZDU1U0cyQlRiNjBnNVhqUzhsR2ZVcGpORU1rUnpJZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUXJDNUNNbkViNzJtTTUwb2dMR1ZyRzBqYnZ6RkFWYU51Z3JNZnlydjZSR2d6dHlTQlJUd0hjZkxFaklsMElKYXIzaUFRbCt6a1JHd0ZBM1drZkozREJRPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 1,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": true,
+      "eventCount": 2,
+      "keyTimestamp": 1782003600,
+      "loggedState": "ACTIVE",
+      "beforeGenesisRejected": true,
+      "cutoffEventCount": 2
+    }
+  },
+  {
+    "id": "migration-from-revoked-history-fails",
+    "description": "from revoked history fails",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-a.example#IiIiIiIiIiIiIiIiIiIiIg",
+            "policy": "log log-a.example+83183200+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-a.example\n2\ndF5+djnZ1HrlJZR1akB40GLfkuPDio1x+mUuihDGQdc=\n\n\u2014 log-a.example gxgyAIp3jqhpgttz/Og8YntydREURW+2qTMqExAp3E9mo+mzYhkdtpkLq47F+5PEfQLVxM0MVVJkMZ7B1P1PqudwEgY=\n\u2014 witness.example 2nZgLwAAAABqOdqQK+EGOnSbkBJO1MrG9Vxcr6BTjqEYmiUcuQ2SKJK5IrbxloO1NEUfGddewKkVV7pwObBDqzaQv4IO4//buHOnBA==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJlayI6eyJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJraWQiOiJlbnRpdHktMSIsImt0eSI6Ik9LUCIsIngiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3In0sImZxZG4iOiJhZ2VudC5leGFtcGxlIiwiZ2kiOiJleGFtcGxlIiwia2luZCI6ImRuc2lkLmxpZmVjeWNsZSIsImt1Ijp7ImFsZyI6IkVkRFNBIiwiY3J2IjoiRWQyNTUxOSIsImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInNlcSI6MCwic2lncyI6eyJhZSI6eyJraWQiOiJlbnRpdHktMSIsInNpZyI6IjBETTNqM0N0Q2pQbHFXZTNPVm1JRVV3UVhEakVfQkxBTW9IZllMdXJLdGlWbDU4dGJOdHcza0tza3ZZN0JDRjhsLW1lX2hiNlp0Tm53V1FSY0I5WkR3In0sIm9wIjp7ImtpZCI6Im9wZXJhdGlvbmFsLTEiLCJzaWciOiI1NzNMMHlvWGoyTEFsVndVVG5iZll2d0hRazBIWEVRZGJpZ1JBVXpsZ1hlYWV0NzFvZE9RQURESVRtS3BnY3psVDJzc3JqbndkcFQ1STlYT2RvUlFDQSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjAwLCJ0eXBlIjoiSVNTVUFOQ0UiLCJ2IjoxfQ",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCks3ZHdCZXN6QmhqZVhGT2JSeDNTUVZGNG1ZZ01Hd3krcFFIandkaENjNFU9Cgpsb2ctYS5leGFtcGxlCjIKZEY1K2RqbloxSHJsSlpSMWFrQjQwR0xma3VQRGlvMXgrbVV1aWhER1FkYz0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBSXAzanFocGd0dHovT2c4WW50eWRSRVVSVysycVRNcUV4QXAzRTltbyttelloa2R0cGtMcTQ3Ris1UEVmUUxWeE0wTVZWSmtNWjdCMVAxUHF1ZHdFZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUUsrRUdPblNia0JKTzFNckc5VnhjcjZCVGpxRVltaVVjdVEyU0tKSzVJcmJ4bG9PMU5FVWZHZGRld0trVlY3cHdPYkJEcXphUXY0SU80Ly9idUhPbkJBPT0K"
+              },
+              {
+                "index": 1,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWEuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsInByZXZfZXZlbnRfaWQiOiJ3ZEl3NHpaRHZfVzd2dVBBUzNfMnFyeU5PRVVkSTlsVVZQQklLV1lxVDFFIiwicHJldl9zdGF0ZV9oYXNoIjoiWVJGdlBhYjN2WlJ1UmR6Q1l3bGlQYlE0SG1jblhNZjl5cVNuVFVYR005USIsInJlYXNvbiI6ImtleUNvbXByb21pc2UiLCJzZXEiOjEsInNpZ3MiOnsiYWUiOnsia2lkIjoiZW50aXR5LTEiLCJzaWciOiJBQ3NKZzZiYnY0WVRQYi1YM1lmb0xITDZYNTFKbnhnaUJ2OUY2MmlUajRzX01OamVaUUxfZlUtb1d4Q3gtbmYxdGpIM3FkbEF2bXpqTWdzM2FfT3dEUSJ9fSwic3RyZWFtX2lkIjoiSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInRzIjoxNzgyMDAzNjYwLCJ0eXBlIjoiUkVWT0NBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAxCkFJTzZkTXJkeXdkWGE3djVhWVF6UkdwTVFSOTRnOGVvd0JmR21xemlXbkk9Cgpsb2ctYS5leGFtcGxlCjIKZEY1K2RqbloxSHJsSlpSMWFrQjQwR0xma3VQRGlvMXgrbVV1aWhER1FkYz0KCuKAlCBsb2ctYS5leGFtcGxlIGd4Z3lBSXAzanFocGd0dHovT2c4WW50eWRSRVVSVysycVRNcUV4QXAzRTltbyttelloa2R0cGtMcTQ3Ris1UEVmUUxWeE0wTVZWSmtNWjdCMVAxUHF1ZHdFZ1k9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUUsrRUdPblNia0JKTzFNckc5VnhjcjZCVGpxRVltaVVjdVEyU0tKSzVJcmJ4bG9PMU5FVWZHZGRld0trVlY3cHdPYkJEcXphUXY0SU80Ly9idUhPbkJBPT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\nRh6RrwF42I0gNmSu5Ee0htMDhE4WrSxT+3UbutyXESE=\n\n\u2014 log-b.example C3FMdZoXtkvghi+xQP05TmsvZyxXm7x6xmJrVn05Cs7nLcJiUJZsX8ztrl1pn0PkSgJNUa/sCAbC291MHRmdKfQD0gw=\n\u2014 witness.example 2nZgLwAAAABqOdqQQt6U8PJBd7AIpJfnJ+cjzIZlJex3aBvnLy6kSaEfbJIW0d0Ux7vyzjQ0k18vLf/ycjVQC8EYRZfaP/GPGeklBA==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1hLmV4YW1wbGUjSWlJaUlpSWlJaUlpSWlJaUlpSWlJZ0AxIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoieE00NkJkZ2tsc3NzNzcwSDhLX0J3MC03bFpYLXRma2VzM0gxZDNUMjlhb05NSTVEc0wxbkVHTElyREREOENxOVh1bExDaHYxU0F6SUFTNmhIX0Y3RHcifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKUmg2UnJ3RjQySTBnTm1TdTVFZTBodE1EaEU0V3JTeFQrM1VidXR5WEVTRT0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWm9YdGt2Z2hpK3hRUDA1VG1zdlp5eFhtN3g2eG1KclZuMDVDczduTGNKaVVKWnNYOHp0cmwxcG4wUGtTZ0pOVWEvc0NBYkMyOTFNSFJtZEtmUUQwZ3c9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUVF0NlU4UEpCZDdBSXBKZm5KK2NqeklabEpleDNhQnZuTHk2a1NhRWZiSklXMGQwVXg3dnl6alEwazE4dkxmL3ljalZRQzhFWVJaZmFQL0dQR2VrbEJBPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 1,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": false,
+      "error": "LifecycleError"
+    }
+  },
+  {
+    "id": "migration-cycle-fails",
+    "description": "cycle fails",
+    "spec_ref": "C2SP tlog method section 15; SDK design 11: Destination-Only Migration",
+    "op": "c2sp_migration_vector",
+    "input": {
+      "migrationCase": {
+        "domain": "agent.example",
+        "entityJwk": {
+          "alg": "EdDSA",
+          "crv": "Ed25519",
+          "kid": "entity-1",
+          "kty": "OKP",
+          "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+        },
+        "operationalThumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU",
+        "logs": [
+          {
+            "lr": "c2sp-tlog:public:https://log-b.example#MzMzMzMzMzMzMzMzMzMzMw",
+            "policy": "log log-b.example+0b714c75+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-b.example\n1\naGhsTGBofc9XRXgn4Z/un20iKsa9EhcnBNOTbEvIpSk=\n\n\u2014 log-b.example C3FMdX3kES7lHA7xSlaKSElGQmLzly+TVpeu55zSgwGZ1xlA/XTdA61PPW+TII0aw9bL1gvmWJQw/Nh6Lj3L/a5N0QA=\n\u2014 witness.example 2nZgLwAAAABqOdqQL0gTM1nbUU9jnZuwwhVpQRdAlM1fOtQQakOlOzG4W+OisPpJBlcU5kiyszf9Boknbl3N2fT561tLxy4gyW7+DA==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWIuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYi5leGFtcGxlI016TXpNek16TXpNek16TXpNek16TXciLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1jLmV4YW1wbGUjUkVSRVJFUkVSRVJFUkVSRVJFUkVSQSIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1jLmV4YW1wbGUjUkVSRVJFUkVSRVJFUkVSRVJFUkVSQUAwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoiTkF1Y3RIdFRxdWRxV0JZZVVJWHcwd01vOFNIclBPSnczb1F4a1VMYXE2NGVfeE0tdDlCS1k5akZ6Q0FQYjRpRDN2SjVEVjFUSEl1NlhrQmxnbVlCQ0EifX0sInN0cmVhbV9pZCI6Ik16TXpNek16TXpNek16TXpNek16TXciLCJ0cyI6MTc4MjE3MjgwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYi5leGFtcGxlCjEKYUdoc1RHQm9mYzlYUlhnbjRaL3VuMjBpS3NhOUVoY25CTk9UYkV2SXBTaz0KCuKAlCBsb2ctYi5leGFtcGxlIEMzRk1kWDNrRVM3bEhBN3hTbGFLU0VsR1FtTHpseStUVnBldTU1elNnd0daMXhsQS9YVGRBNjFQUFcrVElJMGF3OWJMMWd2bVdKUXcvTmg2TGozTC9hNU4wUUE9CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUUwwZ1RNMW5iVVU5am5adXd3aFZwUVJkQWxNMWZPdFFRYWtPbE96RzRXK09pc1BwSkJsY1U1a2l5c3pmOUJva25ibDNOMmZUNTYxdEx4eTRneVc3K0RBPT0K"
+              }
+            ]
+          },
+          {
+            "lr": "c2sp-tlog:public:https://log-c.example#RERERERERERERERERERERA",
+            "policy": "log log-c.example+42a8cdd3+AcqTrBcFGHBx1nuDx/8O/oEI6OxFMFdddyaHkzPb2r58\nwitness primary witness.example+da76602f+BG56HN0psLeP0Tr0xVmP7/TvKpcWbjym8uT7/M2AUFvx\nquorum primary\n",
+            "checkpoint": "log-c.example\n1\nexVOAZoTNwp2hkceCn/hHCVyQjdjWhU6P3GQkiWZSHA=\n\n\u2014 log-c.example QqjN0/5NowsPuEZ5Ol7p6PN/ijASMmyHEgqg3QPgZiQ8W3hHhvPLHNZpAHMMWA5c2WBO1RecCcQtYTHmTNsKjs/csAo=\n\u2014 witness.example 2nZgLwAAAABqOdqQOeFiQ7R3XiZ6wIREUr9p7kc57+yEY47pWx5vkAmuJteTwjrZ/qzbSvLsk5BDxUApSnRJzcFXTXzxeotkg6T+Bg==\n",
+            "entries": [
+              {
+                "index": 0,
+                "entry": "eyJmcWRuIjoiYWdlbnQuZXhhbXBsZSIsImtpbmQiOiJkbnNpZC5saWZlY3ljbGUiLCJsb2dfb3JpZ2luIjoibG9nLWMuZXhhbXBsZSIsImxyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1jLmV4YW1wbGUjUkVSRVJFUkVSRVJFUkVSRVJFUkVSQSIsIm1ldGhvZCI6ImMyc3AtdGxvZyIsIm5ld19sciI6ImMyc3AtdGxvZzpwdWJsaWM6aHR0cHM6Ly9sb2ctYy5leGFtcGxlI1JFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJwcmV2X2xyIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNdyIsInByZXZfcmVmIjoiYzJzcC10bG9nOnB1YmxpYzpodHRwczovL2xvZy1iLmV4YW1wbGUjTXpNek16TXpNek16TXpNek16TXpNd0AwIiwic2VxIjowLCJzaWdzIjp7ImFlIjp7ImtpZCI6ImVudGl0eS0xIiwic2lnIjoiTjdaRU05UThmQ2RDOUtieTRibkJ6bHpNUVFUYngzR2FWSDZMMmZLbXd6RjNxWFFibVdDeFJ3blFTQmJHOGlyNVlWcjluZVhkZUdCdy04ZVVHa29LRFEifX0sInN0cmVhbV9pZCI6IlJFUkVSRVJFUkVSRVJFUkVSRVJFUkEiLCJ0cyI6MTc4MjE3NDYwMCwidHlwZSI6Ik1JR1JBVElPTiIsInYiOjF9",
+                "proof": "YzJzcC5vcmcvdGxvZy1wcm9vZkB2MQppbmRleCAwCgpsb2ctYy5leGFtcGxlCjEKZXhWT0Fab1ROd3AyaGtjZUNuL2hIQ1Z5UWpkaldoVTZQM0dRa2lXWlNIQT0KCuKAlCBsb2ctYy5leGFtcGxlIFFxak4wLzVOb3dzUHVFWjVPbDdwNlBOL2lqQVNNbXlIRWdxZzNRUGdaaVE4VzNoSGh2UExITlpwQUhNTVdBNWMyV0JPMVJlY0NjUXRZVEhtVE5zS2pzL2NzQW89CuKAlCB3aXRuZXNzLmV4YW1wbGUgMm5aZ0x3QUFBQUJxT2RxUU9lRmlRN1IzWGlaNndJUkVVcjlwN2tjNTcreUVZNDdwV3g1dmtBbXVKdGVUd2pyWi9xemJTdkxzazVCRHhVQXBTblJKemNGWFRYenhlb3RrZzZUK0JnPT0K"
+              }
+            ]
+          }
+        ],
+        "target": 0,
+        "maxDepth": null,
+        "at": 1782176400,
+        "beforeGenesis": 1782003599
+      }
+    },
+    "expect": {
+      "ok": false,
+      "error": "LifecycleError"
+    }
+  }
+]

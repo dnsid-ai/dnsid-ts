@@ -12,6 +12,7 @@ import {
   requiredC2spResourceFetchGuarantees,
   verifyC2spStreamBundle,
   type C2spBoundedResourceFetcher,
+  type C2spTlogReaderOptions,
   type SignedNoteKey,
 } from '@dnsid-ai/log-c2sp-tlog';
 
@@ -43,6 +44,10 @@ type ReaderInternals = {
   options: {
     checkpointMaxAge?: number;
     allowedClockSkew?: number;
+    migrationReaderFactory?: C2spTlogReaderOptions['migrationReaderFactory'];
+    migrationLimits?: C2spTlogReaderOptions['migrationLimits'];
+    revalidate?: boolean;
+    signal?: AbortSignal;
     streamBundle?: {
       policyDocument: Uint8Array;
       bundleKeys: SignedNoteKey[];
@@ -114,6 +119,17 @@ describe('DNSid-managed C2SP trust', () => {
       checkpointFreshnessMs: 600_000,
       required: undefined,
     });
+  });
+
+  it('dispatches migration predecessors across managed log profiles', async () => {
+    const registry = await createDnsidManagedVerificationRegistry({ migrationLimits: { maxDepth: 2 } });
+    const development = registry.newReader('c2sp-tlog:public:https://log.dev.dnsid.ai#EREREREREREREREREREREQ') as C2spTlogReader;
+    const factory = internals(development).options.migrationReaderFactory!;
+    const signal = new AbortController().signal;
+    const production = await factory('c2sp-tlog:public:https://log.dnsid.ai#EREREREREREREREREREREQ', { signal, revalidate: true }) as C2spTlogReader;
+    expect(internals(production).options).toMatchObject({ migrationLimits: { maxDepth: 2 }, revalidate: true, signal });
+    expect(internals(production).options.streamBundle!.policyDocument).toEqual(new TextEncoder().encode(PRODUCTION_POLICY));
+    expect(() => factory('c2sp-tlog:public:https://unknown.example#EREREREREREREREREREREQ')).toThrow('unknown DNSid managed trust selector');
   });
 
   it('selects the exact partners profile with the managed defaults', async () => {

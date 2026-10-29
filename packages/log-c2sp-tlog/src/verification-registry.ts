@@ -2,7 +2,7 @@ import { ArgumentError, LogRegistry, VerificationError, type TransportConfig } f
 import { InMemoryTrustedC2spCheckpointStore, type TrustedC2spCheckpointStore } from './checkpoint-trust.ts';
 import { C2spTlogError, C2spTlogParseError } from './errors.ts';
 import { normalizedOriginPolicy, parseC2spPolicyFile } from './policy.ts';
-import { C2spTlogReader } from './reader.ts';
+import { C2spTlogReader, type C2spTlogReaderOptions } from './reader.ts';
 import { parseC2spTlogLr } from './lr.ts';
 import type { SignedNoteKey } from './signed-note.ts';
 import { validateC2spBundleVerifierKeys, validateC2spTlogTrustProfile, type C2spTlogTrustProfile } from './trust-profile.ts';
@@ -52,6 +52,10 @@ export interface C2spTlogVerificationOptions {
   transport?: TransportConfig;
   /** Optional overrides for the built-in complete scanner's secure limits. */
   scanLimits?: C2spScanLimits;
+  /** Recursive migration limits: depth 8, 10,000 stitched events, 8 MiB cumulative responses. */
+  migrationLimits?: C2spTlogReaderOptions['migrationLimits'];
+  /** Advanced predecessor dispatch; defaults to this registry's independently trusted readers. */
+  migrationReaderFactory?: C2spTlogReaderOptions['migrationReaderFactory'];
   /** Independently trusted stream-bundle signer keys. Mutually exclusive with `trustProfile`. */
   bundleVerifierKeys?: SignedNoteKey[];
   /** Maximum bundle expiry distance from its witnessed checkpoint. Required with bundle verifier keys. */
@@ -178,6 +182,8 @@ export async function createC2spTlogVerificationRegistry(
     }
     return new C2spTlogReader(lr, {
       policy,
+      migrationLimits: options.migrationLimits,
+      migrationReaderFactory: options.migrationReaderFactory ?? ((previous, child) => registry.newReader(previous, child)),
       resourceFetcher,
       revalidate: invocation?.revalidate,
       trustedCheckpointStore,
