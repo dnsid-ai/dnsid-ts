@@ -15,6 +15,9 @@
  * lower-level composition, {@link C2spTlogBinding} and the prepared-event writer
  * API for appending events, and {@link verifyC2spStreamBundle} for offline bundles.
  *
+ * JSON values have a maximum depth of 64 (root depth 0, including scalar
+ * values). Exceeding it is fatal INVALID_EVIDENCE, never candidate noise.
+ *
  * @packageDocumentation
  */
 import type { LogRegistry } from '@dnsid-ai/protocol';
@@ -78,7 +81,7 @@ export { parseC2spTlogTrustProfile } from './trust-profile.ts';
 export type { C2spTlogTrustProfile } from './trust-profile.ts';
 export { prepareC2spTlogEventForSigning, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, signPreparedC2spTlogEvent, c2spTlogEntryBytes, writePreparedEvent } from './writer.ts';
 export type { C2spSignerRole, C2spChain, PreparedC2spTlogEvent, PreparedC2spVerificationContext, SignPreparedC2spOptions, C2spTlogAppendOptions } from './writer.ts';
-export { C2spTlogError, C2spTlogParseError, C2spTlogVerificationError } from './errors.ts';
+export { C2spTlogError, C2spTlogParseError, C2spTlogVerificationError, C2spTlogResourceLimitError } from './errors.ts';
 export { C2SP_TLOG_PROFILE_VERSION, C2SP_TLOG_SPECIFICATIONS, DNSID_C2SP_METHOD_REVISION } from './version.ts';
 export { advanceTrustedC2spCheckpoint, C2spCheckpointConsistencyError, C2spCheckpointStoreError, InMemoryTrustedC2spCheckpointStore, MissingC2spConsistencyEvidenceError, verifyC2spConsistencyProof } from './checkpoint-trust.ts';
 export type { C2spConsistencyProofSource, TrustedC2spCheckpoint, TrustedC2spCheckpointStore } from './checkpoint-trust.ts';

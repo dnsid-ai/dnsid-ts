@@ -45,6 +45,14 @@ export class C2spTlogVerificationError extends C2spTlogError {
   }
 }
 
+/** A finite verification budget was exceeded; this must never be candidate noise. */
+export class C2spTlogResourceLimitError extends C2spTlogVerificationError {
+  constructor(message: string, cause?: unknown) {
+    super(message, 'INVALID_EVIDENCE', cause);
+    this.name = 'C2spTlogResourceLimitError';
+  }
+}
+
 /** Adapts a public C2SP boundary failure to the shared SDK log-error taxonomy. */
 export function c2spLogError(message: string, cause: unknown, transient: boolean): VerificationError {
   if (cause instanceof VerificationError && cause.code === VerificationCode.LogError) return cause;

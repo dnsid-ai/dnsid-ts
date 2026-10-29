@@ -67,7 +67,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:56](https://github.c
 
 ###### Overrides
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-7)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-8)
 
 #### Properties
 
@@ -85,7 +85,7 @@ Agent state reported by the status document, when the failure is state-related.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-5)
 
 <a id="cause"></a>
 
@@ -99,7 +99,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-5)
 
 <a id="code"></a>
 
@@ -115,7 +115,7 @@ Classification of the failure.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-5)
 
 <a id="errorcategory"></a>
 
@@ -131,7 +131,7 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-5)
 
 <a id="message"></a>
 
@@ -145,7 +145,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-5)
 
 <a id="name"></a>
 
@@ -159,7 +159,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-5)
 
 <a id="observedroothash"></a>
 
@@ -203,7 +203,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-5)
 
 <a id="status"></a>
 
@@ -217,7 +217,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-5)
 
 <a id="transient"></a>
 
@@ -233,7 +233,7 @@ True when retrying the verification may succeed.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-5)
 
 <a id="trustedroothash"></a>
 
@@ -269,7 +269,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-5)
 
 <a id="verifiedgovernanceid"></a>
 
@@ -285,7 +285,7 @@ Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes c
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-5)
 
 <a id="stacktracelimit"></a>
 
@@ -309,7 +309,7 @@ not capture any frames.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-5)
 
 #### Methods
 
@@ -383,7 +383,7 @@ a();
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-5)
 
 <a id="preparestacktrace"></a>
 
@@ -415,7 +415,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-5)
 
 ***
 
@@ -459,7 +459,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:69](https://github.c
 
 ###### Overrides
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-7)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-8)
 
 #### Properties
 
@@ -477,7 +477,7 @@ Agent state reported by the status document, when the failure is state-related.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-5)
 
 <a id="cause-1"></a>
 
@@ -491,7 +491,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-5)
 
 <a id="code-1"></a>
 
@@ -507,7 +507,7 @@ Classification of the failure.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-5)
 
 <a id="errorcategory-1"></a>
 
@@ -523,7 +523,7 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-5)
 
 <a id="message-1"></a>
 
@@ -537,7 +537,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-5)
 
 <a id="name-1"></a>
 
@@ -551,7 +551,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-5)
 
 <a id="stack-1"></a>
 
@@ -565,7 +565,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-5)
 
 <a id="status-1"></a>
 
@@ -579,7 +579,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-5)
 
 <a id="transient-1"></a>
 
@@ -595,7 +595,7 @@ True when retrying the verification may succeed.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-5)
 
 <a id="verifiedentitykeythumbprint-1"></a>
 
@@ -611,7 +611,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-5)
 
 <a id="verifiedgovernanceid-1"></a>
 
@@ -627,7 +627,7 @@ Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes c
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-5)
 
 <a id="stacktracelimit-1"></a>
 
@@ -651,7 +651,7 @@ not capture any frames.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-5)
 
 #### Methods
 
@@ -725,7 +725,7 @@ a();
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-5)
 
 <a id="preparestacktrace-1"></a>
 
@@ -757,7 +757,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-5)
 
 ***
 
@@ -2815,23 +2815,17 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
 ***
 
-<a id="c2sptlogverificationerror"></a>
+<a id="c2sptlogresourcelimiterror"></a>
 
-### C2spTlogVerificationError
+### C2spTlogResourceLimitError
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L37)
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L49)
 
-Thrown when well-formed c2sp-tlog evidence fails cryptographic or policy verification.
+A finite verification budget was exceeded; this must never be candidate noise.
 
 #### Extends
 
-- [`C2spTlogError`](#c2sptlogerror)
-
-#### Extended by
-
-- [`C2spCheckpointConsistencyError`](#c2spcheckpointconsistencyerror)
-- [`C2spCheckpointStoreError`](#c2spcheckpointstoreerror)
-- [`MissingC2spConsistencyEvidenceError`](#missingc2spconsistencyevidenceerror)
+- [`C2spTlogVerificationError`](#c2sptlogverificationerror)
 
 #### Constructors
 
@@ -2840,14 +2834,10 @@ Thrown when well-formed c2sp-tlog evidence fails cryptographic or policy verific
 ##### Constructor
 
 ```ts
-new C2spTlogVerificationError(
-   message, 
-   errorCategory?, 
-   cause?
-): C2spTlogVerificationError;
+new C2spTlogResourceLimitError(message, cause?): C2spTlogResourceLimitError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L50)
 
 ###### Parameters
 
@@ -2855,21 +2845,17 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 
 `string`
 
-###### errorCategory?
-
-[`LifecycleErrorCategory`](https://docs.dnsid.ai/reference/ts/dnsid/#lifecycleerrorcategory) = `'INVALID_EVIDENCE'`
-
 ###### cause?
 
 `unknown`
 
 ###### Returns
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror)
+[`C2spTlogResourceLimitError`](#c2sptlogresourcelimiterror)
 
 ###### Overrides
 
-[`C2spTlogError`](#c2sptlogerror).[`constructor`](#constructor-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-8)
 
 #### Properties
 
@@ -2887,7 +2873,7 @@ Agent state reported by the status document, when the failure is state-related.
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`agentState`](#agentstate-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-5)
 
 <a id="cause-4"></a>
 
@@ -2901,7 +2887,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`cause`](#cause-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-5)
 
 <a id="code-4"></a>
 
@@ -2917,7 +2903,7 @@ Classification of the failure.
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`code`](#code-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-5)
 
 <a id="errorcategory-4"></a>
 
@@ -2931,9 +2917,9 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-a
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
-###### Overrides
+###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`errorCategory`](#errorcategory-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-5)
 
 <a id="message-4"></a>
 
@@ -2947,7 +2933,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`message`](#message-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-5)
 
 <a id="name-4"></a>
 
@@ -2961,7 +2947,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`name`](#name-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-5)
 
 <a id="stack-4"></a>
 
@@ -2975,7 +2961,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`stack`](#stack-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-5)
 
 <a id="status-4"></a>
 
@@ -2989,7 +2975,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`status`](#status-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-5)
 
 <a id="transient-4"></a>
 
@@ -3005,7 +2991,7 @@ True when retrying the verification may succeed.
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`transient`](#transient-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-5)
 
 <a id="verifiedentitykeythumbprint-4"></a>
 
@@ -3021,7 +3007,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-5)
 
 <a id="verifiedgovernanceid-4"></a>
 
@@ -3037,7 +3023,7 @@ Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes c
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`verifiedGovernanceId`](#verifiedgovernanceid-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-5)
 
 <a id="stacktracelimit-4"></a>
 
@@ -3061,7 +3047,7 @@ not capture any frames.
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`stackTraceLimit`](#stacktracelimit-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-5)
 
 #### Methods
 
@@ -3135,9 +3121,366 @@ a();
 
 ###### Inherited from
 
-[`C2spTlogError`](#c2sptlogerror).[`captureStackTrace`](#capturestacktrace-2)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-5)
 
 <a id="preparestacktrace-4"></a>
+
+##### prepareStackTrace()
+
+```ts
+static prepareStackTrace(err, stackTraces): any;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:55
+
+###### Parameters
+
+###### err
+
+`Error`
+
+###### stackTraces
+
+`CallSite`[]
+
+###### Returns
+
+`any`
+
+###### See
+
+https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+
+###### Inherited from
+
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-5)
+
+***
+
+<a id="c2sptlogverificationerror"></a>
+
+### C2spTlogVerificationError
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L37)
+
+Thrown when well-formed c2sp-tlog evidence fails cryptographic or policy verification.
+
+#### Extends
+
+- [`C2spTlogError`](#c2sptlogerror)
+
+#### Extended by
+
+- [`C2spTlogResourceLimitError`](#c2sptlogresourcelimiterror)
+- [`C2spCheckpointConsistencyError`](#c2spcheckpointconsistencyerror)
+- [`C2spCheckpointStoreError`](#c2spcheckpointstoreerror)
+- [`MissingC2spConsistencyEvidenceError`](#missingc2spconsistencyevidenceerror)
+
+#### Constructors
+
+<a id="constructor-8"></a>
+
+##### Constructor
+
+```ts
+new C2spTlogVerificationError(
+   message, 
+   errorCategory?, 
+   cause?
+): C2spTlogVerificationError;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### errorCategory?
+
+[`LifecycleErrorCategory`](https://docs.dnsid.ai/reference/ts/dnsid/#lifecycleerrorcategory) = `'INVALID_EVIDENCE'`
+
+###### cause?
+
+`unknown`
+
+###### Returns
+
+[`C2spTlogVerificationError`](#c2sptlogverificationerror)
+
+###### Overrides
+
+[`C2spTlogError`](#c2sptlogerror).[`constructor`](#constructor-4)
+
+#### Properties
+
+<a id="agentstate-5"></a>
+
+##### agentState?
+
+```ts
+readonly optional agentState?: string;
+```
+
+Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+
+Agent state reported by the status document, when the failure is state-related.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`agentState`](#agentstate-2)
+
+<a id="cause-5"></a>
+
+##### cause?
+
+```ts
+optional cause?: unknown;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`cause`](#cause-2)
+
+<a id="code-5"></a>
+
+##### code
+
+```ts
+readonly code: VerificationCode;
+```
+
+Defined in: [packages/protocol/src/errors.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L92)
+
+Classification of the failure.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`code`](#code-2)
+
+<a id="errorcategory-5"></a>
+
+##### errorCategory
+
+```ts
+readonly errorCategory: LifecycleErrorCategory;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+
+Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
+
+###### Overrides
+
+[`C2spTlogError`](#c2sptlogerror).[`errorCategory`](#errorcategory-2)
+
+<a id="message-5"></a>
+
+##### message
+
+```ts
+message: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`message`](#message-2)
+
+<a id="name-5"></a>
+
+##### name
+
+```ts
+name: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`name`](#name-2)
+
+<a id="stack-5"></a>
+
+##### stack?
+
+```ts
+optional stack?: string;
+```
+
+Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`stack`](#stack-2)
+
+<a id="status-5"></a>
+
+##### status?
+
+```ts
+readonly optional status?: number;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`status`](#status-2)
+
+<a id="transient-5"></a>
+
+##### transient
+
+```ts
+readonly transient: boolean;
+```
+
+Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+
+True when retrying the verification may succeed.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`transient`](#transient-2)
+
+<a id="verifiedentitykeythumbprint-5"></a>
+
+##### verifiedEntityKeyThumbprint?
+
+```ts
+readonly optional verifiedEntityKeyThumbprint?: string;
+```
+
+Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+
+Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-2)
+
+<a id="verifiedgovernanceid-5"></a>
+
+##### verifiedGovernanceId?
+
+```ts
+readonly optional verifiedGovernanceId?: string;
+```
+
+Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
+
+Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`verifiedGovernanceId`](#verifiedgovernanceid-2)
+
+<a id="stacktracelimit-5"></a>
+
+##### stackTraceLimit
+
+```ts
+static stackTraceLimit: number;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:67
+
+The `Error.stackTraceLimit` property specifies the number of stack frames
+collected by a stack trace (whether generated by `new Error().stack` or
+`Error.captureStackTrace(obj)`).
+
+The default value is `10` but may be set to any valid JavaScript number. Changes
+will affect any stack trace captured _after_ the value has been changed.
+
+If set to a non-number value, or set to a negative number, stack traces will
+not capture any frames.
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`stackTraceLimit`](#stacktracelimit-2)
+
+#### Methods
+
+<a id="capturestacktrace-5"></a>
+
+##### captureStackTrace()
+
+```ts
+static captureStackTrace(targetObject, constructorOpt?): void;
+```
+
+Defined in: node\_modules/@types/node/globals.d.ts:51
+
+Creates a `.stack` property on `targetObject`, which when accessed returns
+a string representing the location in the code at which
+`Error.captureStackTrace()` was called.
+
+```js
+const myObject = {};
+Error.captureStackTrace(myObject);
+myObject.stack;  // Similar to `new Error().stack`
+```
+
+The first line of the trace will be prefixed with
+`${myObject.name}: ${myObject.message}`.
+
+The optional `constructorOpt` argument accepts a function. If given, all frames
+above `constructorOpt`, including `constructorOpt`, will be omitted from the
+generated stack trace.
+
+The `constructorOpt` argument is useful for hiding implementation
+details of error generation from the user. For instance:
+
+```js
+function a() {
+  b();
+}
+
+function b() {
+  c();
+}
+
+function c() {
+  // Create an error without stack trace to avoid calculating the stack trace twice.
+  const { stackTraceLimit } = Error;
+  Error.stackTraceLimit = 0;
+  const error = new Error();
+  Error.stackTraceLimit = stackTraceLimit;
+
+  // Capture the stack trace above function b
+  Error.captureStackTrace(error, b); // Neither function c, nor b is included in the stack trace
+  throw error;
+}
+
+a();
+```
+
+###### Parameters
+
+###### targetObject
+
+`object`
+
+###### constructorOpt?
+
+`Function`
+
+###### Returns
+
+`void`
+
+###### Inherited from
+
+[`C2spTlogError`](#c2sptlogerror).[`captureStackTrace`](#capturestacktrace-2)
+
+<a id="preparestacktrace-5"></a>
 
 ##### prepareStackTrace()
 
@@ -3185,7 +3528,7 @@ Non-persistent, per-process trusted checkpoint store.
 
 #### Constructors
 
-<a id="constructor-8"></a>
+<a id="constructor-9"></a>
 
 ##### Constructor
 
@@ -3290,7 +3633,7 @@ Signals that a valid newer checkpoint needs independent consistency evidence.
 
 #### Constructors
 
-<a id="constructor-9"></a>
+<a id="constructor-10"></a>
 
 ##### Constructor
 
@@ -3324,11 +3667,11 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-7)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`constructor`](#constructor-8)
 
 #### Properties
 
-<a id="agentstate-5"></a>
+<a id="agentstate-6"></a>
 
 ##### agentState?
 
@@ -3342,9 +3685,9 @@ Agent state reported by the status document, when the failure is state-related.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`agentState`](#agentstate-5)
 
-<a id="cause-5"></a>
+<a id="cause-6"></a>
 
 ##### cause?
 
@@ -3356,9 +3699,9 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`cause`](#cause-5)
 
-<a id="code-5"></a>
+<a id="code-6"></a>
 
 ##### code
 
@@ -3372,9 +3715,9 @@ Classification of the failure.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`code`](#code-5)
 
-<a id="errorcategory-5"></a>
+<a id="errorcategory-6"></a>
 
 ##### errorCategory
 
@@ -3388,9 +3731,9 @@ Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`errorCategory`](#errorcategory-5)
 
-<a id="message-5"></a>
+<a id="message-6"></a>
 
 ##### message
 
@@ -3402,9 +3745,9 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`message`](#message-5)
 
-<a id="name-5"></a>
+<a id="name-6"></a>
 
 ##### name
 
@@ -3416,9 +3759,9 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`name`](#name-5)
 
-<a id="stack-5"></a>
+<a id="stack-6"></a>
 
 ##### stack?
 
@@ -3430,9 +3773,9 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stack`](#stack-5)
 
-<a id="status-5"></a>
+<a id="status-6"></a>
 
 ##### status?
 
@@ -3444,9 +3787,9 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`status`](#status-5)
 
-<a id="transient-5"></a>
+<a id="transient-6"></a>
 
 ##### transient
 
@@ -3460,9 +3803,9 @@ True when retrying the verification may succeed.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`transient`](#transient-5)
 
-<a id="verifiedentitykeythumbprint-5"></a>
+<a id="verifiedentitykeythumbprint-6"></a>
 
 ##### verifiedEntityKeyThumbprint?
 
@@ -3476,9 +3819,9 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedEntityKeyThumbprint`](#verifiedentitykeythumbprint-5)
 
-<a id="verifiedgovernanceid-5"></a>
+<a id="verifiedgovernanceid-6"></a>
 
 ##### verifiedGovernanceId?
 
@@ -3492,9 +3835,9 @@ Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes c
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`verifiedGovernanceId`](#verifiedgovernanceid-5)
 
-<a id="stacktracelimit-5"></a>
+<a id="stacktracelimit-6"></a>
 
 ##### stackTraceLimit
 
@@ -3516,11 +3859,11 @@ not capture any frames.
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`stackTraceLimit`](#stacktracelimit-5)
 
 #### Methods
 
-<a id="capturestacktrace-5"></a>
+<a id="capturestacktrace-6"></a>
 
 ##### captureStackTrace()
 
@@ -3590,9 +3933,9 @@ a();
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`captureStackTrace`](#capturestacktrace-5)
 
-<a id="preparestacktrace-5"></a>
+<a id="preparestacktrace-6"></a>
 
 ##### prepareStackTrace()
 
@@ -3622,7 +3965,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ###### Inherited from
 
-[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-4)
+[`C2spTlogVerificationError`](#c2sptlogverificationerror).[`prepareStackTrace`](#preparestacktrace-5)
 
 ***
 
@@ -3642,7 +3985,7 @@ downloads every fixed-geometry entry bundle up to the checkpoint tree size.
 
 #### Constructors
 
-<a id="constructor-10"></a>
+<a id="constructor-11"></a>
 
 ##### Constructor
 

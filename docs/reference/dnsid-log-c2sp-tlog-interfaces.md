@@ -1892,7 +1892,7 @@ optional keyHash?: Uint8Array<ArrayBufferLike>;
 
 Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L5)
 
-<a id="name-6"></a>
+<a id="name-7"></a>
 
 ##### name
 
@@ -2329,7 +2329,7 @@ kind: "ed25519";
 
 Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L7)
 
-<a id="name-7"></a>
+<a id="name-8"></a>
 
 ##### name
 

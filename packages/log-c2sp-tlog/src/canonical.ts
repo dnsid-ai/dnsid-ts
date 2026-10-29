@@ -1,8 +1,32 @@
-import { C2spTlogParseError } from './errors.ts';
+import { C2spTlogParseError, C2spTlogResourceLimitError } from './errors.ts';
 import { parseJsonNoDuplicateMembers as parseStrictJson } from '@dnsid-ai/protocol';
 
 // ignoreBOM keeps a leading U+FEFF, so BOM-prefixed entry bytes fail the canonical comparison.
 const textDecoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+// Match Go jsonutil.decodeValue: root depth 0, every member/element value adds 1.
+// Empty containers at depth 64 are allowed; any value at depth 65 is fatal.
+const MAX_JSON_DEPTH = 64;
+
+/** Iterative scan before parsing; brackets and escaped quotes inside strings do not count. */
+function assertJsonDepth(bytes: Uint8Array): void {
+  let depth = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes[i];
+    if (byte === 0x7d || byte === 0x5d) { depth--; continue; }
+    if (byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d || byte === 0x2c || byte === 0x3a) continue;
+    if (byte === 0x22) {
+      while (++i < bytes.length && bytes[i] !== 0x22) {
+        if (bytes[i] === 0x5c) i++;
+      }
+      let next = i + 1;
+      while ([0x20, 0x09, 0x0a, 0x0d].includes(bytes[next]!)) next++;
+      if (bytes[next] === 0x3a) continue; // Member names are not values.
+    }
+    if (depth > MAX_JSON_DEPTH) throw new C2spTlogResourceLimitError('JSON nesting limit exceeded (64)');
+    if (byte === 0x7b || byte === 0x5b) depth++;
+  }
+}
 
 /**
  * Serializes a JSON value to its RFC 8785 (JCS-style) canonical form:
@@ -10,8 +34,21 @@ const textDecoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
  *
  * @throws C2spTlogParseError for non-finite or negative-zero numbers, unpaired
  *   surrogates, `undefined` members, or non-JSON values.
+ * @throws C2spTlogResourceLimitError for value depth above 64 (root depth 0).
  */
 export function canonicalJson(value: unknown): string {
+  const pending = [{ value, depth: 0 }];
+  while (pending.length > 0) {
+    const { value: current, depth } = pending.pop()!;
+    if (depth > MAX_JSON_DEPTH) throw new C2spTlogResourceLimitError('JSON nesting limit exceeded (64)');
+    if (current !== null && typeof current === 'object') {
+      for (const child of Object.values(current)) pending.push({ value: child, depth: depth + 1 });
+    }
+  }
+  return serializeJson(value);
+}
+
+function serializeJson(value: unknown): string {
   if (value === null || typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
     if (typeof value === 'number' && (!Number.isFinite(value) || Object.is(value, -0))) {
       throw new C2spTlogParseError('non-canonical JSON number');
@@ -19,14 +56,14 @@ export function canonicalJson(value: unknown): string {
     if (typeof value === 'string') assertValidUnicode(value);
     return JSON.stringify(value)!;
   }
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (Array.isArray(value)) return `[${value.map(serializeJson).join(',')}]`;
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     return `{${Object.keys(obj).sort().map((k) => {
       assertValidUnicode(k);
       const v = obj[k];
       if (v === undefined) throw new C2spTlogParseError('undefined is not JSON');
-      return `${JSON.stringify(k)}:${canonicalJson(v)}`;
+      return `${JSON.stringify(k)}:${serializeJson(v)}`;
     }).join(',')}}`;
   }
   throw new C2spTlogParseError(`unsupported JSON value: ${typeof value}`);
@@ -55,12 +92,15 @@ export function canonicalBytes(value: unknown): Uint8Array {
  * the document.
  *
  * @throws C2spTlogParseError on invalid UTF-8, malformed JSON, or duplicate members.
+ * @throws C2spTlogResourceLimitError for value depth above 64 (root depth 0).
  */
 export function parseJsonNoDuplicateMembers(bytes: Uint8Array): unknown {
+  assertJsonDepth(bytes);
   try {
     return parseStrictJson(bytes);
   } catch (cause) {
-    if (cause instanceof C2spTlogParseError) throw cause;
+    if (cause instanceof RangeError) throw new C2spTlogResourceLimitError('JSON parser resource limit exceeded', cause);
+    if (cause instanceof C2spTlogParseError || cause instanceof C2spTlogResourceLimitError) throw cause;
     throw new C2spTlogParseError(`malformed UTF-8 JSON: ${cause instanceof Error ? cause.message : String(cause)}`, cause);
   }
 }

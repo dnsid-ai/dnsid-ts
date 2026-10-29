@@ -132,6 +132,11 @@ Factory/reader `signal` settings and per-call stream-verifier options propagate
 cancellation; injected sources must honor it. Raw scans default to one million
 entries and 256 MiB aggregate entry bytes; lifecycle replay additionally caps
 retained history at 10,000 logical events. Copies still consume input limits.
+JSON parsing and canonicalization limit value depth to 64, matching Go: the root
+is depth 0 and each object-member or array-element value adds 1, including scalars.
+Empty containers at depth 64 are allowed. Excess depth throws
+`C2spTlogResourceLimitError` (`INVALID_EVIDENCE`) and aborts verification in scans,
+stream bundles, and `readEvent`; it is never ignored as candidate noise.
 Reuse registries/transports/checkpoint stores, monitor fallback cost, and lower
 scan limits or require bundles for predictable cost.
 
@@ -161,6 +166,9 @@ caller-supplied trust, [createDnsidManagedVerificationRegistry](https://docs.dns
 reviewed DNSid-managed trust catalog, [registerC2spTlog](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#registerc2sptlog) / [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) for
 lower-level composition, [C2spTlogBinding](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogbinding) and the prepared-event writer
 API for appending events, and [verifyC2spStreamBundle](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#verifyc2spstreambundle) for offline bundles.
+
+JSON values have a maximum depth of 64 (root depth 0, including scalar
+values). Exceeding it is fatal INVALID_EVIDENCE, never candidate noise.
 
 ## Type Aliases
 
@@ -397,6 +405,7 @@ Documented on [Transparency log: classes](https://docs.dnsid.ai/reference/ts/dns
 - [C2spTlogError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogerror)
 - [C2spTlogParseError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogparseerror)
 - [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader)
+- [C2spTlogResourceLimitError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogresourcelimiterror)
 - [C2spTlogVerificationError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogverificationerror)
 - [InMemoryTrustedC2spCheckpointStore](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#inmemorytrustedc2spcheckpointstore)
 - [MissingC2spConsistencyEvidenceError](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#missingc2spconsistencyevidenceerror)

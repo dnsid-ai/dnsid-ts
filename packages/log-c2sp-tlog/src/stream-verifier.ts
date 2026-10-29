@@ -5,7 +5,7 @@ import { leafHash, sha256 } from './merkle.ts';
 import { canonicalBytes } from './canonical.ts';
 import { b64url } from './base64.ts';
 import type { IndexedEntry } from './stream-source.ts';
-import { C2spTlogVerificationError } from './errors.ts';
+import { C2spTlogVerificationError, C2spTlogResourceLimitError } from './errors.ts';
 
 /** A lifecycle event accepted by stream verification, with its log index, leaf hash, and raw entry bytes. */
 export interface VerifiedLifecycleEvent { index: number; leafHash: Uint8Array; bytes: Uint8Array; event: LogEvent }
@@ -194,7 +194,10 @@ async function verifyStreamWithinBudget(entries: IndexedEntry[], domain: string,
       if (parseC2spAuthorization(entry.bytes, options).domain !== domain) continue;
       signedBytes = signedC2spEntryBytes(entry.bytes);
       envelope = JSON.parse(new TextDecoder().decode(signedBytes));
-    } catch { continue; }
+    } catch (error) {
+      if (error instanceof C2spTlogResourceLimitError || error instanceof RangeError) throw error;
+      continue;
+    }
     const entryId = c2spEventId(signedBytes);
     const signed = b64url(signedBytes);
     const applied = appliedEntries.get(entryId);
@@ -208,7 +211,8 @@ async function verifyStreamWithinBudget(entries: IndexedEntry[], domain: string,
     }
     let event: LogEvent;
     try { event = await parseC2spEventEntry(entry.bytes, options); }
-    catch {
+    catch (error) {
+      if (error instanceof C2spTlogResourceLimitError || error instanceof RangeError) throw error;
       if (selected.length > 0) throw new C2spTlogVerificationError('authenticated lifecycle candidate is malformed');
       continue;
     }
@@ -218,6 +222,7 @@ async function verifyStreamWithinBudget(entries: IndexedEntry[], domain: string,
       try {
         await verifyLifecycle([candidate], lifecycleOptions);
       } catch (error) {
+        if (error instanceof C2spTlogResourceLimitError || error instanceof RangeError) throw error;
         if (event.type === 'MIGRATION' && (!options.verifyMigration || migrationVerificationFailed)) {
           if (error instanceof C2spTlogVerificationError && error.errorCategory === 'INVALID_MIGRATION') throw error;
           throw new C2spTlogVerificationError('MIGRATION requires verifiable prior-log history', 'INVALID_MIGRATION');
@@ -260,7 +265,10 @@ async function hasAllRoleSignatures(bytes: Uint8Array, entityKey: DnsIdJWK, oper
       if (signature.kid !== key.kid || !await verifyWithKey(signedC2spEntryBytes(bytes), fromBase64Url(signature.sig), key)) return false;
     }
     return true;
-  } catch { return false; }
+  } catch (error) {
+    if (error instanceof C2spTlogResourceLimitError || error instanceof RangeError) throw error;
+    return false;
+  }
 }
 
 /**

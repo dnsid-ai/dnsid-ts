@@ -127,6 +127,11 @@ Factory/reader `signal` settings and per-call stream-verifier options propagate
 cancellation; injected sources must honor it. Raw scans default to one million
 entries and 256 MiB aggregate entry bytes; lifecycle replay additionally caps
 retained history at 10,000 logical events. Copies still consume input limits.
+JSON parsing and canonicalization limit value depth to 64, matching Go: the root
+is depth 0 and each object-member or array-element value adds 1, including scalars.
+Empty containers at depth 64 are allowed. Excess depth throws
+`C2spTlogResourceLimitError` (`INVALID_EVIDENCE`) and aborts verification in scans,
+stream bundles, and `readEvent`; it is never ignored as candidate noise.
 Reuse registries/transports/checkpoint stores, monitor fallback cost, and lower
 scan limits or require bundles for predictable cost.
 
