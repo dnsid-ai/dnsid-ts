@@ -84,7 +84,7 @@ C2spTlogVerificationError for missing/invalid candidate evidence.
 function assertCanonicalJsonBytes(bytes, value?): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L74)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L114)
 
 Asserts that `bytes` are exactly the canonical JSON serialization of `value`
 (which defaults to the parsed content of `bytes`).
@@ -208,7 +208,7 @@ C2spTlogParseError when the entry is malformed or oversized.
 function canonicalBytes(value): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L49)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L86)
 
 UTF-8 encoding of [canonicalJson](#canonicaljson).
 
@@ -265,7 +265,7 @@ C2spTlogParseError when signatures are incomplete or the entry is oversized.
 function canonicalJson(value): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L14)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L39)
 
 Serializes a JSON value to its RFC 8785 (JCS-style) canonical form:
 lexicographically sorted object members, no whitespace, valid Unicode.
@@ -284,6 +284,10 @@ lexicographically sorted object members, no whitespace, valid Unicode.
 
 C2spTlogParseError for non-finite or negative-zero numbers, unpaired
   surrogates, `undefined` members, or non-JSON values.
+
+#### Throws
+
+C2spTlogResourceLimitError for value depth above 64 (root depth 0).
 
 ***
 
@@ -1092,7 +1096,7 @@ C2spTlogParseError when a length prefix or entry is truncated.
 function parseJsonNoDuplicateMembers(bytes): unknown;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L59)
+Defined in: [packages/log-c2sp-tlog/src/canonical.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L97)
 
 Parses UTF-8 JSON bytes, rejecting duplicate object member names anywhere in
 the document.
@@ -1110,6 +1114,10 @@ the document.
 #### Throws
 
 C2spTlogParseError on invalid UTF-8, malformed JSON, or duplicate members.
+
+#### Throws
+
+C2spTlogResourceLimitError for value depth above 64 (root depth 0).
 
 ***
 
@@ -1376,7 +1384,7 @@ C2spTlogParseError when the reference, event, or chain metadata is invalid.
 function registerC2spTlog(registry, options): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/index.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/index.ts#L24)
+Defined in: [packages/log-c2sp-tlog/src/index.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/index.ts#L27)
 
 Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr. Reader options are shared; invocation refresh and cancellation apply to each reader.
 
@@ -1559,7 +1567,7 @@ C2spTlogVerificationError when the role is not required, already
 function stateHash(state): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:379](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L379)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:387](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L387)
 
 Base64url hash of a lifecycle state object (domain-separated SHA-256 over canonical JSON), as used in `prev_state_hash`.
 
@@ -1964,7 +1972,7 @@ Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expec
 function verifyLifecycle(events, options?): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:277](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L277)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:285](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L285)
 
 Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
 inbound MIGRATION), every event signature must verify against the entity or
@@ -2005,7 +2013,7 @@ VerificationError (SignatureInvalid) when a signature fails to verify.
 function verifyLoggedEventSignature(item, signerKey): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:372](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L372)
+Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:380](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L380)
 
 Verifies a single logged event's primary signature against `signerKey` over
 the entry's signed bytes.
