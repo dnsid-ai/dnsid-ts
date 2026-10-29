@@ -27,6 +27,7 @@ import { C2spTlogReader, type C2spTlogReaderOptions } from './reader.ts';
 export function registerC2spTlog(registry: LogRegistry, options: C2spTlogReaderOptions): void {
   registry.register('c2sp-tlog', (lr, invocation) => new C2spTlogReader(lr, {
     ...options,
+    migrationReaderFactory: options.migrationReaderFactory ?? ((previous, child) => registry.newReader(previous, child)),
     revalidate: invocation?.revalidate ?? options.revalidate,
     signal: invocation?.signal && options.signal ? AbortSignal.any([invocation.signal, options.signal]) : invocation?.signal ?? options.signal,
   }));
@@ -72,7 +73,7 @@ export type {
 export { stitchVerifiedMigrationHistory, verifyStreamLifecycle, verifyLifecycle, verifyLoggedEventSignature, stateHash } from './stream-verifier.ts';
 export type { MigrationVerificationResult, VerifiedLifecycleEvent, StreamVerifierOptions } from './stream-verifier.ts';
 export { C2spTlogReader, C2spTlogBinding, C2spTlogClient } from './reader.ts';
-export type { C2spStreamBundleReaderOptions, C2spTlogReaderOptions } from './reader.ts';
+export type { C2spMigrationVerificationLimits, C2spStreamBundleReaderOptions, C2spTlogReaderOptions } from './reader.ts';
 export { createC2spTlogVerificationRegistry } from './verification-registry.ts';
 export type { C2spScanLimits, C2spTlogVerificationOptions } from './verification-registry.ts';
 export { createDnsidManagedVerificationRegistry } from './managed-verification-registry.ts';

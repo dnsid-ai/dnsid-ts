@@ -377,7 +377,7 @@ URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 function createC2spTlogVerificationRegistry(options): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L93)
+Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L97)
 
 Creates a [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry) ready to verify `c2sp-tlog` lifecycle
 references. Trust policy is explicit and never inferred from an identity
@@ -437,7 +437,7 @@ such as `dnsid local` is reachable for policy and log reads.
 function createDnsidManagedVerificationRegistry(options?): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L73)
 
 Creates a registry for the reviewed trust roots of DNSid-managed
 DNSid logs. Calling this separately named factory is an explicit application
@@ -950,7 +950,7 @@ C2spTlogParseError when the object, a role, or a signature value is invalid.
 function parseC2spStreamBundle(bytes, options): C2spStreamBundle;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L121)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L124)
 
 Parses and structurally validates a canonical-JSON stream bundle without
 verifying any signatures, proofs, or freshness: exact member sets, canonical
@@ -1784,7 +1784,7 @@ Returns false rather than throwing on invalid input.
 function verifyC2spStreamBundle(bytes, options): Promise<VerifiedC2spStreamBundle>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:200](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L200)
+Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:203](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L203)
 
 Verifies offline lifecycle evidence for an expected identity and log reference:
 checks the expected agent FQDN and log reference, the producer signature,
