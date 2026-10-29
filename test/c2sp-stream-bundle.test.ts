@@ -16,6 +16,7 @@ import {
   type TrustedC2spCheckpointStore,
   InMemoryTrustedC2spCheckpointStore,
   canonicalBytes,
+  c2spEventId,
   canonicalizeC2spEvent,
   checkpointPath,
   createC2spTlogVerificationRegistry,
@@ -34,8 +35,11 @@ import {
   requiredC2spResourceFetchGuarantees,
   ScanStreamSource,
   signedC2spEventBytes,
+  signedC2spEntryBytes,
+  stateHash,
   tilePath,
   verifyC2spStreamBundle,
+  verifyStreamLifecycle,
 } from '@dnsid-ai/log-c2sp-tlog';
 
 const BUNDLE_EXTRA_ENTRY = new TextEncoder().encode('bundle tree non-lifecycle entry');
@@ -379,6 +383,82 @@ function rawReader(value: Fixture, entries: Uint8Array[], options: Partial<C2spT
 }
 
 const issuanceBytes = () => new TextEncoder().encode(ISSUANCE_ENTRY);
+
+describe('C2SP nested signed revocations (DEV-035)', () => {
+  it.each([0, 63, 64, 65, 4200, 10000, 20000])('never omits a revocation with extension depth %s', async depth => {
+    const issuance = JSON.parse(ISSUANCE_ENTRY);
+    const payload = {
+      fqdn: issuance.fqdn, kind: issuance.kind, log_origin: ORIGIN, lr: LR,
+      method: 'c2sp-tlog', stream_id: 'test-instance', type: 'REVOCATION', v: 1,
+      ts: issuance.ts + 1, reason: 'cessationOfOperation', seq: 1,
+      prev_event_id: c2spEventId(signedC2spEntryBytes(issuanceBytes())),
+      prev_state_hash: stateHash({
+        fqdn: issuance.fqdn, status: 'ACTIVE',
+        entity_thumb: await jwkThumbprint(issuance.ek),
+        operational_thumb: await jwkThumbprint(issuance.ku),
+      }),
+      x: 'NESTED',
+    };
+    // Splice canonical bytes so test generation does not use the SDK's nesting budget.
+    const nested = '['.repeat(depth) + '0' + ']'.repeat(depth);
+    const splice = (value: unknown) => Buffer.from(new TextDecoder().decode(canonicalBytes(value)).replace('"NESTED"', nested));
+    const key = createPrivateKey({
+      key: Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.alloc(32, 1)]),
+      format: 'der', type: 'pkcs8',
+    });
+    const signature = signEd25519(null, splice(payload), key).toString('base64url');
+    const revocation = splice({ ...payload, sigs: { ae: { kid: issuance.ek.kid, sig: signature } } });
+    expect(revocation.length).toBeLessThan(65536);
+    const entries = [issuanceBytes(), revocation];
+    const value = fixture(revocation);
+    value.object.events = [
+      { index: 0, entry: Buffer.from(entries[0]!).toString('base64url'), proof: Buffer.from(leafHash(revocation)).toString('base64url') },
+      { index: 1, entry: revocation.toString('base64url'), proof: Buffer.from(leafHash(entries[0]!)).toString('base64url') },
+    ];
+    value.object.state = { event_count: 2, last_event_type: 'REVOCATION', logged_state: 'REVOKED' };
+    const bundle = value.resign();
+    const source = new ScanStreamSource({ authenticateCheckpoint: () => {} }, {
+      securityGuarantees: requiredC2spResourceFetchGuarantees,
+      fetchBounded: async url => {
+        if (url === checkpointPath('https://log.example/dnsid')) return value.checkpoint(entries);
+        if (url === entryBundlePath('https://log.example/dnsid', 0, entries.length)) return encodeEntryBundle(entries);
+        throw new Error(`unexpected URL ${url}`);
+      },
+    });
+    const reader = rawReader(value, entries, { streamSource: source, checkpointMaxAge: 60_000 });
+    const fallback = vi.fn(async () => { throw new Error('invalid bundles must not fall back'); });
+    const bundleReader = rawReader(value, entries, {
+      streamSource: { load: fallback }, checkpointMaxAge: 60_000,
+      resourceFetcher: { fetchBounded: async () => bundle, securityGuarantees: requiredC2spResourceFetchGuarantees },
+      streamBundle: { policyDocument: value.options.policyBytes, bundleKeys: value.options.bundleKeys,
+        maxBundleLifetimeMs: 60_000, checkpointFreshnessMs: 60_000 },
+    });
+    const operations = {
+      history: async () => (await reader.rebuildHistory('agent.example')).map(event => event.type),
+      nonRevocation: () => reader.verifyNonRevocation('agent.example', new Date()),
+      stream: async () => (await verifyStreamLifecycle(entries.map((bytes, index) => ({ index, bytes })), 'agent.example', {
+        signerKey: issuance.ek, checkpointIntegrationTimeMs: value.options.nowMs,
+      })).map(item => item.event.type),
+      bundle: async () => (await verifyC2spStreamBundle(bundle, value.options)).events.map(item => item.event.type),
+      readEvent: async () => (await reader.readEvent(`${LR}@1`)).type,
+      bundleHistory: async () => (await bundleReader.rebuildHistory('agent.example')).map(event => event.type),
+      bundleNonRevocation: () => bundleReader.verifyNonRevocation('agent.example', new Date()),
+    };
+    for (const [path, operation] of Object.entries(operations)) {
+      if (depth >= 64) {
+        await expect(operation(), `path ${path}`).rejects.toMatchObject({
+          name: 'C2spTlogResourceLimitError', errorCategory: 'INVALID_EVIDENCE', transient: false,
+          message: 'JSON nesting limit exceeded (64)',
+        });
+      } else if (path === 'nonRevocation' || path === 'bundleNonRevocation') {
+        await expect(operation()).rejects.toThrow('revoked');
+      } else {
+        await expect(operation()).resolves.toEqual(path === 'readEvent' ? 'REVOCATION' : ['ISSUANCE', 'REVOCATION']);
+      }
+    }
+    expect(fallback).not.toHaveBeenCalled();
+  });
+});
 
 describe('C2SP network hash-tile consistency', () => {
   it.each([false, true])('advances factory bundles through tiles without entry reads (required=%s)', async required => {
