@@ -202,8 +202,10 @@ function crc(bytes) {
   for (const b of bytes) { c ^= b; for (let i = 0; i < 8; i++) c = (c >>> 1) ^ ((c & 1) ? 0x82f63b78 : 0); }
   return (c ^ 0xffffffff) >>> 0;
 }
-module.exports = async function runGcpPacked(Provider, sdkNode, format) {
+module.exports = async function runGcpPacked(Provider, sdkNode, sdk, format) {
   let reads = 0; let signatures = 0;
+  const originalVerify = sdk.IdentityManager.prototype.verifyPublicationEvidence;
+  let publicationChecks = 0;
   const prototype = KeyManagementServiceClient.prototype;
   const methods = ['getPublicKey', 'asymmetricSign', 'createCryptoKey', 'createCryptoKeyVersion',
     'importCryptoKeyVersion', 'updateCryptoKeyVersion', 'destroyCryptoKeyVersion', 'updateCryptoKeyPrimaryVersion'];
@@ -224,7 +226,24 @@ module.exports = async function runGcpPacked(Provider, sdkNode, format) {
     // Direct import/require and the SDK's native selected lazy import must both
     // reach the packed provider. No source alias or replacement module is used.
     const direct = await Provider.load(new KeyManagementServiceClient(), { activeKeyVersion: version, algorithm });
-    const selected = await sdkNode.operationalKeyProvider({ provider: 'google-kms', keyRef: version, settings: { algorithm } }, 'agent.example.com');
+    const publishedKey = await direct.signingKey();
+    // Isolate downstream publication evidence, as in the AWS packed smoke.
+    // This does not replace the configuration loader or provider factory.
+    sdk.IdentityManager.prototype.verifyPublicationEvidence = async function(domain) {
+      assert.equal(domain, 'agent.example.com'); publicationChecks++;
+      return { jwks: new sdk.JWKS([publishedKey]) };
+    };
+    const loaded = sdkNode.mergeLoadedConfig({}, {
+      dnsid: { identity: {
+        domain: 'agent.example.com', governanceId: 'example.com',
+        logRef: 'c2sp-tlog:public:https://log.dev.dnsid.ai#0123456789abcdefghijkl',
+        statusUrl: 'https://agent.example.com/status',
+        ekUrl: 'https://example.com/ek', kuUrl: 'https://agent.example.com/keys',
+      } },
+      keySource: { provider: 'google-kms', keyRef: version, settings: { algorithm } },
+    });
+    const manager = await sdkNode.constructIdentityManager(loaded);
+    const selected = manager.getKeyProvider();
     assert(selected, 'SDK must return the selected cloud provider, not file fallback');
     for (const provider of [direct, selected]) {
       const jwk = await provider.signingKey();
@@ -238,23 +257,27 @@ module.exports = async function runGcpPacked(Provider, sdkNode, format) {
         assert.deepEqual(Buffer.from(signature), sign(null, payload, privateKey));
       }
     }
-    assert.equal(reads, 2); assert.equal(signatures, 4);
+    assert.equal(reads, 2); assert.equal(signatures, 4); assert.equal(publicationChecks, 1);
     console.log('packed GCP ' + format + ' direct + SDK selected lazy loading passed (official client, mocked RPCs)');
-  } finally { for (const [name, original] of originals) prototype[name] = original; }
+  } finally {
+    for (const [name, original] of originals) prototype[name] = original;
+    sdk.IdentityManager.prototype.verifyPublicationEvidence = originalVerify;
+  }
 };
 `);
 await writeFile(path.join(consumerDir, 'gcp-loading.mjs'), `
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 import * as sdkNode from '@dnsid-ai/sdk/node';
+import * as sdk from '@dnsid-ai/sdk';
 import run from './gcp-packed-fixture.cjs';
-await run(GcpCloudKmsKeyProvider, sdkNode, 'ESM');
+await run(GcpCloudKmsKeyProvider, sdkNode, sdk, 'ESM');
 `);
 await writeFile(path.join(consumerDir, 'gcp-loading.cjs'), `
 const assert = require('node:assert/strict');
 const sdkNode = require('@dnsid-ai/sdk/node');
 assert.equal(require.cache[require.resolve('@dnsid-ai/key-gcp')], undefined, 'base SDK must not eagerly require GCP');
 const { GcpCloudKmsKeyProvider } = require('@dnsid-ai/key-gcp');
-require('./gcp-packed-fixture.cjs')(GcpCloudKmsKeyProvider, sdkNode, 'CJS').catch(error => { console.error(error); process.exitCode = 1; });
+require('./gcp-packed-fixture.cjs')(GcpCloudKmsKeyProvider, sdkNode, require('@dnsid-ai/sdk'), 'CJS').catch(error => { console.error(error); process.exitCode = 1; });
 `);
 
 await writeFile(path.join(consumerDir, 'browser.mjs'), `
@@ -278,8 +301,10 @@ globalThis.__dnsidBrowserExports = [
 run('node', ['esm.mjs'], { cwd: consumerDir });
 run('node', ['cjs.cjs'], { cwd: consumerDir });
 run('node', ['aws-loading.mjs'], { cwd: consumerDir });
-run('node', ['gcp-loading.mjs'], { cwd: consumerDir });
-run('node', ['gcp-loading.cjs'], { cwd: consumerDir });
+// Explicit non-secret project avoids ambient project discovery/metadata probes.
+const gcpSmokeOptions = { cwd: consumerDir, env: { ...process.env, GOOGLE_CLOUD_PROJECT: 'packed-test', METADATA_SERVER_DETECTION: 'none' } };
+run('node', ['gcp-loading.mjs'], gcpSmokeOptions);
+run('node', ['gcp-loading.cjs'], gcpSmokeOptions);
 run(path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'), ['browser.mjs', '--bundle', '--platform=browser', '--format=esm', '--outfile=browser-bundle.mjs'], { cwd: consumerDir });
 
 const browserBundle = await readFile(path.join(consumerDir, 'browser-bundle.mjs'), 'utf8');
