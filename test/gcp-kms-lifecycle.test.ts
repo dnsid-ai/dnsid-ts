@@ -73,6 +73,53 @@ describe('GCP provisional lifecycle (#56; Mode: fake-only)', () => {
     noCloudRetirement(client);
   });
 
+  for (const failure of ['creation-denied', 'generated-public-key-unavailable'] as const) {
+    it(`Given ${failure}, When GenerateKey fails, Then active signing and inventory remain unchanged without exposing a pending key`, async () => {
+      // Discover this version's opaque kid through a separate successful public
+      // operation, not a guessed encoding or provider implementation detail.
+      const control = await setup();
+      const failedVersionKid = await generate(control.provider);
+      const { client, config, provider } = await setup();
+      const before = await provider.signingKey();
+      const inventory = await provider.listKeyIds();
+      const payload = new Uint8Array([0, 255, 128, 42]);
+      const signatureBefore = await provider.sign(payload);
+      const failureMessage = failure === 'creation-denied' ? 'creation permission denied' : 'generated public key unavailable';
+      if (failure === 'creation-denied') {
+        client.createCryptoKeyVersion.mockRejectedValueOnce(Object.assign(new Error(failureMessage), { code: 7 }));
+      } else {
+        const originalGet = client.getPublicKey.getMockImplementation()!;
+        client.getPublicKey.mockImplementation(async request => {
+          if (request.name === NEXT) throw Object.assign(new Error(failureMessage), { code: 14 });
+          return originalGet(request);
+        });
+      }
+      await expect(provider.generateKey()).rejects.toThrow(failureMessage);
+      expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1);
+      if (failure === 'creation-denied') {
+        expect(client.getPublicKey.mock.calls.some(([request]) => request.name === NEXT)).toBe(false);
+      } else {
+        expect(client.getPublicKey).toHaveBeenCalledWith(expect.objectContaining({ name: NEXT }));
+      }
+      expect(config).toEqual({ activeKeyVersion: OLD, algorithm: ALGORITHM });
+      expect(await provider.signingKey()).toEqual(before);
+      expect(await provider.jwk(before.kid)).toEqual(before);
+      expect(await provider.listKeyIds()).toEqual(inventory);
+      expect(inventory).toEqual([before.kid]);
+      const signatureAfter = await provider.sign(payload);
+      expect(Buffer.from(signatureAfter)).toEqual(Buffer.from(signatureBefore));
+      expect(verify(null, payload, createPublicKey(keys.get(OLD)!), signatureAfter)).toBe(true);
+      // A cloud-created version whose public-key fetch failed is not a locally
+      // usable pending key. Creation denial likewise must leave no phantom key.
+      const callsBefore = client.asymmetricSign.mock.calls.length;
+      await expect(provider.jwk(failedVersionKid)).rejects.toThrow();
+      await expect(provider.signKey(failedVersionKid, payload)).rejects.toThrow();
+      expect(client.asymmetricSign.mock.calls.length).toBe(callsBefore);
+      expect(await provider.listKeyIds()).toEqual(inventory);
+      noCloudRetirement(client);
+    });
+  }
+
   it('Given pending successor, When explicitly activated, Then only successor is active and previous signing is denied', async () => {
     const { client, provider } = await setup(); const old = await provider.signingKey(); const kid = await generate(provider);
     await provider.activate(kid);
