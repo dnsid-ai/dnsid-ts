@@ -16,6 +16,7 @@ export interface GcpCloudKmsConfig {
 
 /** Structural seam implemented by the official KeyManagementServiceClient. */
 export interface GcpCloudKmsClient {
+  createCryptoKeyVersion?(request: { parent: string; cryptoKeyVersion: { state: 'ENABLED' } }): Promise<readonly unknown[]>;
   getPublicKey(request: { name: string }): Promise<readonly unknown[]>;
   asymmetricSign(request: { name: string; data: Uint8Array; dataCrc32c: { value: number } }): Promise<readonly unknown[]>;
 }
@@ -32,19 +33,30 @@ type SignResponse = {
 
 /** Opens one existing software Ed25519 version without cloud mutation or fallback. */
 export class GcpCloudKmsKeyProvider implements KeyProvider {
+  private readonly keys = new Map<string, { version: string; jwk: Readonly<DnsIdJWK>; state: 'active' | 'pending' | 'superseded' }>();
+  private activeKid: string | undefined;
+  private readonly signing = new Set<Promise<Uint8Array>>();
+  private activating = false;
   private constructor(
     private readonly client: GcpCloudKmsClient,
     private readonly version: string,
     private readonly publicKey: Readonly<DnsIdJWK>,
-  ) {}
+  ) {
+    this.activeKid = publicKey.kid;
+    this.keys.set(publicKey.kid, { version, jwk: publicKey, state: 'active' });
+  }
 
-  static async load(client: GcpCloudKmsClient, config: GcpCloudKmsConfig): Promise<GcpCloudKmsKeyProvider> {
+  static async load(client: GcpCloudKmsClient | undefined, config: GcpCloudKmsConfig): Promise<GcpCloudKmsKeyProvider> {
     const version = config.activeKeyVersion;
     if (typeof version !== 'string' || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]+\/cryptoKeys\/[A-Za-z0-9_-]+\/cryptoKeyVersions\/[1-9][0-9]*$/.test(version)) {
       throw new ArgumentError('Google Cloud KMS requires an immutable CryptoKeyVersion name');
     }
     if (config.algorithm !== 'EC_SIGN_ED25519') throw new ArgumentError('Google Cloud KMS algorithm must be EC_SIGN_ED25519');
     if (config.retainedKeyVersions?.length) throw new ArgumentError('Google Cloud KMS retained key loading is not supported');
+    if (!client) {
+      const { KeyManagementServiceClient } = await import('@google-cloud/kms');
+      client = new KeyManagementServiceClient();
+    }
     const [raw] = await client.getPublicKey({ name: version });
     const response = raw as PublicResponse | undefined;
     if (response?.name !== version) throw new ArgumentError('Google Cloud KMS public key version mismatch');
@@ -69,20 +81,35 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     return new GcpCloudKmsKeyProvider(client, version, Object.freeze(publicKey));
   }
 
-  async signingKey(): Promise<DnsIdJWK> { return { ...this.publicKey }; }
-  async jwk(kid: string): Promise<DnsIdJWK> {
-    this.requireKey(kid);
-    return { ...this.publicKey };
+  async signingKey(): Promise<DnsIdJWK> {
+    if (!this.activeKid) throw new ArgumentError('Google Cloud KMS has no active key');
+    return this.jwk(this.activeKid);
   }
-  async listKeyIds(): Promise<string[]> { return [this.publicKey.kid]; }
-  async sign(payload: Uint8Array): Promise<Uint8Array> { return this.signKey(this.publicKey.kid, payload); }
+  async jwk(kid: string): Promise<DnsIdJWK> {
+    const key = this.keys.get(kid);
+    if (!key) throw new ArgumentError('Google Cloud KMS key not found');
+    return { ...key.jwk };
+  }
+  async listKeyIds(): Promise<string[]> { return this.activeKid ? [this.activeKid] : []; }
+  async sign(payload: Uint8Array): Promise<Uint8Array> {
+    if (!this.activeKid) throw new ArgumentError('Google Cloud KMS has no active key');
+    return this.signKey(this.activeKid, payload);
+  }
   async signKey(kid: string, payload: Uint8Array): Promise<Uint8Array> {
-    this.requireKey(kid);
+    if (this.activating) throw new ArgumentError('Google Cloud KMS activation is in progress');
+    const key = this.keys.get(kid);
+    if (!key || key.state === 'superseded') throw new ArgumentError('Google Cloud KMS key is not active or pending');
+    const operation = this.signVersion(key.version, payload);
+    this.signing.add(operation);
+    try { return await operation; }
+    finally { this.signing.delete(operation); }
+  }
+  private async signVersion(version: string, payload: Uint8Array): Promise<Uint8Array> {
     // Snapshot caller-owned bytes before crossing the asynchronous transport boundary.
     const data = new Uint8Array(payload);
-    const [raw] = await this.client.asymmetricSign({ name: this.version, data, dataCrc32c: { value: crc32c(data) } });
+    const [raw] = await this.client.asymmetricSign({ name: version, data, dataCrc32c: { value: crc32c(data) } });
     const response = raw as SignResponse | undefined;
-    if (response?.name !== this.version) throw new ArgumentError('Google Cloud KMS signature version mismatch');
+    if (response?.name !== version) throw new ArgumentError('Google Cloud KMS signature version mismatch');
     if (response.verifiedDataCrc32c !== true) throw new ArgumentError('Google Cloud KMS did not verify data checksum');
     const signature = typeof response.signature === 'string'
       ? Buffer.from(response.signature, 'base64') : response.signature;
@@ -90,15 +117,47 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     if (!checksumMatches(signature, response.signatureCrc32c)) throw new ArgumentError('Google Cloud KMS signature checksum mismatch');
     return new Uint8Array(signature);
   }
-  private requireKey(kid: string): void {
-    if (kid !== this.publicKey.kid) throw new ArgumentError('Google Cloud KMS key not found');
+  /** Explicit operator generation only; never called by configuration opening. */
+  async generateKey(): Promise<string> {
+    if (!this.client.createCryptoKeyVersion) throw new ArgumentError('Google Cloud KMS client does not support version creation');
+    const parent = this.version.slice(0, this.version.lastIndexOf('/cryptoKeyVersions/'));
+    const [raw] = await this.client.createCryptoKeyVersion({ parent, cryptoKeyVersion: { state: 'ENABLED' } });
+    const created = raw as { name?: string; algorithm?: string | number; protectionLevel?: string | number; state?: string | number } | undefined;
+    if (!created?.name?.startsWith(parent + '/cryptoKeyVersions/')
+      || (created.algorithm !== 'EC_SIGN_ED25519' && created.algorithm !== 40)
+      || (created.protectionLevel !== 'SOFTWARE' && created.protectionLevel !== 1)
+      || (created.state !== 'ENABLED' && created.state !== 1)) {
+      throw new ArgumentError('Google Cloud KMS created an unexpected key version');
+    }
+    // Reuse the same integrity and immutable-version validation as existing-key opening.
+    const pending = await GcpCloudKmsKeyProvider.load(this.client, { activeKeyVersion: created.name, algorithm: 'EC_SIGN_ED25519' });
+    const jwk = await pending.signingKey();
+    if (this.keys.has(jwk.kid)) throw new ArgumentError('Google Cloud KMS generated duplicate public key');
+    this.keys.set(jwk.kid, { version: created.name, jwk: Object.freeze(jwk), state: 'pending' });
+    return jwk.kid;
   }
+  async activate(kid: string): Promise<void> {
+    if (this.activating) throw new ArgumentError('Google Cloud KMS activation is already in progress');
+    const key = this.keys.get(kid);
+    if (!key || key.state !== 'pending') throw new ArgumentError('Google Cloud KMS key is not pending');
+    this.activating = true;
+    try {
+      await Promise.allSettled(this.signing);
+      if (this.activeKid) this.keys.get(this.activeKid)!.state = 'superseded';
+      key.state = 'active';
+      this.activeKid = kid;
+    } finally { this.activating = false; }
+  }
+  async supersede(kid: string): Promise<void> {
+    if (this.activating) throw new ArgumentError('Google Cloud KMS activation is in progress');
+    const key = this.keys.get(kid);
+    if (!key) throw new ArgumentError('Google Cloud KMS key not found');
+    key.state = 'superseded';
+    if (this.activeKid === kid) this.activeKid = undefined;
+  }
+  /** Alias for local supersession; never disables or destroys a cloud version. */
+  async purge(kid: string): Promise<void> { return this.supersede(kid); }
 
-  // Lifecycle implementation awaits separately authored red proof (#56).
-  async generateKey(): Promise<string> { throw new ArgumentError('Google Cloud KMS generation is not implemented'); }
-  async activate(_kid: string): Promise<void> { throw new ArgumentError('Google Cloud KMS activation is not implemented'); }
-  async supersede(_kid: string): Promise<void> { throw new ArgumentError('Google Cloud KMS supersession is not implemented'); }
-  async purge(_kid: string): Promise<void> { throw new ArgumentError('Google Cloud KMS supersession is not implemented'); }
 }
 
 function checksumMatches(bytes: Uint8Array, checksum: Checksum): boolean {

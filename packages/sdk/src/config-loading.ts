@@ -418,6 +418,10 @@ export async function operationalKeyProvider(source: KeySource, domain: string):
     const { createAwsKmsKeyProvider } = await import('@dnsid-ai/key-aws');
     return createAwsKmsKeyProvider(source.keyRef!, source.settings);
   }
+  if (source.provider === 'google-kms') {
+    const { GcpCloudKmsKeyProvider } = await import('@dnsid-ai/key-gcp');
+    return GcpCloudKmsKeyProvider.load(undefined, { activeKeyVersion: source.keyRef!, algorithm: 'EC_SIGN_ED25519' });
+  }
   if (source.keyRef !== undefined || source.cliDirectory !== undefined || source.keyStorePath !== undefined) {
     console.warn('Local private-key files are unsuitable for production. Configure keySource.provider/keyRef for cloud custody.');
   }
@@ -445,7 +449,23 @@ export async function validateKeySource(source: KeySource = {}): Promise<void> {
     if (source.settings && Object.keys(source.settings).length) throw new ArgumentError('file provider has no settings');
     return;
   }
-  if (provider !== 'aws-kms') throw new ArgumentError(`${provider} is unavailable; install/link a supported provider package (Google KMS and Azure factories are not implemented)`);
+  if (provider === 'google-kms') {
+    if (!source.keyRef || source.generation || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]+\/cryptoKeys\/[A-Za-z0-9_-]+\/cryptoKeyVersions\/[1-9][0-9]*$/.test(source.keyRef)) {
+      throw new ArgumentError('google-kms requires an existing immutable CryptoKeyVersion keyRef');
+    }
+    if (source.settings && (Object.keys(source.settings).some(key => key !== 'algorithm')
+      || (source.settings.algorithm !== undefined && source.settings.algorithm !== 'EC_SIGN_ED25519'))) {
+      throw new ArgumentError('google-kms settings allow only algorithm EC_SIGN_ED25519; use ambient credentials');
+    }
+    try {
+      const factory = await import('@dnsid-ai/key-gcp');
+      if (typeof factory.GcpCloudKmsKeyProvider?.load !== 'function') throw new Error('provider unavailable');
+    } catch {
+      throw new ArgumentError('google-kms unavailable; install a compatible @dnsid-ai/key-gcp and include it in the build/bundle');
+    }
+    return;
+  }
+  if (provider !== 'aws-kms') throw new ArgumentError(`${provider} is unavailable; install/link a supported provider package (Azure factory is not implemented)`);
   if (!source.keyRef || source.generation) throw new ArgumentError('AWS KMS requires an existing keyRef; atomic generation discovery is not supported');
   try {
     const factory = await import('@dnsid-ai/key-aws');

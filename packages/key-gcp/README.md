@@ -21,7 +21,19 @@ It sends raw data (never a digest) and verifies request/response CRC32C integrit
 and returned version bindings. Google transport and permission errors propagate;
 there is no local signing fallback, key import, or generation during opening.
 
-This runtime slice supports `signingKey`, `jwk`, `listKeyIds`, `sign`, and
-`signKey`. Configuration-factory selection and management methods (`generateKey`,
-`activate`, `supersede`, `purge`) are not implemented yet. Retained-key loading
-is rejected. No remote version is disabled or destroyed by this package.
+Configuration selects this optional package with `provider: "google-kms"`, the
+immutable version as `keyRef`, and optional `settings.algorithm: "EC_SIGN_ED25519"`.
+Only the selected package is imported; injected providers bypass selection.
+
+An explicit `generateKey()` creates a pending software Ed25519 version under the
+same CryptoKey. It does not change deployment configuration or the active signer.
+Pending keys support `jwk` and `signKey`; `activate` drains in-flight signatures
+and blocks new signing while promoting the pending key. `listKeyIds` contains
+only the active ID, or is empty after local supersession. `supersede` and its
+`purge` alias change local eligibility only; no cloud version is disabled or
+destroyed. Historical public keys remain available through `jwk`.
+
+Lifecycle state is in memory. Applications own durable recovery and publication
+orchestration; reopening the configured version does not recover pending state.
+Retained-key configuration loading is rejected. Lifecycle behavior implements
+the provisional shared #56 clarification, not a claim of contract acceptance.
