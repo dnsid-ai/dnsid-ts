@@ -30,6 +30,8 @@ function isAlgConsistentWithKey(alg: string, key: DnsIdJWK): boolean {
       || (key.crv === 'P-384' && alg === 'ES384')
       || (key.crv === 'P-521' && alg === 'ES512');
   }
+  // Fixed-length alternatives cannot cause unbounded backtracking.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (key.kty === 'RSA') return /^RS(256|384|512)$/.test(alg) || /^PS(256|384|512)$/.test(alg);
   return false;
 }

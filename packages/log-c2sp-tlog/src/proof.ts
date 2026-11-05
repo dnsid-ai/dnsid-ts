@@ -62,6 +62,8 @@ export function verifyC2spTlogProof(entryBytes: Uint8Array, proof: TlogProofV1 |
 }
 
 function parseSafeInt(s: string, name: string): number {
+  // Anchored decimal grammar has disjoint alternatives and linear-time matching.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (!/^(0|[1-9][0-9]*)$/.test(s)) throw new C2spTlogParseError(`invalid ${name}`);
   const n = Number(s);
   if (!Number.isSafeInteger(n)) throw new C2spTlogParseError(`${name} outside safe integer range`);

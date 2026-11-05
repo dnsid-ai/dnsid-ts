@@ -57,6 +57,8 @@ function validity(params: SignatureParams, skew: number, directory = false): voi
 }
 
 function directoryFreshness(headers: Headers, started: number, received: number): number | undefined {
+  // Sticky matching and disjoint token/quoted-string branches keep parsing linear.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   const control = headers.get('Cache-Control') ?? '';
   const directive = /\s*([!#$%&'*+.^_`|~0-9a-z-]+)(?:\s*=\s*("(?:[^"\\\r\n]|\\[^\r\n])*"|[!#$%&'*+.^_`|~0-9a-z-]+))?\s*(?:,|$)/igy;
   let maxAge: number | undefined;

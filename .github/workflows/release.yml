@@ -36,6 +36,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Read version
         id: version
@@ -45,8 +46,9 @@ jobs:
           echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Extract release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           VERSION="${VERSION#v}"
           awk -v version="$VERSION" '
             BEGIN { header = "## [" version "]" }
@@ -61,12 +63,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.23.4
+          # Includes npm >= 11.5.1 for trusted publishing (OIDC).
+          node-version: 24.22.1
           registry-url: 'https://registry.npmjs.org'
-
-      # Trusted publishing (OIDC) requires npm >= 11.5.1; Node 22 bundles npm 10.
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@11 && npm --version
 
       - name: Install dependencies
         run: npm ci
@@ -105,14 +104,18 @@ jobs:
           ls -lh tarballs/*.tgz
 
       - name: Tag release
+        env:
+          TAG: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.version.outputs.version }} already exists, skipping"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists, skipping"
           else
-            git tag -a "${{ steps.version.outputs.version }}" -m "Release ${{ steps.version.outputs.version }}"
-            git push origin "${{ steps.version.outputs.version }}"
+            git tag -a "$TAG" -m "Release ${TAG}"
+            gh auth setup-git
+            git push origin "$TAG"
           fi
 
       - name: Generate SBOM (CycloneDX)
@@ -125,7 +128,6 @@ jobs:
 
       - name: Create GitHub Release
         run: |
-          TAG="${{ steps.version.outputs.version }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists; refreshing assets"
             gh release upload "$TAG" tarballs/*.tgz sbom.cdx.json --clobber
@@ -136,7 +138,8 @@ jobs:
               --notes-file /tmp/release-notes.md
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.version }}
 
       - name: Publish public workspaces to npmjs
         run: |

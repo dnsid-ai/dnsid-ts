@@ -1192,6 +1192,8 @@ function parseLiveChallenge(
   expectedDomain?: string,
 ): { domain: string; challengeTranscript: LiveChallengeTranscript } {
   const label = 'registry Live challenge transcript';
+  // Each anchored character-class match is linear in its input length.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (!/^[A-Za-z0-9_-]+$/.test(challenge) || !/^[A-Za-z0-9_-]+$/.test(challengeMessage)) {
     throw new Error(`invalid ${label}: challenge and challenge_message must be non-empty unpadded base64url strings`);
   }

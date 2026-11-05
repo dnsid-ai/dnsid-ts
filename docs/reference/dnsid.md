@@ -1076,7 +1076,7 @@ Returns true when the error is a transient DNSid verification failure.
 function jwkSignatureAlg(key): string;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L37)
+Defined in: [packages/protocol/src/jwks.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L39)
 
 #### Parameters
 
@@ -1098,7 +1098,7 @@ Defined in: [packages/protocol/src/jwks.ts:37](https://github.com/dnsid-ai/dnsid
 function jwkThumbprint(key): Promise<string>;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:218](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L218)
+Defined in: [packages/protocol/src/jwks.ts:220](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L220)
 
 Computes the RFC 7638 JWK thumbprint of a key.
 Returns unpadded base64url (RFC 7515 §2).
@@ -1125,7 +1125,7 @@ Lifecycle log bindings MUST use thumbprints, not kid values, as the durable key 
 function keySetsShareKeyMaterial(a, b): Promise<boolean>;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:247](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L247)
+Defined in: [packages/protocol/src/jwks.ts:249](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L249)
 
 Returns true if any key in `a` shares an RFC 7638 JWK thumbprint with any key in `b`.
 

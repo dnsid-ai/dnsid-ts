@@ -1,20 +1,12 @@
 name: Auto-regenerate reference docs
 
-# On every same-repo PR push, regenerate docs/reference/ and, when the output
-# changed, push the fix to the PR branch — contributors never run the docs
-# generator by hand. Fork PRs are skipped (GITHUB_TOKEN cannot push to forks);
-# the freshness warning in compile.yml still tells fork authors the manual
-# command.
-#
-# Loop guard: the job skips when the actor is github-actions[bot] (GraphQL-created
-# commits do re-trigger pull_request), and a re-run would find no diff anyway. The same property means CI results shown on the PR
-# belong to the contributor's last commit; the bot commit only touches
-# docs/reference/, which no test job consumes.
+# Generate on same-repo PRs without write credentials. A separate job commits
+# only validated docs/reference/ changes through GitHub's signed-commit API.
+# Fork authors use the freshness warning in compile.yml and run npm run docs:md.
 on:
   pull_request:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: regen-docs-${{ github.event.pull_request.number }}
@@ -22,13 +14,18 @@ concurrency:
 
 jobs:
   regen:
-    # actor guard: createCommitOnBranch commits DO re-trigger pull_request, unlike GITHUB_TOKEN git pushes
+    # GraphQL-created commits can re-trigger pull_request.
     if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -37,38 +34,71 @@ jobs:
 
       - run: npm ci
 
-      # TypeDoc runs with treatWarningsAsErrors, so an undocumented export
-      # fails here — same standard the blocking "Build docs" step enforces.
+      # treatWarningsAsErrors matches the blocking docs build in compile.yml.
       - name: Regenerate reference
         run: npm run docs:md
 
-      # Commit through the GraphQL API instead of `git commit`: commits created
-      # by createCommitOnBranch are signed by GitHub's web-flow key, so the bot
-      # commit is Verified and satisfies signed-commit branch protection. A
-      # GITHUB_TOKEN commit still does not re-trigger this workflow.
-      - name: Commit and push if changed
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Prepare changes
+        id: changes
         run: |
           git add -A docs/reference/
           if git diff --cached --quiet; then
             echo "reference is current"
             exit 0
           fi
+          mkdir -p "$RUNNER_TEMP/reference-changes"
           git diff --cached --name-only --diff-filter=AM -z \
             | while IFS= read -r -d '' f; do base64 -w0 < "$f" > /tmp/b64; jq -n --arg p "$f" --rawfile c /tmp/b64 '{path: $p, contents: $c}'; done \
-            | jq -s . > /tmp/additions.json
+            | jq -s . > "$RUNNER_TEMP/reference-changes/additions.json"
           git diff --cached --name-only --diff-filter=D -z \
-            | jq -Rs 'split("\u0000") | map(select(length > 0) | {path: .})' > /tmp/deletions.json
-          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$BRANCH" --arg head "$(git rev-parse HEAD)" \
-            --slurpfile additions /tmp/additions.json --slurpfile deletions /tmp/deletions.json '{
+            | jq -Rs 'split("\u0000") | map(select(length > 0) | {path: .})' > "$RUNNER_TEMP/reference-changes/deletions.json"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          name: reference-changes
+          path: ${{ runner.temp }}/reference-changes/
+          retention-days: 1
+
+  commit:
+    needs: regen
+    if: needs.regen.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Do not check out or execute PR code in this job.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: reference-changes
+          path: ${{ runner.temp }}/reference-changes/
+
+      - name: Commit and push changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CHANGES: ${{ runner.temp }}/reference-changes
+        run: |
+          # Treat the artifact as untrusted data; restrict every write to docs.
+          for file in additions deletions; do
+            jq -e 'type == "array" and all(.[];
+              (.path | type == "string" and startswith("docs/reference/") and
+                (split("/") | all(. != ".." and . != "." and . != ""))))' "$CHANGES/$file.json" > /dev/null
+          done
+          jq -e 'all(.[]; .contents | type == "string")' "$CHANGES/additions.json" > /dev/null
+          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$BRANCH" --arg head "$HEAD_SHA" \
+            --slurpfile additions "$CHANGES/additions.json" --slurpfile deletions "$CHANGES/deletions.json" '{
               query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
               variables: { input: {
                 branch: { repositoryNameWithOwner: $repo, branchName: $branch },
                 expectedHeadOid: $head,
                 message: { headline: "docs: regenerate reference" },
-                fileChanges: { additions: $additions[0], deletions: $deletions[0] }
+                fileChanges: {
+                  additions: ($additions[0] | map({path, contents})),
+                  deletions: ($deletions[0] | map({path}))
+                }
               } }
             }' > /tmp/commit.json
           gh api graphql --input /tmp/commit.json --jq '.data.createCommitOnBranch.commit.oid'

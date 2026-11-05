@@ -361,6 +361,8 @@ function exactObject(value: unknown, members: string[], name: string): Record<st
 }
 
 function strictBase64url(value: unknown, name: string, expectedLength?: number): Uint8Array {
+  // One anchored character class; matching is linear in the encoded length.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (typeof value !== 'string' || !/^[A-Za-z0-9_-]*$/.test(value)) throw new C2spTlogParseError(`${name} must be unpadded base64url`);
   const bytes = new Uint8Array(Buffer.from(value, 'base64url'));
   if (b64url(bytes) !== value) throw new C2spTlogParseError(`${name} must use canonical base64url`);

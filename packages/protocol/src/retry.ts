@@ -65,6 +65,8 @@ function delayForAttempt(
 ): number {
   const uncapped = initialDelayMs * Math.pow(multiplier, attempt - 1);
   const capped = Math.min(maxDelayMs, uncapped);
+  // Jitter controls retry timing, not keys, nonces, or authorization.
+  // nosemgrep: ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
   return jitter ? Math.floor(Math.random() * capped) : capped;
 }
 

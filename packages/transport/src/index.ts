@@ -62,6 +62,8 @@ export interface HTTPSFetchOptions {
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 1 * 1024 * 1024;
+// Public HTTP User-Agent identifier, not an authentication username.
+// nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_username
 const DNSID_USER_AGENT = 'dnsid-ts';
 
 function httpsTransportError(cause: unknown): VerificationError {
