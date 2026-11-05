@@ -148,6 +148,13 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
       this.activeKid = kid;
     } finally { this.activating = false; }
   }
+  /**
+   * Removes local signing eligibility from an active, pending, or already
+   * superseded key. Superseding the active key leaves no active signer and an
+   * empty live key list; superseding another key does not clear its successor.
+   * The public JWK remains available through `jwk` for historical verification.
+   * Never disables, destroys, or otherwise mutates the remote CryptoKeyVersion.
+   */
   async supersede(kid: string): Promise<void> {
     if (this.activating) throw new ArgumentError('Google Cloud KMS activation is in progress');
     const key = this.keys.get(kid);

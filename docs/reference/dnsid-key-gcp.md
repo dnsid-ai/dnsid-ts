@@ -164,7 +164,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L159)
+Defined in: [index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L166)
 
 Alias for local supersession; never disables or destroys a cloud version.
 
@@ -268,9 +268,13 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L151)
+Defined in: [index.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L158)
 
-Supersedes and removes a retained key from this provider's published key set.
+Removes local signing eligibility from an active, pending, or already
+superseded key. Superseding the active key leaves no active signer and an
+empty live key list; superseding another key does not clear its successor.
+The public JWK remains available through `jwk` for historical verification.
+Never disables, destroys, or otherwise mutates the remote CryptoKeyVersion.
 
 ###### Parameters
 
