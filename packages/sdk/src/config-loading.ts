@@ -180,7 +180,10 @@ export async function loadFile(filePath: string): Promise<LoadedConfig> {
   if (root.keySource !== undefined) {
     const source = object(root.keySource, `${filePath}: keySource`);
     rejectUnknown(source, 'keySource', ['provider', 'keyRef', 'generation', 'settings', 'cliDirectory', 'keyStorePath', 'entityKeyPath']);
-    for (const field of ['provider', 'keyRef', 'cliDirectory', 'keyStorePath', 'entityKeyPath']) optional(source, field, 'string', 'keySource');
+    for (const field of ['provider', 'keyRef', 'cliDirectory', 'keyStorePath', 'entityKeyPath']) {
+      const value = optional(source, field, 'string', 'keySource');
+      if (typeof value === 'string' && !value.trim()) delete source[field];
+    }
     if (source.settings !== undefined) object(source.settings, 'keySource.settings');
     if (source.generation !== undefined) {
       const generation = object(source.generation, 'keySource.generation');
