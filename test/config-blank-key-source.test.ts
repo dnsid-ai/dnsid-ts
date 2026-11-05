@@ -35,7 +35,7 @@ describe('deployment keySource blank optional strings', () => {
   for (const field of ['provider', 'keyRef', 'cliDirectory', 'keyStorePath', 'all']) {
     it.each(blanks)(`${field}: %s operational overlay retains the base`, (_name, blank) => {
       // Given a base cloud source and only blank operational file strings.
-      const base = { keySource: { provider: 'aws-kms', keyRef: 'stable-key', settings: { region: 'us-east-1' }, entityKeyPath: '/base/entity.jwk' } };
+      const base = { keySource: { provider: 'aws-kms' as const, keyRef: 'stable-key', settings: { region: 'us-east-1' }, entityKeyPath: '/base/entity.jwk' } };
       const source = field === 'all'
         ? { provider: blank, keyRef: blank, cliDirectory: blank, keyStorePath: blank }
         : { [field]: blank };
