@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws'];
+const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws', 'key-gcp'];
 const browserCapablePackages = ['protocol', 'http-signatures', 'jose', 'registry', 'web-bot-auth', 'log-c2sp-tlog', 'sdk'];
 
 for (const name of browserCapablePackages) {
@@ -94,8 +94,9 @@ import {
 } from '@dnsid-ai/sdk';
 import { LocalKeyProvider, createNodeIdentityManager } from '@dnsid-ai/sdk/node';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
-for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade]) {
+for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade, GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected ESM function export');
 }
 if (DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
@@ -118,8 +119,9 @@ const c2spTlogVersion = require('@dnsid-ai/log-c2sp-tlog/version');
 const sdk = require('@dnsid-ai/sdk');
 const sdkNode = require('@dnsid-ai/sdk/node');
 const keyAws = require('@dnsid-ai/key-aws');
+const keyGcp = require('@dnsid-ai/key-gcp');
 
-for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade]) {
+for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade, keyGcp.GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected CJS function export');
 }
 if (sdk.DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
@@ -179,6 +181,82 @@ try {
 }
 `);
 
+// #56 characterization: installed tarballs only, no Vitest aliases/source imports.
+// Authority: dnsid-sdk-compliance@3e5d4d7, SDK configuration/key-provider contracts.
+// Mode: fake-only Cloud KMS network; real official client, packed provider and SDK loader.
+// The independent RFC 8032 key is test-only. No credentials or GCP network access.
+await writeFile(path.join(consumerDir, 'gcp-packed-fixture.cjs'), `
+const assert = require('node:assert/strict');
+const { createPrivateKey, createPublicKey, sign, verify } = require('node:crypto');
+const { KeyManagementServiceClient } = require('@google-cloud/kms');
+const version = 'projects/packed-test/locations/global/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7';
+const algorithm = 'EC_SIGN_ED25519';
+const privateKey = createPrivateKey({
+  key: Buffer.from('302e020100300506032b657004220420' + '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60', 'hex'),
+  format: 'der', type: 'pkcs8',
+});
+const publicKey = createPublicKey(privateKey);
+const pem = publicKey.export({ format: 'pem', type: 'spki' }).toString();
+function crc(bytes) {
+  let c = 0xffffffff;
+  for (const b of bytes) { c ^= b; for (let i = 0; i < 8; i++) c = (c >>> 1) ^ ((c & 1) ? 0x82f63b78 : 0); }
+  return (c ^ 0xffffffff) >>> 0;
+}
+module.exports = async function runGcpPacked(Provider, sdkNode, format) {
+  let reads = 0; let signatures = 0;
+  const prototype = KeyManagementServiceClient.prototype;
+  const methods = ['getPublicKey', 'asymmetricSign', 'createCryptoKey', 'createCryptoKeyVersion',
+    'importCryptoKeyVersion', 'updateCryptoKeyVersion', 'destroyCryptoKeyVersion', 'updateCryptoKeyPrimaryVersion'];
+  const originals = new Map(methods.map(name => [name, prototype[name]]));
+  try {
+    // Patch only official-client RPC boundaries. Any unexpected RPC fails closed.
+    for (const name of methods) prototype[name] = async function() { assert.fail('unexpected GCP mutation: ' + name); };
+    prototype.getPublicKey = async function(request) {
+      assert.equal(request.name, version); reads++;
+      return [{ name: version, algorithm, protectionLevel: 'SOFTWARE', pem, pemCrc32c: { value: crc(Buffer.from(pem)) } }];
+    };
+    prototype.asymmetricSign = async function(request) {
+      assert.equal(request.name, version); assert.equal(request.digest, undefined);
+      assert.equal(Number(request.dataCrc32c?.value), crc(request.data)); signatures++;
+      const signature = sign(null, request.data, privateKey);
+      return [{ name: version, signature, signatureCrc32c: { value: crc(signature) }, verifiedDataCrc32c: true }];
+    };
+    // Direct import/require and the SDK's native selected lazy import must both
+    // reach the packed provider. No source alias or replacement module is used.
+    const direct = await Provider.load(new KeyManagementServiceClient(), { activeKeyVersion: version, algorithm });
+    const selected = await sdkNode.operationalKeyProvider({ provider: 'google-kms', keyRef: version, settings: { algorithm } }, 'agent.example.com');
+    assert(selected, 'SDK must return the selected cloud provider, not file fallback');
+    for (const provider of [direct, selected]) {
+      const jwk = await provider.signingKey();
+      assert.equal(jwk.kty, 'OKP'); assert.equal(jwk.crv, 'Ed25519'); assert.equal(jwk.alg, 'EdDSA');
+      assert.equal(jwk.x, Buffer.from('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a', 'hex').toString('base64url'));
+      assert.equal(jwk.d, undefined); assert(jwk.kid && !jwk.kid.includes('#'));
+      assert.deepEqual(await provider.listKeyIds(), [jwk.kid]);
+      for (const payload of [Buffer.alloc(0), Buffer.from([0, 255, 128, 42])]) {
+        const signature = await provider.sign(payload);
+        assert.equal(signature.length, 64); assert(verify(null, payload, publicKey, signature));
+        assert.deepEqual(Buffer.from(signature), sign(null, payload, privateKey));
+      }
+    }
+    assert.equal(reads, 2); assert.equal(signatures, 4);
+    console.log('packed GCP ' + format + ' direct + SDK selected lazy loading passed (official client, mocked RPCs)');
+  } finally { for (const [name, original] of originals) prototype[name] = original; }
+};
+`);
+await writeFile(path.join(consumerDir, 'gcp-loading.mjs'), `
+import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
+import * as sdkNode from '@dnsid-ai/sdk/node';
+import run from './gcp-packed-fixture.cjs';
+await run(GcpCloudKmsKeyProvider, sdkNode, 'ESM');
+`);
+await writeFile(path.join(consumerDir, 'gcp-loading.cjs'), `
+const assert = require('node:assert/strict');
+const sdkNode = require('@dnsid-ai/sdk/node');
+assert.equal(require.cache[require.resolve('@dnsid-ai/key-gcp')], undefined, 'base SDK must not eagerly require GCP');
+const { GcpCloudKmsKeyProvider } = require('@dnsid-ai/key-gcp');
+require('./gcp-packed-fixture.cjs')(GcpCloudKmsKeyProvider, sdkNode, 'CJS').catch(error => { console.error(error); process.exitCode = 1; });
+`);
+
 await writeFile(path.join(consumerDir, 'browser.mjs'), `
 import {
   DomainLog,
@@ -200,6 +278,8 @@ globalThis.__dnsidBrowserExports = [
 run('node', ['esm.mjs'], { cwd: consumerDir });
 run('node', ['cjs.cjs'], { cwd: consumerDir });
 run('node', ['aws-loading.mjs'], { cwd: consumerDir });
+run('node', ['gcp-loading.mjs'], { cwd: consumerDir });
+run('node', ['gcp-loading.cjs'], { cwd: consumerDir });
 run(path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'), ['browser.mjs', '--bundle', '--platform=browser', '--format=esm', '--outfile=browser-bundle.mjs'], { cwd: consumerDir });
 
 const browserBundle = await readFile(path.join(consumerDir, 'browser-bundle.mjs'), 'utf8');
