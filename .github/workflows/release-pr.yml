@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install git-cliff
         uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
@@ -49,9 +50,10 @@ jobs:
 
       - name: Synchronize workspace versions
         if: steps.prep.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.prep.outputs.version }}
         run: |
           # Strip leading 'v' for npm package versions, e.g. v0.2.0 -> 0.2.0.
-          VERSION="${{ steps.prep.outputs.version }}"
           node scripts/sync-package-versions.mjs "${VERSION#v}"
           npm install --package-lock-only
 

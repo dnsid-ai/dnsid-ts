@@ -191,6 +191,8 @@ function validateLrFormat(lr: string): void {
 
 function validateHttpsUrl(value: string, field: string): URL {
   // WHATWG URL also accepts "https:host", "https:///host" and backslashes; RFC 9110 section 4.2.2 does not.
+  // Fixed-length prefix check has no repetition or backtracking risk.
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (!/^https:\/\/[^/\\]/i.test(value) || value.includes('\\')) throw new ValidationError(`${field} must be a valid HTTPS URI with a host`);
   let url: URL;
   try { url = new URL(value); } catch { throw new ValidationError(`${field} is not a valid URI: ${value}`); }

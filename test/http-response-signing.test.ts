@@ -157,7 +157,7 @@ describe('NR06 server no negotiation', () => {
 describe('NR07 server fulfills parsed negotiation', () => {
   it('preserves a non-default label, reordered full coverage, added fields, and equivalent true spellings', async () => {
     let request = await prepare({ expectedDomain: domain, additionalComponents: ['content-type'] });
-    const header = request.headers.get('Accept-Signature')!.replace('sig1=', 'custom=').replace('"@status" ', '').replace('("@method"', '("@method"').replace('"content-type")', '"content-type" "@status")').replaceAll(';req', ';req=?1').replace(';created;', ';created=?1;').replace(';expires;', ';expires=?1;');
+    const header = request.headers.get('Accept-Signature')!.replace('sig1=', 'custom=').replace('"@status" ', '').replace('"content-type")', '"content-type" "@status")').replaceAll(';req', ';req=?1').replace(';created;', ';created=?1;').replace(';expires;', ';expires=?1;');
     const headers = new Headers(request.headers); headers.set('Accept-Signature', header);
     request = new Request(request, { headers });
     const response = await server.signRequestedHttpResponse(request, new Response('body', { headers: { 'Content-Type': 'text/plain' } }));

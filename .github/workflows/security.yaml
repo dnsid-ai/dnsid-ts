@@ -29,3 +29,5 @@ jobs:
       codeql-actions: true
       upload-sarif: true
       enforce-security: false
+      # Platform binary installers used by the locked build/test toolchain.
+      allowed-install-scripts: esbuild fsevents

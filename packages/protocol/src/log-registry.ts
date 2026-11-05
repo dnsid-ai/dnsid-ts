@@ -27,6 +27,8 @@ export class LogRegistry {
    * @throws ArgumentError if method does not match [a-z][a-z0-9-]*
    */
   register(method: string, factory: LogReaderFactory): void {
+    // Anchored prefix plus a single character class; matching is linear.
+    // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
     if (!METHOD_RE.test(method)) {
       throw new ArgumentError(`log method must match [a-z][a-z0-9-]*: ${method}`);
     }

@@ -1,0 +1,6 @@
+# TypeDoc 0.28.20 uses minimatch.matchOne, which minimatch 11 removed.
+# Only the docs toolchain uses minimatch; its glob patterns come from repository config.
+# shortcut: retain minimatch 10 for TypeDoc, remove this exception when TypeDoc supports a fixed version.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249" # CVE-2026-118764
+reason = "Dev-only TypeDoc uses repository-controlled glob patterns. Fixed minimatch 11 breaks TypeDoc (matchOne removed); remove when TypeDoc supports a fixed release."

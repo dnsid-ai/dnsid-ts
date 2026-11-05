@@ -1453,7 +1453,7 @@ Stores a verified domain result. Entry expires at result.expiry().
 
 ### JWKS
 
-Defined in: [packages/protocol/src/jwks.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L100)
+Defined in: [packages/protocol/src/jwks.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L102)
 
 Wrapper around a JWK Set document.
 
@@ -1467,7 +1467,7 @@ Wrapper around a JWK Set document.
 new JWKS(keys): JWKS;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L103)
+Defined in: [packages/protocol/src/jwks.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L105)
 
 ###### Parameters
 
@@ -1489,7 +1489,7 @@ Defined in: [packages/protocol/src/jwks.ts:103](https://github.com/dnsid-ai/dnsi
 readonly keys: DnsIdJWK[];
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L101)
+Defined in: [packages/protocol/src/jwks.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L103)
 
 #### Methods
 
@@ -1501,7 +1501,7 @@ Defined in: [packages/protocol/src/jwks.ts:101](https://github.com/dnsid-ai/dnsi
 currentOperationalSigningKey(): DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:174](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L174)
+Defined in: [packages/protocol/src/jwks.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L176)
 
 ###### Returns
 
@@ -1515,7 +1515,7 @@ Defined in: [packages/protocol/src/jwks.ts:174](https://github.com/dnsid-ai/dnsi
 currentRecordSigningKey(): DnsIdJWK;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:170](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L170)
+Defined in: [packages/protocol/src/jwks.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L172)
 
 ###### Returns
 
@@ -1529,7 +1529,7 @@ Defined in: [packages/protocol/src/jwks.ts:170](https://github.com/dnsid-ai/dnsi
 draft01RecordSigningKeyById(kid): DnsIdJWK | null;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L136)
+Defined in: [packages/protocol/src/jwks.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L138)
 
 Returns the draft-01-compatible record-signing key matching kid, or null if none.
 
@@ -1551,7 +1551,7 @@ Returns the draft-01-compatible record-signing key matching kid, or null if none
 keyById(kid): DnsIdJWK | null;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L131)
+Defined in: [packages/protocol/src/jwks.ts:133](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L133)
 
 Returns the key matching the given kid, or null if not found.
 
@@ -1573,7 +1573,7 @@ Returns the key matching the given kid, or null if not found.
 signingKeys(): DnsIdJWK[];
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L112)
+Defined in: [packages/protocol/src/jwks.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L114)
 
 Returns all keys suitable for signature verification.
 A key qualifies if use is absent/sig and it has a supported signature algorithm binding.
@@ -1594,7 +1594,7 @@ ValidationError if no signing keys are present.
 toJSON(): object;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:207](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L207)
+Defined in: [packages/protocol/src/jwks.ts:209](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L209)
 
 Returns the JWKS as a plain JSON-serializable object.
 
@@ -1616,7 +1616,7 @@ keys: DnsIdJWK[];
 validate(): void;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L147)
+Defined in: [packages/protocol/src/jwks.ts:149](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L149)
 
 Validates the key set.
 
@@ -1639,7 +1639,7 @@ ValidationError if:
 validateOperational(): void;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:190](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L190)
+Defined in: [packages/protocol/src/jwks.ts:192](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L192)
 
 ###### Returns
 
@@ -1653,7 +1653,7 @@ Defined in: [packages/protocol/src/jwks.ts:190](https://github.com/dnsid-ai/dnsi
 validateRecordSigning(): void;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:178](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L178)
+Defined in: [packages/protocol/src/jwks.ts:180](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L180)
 
 ###### Returns
 
@@ -1667,7 +1667,7 @@ Defined in: [packages/protocol/src/jwks.ts:178](https://github.com/dnsid-ai/dnsi
 validateRecordSigningKeyset(): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/jwks.ts:184](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L184)
+Defined in: [packages/protocol/src/jwks.ts:186](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L186)
 
 Validates the single current draft-01 ek key and its importable public material.
 
@@ -1710,7 +1710,7 @@ new LogRegistry(): LogRegistry;
 newReader(lr, options?): LogReader;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L41)
+Defined in: [packages/protocol/src/log-registry.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L43)
 
 Creates a LogReader bound to the given lr string.
 Returns a NoopLogReader if no factory is registered for the method.
@@ -3208,7 +3208,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### NoopLogReader
 
-Defined in: [packages/protocol/src/log-registry.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L63)
+Defined in: [packages/protocol/src/log-registry.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L65)
 
 Returned by LogRegistry.newReader when no factory is registered for the method.
 Every method raises VerificationError{code: LogError}.
@@ -3227,7 +3227,7 @@ Every method raises VerificationError{code: LogError}.
 new NoopLogReader(method): NoopLogReader;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L66)
+Defined in: [packages/protocol/src/log-registry.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L68)
 
 ###### Parameters
 
@@ -3249,7 +3249,7 @@ Defined in: [packages/protocol/src/log-registry.ts:66](https://github.com/dnsid-
 canonical(_event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L77)
+Defined in: [packages/protocol/src/log-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L79)
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -3277,7 +3277,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 keyTimestamp(_domain, _keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L78)
+Defined in: [packages/protocol/src/log-registry.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L80)
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -3308,7 +3308,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(_ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L82)
+Defined in: [packages/protocol/src/log-registry.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L84)
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -3335,7 +3335,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(_domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L83)
+Defined in: [packages/protocol/src/log-registry.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L85)
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -3374,7 +3374,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L79)
+Defined in: [packages/protocol/src/log-registry.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L81)
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -3412,7 +3412,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(_domain, _at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L81)
+Defined in: [packages/protocol/src/log-registry.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L83)
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -3448,7 +3448,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/protocol/src/log-registry.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L80)
+Defined in: [packages/protocol/src/log-registry.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-registry.ts#L82)
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
