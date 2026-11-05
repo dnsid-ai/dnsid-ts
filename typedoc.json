@@ -12,7 +12,8 @@
     "packages/oidc",
     "packages/registry",
     "packages/log-c2sp-tlog",
-    "packages/key-aws"
+    "packages/key-aws",
+    "packages/key-gcp"
   ],
   "out": "docs/api",
   "readme": "README.md",

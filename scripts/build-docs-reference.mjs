@@ -101,6 +101,13 @@ const PAGES = [
     description: 'AWS KMS-backed key provider.',
   },
   {
+    slug: 'dnsid-key-gcp',
+    label: 'Key providers: Google Cloud KMS',
+    pkg: '@dnsid-ai/key-gcp',
+    src: '@dnsid-ai/key-gcp.md',
+    description: 'Google Cloud KMS-backed software Ed25519 key provider.',
+  },
+  {
     slug: 'dnsid-registry',
     label: 'Registry',
     pkg: '@dnsid-ai/registry',
