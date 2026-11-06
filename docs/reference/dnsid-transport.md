@@ -691,7 +691,7 @@ Malformed IP-shaped input is treated as unsafe; non-IP strings return false.
 ### parseDnsServer()
 
 ```ts
-function parseDnsServer(server): 
+function parseDnsServer(server):
   | {
   host: string;
   port?: string;

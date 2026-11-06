@@ -28,8 +28,8 @@ capabilities. With revalidate, bypass local caches and revalidate upstream.
 
 ```ts
 fetchBounded(
-   url, 
-   maxBytes, 
+   url,
+   maxBytes,
    options
 ): Promise<Uint8Array<ArrayBufferLike>>;
 ```
@@ -128,9 +128,9 @@ Fetches RFC 6962 consistency proofs between two tree sizes of a log.
 
 ```ts
 fetchConsistencyProof(
-   reference, 
-   fromSize, 
-   toSize, 
+   reference,
+   fromSize,
+   toSize,
    signal?
 ): Promise<Uint8Array<ArrayBufferLike>[]>;
 ```
@@ -2677,8 +2677,8 @@ Supplies checkpoint-plus-entries evidence for a log prefix.
 
 ```ts
 optional discoverEntry(
-   prefix, 
-   index, 
+   prefix,
+   index,
    options?
 ): Promise<IndexedEntry>;
 ```
@@ -3077,9 +3077,9 @@ on the assumption that the old state remains. See the package storage contract.
 
 ```ts
 compareAndSwap(
-   origin, 
-   expected, 
-   candidate, 
+   origin,
+   expected,
+   candidate,
    signal?
 ): Promise<boolean>;
 ```

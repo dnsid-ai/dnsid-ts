@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: {
+      '@dnsid-ai/foundry': new URL('./packages/foundry/src/index.ts', import.meta.url).pathname,
       '@dnsid-ai/protocol': new URL('./packages/protocol/src/index.ts', import.meta.url).pathname,
       '@dnsid-ai/http-signatures': new URL('./packages/http-signatures/src/index.ts', import.meta.url).pathname,
       '@dnsid-ai/jose': new URL('./packages/jose/src/index.ts', import.meta.url).pathname,

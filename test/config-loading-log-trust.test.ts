@@ -34,9 +34,9 @@ describe('constructIdentityManager() log trust wiring', () => {
     });
   });
 
-  it('managed: true calls the managed factory with no options', async () => {
+  it('managed: true supplies a bounded resource fetcher', async () => {
     await constructIdentityManager({ logTrust: { managed: true } }, deps);
-    expect(createDnsidManagedVerificationRegistry).toHaveBeenLastCalledWith();
+    expect(createDnsidManagedVerificationRegistry).toHaveBeenLastCalledWith({ resourceFetcher: expect.objectContaining({ fetchBounded: expect.any(Function) }) });
   });
 
   it('skips every factory when deps.logRegistry is supplied', async () => {

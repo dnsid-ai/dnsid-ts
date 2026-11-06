@@ -27,6 +27,7 @@ import {
   createC2spTlogVerificationRegistry,
   createDnsidManagedVerificationRegistry,
   parseC2spTlogTrustProfile,
+  createDefaultC2spBoundedResourceFetcher,
 } from '@dnsid-ai/log-c2sp-tlog';
 import { RegistryClient, type RegistryClientOptions } from '@dnsid-ai/registry';
 
@@ -62,6 +63,12 @@ export interface KeySource {
   keyStorePath?: string;
 }
 
+/** Optional Known Foundry account expectations, not identity selectors or acceptance policy. */
+export interface FoundryConfig {
+  organizationId?: string;
+  governanceId?: string;
+}
+
 export interface ManagedRegistrationConfig {
   organizationId?: string;
   governanceId?: string;
@@ -82,6 +89,7 @@ export interface LoadedConfig {
   dnsid?: LoadedDnsidConfig;
   logTrust?: LogTrust;
   registry?: LoadedRegistryConfig;
+  foundry?: FoundryConfig;
   /** Setup expectations only; never identity or counterparty acceptance defaults. */
   registration?: Partial<ManagedRegistrationConfig>;
   keySource?: KeySource;
@@ -146,12 +154,12 @@ export async function loadEnvironment(env: EnvironmentSource = process.env): Pro
 // Deployment file
 
 /**
- * Reads a JSON deployment file: `{ dnsid?, logTrust?, registry?, registration? }`. Unknown members, mistyped
+ * Reads a JSON deployment file: `{ dnsid?, logTrust?, registry?, foundry?, registration?, keySource? }`. Unknown members, mistyped
  * values, and duplicate members are rejected; semantic `dnsid` validation stays with the constructor.
  */
 export async function loadFile(filePath: string): Promise<LoadedConfig> {
   const root = jsonObject(await fs.readFile(filePath), filePath);
-  rejectUnknown(root, filePath, ['dnsid', 'logTrust', 'registry', 'registration', 'keySource']);
+  rejectUnknown(root, filePath, ['dnsid', 'logTrust', 'registry', 'foundry', 'registration', 'keySource']);
   const loaded: LoadedConfig = {};
   if (root.dnsid !== undefined) loaded.dnsid = validateLoadedDnsidConfig(root.dnsid, `${filePath}: dnsid`);
   if (root.logTrust !== undefined) {
@@ -167,6 +175,14 @@ export async function loadFile(filePath: string): Promise<LoadedConfig> {
     const registry = object(root.registry, `${filePath}: registry`);
     rejectUnknown(registry, `${filePath}: registry`, ['registryUrl']);
     loaded.registry = compact({ registryUrl: optional(registry, 'registryUrl', 'string', `${filePath}: registry`) });
+  }
+  if (root.foundry !== undefined) {
+    const foundry = object(root.foundry, `${filePath}: foundry`);
+    rejectUnknown(foundry, `${filePath}: foundry`, ['organizationId', 'governanceId']);
+    loaded.foundry = compact(Object.fromEntries(['organizationId', 'governanceId'].map(key => {
+      const value = optional(foundry, key, 'string', `${filePath}: foundry`);
+      return [key, value?.trim() ? value : undefined];
+    })));
   }
   if (root.registration !== undefined) {
     const registration = object(root.registration, `${filePath}: registration`);
@@ -310,6 +326,7 @@ export function mergeLoadedConfig(base: LoadedConfig, overlay: LoadedConfig): Lo
     dnsid: mergeDnsid(base.dnsid, overlay.dnsid),
     logTrust: overlay.logTrust ?? base.logTrust,
     registry: mergeSection(base.registry, overlay.registry),
+    foundry: mergeSection(base.foundry, overlay.foundry),
     registration: mergeSection(base.registration, overlay.registration),
     keySource: mergeKeySource(base.keySource, overlay.keySource),
   });
@@ -390,14 +407,14 @@ export async function constructIdentityManager(loaded: LoadedConfig, deps: Ident
   return manager;
 }
 
-async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig | undefined): Promise<LogRegistry> {
+export async function logRegistryFromTrust(trust: LogTrust, transport: TransportConfig | undefined): Promise<LogRegistry> {
   const variants = (['managed', 'profile', 'policyDocument', 'policyUrl'] as const).filter(k => trust[k] !== undefined);
   if (variants.length !== 1) {
     throw new ArgumentError(`logTrust requires exactly one of managed, profile, policyDocument, policyUrl; got ${variants.length}`);
   }
   if (trust.managed !== undefined) {
     if (trust.managed !== true) throw new ArgumentError('logTrust.managed must be true when present');
-    return createDnsidManagedVerificationRegistry();
+    return createDnsidManagedVerificationRegistry({ resourceFetcher: createDefaultC2spBoundedResourceFetcher(transport) });
   }
   return createC2spTlogVerificationRegistry({
     trustProfile: trust.profile && parseC2spTlogTrustProfile(new TextEncoder().encode(JSON.stringify(trust.profile))),
