@@ -340,10 +340,19 @@ describe('constructIdentityManager() and convenience constructors', () => {
     const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
     const base = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), { keySource: { keyStorePath: store } });
     const loaded = mergeLoadedConfig(base, { keySource: { provider: 'google-kms', keyRef: 'projects/test/locations/global/keyRings/test/cryptoKeys/agent/cryptoKeyVersions/1' } });
-    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/google-kms/);
-    expect(local).not.toHaveBeenCalled();
-    expect(verify).not.toHaveBeenCalled();
-    expect(warn).not.toHaveBeenCalled();
+    const unavailable = vi.fn(() => { throw Object.assign(new Error('package absent'), { code: 'ERR_MODULE_NOT_FOUND' }); });
+    vi.doMock('@dnsid-ai/key-gcp', unavailable);
+    try {
+      const { constructIdentityManager } = await import('../packages/sdk/src/config-loading.js');
+      await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/google-kms unavailable; install.*@dnsid-ai\/key-gcp.*build\/bundle/);
+      expect(unavailable).toHaveBeenCalledTimes(1);
+      expect(local).not.toHaveBeenCalled();
+      expect(verify).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock('@dnsid-ai/key-gcp');
+      vi.resetModules();
+    }
   }));
 
   it.each([undefined, 'file'] as const)('warns when selecting local custody (%s), but not when displaced', provider => withTemp(async root => {
