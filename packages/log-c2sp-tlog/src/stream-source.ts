@@ -1,5 +1,5 @@
-import { VerificationError, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
-import { createSsrfSafeFetch, type FetchLike, type TransportConfig } from '@dnsid-ai/transport';
+import { VerificationError, normalizePrivateAddressHost, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
+import type { FetchLike, TransportConfig } from '@dnsid-ai/transport';
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import { C2spTlogError, C2spTlogVerificationError } from './errors.ts';
 import { checkpointPath, entryBundlePath, parseEntryBundle } from './tiles.ts';
@@ -95,7 +95,14 @@ export function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarante
  */
 export function createDefaultC2spBoundedResourceFetcher(transport: TransportConfig = {}): C2spBoundedResourceFetcher {
   const { privateAddressHosts, ...config } = transport;
-  return createFetchBackedC2spResourceFetcher(createSsrfSafeFetch(config, { privateAddressHosts }), REQUIRED_FETCH_GUARANTEES);
+  privateAddressHosts?.forEach(normalizePrivateAddressHost); // reject bad entries now, not on first fetch
+  // Load the Node transport on first use, so runtimes that inject their own fetcher never load it.
+  let ssrfSafeFetch: Promise<FetchLike> | undefined;
+  const fetchImpl: FetchLike = async (input, init) => {
+    ssrfSafeFetch ??= import('@dnsid-ai/transport').then(t => t.createSsrfSafeFetch(config, { privateAddressHosts }));
+    return (await ssrfSafeFetch)(input, init);
+  };
+  return createFetchBackedC2spResourceFetcher(fetchImpl, REQUIRED_FETCH_GUARANTEES);
 }
 
 /**
