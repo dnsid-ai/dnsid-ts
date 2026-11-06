@@ -74,10 +74,6 @@
     "slug": "reference/ts/dnsid-registry"
   },
   {
-    "label": "Known Foundry",
-    "slug": "reference/ts/dnsid-foundry"
-  },
-  {
     "label": "Transparency log",
     "items": [
       {

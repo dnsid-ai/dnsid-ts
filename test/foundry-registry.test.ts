@@ -7,11 +7,11 @@ import { withTemp } from './helpers/cli-directory.ts';
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('Foundry registry adapters', () => {
-  it.each([undefined, DOMAIN.toUpperCase() + '.'])('reads the optional challenge-free replay domain: %s', async domain => {
+  it.each([undefined, null, '', DOMAIN.toUpperCase() + '.'])('reads the optional challenge-free replay domain: %s', async domain => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       const registry = new RegistryClient({ fetch: vi.fn(async () => new Response(JSON.stringify({
-        request_id: 'key', agent_id: 'agent-1', status: 'VERIFIED', challenge: '', challenge_message: '', ...(domain ? { domain } : {}),
+        request_id: 'key', agent_id: 'agent-1', status: 'VERIFIED', challenge: '', challenge_message: '', ...(domain !== undefined ? { domain } : {}),
       }), { status: 202 })) as typeof fetch });
       const response = await registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
       expect(response.domain).toBe(domain ? DOMAIN : undefined);

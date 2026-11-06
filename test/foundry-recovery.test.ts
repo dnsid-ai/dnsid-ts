@@ -1,11 +1,14 @@
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { create, Deadline, FileFoundryStore, SigningPaused, type FoundryOperation, type FoundryPhase, type FoundryStore } from '@dnsid-ai/foundry';
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
+import { RegistryRequestError } from '@dnsid-ai/registry';
 import { DOMAIN, ORG, foundryFixture } from './helpers/foundry.ts';
 import { withTemp } from './helpers/cli-directory.ts';
 
 const key = { registryUrl: 'https://registry.example', organizationId: ORG, name: 'agent' };
+
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe('Foundry restart and replica recovery', () => {
   it.each(['creation-pending', 'proof-pending', 'identity-known', 'issuance-accepted', 'complete'] as FoundryPhase[])(
@@ -124,20 +127,63 @@ describe('Foundry restart and replica recovery', () => {
     });
   });
 
-  it('does not reissue a challenge after an indeterminate proof submission, even after expiry', async () => {
+  it('retries an indeterminate proof with the same bytes before expiry', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.proofRequired = true; f.registryStatus = 'PENDING';
       vi.mocked(f.registry.submitLiveProof).mockRejectedValueOnce(new Error('lost proof response'));
       const id = await create('agent', f.options);
       await expect(id.active()).rejects.toMatchObject({ resumable: true });
-      await f.options.store!.withLock(key, new Deadline(), async transaction => {
-        const saved = (await transaction.load())!; saved.proof!.expiresAt = new Date(Date.now() - 1000).toISOString();
-        await transaction.save(saved);
-      });
       await (await create('agent', f.options)).active();
       expect(f.registry.reissueLiveProof).not.toHaveBeenCalled();
       const calls = vi.mocked(f.registry.submitLiveProof).mock.calls;
       expect(calls[0]!.slice(0, 2)).toEqual(calls[1]!.slice(0, 2));
+    });
+  });
+
+  it.each(['reissued', 'used'] as const)('reconciles an expired unsettled proof: %s', async outcome => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root); f.proofRequired = true; f.registryStatus = 'PENDING';
+      vi.mocked(f.registry.submitLiveProof).mockRejectedValueOnce(new Error('proof outcome unknown'));
+      const id = await create('agent', f.options);
+      await expect(id.active()).rejects.toMatchObject({ resumable: true });
+      await f.options.store!.withLock(key, new Deadline(), async transaction => {
+        const saved = (await transaction.load())!; saved.proof!.expiresAt = new Date(Date.now() - 1000).toISOString();
+        expect(saved.proof!.submissionState).toBe('submitting');
+        await transaction.save(saved);
+      });
+      const reissue = vi.mocked(f.registry.reissueLiveProof).getMockImplementation()!;
+      vi.mocked(f.registry.reissueLiveProof).mockImplementationOnce(async (...args) => {
+        expect(args.slice(0, 3)).toEqual([DOMAIN, vi.mocked(f.registry.registerLiveAgent).mock.calls[0]![1], f.operationalKey]);
+        if (outcome === 'used') throw new RegistryRequestError(409, undefined, 'challenge was used');
+        const replacement = await reissue(...args);
+        const transcript = JSON.parse(Buffer.from(replacement.challengeMessage, 'base64url').toString());
+        transcript.nonce = 'bmV3LW5vbmNl';
+        return { ...replacement, challenge: transcript.nonce, challengeMessage: Buffer.from(JSON.stringify(transcript)).toString('base64url') };
+      });
+      const read = vi.mocked(f.registry.getRegistration).getMockImplementation()!;
+      let reads = 0;
+      vi.mocked(f.registry.getRegistration).mockImplementation(async (...args) => {
+        if (++reads === 3 && outcome === 'used') f.registryStatus = 'VERIFIED';
+        return read(...args);
+      });
+      vi.spyOn(Deadline.prototype, 'wait').mockResolvedValue();
+      await (await create('agent', f.options)).active();
+      expect(f.registry.reissueLiveProof).toHaveBeenCalledOnce();
+      const submissions = vi.mocked(f.registry.submitLiveProof).mock.calls;
+      const saved = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
+      if (outcome === 'used') {
+        expect(submissions).toHaveLength(1);
+        expect(reads).toBeGreaterThanOrEqual(3);
+        expect(saved.proof.outcome).toEqual({ httpStatus: 409 });
+        expect(saved.proof.request).toEqual(submissions[0]![1]);
+      } else {
+        expect(submissions).toHaveLength(2);
+        expect(submissions[1]![1].signature).not.toBe(submissions[0]![1].signature);
+        expect(saved.proof.challenge).toBe('bmV3LW5vbmNl');
+        expect(saved.proof.request).toEqual(submissions[1]![1]);
+      }
+      expect(saved.phase).toBe('complete');
+      await expect((await create('agent', f.options)).sign(new Uint8Array())).resolves.toHaveLength(64);
     });
   });
 

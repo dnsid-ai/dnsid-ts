@@ -207,7 +207,8 @@ describe('Known Foundry create', () => {
       const f = await foundryFixture(root);
       await create('agent', f.options);
       const other = await LocalKeyProvider.generate(); const generate = vi.spyOn(other, 'generateKey');
-      await expect(create('agent', { ...f.options, keyProvider: other })).rejects.toMatchObject({ category: 'KEY_MISMATCH', identityId: 'agent-1', domain: DOMAIN });
+      await expect(create('agent', { ...f.options, keyProvider: other })).rejects.toMatchObject({ category: 'KEY_MISMATCH', identityId: 'agent-1', domain: DOMAIN,
+        message: 'use the provider key this identity was created with; run one identity per cloud provider' });
       expect(generate).not.toHaveBeenCalled(); expect(f.registry.registerLiveAgent).toHaveBeenCalledOnce();
     });
   });
@@ -284,6 +285,37 @@ describe('Known Foundry create', () => {
       if (fault === 'log') f.publicLog = f.publicLog.replace('log.example', 'other.example');
       await expect(id.active()).rejects.toMatchObject({ category: fault === 'key' ? 'KEY_MISMATCH' : 'binding' });
       await expect(id.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
+      await expect((await create('agent', f.options)).sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
+    });
+  });
+
+  it.each(['publication', 'provider-key', 'onboarding', 'terminal'])('persists a signing pause for %s failure outside the public loop', async fault => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root); const id = await create('agent', f.options); await id.active();
+      if (fault === 'publication') {
+        const read = vi.mocked(f.registry.getRegistration).getMockImplementation()!;
+        vi.mocked(f.registry.getRegistration).mockImplementationOnce(async (...args) => {
+          const registration = (await read(...args))!;
+          return { ...registration, publicationConfig: { ...registration.publicationConfig!, logRef: registration.publicationConfig!.logRef.replace('log.example', 'other.example') } };
+        });
+      }
+      const keyCheck = fault === 'provider-key'
+        ? vi.spyOn(f.provider, 'signingKey').mockResolvedValue(await (await LocalKeyProvider.generate()).signingKey()) : undefined;
+      if (fault === 'onboarding') f.organizationId = 'different-organization';
+      if (fault === 'terminal') f.registryStatus = 'RETIRED';
+      const category = fault === 'provider-key' ? 'KEY_MISMATCH' : fault === 'terminal' ? 'terminal' : 'binding';
+      await expect(id.active()).rejects.toMatchObject({ category });
+      await expect(id.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
+      const saved = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
+      expect(saved.signingPaused).toBe(true);
+      keyCheck?.mockRestore(); f.organizationId = ORG;
+      if (fault === 'terminal') await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'terminal' });
+      else {
+        const reopened = await create('agent', f.options);
+        await expect(reopened.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
+        await reopened.active();
+        await expect(reopened.sign(new Uint8Array())).resolves.toHaveLength(64);
+      }
     });
   });
 

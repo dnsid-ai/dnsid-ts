@@ -7,7 +7,7 @@ import { withTemp } from './helpers/cli-directory.ts';
 
 const key = { registryUrl: 'https://registry.example', organizationId: ORG, name: 'agent' };
 
-describe('Foundry issuance recovery order (89600ed)', () => {
+describe('Foundry issuance recovery order (665aa67)', () => {
   it('does not scan lifecycle history before preparation or submission', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);

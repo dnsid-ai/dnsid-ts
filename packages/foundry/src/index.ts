@@ -1,4 +1,4 @@
-/** Known Foundry named Live creation. Requires the server gates documented at compliance 89600ed. */
+/** Known Foundry named Live creation. Requires the server gates documented at compliance 665aa67. */
 import {
   ArgumentError, IdentityManager, JWKS, VerificationCode, VerificationError,
   issueManagedIdentity, jwkThumbprint, normalizeFQDN, validateDnsidConfig, verifyWithKey, ValidationError,
@@ -148,7 +148,7 @@ export class FoundryIdentity {
     if (operation.publicationConfig) this.identityManager();
   }
 
-  /** Returns the same normally constructed manager after step 5 has saved publication configuration. */
+  /** Returns the same normally constructed manager after publication configuration is saved. */
   identityManager(): IdentityManager {
     if (this.manager) return this.manager;
     if (!this.operation.publicationConfig) throw new SigningPaused();
@@ -163,87 +163,89 @@ export class FoundryIdentity {
     const deadline = new Deadline(options.timeoutMs ?? 600_000, options.signal);
     const context = { ...this.context, deadline };
     try {
-      const account = await onboarding(context);
-      if (account.organizationId !== this.operation.organizationId) throw failure('binding', this.operation, 'credential belongs to a different organization');
       await context.store.withLock(this.operation, deadline, async transaction => {
         const saved = await transaction.load();
         if (!saved) throw failure('storage', this.operation, 'named recovery state is missing');
         this.operation = parseFoundryOperation(canonicalBytes(saved));
         const operation = this.operation;
-        assertBindings(context, operation, account.organizationId, account.governanceId!);
-        await validateSavedOperation(operation);
-        if (operation.domain !== this.domain) throw failure('binding', operation, 'assigned domain changed');
-        registryOutcome(operation);
-        const key = await signingKey(context, true);
-        await assertKey(operation.currentPublicKey ?? operation.initialPublicKey, key, operation);
-        let registration = await this.waitForRegistry(context, transaction);
-        if (!operation.publicationConfig) throw failure('unsupported-contract', operation, 'registry did not supply publication configuration');
-        this.identityManager();
-        if (!operation.entityPublicKey) {
-          const publication = operation.publicationConfig as unknown as PublicationConfig;
-          const result = await deadline.call(() => context.fetchJson(publication.ekUrl, { signal: deadline.signal, revalidate: true, maxResponseBytes: 256 * 1024 }));
-          const document = result.data as { keys?: unknown } | null;
-          if (!document || !Array.isArray(document.keys)) throw failure('binding', operation, 'entity endpoint did not return a JWKS');
-          const keys = new JWKS(document.keys.map(publicKey));
-          await keys.validateRecordSigningKeyset();
-          operation.entityPublicKey = publicKey(keys.currentRecordSigningKey());
-          await transaction.save(operation);
-        }
-        if (operation.phase !== 'complete') {
-          await this.issue(context, transaction, key);
-          registration = await this.waitForRegistry(context, transaction);
-        }
-        // Fresh, isolated public verification never changes application counterparty policy.
-        for (let delay = 1000; ; delay = Math.min(delay * 2, 15_000)) {
-          deadline.check();
-          try {
-            const verifier = makeManager(context, operation, this.signer, true);
-            const verified = await deadline.call(() => verifier.verifyLocalPublication({ signal: deadline.signal, timeoutMs: Math.max(1, deadline.end - Date.now()) }));
-            this.state = verified.registryStatus.state;
-            operation.publicState = this.state;
-            await verifyPublicBindings(operation, verified, key);
-            await assertInitialIssuance(operation, (await deadline.call(() => verified.logReader.rebuildHistory(this.domain)))[0]);
-            const evidence = await deadline.call(() => verified.verifyNonRevocation());
-            if (evidence.loggedState !== 'ACTIVE') throw failure('terminal', operation, 'public lifecycle is terminal');
-            operation.phase = 'complete';
-            delete operation.signingPaused;
+        try {
+          const account = await onboarding(context);
+          if (account.organizationId !== operation.organizationId) throw failure('binding', operation, 'credential belongs to a different organization');
+          assertBindings(context, operation, account.organizationId, account.governanceId!);
+          await validateSavedOperation(operation);
+          if (operation.domain !== this.domain) throw failure('binding', operation, 'assigned domain changed');
+          registryOutcome(operation);
+          const key = await signingKey(context, true);
+          await assertKey(operation.currentPublicKey ?? operation.initialPublicKey, key, operation);
+          let registration = await this.waitForRegistry(context, transaction);
+          if (!operation.publicationConfig) throw failure('unsupported-contract', operation, 'registry did not supply publication configuration');
+          this.identityManager();
+          if (!operation.entityPublicKey) {
+            const publication = operation.publicationConfig as unknown as PublicationConfig;
+            const result = await deadline.call(() => context.fetchJson(publication.ekUrl, { signal: deadline.signal, revalidate: true, maxResponseBytes: 256 * 1024 }));
+            const document = result.data as { keys?: unknown } | null;
+            if (!document || !Array.isArray(document.keys)) throw failure('binding', operation, 'entity endpoint did not return a JWKS');
+            const keys = new JWKS(document.keys.map(publicKey));
+            await keys.validateRecordSigningKeyset();
+            operation.entityPublicKey = publicKey(keys.currentRecordSigningKey());
             await transaction.save(operation);
-            this.signer.enable(key);
-            this.registryStatus = registration.registryStatus;
-            return;
-          } catch (cause) {
-            const error = normalizeError(cause, operation, deadline);
-            if (['deadline', 'cancelled'].includes(error.category)) throw error;
-            if (cause instanceof VerificationError && cause.agentState) {
-              if (['PENDING', 'PROVISIONING', 'VERIFYING', 'ACTIVE', 'REVOKED', 'RETIRED'].includes(cause.agentState)) {
-                this.state = cause.agentState as AgentStatusState;
-                operation.publicState = this.state;
-              }
-              if (['REVOKED', 'RETIRED'].includes(cause.agentState)) {
-                operation.signingPaused = true;
-                await transaction.save(operation);
-                throw failure('terminal', operation, 'public identity is terminal', false, cause);
-              }
-            }
-            if (!publicPending(cause)) {
-              this.signer.pause();
-              operation.signingPaused = true;
-              await transaction.save(operation);
-              throw cause;
-            }
-            await deadline.wait(delay);
-            const next = await retry(context, () => context.registry.getRegistration(this.domain, { signal: deadline.signal }));
-            observeRegistration(operation, next);
-            this.registryStatus = operation.registryStatus;
-            await transaction.save(operation);
-            registryOutcome(operation);
           }
+          if (operation.phase !== 'complete') {
+            await this.issue(context, transaction, key);
+            registration = await this.waitForRegistry(context, transaction);
+          }
+          // Fresh, isolated public verification never changes application counterparty policy.
+          for (let delay = 1000; ; delay = Math.min(delay * 2, 15_000)) {
+            deadline.check();
+            try {
+              const verifier = makeManager(context, operation, this.signer, true);
+              const verified = await deadline.call(() => verifier.verifyLocalPublication({ signal: deadline.signal, timeoutMs: Math.max(1, deadline.end - Date.now()) }));
+              this.state = verified.registryStatus.state;
+              operation.publicState = this.state;
+              await verifyPublicBindings(operation, verified, key);
+              await assertInitialIssuance(operation, (await deadline.call(() => verified.logReader.rebuildHistory(this.domain)))[0]);
+              const evidence = await deadline.call(() => verified.verifyNonRevocation());
+              if (evidence.loggedState !== 'ACTIVE') throw failure('terminal', operation, 'public lifecycle is terminal');
+              operation.phase = 'complete';
+              delete operation.signingPaused;
+              await transaction.save(operation);
+              this.signer.enable(key);
+              this.registryStatus = registration.registryStatus;
+              return;
+            } catch (cause) {
+              const error = normalizeError(cause, operation, deadline);
+              if (['deadline', 'cancelled'].includes(error.category)) throw error;
+              if (cause instanceof VerificationError && cause.agentState) {
+                if (['PENDING', 'PROVISIONING', 'VERIFYING', 'ACTIVE', 'REVOKED', 'RETIRED'].includes(cause.agentState)) {
+                  this.state = cause.agentState as AgentStatusState;
+                  operation.publicState = this.state;
+                }
+                if (['REVOKED', 'RETIRED'].includes(cause.agentState)) {
+                  throw failure('terminal', operation, 'public identity is terminal', false, cause);
+                }
+              }
+              if (!publicPending(cause)) throw cause;
+              await deadline.wait(delay);
+              const next = await retry(context, () => context.registry.getRegistration(this.domain, { signal: deadline.signal }));
+              observeRegistration(operation, next);
+              this.registryStatus = operation.registryStatus;
+              await transaction.save(operation);
+              registryOutcome(operation);
+            }
+          }
+        } catch (cause) {
+          const error = normalizeError(cause, operation, deadline);
+          if (['binding', 'KEY_MISMATCH', 'terminal'].includes(error.category)) {
+            this.signer.pause();
+            operation.signingPaused = true;
+            await transaction.save(operation);
+          }
+          throw error;
         }
       });
       return this;
     } catch (cause) {
       const error = normalizeError(cause, this.operation, deadline);
-      if (['binding', 'KEY_MISMATCH', 'terminal'].includes(error.category)) this.signer.pause();
       throw error;
     }
   }
@@ -277,9 +279,18 @@ export class FoundryIdentity {
   private async prove(context: Context, transaction: FoundryTransaction): Promise<void> {
     const operation = this.operation;
     let proof = operation.proof!;
-    if (Date.parse(proof.expiresAt as string) <= Date.now() && proof.submissionState !== 'submitting') {
-      const replacement = await retry(context, () => context.registry.reissueLiveProof(this.domain, operation.requestId!, operation.initialPublicKey, { signal: context.deadline.signal }));
-      proof = operation.proof = await challenge(operation, replacement);
+    const waitingForProof = !['VERIFIED', 'READY'].includes(operation.registryStatus!.toUpperCase());
+    if (Date.parse(proof.expiresAt as string) <= Date.now() && (proof.submissionState !== 'submitting' || waitingForProof)) {
+      try {
+        const replacement = await retry(context, () => context.registry.reissueLiveProof(this.domain, operation.requestId!, operation.initialPublicKey, { signal: context.deadline.signal }));
+        proof = operation.proof = await challenge(operation, replacement);
+      } catch (cause) {
+        if (!(cause instanceof RegistryRequestError) || cause.httpStatus !== 409) throw cause;
+        proof.outcome = { httpStatus: 409 };
+        operation.phase = 'identity-known';
+        await transaction.save(operation);
+        return;
+      }
       await transaction.save(operation);
     }
     if (!proof.request) {
@@ -288,7 +299,6 @@ export class FoundryIdentity {
       proof.submissionState = 'prepared';
       await transaction.save(operation);
     }
-    // shortcut: proof rejection is not reconciled, add safe reissue when the server defines its expired-challenge code.
     proof.submissionState = 'submitting';
     await transaction.save(operation);
     const request = proof.request as Parameters<FoundryRegistry['submitLiveProof']>[1];
@@ -413,7 +423,7 @@ class ApplicationSigner implements KeyProvider {
     if (this.paused || kid !== this.key.kid) throw new SigningPaused();
     return this.provider.signKey(kid, bytes);
   }
-  async generateKey(): Promise<string> { throw new FoundryError('unsupported-contract', 'Foundry rotation belongs to E7', { resumable: false }); }
+  async generateKey(): Promise<string> { throw new FoundryError('unsupported-contract', 'key rotation is not supported by this facade', { resumable: false }); }
   async activate(): Promise<void> { this.pause(); throw new SigningPaused(); }
   async supersede(): Promise<void> { this.pause(); throw new SigningPaused(); }
 }
@@ -542,7 +552,7 @@ function boundedProvider(context: Context): KeyProvider {
     ? (...args: unknown[]) => providerCall(context, property as keyof KeyProvider, ...args) : Reflect.get(target, property) });
 }
 async function assertKey(expected: DnsIdJWK, actual: DnsIdJWK, operation: FoundryOperation): Promise<void> {
-  if (expected.kid !== actual.kid || expected.alg !== actual.alg || await jwkThumbprint(expected) !== await jwkThumbprint(actual)) throw failure('KEY_MISMATCH', operation, 'provider key differs from the saved binding; see one-identity-per-cloud guidance https://github.com/Identity-Digital/known-foundry/issues/63');
+  if (expected.kid !== actual.kid || expected.alg !== actual.alg || await jwkThumbprint(expected) !== await jwkThumbprint(actual)) throw failure('KEY_MISMATCH', operation, 'use the provider key this identity was created with; run one identity per cloud provider');
 }
 async function validateSavedOperation(operation: FoundryOperation): Promise<void> {
   if (operation.requestId !== undefined && operation.requestId !== await registrationId(operation)) throw failure('binding', operation, 'saved requestId does not match the creation binding');
@@ -674,7 +684,7 @@ function normalizeError(cause: unknown, operation: FoundryOperation | undefined,
   const category = ['KEY_MISSING', 'KEY_MISMATCH', 'KEY_REVOKED'].includes(code ?? '') ? code as FoundryErrorCategory
     : raw.category ?? (raw.issuance ? 'workflow-outcome' : cause instanceof VerificationError && !cause.transient || cause instanceof ValidationError ? 'binding'
       : cause instanceof ArgumentError || cause instanceof TypeError || cause instanceof RangeError ? 'unsupported-contract' : 'resumable');
-  const message = category === 'KEY_MISMATCH' ? 'key differs from the identity; see one-identity-per-cloud guidance https://github.com/Identity-Digital/known-foundry/issues/63'
+  const message = category === 'KEY_MISMATCH' ? 'use the provider key this identity was created with; run one identity per cloud provider'
     : cause instanceof Error ? cause.message : 'Foundry setup failed';
   return new FoundryError(category, message, {
     phase: operation?.phase, identityId: operation?.identityId, domain: operation?.domain,

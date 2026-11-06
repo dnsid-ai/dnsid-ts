@@ -20,5 +20,4 @@ API reference for the [DNSid TypeScript SDK](https://github.com/dnsid-ai/dnsid-t
 - [Key providers: AWS KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-aws/) (`@dnsid-ai/key-aws`) — AWS KMS-backed key provider.
 - [Key providers: Google Cloud KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-gcp/) (`@dnsid-ai/key-gcp`) — Google Cloud KMS-backed software Ed25519 key provider.
 - [Registry](https://docs.dnsid.ai/reference/ts/dnsid-registry/) (`@dnsid-ai/registry`) — Registry client and TXT publishing helpers.
-- [Known Foundry](https://docs.dnsid.ai/reference/ts/dnsid-foundry/) (`@dnsid-ai/foundry`) — Known Foundry named creation, public readiness, and durable recovery.
 - [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/) (`@dnsid-ai/log-c2sp-tlog`) — C2SP tlog-backed lifecycle log reader, writer, and verifier.

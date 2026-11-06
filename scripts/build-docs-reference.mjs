@@ -115,13 +115,6 @@ const PAGES = [
     description: 'Registry client and TXT publishing helpers.',
   },
   {
-    slug: 'dnsid-foundry',
-    label: 'Known Foundry',
-    pkg: '@dnsid-ai/foundry',
-    src: '@dnsid-ai/foundry.md',
-    description: 'Known Foundry named creation, public readiness, and durable recovery.',
-  },
-  {
     slug: 'dnsid-log-c2sp-tlog',
     label: 'Transparency log',
     pkg: '@dnsid-ai/log-c2sp-tlog',
