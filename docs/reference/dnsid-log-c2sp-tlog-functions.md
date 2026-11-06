@@ -468,7 +468,7 @@ Managed verification prefers signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L107)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L114)
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -1680,7 +1680,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L119)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L126)
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 
