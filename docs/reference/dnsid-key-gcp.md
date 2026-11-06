@@ -69,7 +69,7 @@ Opens one existing software Ed25519 version without cloud mutation or fallback.
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L139)
+Defined in: [index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L144)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -96,7 +96,7 @@ The previously active key transitions to retained.
 generateKey(): Promise<string>;
 ```
 
-Defined in: [index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L121)
+Defined in: [index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L126)
 
 Explicit operator generation only; never called by configuration opening.
 
@@ -143,10 +143,11 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L93)
+Defined in: [index.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L98)
 
-Returns the IDs of all active and retained keys (pending keys excluded).
-The active key ID MUST appear first; retained keys follow in any order.
+Returns only the current active key ID, or an empty list when no key is active.
+Pending and superseded keys are excluded from this live key list, even when
+their public JWKs remain available through `jwk` for historical verification.
 
 ###### Returns
 
@@ -164,7 +165,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L166)
+Defined in: [index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L171)
 
 Alias for local supersession; never disables or destroys a cloud version.
 
@@ -190,7 +191,7 @@ Alias for local supersession; never disables or destroys a cloud version.
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L94)
+Defined in: [index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L99)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -238,7 +239,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L98)
+Defined in: [index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L103)
 
 Signs with a specified active or pending key.
 
@@ -268,7 +269,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L158)
+Defined in: [index.ts:163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L163)
 
 Removes local signing eligibility from an active, pending, or already
 superseded key. Superseding the active key leaves no active signer and an

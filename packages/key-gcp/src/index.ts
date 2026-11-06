@@ -40,7 +40,7 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
   private constructor(
     private readonly client: GcpCloudKmsClient,
     private readonly version: string,
-    private readonly publicKey: Readonly<DnsIdJWK>,
+    publicKey: Readonly<DnsIdJWK>,
   ) {
     this.activeKid = publicKey.kid;
     this.keys.set(publicKey.kid, { version, jwk: publicKey, state: 'active' });
@@ -90,6 +90,11 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     if (!key) throw new ArgumentError('Google Cloud KMS key not found');
     return { ...key.jwk };
   }
+  /**
+   * Returns only the current active key ID, or an empty list when no key is active.
+   * Pending and superseded keys are excluded from this live key list, even when
+   * their public JWKs remain available through `jwk` for historical verification.
+   */
   async listKeyIds(): Promise<string[]> { return this.activeKid ? [this.activeKid] : []; }
   async sign(payload: Uint8Array): Promise<Uint8Array> {
     if (!this.activeKid) throw new ArgumentError('Google Cloud KMS has no active key');
