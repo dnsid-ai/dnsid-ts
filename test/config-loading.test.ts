@@ -350,8 +350,8 @@ describe('constructIdentityManager() and convenience constructors', () => {
       expect(verify).not.toHaveBeenCalled();
       expect(warn).not.toHaveBeenCalled();
     } finally {
+      // Unmock only GCP: resetting all modules detaches the static AWS spies.
       vi.doUnmock('@dnsid-ai/key-gcp');
-      vi.resetModules();
     }
   }));
 
