@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/key-gcp",
   "author": "Known Systems AI, Inc.",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "description": "DNSid Google Cloud KMS Ed25519 key provider integration.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -40,7 +40,7 @@
     "prepack": "node ../../scripts/copy-notice.mjs"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.34.0",
+    "@dnsid-ai/protocol": "^0.35.0",
     "@google-cloud/kms": "^6.3.0"
   },
   "license": "Apache-2.0",
