@@ -260,7 +260,9 @@ describe('constructIdentityManager() and convenience constructors', () => {
   });
 
 
+  // Mode: fake-only (AWS discovery and publication evidence); Guards: known-foundry#57.
   it('binds configuration-selected cloud keys to verified publication and rejects alias changes', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = await LocalKeyProvider.generate();
     const second = await LocalKeyProvider.generate();
     const firstKey = await first.signingKey();
@@ -279,6 +281,9 @@ describe('constructIdentityManager() and convenience constructors', () => {
     await expect(constructIdentityManager(loaded, deps)).resolves.toBeDefined();
     verify.mockRejectedValue(new Error('publication unavailable'));
     await expect(constructIdentityManager(loaded, deps)).rejects.toThrow('publication unavailable');
+    load.mockRejectedValue(new Error('KMS discovery unavailable'));
+    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow('KMS discovery unavailable');
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('rejects configuration-only replacement of a file key', () => withTemp(async root => {
@@ -293,15 +298,53 @@ describe('constructIdentityManager() and convenience constructors', () => {
       .rejects.toThrow(/authorized key rotation/);
   }));
 
+  // Mode: fake-only (publication spy); the injected provider is caller-owned.
   it('injected providers displace unavailable cloud settings without publication reads', async () => {
     const keyProvider = await LocalKeyProvider.generate();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
     const loaded = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), {
       keySource: { provider: 'google-kms', settings: { invalid: true } },
     });
     await expect(constructIdentityManager(loaded, { ...deps, keyProvider })).resolves.toBeDefined();
     expect(verify).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
   });
+
+  // Mode: fake-only (publication); local entity key parsing is real.
+  it('keeps an independent local entity key silent with cloud operational custody', () => withTemp(async root => {
+    const keyProvider = await LocalKeyProvider.generate();
+    const load = vi.spyOn(AwsKmsKeyProvider, 'load').mockResolvedValue(keyProvider as unknown as AwsKmsKeyProvider);
+    matchingPublication();
+    await writeKeyPair(root, 'entity-key', 'entity.jwk');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const base = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), {
+      keySource: { cliDirectory: '/must-not-open', entityKeyPath: join(root, 'entity.jwk') },
+    });
+    const loaded = mergeLoadedConfig(base, {
+      keySource: { provider: 'aws-kms', keyRef: 'alias/agent', settings: { region: 'us-east-1' } },
+    });
+    const idm = await constructIdentityManager(loaded, deps);
+    expect(load).toHaveBeenCalled();
+    expect(idm.getKeyProvider()).toBe(keyProvider);
+    await expect(idm.getEntityKeySet()).resolves.toMatchObject({ keys: [expect.objectContaining({ kid: 'entity-key' })] });
+    expect(warn).not.toHaveBeenCalled();
+  }));
+
+  // Mode: fake-only (unavailable Google factory); not Google success proof.
+  it('names unavailable google-kms without local fallback or warning', () => withTemp(async root => {
+    const store = join(root, 'keys.json');
+    await LocalKeyProvider.load(store, true);
+    const local = vi.spyOn(LocalKeyProvider, 'load');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
+    const base = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), { keySource: { keyStorePath: store } });
+    const loaded = mergeLoadedConfig(base, { keySource: { provider: 'google-kms', keyRef: 'projects/test/locations/global/keyRings/test/cryptoKeys/agent/cryptoKeyVersions/1' } });
+    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/google-kms/);
+    expect(local).not.toHaveBeenCalled();
+    expect(verify).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+  }));
 
   it.each([undefined, 'file'] as const)('warns when selecting local custody (%s), but not when displaced', provider => withTemp(async root => {
     matchingPublication();
