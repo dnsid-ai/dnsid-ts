@@ -56,7 +56,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test packed packages
+      - name: Install Chromium for browser verification
+        run: npx playwright install --with-deps chromium
+
+      - name: Test packed packages and browser verification
         run: npm run smoke:pack
 
   docs:

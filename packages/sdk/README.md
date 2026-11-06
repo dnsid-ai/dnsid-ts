@@ -51,6 +51,13 @@ JOSE, HTTP Message Signature, and OIDC profiles may use this verifier as their
 `identityResolver` while omitting `keyProvider`. Their signing or minting methods
 then fail with `ArgumentError`.
 
+Browser verification requires trusted DNS/DNSSEC, JSON fetch, and lifecycle log
+adapters. Browser `fetch` cannot read the TLS certificate metadata required by
+`JsonFetcher`; do not fabricate it. The supplied C2SP reader is Node-oriented.
+The repository's `npm run smoke:pack` bundles the packed root SDK and runs domain
+and JWT verification in Chromium without Node polyfills, using fixture transport
+and log evidence. This does not test live browser transport or CORS.
+
 ### Registry-managed C2SP key rotation
 
 `rotateManagedOperationalKey()` composes the registry client, C2SP prepared-event

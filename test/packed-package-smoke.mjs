@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws'];
@@ -179,23 +181,7 @@ try {
 }
 `);
 
-await writeFile(path.join(consumerDir, 'browser.mjs'), `
-import {
-  DomainLog,
-  SDK_CONFORMANCE,
-  createIdentityManager,
-  issueManagedIdentity,
-  rotateManagedOperationalKey,
-} from '@dnsid-ai/sdk';
-
-globalThis.__dnsidBrowserExports = [
-  DomainLog,
-  SDK_CONFORMANCE,
-  createIdentityManager,
-  issueManagedIdentity,
-  rotateManagedOperationalKey,
-];
-`);
+await writeFile(path.join(consumerDir, 'browser.mjs'), await readFile(path.join(root, 'test/helpers/browser-verification.mjs'), 'utf8'));
 
 run('node', ['esm.mjs'], { cwd: consumerDir });
 run('node', ['cjs.cjs'], { cwd: consumerDir });
@@ -205,6 +191,19 @@ run(path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbu
 const browserBundle = await readFile(path.join(consumerDir, 'browser-bundle.mjs'), 'utf8');
 for (const forbidden of [/\bnode:/, /\bBuffer\b/, /\bprocess\./]) {
   if (forbidden.test(browserBundle)) throw new Error(`browser bundle contains Node-only global: ${forbidden}`);
+}
+
+const browser = await chromium.launch();
+try {
+  const page = await browser.newPage();
+  await page.route('https://dnsid-browser.test/', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>DNSid browser test</title>' }));
+  await page.goto('https://dnsid-browser.test/');
+  assert.equal(await page.evaluate(() => isSecureContext), true);
+  assert.deepEqual(await page.evaluate(() => [typeof Buffer, typeof process, typeof require]), ['undefined', 'undefined', 'undefined']);
+  await page.addScriptTag({ type: 'module', content: browserBundle });
+  console.log(await page.evaluate(() => globalThis.__dnsidBrowserVerification()));
+} finally {
+  await browser.close();
 }
 
 console.log(`packed-package smoke test passed (${work})`);

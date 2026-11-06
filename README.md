@@ -12,7 +12,7 @@ entrypoint is also safe to bundle for browsers.
 | Area | Supported/tested baseline | Notes |
 | --- | --- | --- |
 | Node.js | Node.js 22.23.4 in CI; Node-bound package metadata requires `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
-| Browser and non-Node runtimes | Root `@dnsid-ai/sdk` entrypoint and runtime-neutral packages can be bundled when callers inject DNS, JSON fetch, cache, log, and key-provider implementations. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
+| Browser and non-Node runtimes | Packed root `@dnsid-ai/sdk` bundled and exercised in Chromium: ES256/Ed25519 domain and JWT verification, with fixture transports and log evidence. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
 | TypeScript | `typescript` 6.0.3 from `package-lock.json`; `tsconfig.json` targets ES2022 with `module: ESNext`, `moduleResolution: bundler`, `strict: true`, and `lib: ["ES2022", "dom"]`. | Published packages include declaration files from `tsup --dts`. |
 | Module formats | ESM and CommonJS package exports. | Packages use `type: "module"` and expose both `import` (`dist/*.js`) and `require` (`dist/*.cjs`) entries. |
 | Runtime dependencies | Locked by npm lockfile v3 and installed in CI with `npm ci`. Current key versions: `@noble/hashes` 2.2.0, `jose` 6.2.4, `structured-headers` 2.0.3, `undici` 8.12.3, `uuid` 14.0.1. | Published packages declare semver ranges; applications should use their own lockfile and upgrade through normal dependency review. |
@@ -121,6 +121,16 @@ import { createIdentityVerifier } from '@dnsid-ai/sdk';
 const verifier = createIdentityVerifier({}, { dnsResolver, fetchJson, logRegistry });
 const verified = await verifier.verifyDomain('agent.example');
 ```
+
+Browser use still requires trusted adapters. Browser `fetch` does not expose the
+TLS certificate metadata required by `JsonFetcher`, and DNS/DNSSEC and lifecycle
+log verification must also be supplied. Do not invent certificate metadata or
+replace log verification with no-ops in production.
+
+`npm run smoke:pack` tests the installed tarballs in Chromium without Node
+polyfills, including rejection of invalid signatures, revoked status, and failed
+DNSSEC. Run `npx playwright install chromium` before running it locally. Network
+and log evidence are fixtures; this does not test live browser transport or CORS.
 
 For OIDC minting (server-side only — private keys never belong in browser/client code):
 
