@@ -493,7 +493,7 @@ An HTTPS fetch of the JWKS or status endpoint failed at the transport/TLS layer.
 ### AgentStatusState
 
 ```ts
-type AgentStatusState = 
+type AgentStatusState =
   | "PENDING"
   | "PROVISIONING"
   | "VERIFYING"
@@ -551,7 +551,7 @@ Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dn
 ### LifecycleErrorCategory
 
 ```ts
-type LifecycleErrorCategory = 
+type LifecycleErrorCategory =
   | "GENESIS_REQUIRED"
   | "DUPLICATE_ISSUANCE"
   | "INVALID_ISSUANCE"
@@ -583,7 +583,7 @@ Stable, language-neutral categories used by lifecycle conformance vectors.
 ### LogEvent
 
 ```ts
-type LogEvent = 
+type LogEvent =
   | IssuanceEvent
   | KeyRotationEvent
   | RevocationEvent
@@ -625,7 +625,7 @@ Defined in: [packages/protocol/src/types.ts:55](https://github.com/dnsid-ai/dnsi
 ### LogSignerRole
 
 ```ts
-type LogSignerRole = 
+type LogSignerRole =
   | "Entity"
   | "Operational"
   | "OperationalCountersignature"
@@ -642,7 +642,7 @@ Defined in: [packages/protocol/src/log.ts:4](https://github.com/dnsid-ai/dnsid-t
 ### ManagedIssuanceSubmission
 
 ```ts
-type ManagedIssuanceSubmission = 
+type ManagedIssuanceSubmission =
   | SubmissionResult
   | {
   entryHash: string;
@@ -672,7 +672,7 @@ Defined in: [packages/protocol/src/types.ts:28](https://github.com/dnsid-ai/dnsi
 ### RevocationReason
 
 ```ts
-type RevocationReason = 
+type RevocationReason =
   | "keyCompromise"
   | "policyViolation"
   | "superseded"
@@ -1653,8 +1653,8 @@ initialization paths apply identical defaults and rejections.
 
 ```ts
 function verifyBilateralBinding(
-   event, 
-   record, 
+   event,
+   record,
    currentEntityKey
 ): Promise<{
   initialOperationalThumbprint: string;
@@ -1710,9 +1710,9 @@ returned so the caller can hand it to that continuity check.
 
 ```ts
 function verifyWithKey(
-   signingInput, 
-   signature, 
-   key, 
+   signingInput,
+   signature,
+   key,
    expectedAlg?
 ): Promise<boolean>;
 ```

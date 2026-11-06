@@ -115,6 +115,13 @@ const PAGES = [
     description: 'Registry client and TXT publishing helpers.',
   },
   {
+    slug: 'dnsid-foundry',
+    label: 'Known Foundry',
+    pkg: '@dnsid-ai/foundry',
+    src: '@dnsid-ai/foundry.md',
+    description: 'Known Foundry named creation, public readiness, and durable recovery.',
+  },
+  {
     slug: 'dnsid-log-c2sp-tlog',
     label: 'Transparency log',
     pkg: '@dnsid-ai/log-c2sp-tlog',
@@ -196,7 +203,7 @@ function partition(body, extract) {
 
 /** Rewrites markdown link targets; `fromDir` is the source file's directory. */
 function rewriteLinks(markdown, fromDir, ownSlug, ownPkgSlug) {
-  return markdown.replace(/\]\(([^()\s]+)\)/g, (match, target) => {
+  return markdown.replace(/(\S) $/gm, '$1').replace(/\]\(([^()\s]+)\)/g, (match, target) => {
     if (/^(https?:|mailto:)/.test(target)) return match;
     if (target.startsWith('#')) {
       // Same-package fragment link; the anchor may have moved to a kind page.

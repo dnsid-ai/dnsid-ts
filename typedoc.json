@@ -11,6 +11,7 @@
     "packages/web-bot-auth",
     "packages/oidc",
     "packages/registry",
+    "packages/foundry",
     "packages/log-c2sp-tlog",
     "packages/key-aws",
     "packages/key-gcp"
