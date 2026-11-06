@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { create, SigningPaused, deriveRegistrationKey, deriveIssuanceKey, validateName, FoundryError } from '@dnsid-ai/foundry';
-import { JoseProfile, LogRegistry, VerificationCode, VerificationError, jwkThumbprint } from '@dnsid-ai/sdk';
+import { IdentityManager, JoseProfile, LogRegistry, VerificationCode, VerificationError, jwkThumbprint } from '@dnsid-ai/sdk';
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { RegistryRequestError } from '@dnsid-ai/registry';
 import { withTemp } from './helpers/cli-directory.ts';
@@ -192,7 +192,7 @@ describe('Known Foundry create', () => {
       const f = await foundryFixture(root);
       const p = Object.create(f.provider) as typeof f.provider & { activeSigningKey?: () => Promise<null>; ensureSigningKey?: () => Promise<void> };
       p.activeSigningKey = vi.fn(async () => null);
-      await expect(create('agent', { ...f.options, keyProvider: p })).rejects.toMatchObject({ category: 'KEY_MISSING' });
+      await expect(create('agent', { ...f.options, keyProvider: p })).rejects.toMatchObject({ category: 'KEY_MISSING', message: expect.stringContaining('ensureSigningKey({signal})') });
       p.ensureSigningKey = vi.fn(async () => {});
       await create('agent', { ...f.options, keyProvider: p });
       expect(p.ensureSigningKey).toHaveBeenCalledOnce();
@@ -243,6 +243,25 @@ describe('Known Foundry create', () => {
       expect(f.registry.prepareIssuance).toHaveBeenCalledOnce();
       const submissions = vi.mocked(f.registry.submitPreparedEvent).mock.calls;
       for (const call of submissions) expect(call.slice(0, 3)).toEqual(submissions[0]!.slice(0, 3));
+    });
+  });
+
+  it.each(['deadline', 'cancelled'])('keeps completed signing enabled when public refresh ends with %s', async category => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root); const id = await create('agent', f.options); await id.active();
+      const controller = new AbortController();
+      const check = vi.spyOn(IdentityManager.prototype, 'verifyLocalPublication').mockImplementationOnce(async () => {
+        controller.abort(category === 'deadline' ? new DOMException('budget expired', 'TimeoutError') : undefined);
+        throw controller.signal.reason;
+      });
+      await expect(id.active({ signal: controller.signal })).rejects.toMatchObject({ category });
+      expect(check).toHaveBeenCalledOnce();
+      await expect(id.sign(new Uint8Array())).resolves.toHaveLength(64);
+      await expect(JoseProfile.fromIdentityManager(id.identityManager()).createJWT({ audience: DOMAIN })).resolves.toBeTypeOf('string');
+      const saved = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
+      expect(saved.phase).toBe('complete');
+      expect(saved.signingPaused).not.toBe(true);
+      await expect((await create('agent', f.options)).sign(new Uint8Array())).resolves.toHaveLength(64);
     });
   });
 

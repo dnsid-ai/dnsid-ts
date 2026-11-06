@@ -212,6 +212,8 @@ export class FoundryIdentity {
             this.registryStatus = registration.registryStatus;
             return;
           } catch (cause) {
+            const error = normalizeError(cause, operation, deadline);
+            if (['deadline', 'cancelled'].includes(error.category)) throw error;
             if (cause instanceof VerificationError && cause.agentState) {
               if (['PENDING', 'PROVISIONING', 'VERIFYING', 'ACTIVE', 'REVOKED', 'RETIRED'].includes(cause.agentState)) {
                 this.state = cause.agentState as AgentStatusState;
@@ -434,7 +436,7 @@ async function compose(config: LoadedConfig, deps: FoundryDependencies, deadline
   if (!provider) {
     try { provider = await deadline.call(() => operationalKeyProvider(config.keySource ?? {}, '')); }
     catch (cause) {
-      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') throw new FoundryError('KEY_MISSING', 'configured signing key does not exist; supply a provider with an existing key or EnsureSigningKey', { resumable: true, cause });
+      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') throw new FoundryError('KEY_MISSING', 'configured signing key does not exist; supply a provider with an existing key or ensureSigningKey({signal})', { resumable: true, cause });
       throw cause;
     }
   }
@@ -524,7 +526,7 @@ async function signingKey(context: Context, established: boolean): Promise<DnsId
     if (!established && provider.ensureSigningKey) {
       await context.deadline.call(() => provider.ensureSigningKey!({ signal: context.deadline.signal }));
       key = await providerCall(context, 'signingKey');
-    } else throw new FoundryError('KEY_MISSING', 'provider has no signing key; supply it or a provider with EnsureSigningKey', { resumable: true });
+    } else throw new FoundryError('KEY_MISSING', 'provider has no signing key; supply it or a provider with ensureSigningKey({signal})', { resumable: true });
   }
   if (key.kty !== 'OKP' || key.crv !== 'Ed25519' || key.alg !== 'EdDSA') throw new FoundryError('unsupported-algorithm', 'Foundry Live creation requires Ed25519 with EdDSA', { resumable: false });
   const result = publicKey(key);

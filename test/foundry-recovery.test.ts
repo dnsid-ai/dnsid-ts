@@ -25,8 +25,8 @@ describe('Foundry restart and replica recovery', () => {
             },
           })),
         };
-        try { await (await create('agent', { ...f.options, store: crashStore })).active(); }
-        catch { expect(crashed).toBe(true); }
+        await expect(create('agent', { ...f.options, store: crashStore }).then(identity => identity.active())).rejects.toThrow('process stopped');
+        expect(crashed).toBe(true);
         const id = await create('agent', f.options); await id.active();
         await expect(id.sign(new Uint8Array())).resolves.toHaveLength(64);
         expect(f.registry.registerLiveAgent).toHaveBeenCalledOnce();

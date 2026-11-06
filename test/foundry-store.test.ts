@@ -73,17 +73,25 @@ describe('FileFoundryStore', () => {
       const order: string[] = [];
       let escape: FoundryTransaction | undefined;
       let state: FoundryOperation | undefined;
+      let locked!: () => void;
+      let release!: () => void;
+      const acquired = new Promise<void>(resolve => { locked = resolve; });
+      const held = new Promise<void>(resolve => { release = resolve; });
       const first = store.withLock(key, new Deadline(), async transaction => {
         escape = transaction; state = await transaction.load();
         order.push('first');
-        await new Promise(resolve => setTimeout(resolve, 80));
+        locked();
+        await held;
         await transaction.save({ ...state!, extension: 'saved' });
       });
-      await new Promise(resolve => setTimeout(resolve, 20));
-      await expect(other.withLock(key, new Deadline(25), async () => {})).rejects.toMatchObject({ category: 'busy' });
-      const second = other.withLock(key, new Deadline(), async transaction => {
-        order.push('second'); expect((await transaction.load())!.extension).toBe('saved');
-      });
+      let second: Promise<void>;
+      try {
+        await acquired;
+        await expect(other.withLock(key, new Deadline(25), async () => {})).rejects.toMatchObject({ category: 'busy' });
+        second = other.withLock(key, new Deadline(), async transaction => {
+          order.push('second'); expect((await transaction.load())!.extension).toBe('saved');
+        });
+      } finally { release(); }
       await Promise.all([first, second]);
       expect(order).toEqual(['first', 'second']);
       await expect(escape!.save(state!)).rejects.toThrow('closed');

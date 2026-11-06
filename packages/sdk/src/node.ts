@@ -24,12 +24,11 @@ export {
   loadCliDirectory,
   mergeLoadedConfig,
   constructIdentityManager,
-  operationalKeyProvider,
-  validateKeySource,
-  logRegistryFromTrust,
   createNodeIdentityManagerFromEnvironment,
   createNodeIdentityManagerFromDnsid,
   createNodeIdentityManagerFromFile,
   createRegistryClientFromEnvironment,
 } from './config-loading.ts';
+/** @internal Shared implementation helpers for the private Foundry workspace. */
+export { operationalKeyProvider, validateKeySource, logRegistryFromTrust } from './config-loading.ts';
 export type { EnvironmentSource, FoundryConfig, KeySource, LoadedConfig, LoadedDnsidConfig, LoadedRegistryConfig, LogTrust, ManagedRegistrationConfig } from './config-loading.ts';

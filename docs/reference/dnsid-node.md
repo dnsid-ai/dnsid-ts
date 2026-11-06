@@ -1227,33 +1227,6 @@ values, and duplicate members are rejected; semantic `dnsid` validation stays wi
 
 ***
 
-<a id="logregistryfromtrust"></a>
-
-### logRegistryFromTrust()
-
-```ts
-function logRegistryFromTrust(trust, transport): Promise<LogRegistry>;
-```
-
-Defined in: [packages/sdk/src/config-loading.ts:410](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L410)
-
-#### Parameters
-
-##### trust
-
-[`LogTrust`](#logtrust-1)
-
-##### transport
-
-  \| [`TransportConfig`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#transportconfig)
-  \| `undefined`
-
-#### Returns
-
-`Promise`\<[`LogRegistry`](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry)\>
-
-***
-
 <a id="mergeloadedconfig"></a>
 
 ### mergeLoadedConfig()
@@ -1281,62 +1254,6 @@ whole section when `overlay` sets any variant. Operational key-source fields rep
 #### Returns
 
 [`LoadedConfig`](#loadedconfig)
-
-***
-
-<a id="operationalkeyprovider"></a>
-
-### operationalKeyProvider()
-
-```ts
-function operationalKeyProvider(source, domain): Promise<
-  | KeyProvider
-| undefined>;
-```
-
-Defined in: [packages/sdk/src/config-loading.ts:431](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L431)
-
-`cliDirectory` wins over `keyStorePath`; neither leaves `deps.keyProvider` absent for the constructor to reject.
-
-#### Parameters
-
-##### source
-
-[`KeySource`](#keysource)
-
-##### domain
-
-`string`
-
-#### Returns
-
-`Promise`\<
-  \| [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1)
-  \| `undefined`\>
-
-***
-
-<a id="validatekeysource"></a>
-
-### validateKeySource()
-
-```ts
-function validateKeySource(source?): Promise<void>;
-```
-
-Defined in: [packages/sdk/src/config-loading.ts:454](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L454)
-
-Validate selected-only availability before discovery or mutation; injected providers bypass this.
-
-#### Parameters
-
-##### source?
-
-[`KeySource`](#keysource) = `{}`
-
-#### Returns
-
-`Promise`\<`void`\>
 
 ## References
 
