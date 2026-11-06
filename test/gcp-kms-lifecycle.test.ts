@@ -1,5 +1,6 @@
 import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
+import type { KeyProvider } from '@dnsid-ai/protocol';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
 // PROVISIONAL contract: dnsid-sdk-compliance@3e5d4d7ca662270739aa28b9e0d86fac2a704949
@@ -55,6 +56,40 @@ function noCloudRetirement(client: ReturnType<typeof fakeCloud>) {
 }
 
 describe('GCP provisional lifecycle (#56; Mode: fake-only)', () => {
+  it('Given KeyProvider interface, When ES256 generation is requested, Then reject before any create RPC (F3)', async () => {
+    const { client, provider: concrete } = await setup();
+    const provider: KeyProvider = concrete;
+    const result = await provider.generateKey('ES256').then(kid => ({ ok: true, kid }), error => ({ ok: false, error }));
+    expect(result, 'unsupported requested algorithm must reject, not silently create Ed25519').toMatchObject({ ok: false });
+    expect(client.createCryptoKeyVersion).not.toHaveBeenCalled();
+  });
+
+  it('Given generation preflight hook, When validating EdDSA or unsupported algorithms, Then validate without creation (F3)', async () => {
+    const { client, provider: concrete } = await setup();
+    const provider: KeyProvider = concrete;
+    expect(typeof provider.validateKeyGeneration, 'same optional validation hook as AWS/local').toBe('function');
+    await expect(provider.validateKeyGeneration!('EdDSA')).resolves.toBeUndefined();
+    for (const algorithm of ['ES256', 'unknown', 'EC_SIGN_ED25519']) {
+      await expect(provider.validateKeyGeneration!(algorithm)).rejects.toThrow();
+    }
+    expect(client.createCryptoKeyVersion).not.toHaveBeenCalled();
+  });
+
+  for (const algorithm of [undefined, 'EdDSA']) {
+    it(`Given supported ${algorithm ?? 'default'} request, When generating through KeyProvider, Then pending Ed25519 signs and active remains unchanged`, async () => {
+      const { client, provider: concrete } = await setup();
+      const provider: KeyProvider = concrete;
+      const old = await provider.signingKey();
+      const pending = await provider.generateKey(algorithm);
+      const payload = new Uint8Array([0, 255, 128, 42]);
+      expect(verify(null, payload, createPublicKey(keys.get(NEXT)!), await provider.signKey(pending, payload))).toBe(true);
+      expect(await provider.signingKey()).toEqual(old);
+      expect(await provider.listKeyIds()).toEqual([old.kid]);
+      expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1);
+      noCloudRetirement(client);
+    });
+  }
+
   it('Given active version, When explicitly generating, Then same-parent successor is pending without active/config change', async () => {
     const { client, config, provider } = await setup(); const old = await provider.signingKey();
     const kid = await generate(provider);
@@ -124,10 +159,13 @@ describe('GCP provisional lifecycle (#56; Mode: fake-only)', () => {
     const { client, provider } = await setup(); const old = await provider.signingKey(); const kid = await generate(provider);
     await provider.activate(kid);
     expect((await provider.signingKey()).kid).toBe(kid); expect(await provider.listKeyIds()).toEqual([kid]);
+    const payload = new Uint8Array([0, 255, 128, 42]);
+    expect(verify(null, payload, createPublicKey(keys.get(NEXT)!), await provider.sign(payload))).toBe(true);
     expect(await provider.jwk(old.kid)).toEqual(old);
     await expect(provider.signKey(old.kid, new Uint8Array([1]))).rejects.toThrow();
     await provider.supersede(old.kid);
     expect((await provider.signingKey()).kid).toBe(kid); expect(await provider.listKeyIds()).toEqual([kid]);
+    expect(verify(null, payload, createPublicKey(keys.get(NEXT)!), await provider.sign(payload))).toBe(true);
     noCloudRetirement(client);
   });
 

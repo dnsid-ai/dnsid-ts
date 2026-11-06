@@ -10,7 +10,7 @@ import type { KeySource } from '../packages/sdk/src/config-loading.js';
 // Mode: fake-only for optional-package availability; real isolated temporary files.
 // No production network or credential chain is used.
 const VERSION = 'projects/test/locations/global/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7';
-const source: KeySource = { provider: 'google-kms', keyRef: VERSION, settings: { algorithm: 'EC_SIGN_ED25519' } };
+const source: KeySource = { provider: 'google-kms', keyRef: VERSION, settings: { algorithm: 'EdDSA' } };
 const identity = { domain: 'agent.example.com', governanceId: 'example.com', logRef: 'test:agent',
   statusUrl: 'https://agent.example.com/status', ekUrl: 'https://example.com/ek', kuUrl: 'https://agent.example.com/keys' };
 function signer(): KeyProvider {
@@ -98,7 +98,9 @@ describe('GCP config (#56; Mode: fake-only optional packages)', () => {
   for (const invalid of [
     { ...source, cliDirectory: '/must-not-open' }, { ...source, keyStorePath: '/must-not-open' },
     { ...source, keyRef: '' }, { ...source, settings: { algorithm: 'EC_SIGN_P256_SHA256' } },
-    { ...source, settings: { algorithm: 'EC_SIGN_ED25519', privateKey: 'secret-not-permitted' } },
+    { ...source, settings: { algorithm: 'EC_SIGN_ED25519' } },
+    { ...source, settings: { algorithm: 'ES256' } },
+    { ...source, settings: { algorithm: 'EdDSA', privateKey: 'secret-not-permitted' } },
   ]) it(`Given invalid selection ${JSON.stringify(invalid)}, When validating, Then fail before opening`, async () => {
     const load = vi.fn(); vi.doMock('@dnsid-ai/key-gcp', () => ({ GcpCloudKmsKeyProvider: { load } }));
     const { validateKeySource } = await import('../packages/sdk/src/config-loading.js');
