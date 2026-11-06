@@ -20,10 +20,11 @@ function run(command, args, options = {}) {
     cwd: root,
     stdio: 'inherit',
     shell: process.platform === 'win32',
+    timeout: 180_000,
     ...options,
   });
   if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status}`);
+    throw new Error(`${command} ${args.join(' ')} failed: ${result.error?.message ?? `exit ${result.status}`}`);
   }
 }
 
@@ -45,6 +46,7 @@ for (const name of packages) {
   const result = spawnSync('npm', ['pack', path.join(root, 'packages', name), '--json', '--pack-destination', tarballDir], {
     cwd: root,
     encoding: 'utf8',
+    timeout: 180_000,
     stdio: ['ignore', 'pipe', 'inherit'],
     shell: process.platform === 'win32',
   });
@@ -60,7 +62,7 @@ for (const name of packages) {
 }
 
 await writeFile(path.join(consumerDir, 'package.json'), JSON.stringify({ type: 'module', private: true }, null, 2));
-run('npm', ['install', '--ignore-scripts', '--no-audit', '--package-lock=false', ...tarballs], { cwd: consumerDir });
+run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--fetch-retries=0', '--fetch-timeout=20000', '--package-lock=false', ...tarballs], { cwd: consumerDir });
 
 for (const name of packages) {
   const installed = path.join(consumerDir, 'node_modules', '@dnsid-ai', name);
@@ -181,103 +183,24 @@ try {
 }
 `);
 
-// #56 characterization: installed tarballs only, no Vitest aliases/source imports.
-// Authority: dnsid-sdk-compliance@3e5d4d7, SDK configuration/key-provider contracts.
-// Mode: fake-only Cloud KMS network; real official client, packed provider and SDK loader.
-// The independent RFC 8032 key is test-only. No credentials or GCP network access.
-await writeFile(path.join(consumerDir, 'gcp-packed-fixture.cjs'), `
-const assert = require('node:assert/strict');
-const { createPrivateKey, createPublicKey, sign, verify } = require('node:crypto');
-const { KeyManagementServiceClient } = require('@google-cloud/kms');
-const version = 'projects/packed-test/locations/global/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7';
-const algorithm = 'EC_SIGN_ED25519';
-const privateKey = createPrivateKey({
-  key: Buffer.from('302e020100300506032b657004220420' + '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60', 'hex'),
-  format: 'der', type: 'pkcs8',
-});
-const publicKey = createPublicKey(privateKey);
-const pem = publicKey.export({ format: 'pem', type: 'spki' }).toString();
-function crc(bytes) {
-  let c = 0xffffffff;
-  for (const b of bytes) { c ^= b; for (let i = 0; i < 8; i++) c = (c >>> 1) ^ ((c & 1) ? 0x82f63b78 : 0); }
-  return (c ^ 0xffffffff) >>> 0;
+// Same real-publication consumer assertions against installed tarballs, not source aliases.
+for (const format of ['esm', 'cjs']) {
+  const output = path.join(consumerDir, `gcp-consumer.${format === 'esm' ? 'mjs' : 'cjs'}`);
+  run(path.join(root, 'node_modules', '.bin', 'esbuild'), [
+    'test/helpers/gcp-consumer.ts', '--bundle', '--platform=node', `--format=${format}`,
+    '--external:@dnsid-ai/*', '--external:@google-cloud/kms', `--outfile=${output}`,
+  ]);
 }
-module.exports = async function runGcpPacked(Provider, sdkNode, sdk, format) {
-  let reads = 0; let signatures = 0;
-  const originalVerify = sdk.IdentityManager.prototype.verifyPublicationEvidence;
-  let publicationChecks = 0;
-  const prototype = KeyManagementServiceClient.prototype;
-  const methods = ['getPublicKey', 'asymmetricSign', 'createCryptoKey', 'createCryptoKeyVersion',
-    'importCryptoKeyVersion', 'updateCryptoKeyVersion', 'destroyCryptoKeyVersion', 'updateCryptoKeyPrimaryVersion'];
-  const originals = new Map(methods.map(name => [name, prototype[name]]));
-  try {
-    // Patch only official-client RPC boundaries. Any unexpected RPC fails closed.
-    for (const name of methods) prototype[name] = async function() { assert.fail('unexpected GCP mutation: ' + name); };
-    prototype.getPublicKey = async function(request) {
-      assert.equal(request.name, version); reads++;
-      return [{ name: version, algorithm, protectionLevel: 'SOFTWARE', pem, pemCrc32c: { value: crc(Buffer.from(pem)) } }];
-    };
-    prototype.asymmetricSign = async function(request) {
-      assert.equal(request.name, version); assert.equal(request.digest, undefined);
-      assert.equal(Number(request.dataCrc32c?.value), crc(request.data)); signatures++;
-      const signature = sign(null, request.data, privateKey);
-      return [{ name: version, signature, signatureCrc32c: { value: crc(signature) }, verifiedDataCrc32c: true }];
-    };
-    // Direct import/require and the SDK's native selected lazy import must both
-    // reach the packed provider. No source alias or replacement module is used.
-    const direct = await Provider.load(new KeyManagementServiceClient(), { activeKeyVersion: version, algorithm });
-    const publishedKey = await direct.signingKey();
-    // Isolate downstream publication evidence, as in the AWS packed smoke.
-    // This does not replace the configuration loader or provider factory.
-    sdk.IdentityManager.prototype.verifyPublicationEvidence = async function(domain) {
-      assert.equal(domain, 'agent.example.com'); publicationChecks++;
-      return { jwks: new sdk.JWKS([publishedKey]) };
-    };
-    const loaded = sdkNode.mergeLoadedConfig({}, {
-      dnsid: { identity: {
-        domain: 'agent.example.com', governanceId: 'example.com',
-        logRef: 'c2sp-tlog:public:https://log.dev.dnsid.ai#0123456789abcdefghijkl',
-        statusUrl: 'https://agent.example.com/status',
-        ekUrl: 'https://example.com/ek', kuUrl: 'https://agent.example.com/keys',
-      } },
-      keySource: { provider: 'google-kms', keyRef: version, settings: { algorithm } },
-    });
-    const manager = await sdkNode.constructIdentityManager(loaded);
-    const selected = manager.getKeyProvider();
-    assert(selected, 'SDK must return the selected cloud provider, not file fallback');
-    for (const provider of [direct, selected]) {
-      const jwk = await provider.signingKey();
-      assert.equal(jwk.kty, 'OKP'); assert.equal(jwk.crv, 'Ed25519'); assert.equal(jwk.alg, 'EdDSA');
-      assert.equal(jwk.x, Buffer.from('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a', 'hex').toString('base64url'));
-      assert.equal(jwk.d, undefined); assert(jwk.kid && !jwk.kid.includes('#'));
-      assert.deepEqual(await provider.listKeyIds(), [jwk.kid]);
-      for (const payload of [Buffer.alloc(0), Buffer.from([0, 255, 128, 42])]) {
-        const signature = await provider.sign(payload);
-        assert.equal(signature.length, 64); assert(verify(null, payload, publicKey, signature));
-        assert.deepEqual(Buffer.from(signature), sign(null, payload, privateKey));
-      }
-    }
-    assert.equal(reads, 2); assert.equal(signatures, 4); assert.equal(publicationChecks, 1);
-    console.log('packed GCP ' + format + ' direct + SDK selected lazy loading passed (official client, mocked RPCs)');
-  } finally {
-    for (const [name, original] of originals) prototype[name] = original;
-    sdk.IdentityManager.prototype.verifyPublicationEvidence = originalVerify;
-  }
-};
-`);
 await writeFile(path.join(consumerDir, 'gcp-loading.mjs'), `
-import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
-import * as sdkNode from '@dnsid-ai/sdk/node';
-import * as sdk from '@dnsid-ai/sdk';
-import run from './gcp-packed-fixture.cjs';
-await run(GcpCloudKmsKeyProvider, sdkNode, sdk, 'ESM');
+import { gcpConsumer } from './gcp-consumer.mjs';
+await gcpConsumer();
+console.log('packed GCP ESM real publication and public HTTP verification passed');
 `);
 await writeFile(path.join(consumerDir, 'gcp-loading.cjs'), `
 const assert = require('node:assert/strict');
-const sdkNode = require('@dnsid-ai/sdk/node');
+require('@dnsid-ai/sdk/node');
 assert.equal(require.cache[require.resolve('@dnsid-ai/key-gcp')], undefined, 'base SDK must not eagerly require GCP');
-const { GcpCloudKmsKeyProvider } = require('@dnsid-ai/key-gcp');
-require('./gcp-packed-fixture.cjs')(GcpCloudKmsKeyProvider, sdkNode, require('@dnsid-ai/sdk'), 'CJS').catch(error => { console.error(error); process.exitCode = 1; });
+require('./gcp-consumer.cjs').gcpConsumer().then(() => console.log('packed GCP CJS real publication and public HTTP verification passed')).catch(error => { console.error(error); process.exitCode = 1; });
 `);
 
 await writeFile(path.join(consumerDir, 'browser.mjs'), `
