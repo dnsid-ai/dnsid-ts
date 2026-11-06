@@ -122,8 +122,12 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     if (!checksumMatches(signature, response.signatureCrc32c)) throw new ArgumentError('Google Cloud KMS signature checksum mismatch');
     return new Uint8Array(signature);
   }
-  /** Explicit operator generation only; never called by configuration opening. */
-  async generateKey(): Promise<string> {
+  async validateKeyGeneration(algorithm: string): Promise<void> {
+    if (algorithm !== 'EdDSA') throw new ArgumentError(`Google Cloud KMS generation settings do not support ${algorithm}`);
+  }
+  /** Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation. Never called by configuration opening. */
+  async generateKey(algorithm?: string): Promise<string> {
+    await this.validateKeyGeneration(algorithm ?? 'EdDSA');
     if (!this.client.createCryptoKeyVersion) throw new ArgumentError('Google Cloud KMS client does not support version creation');
     const parent = this.version.slice(0, this.version.lastIndexOf('/cryptoKeyVersions/'));
     const [raw] = await this.client.createCryptoKeyVersion({ parent, cryptoKeyVersion: { state: 'ENABLED' } });

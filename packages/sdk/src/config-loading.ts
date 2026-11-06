@@ -454,8 +454,8 @@ export async function validateKeySource(source: KeySource = {}): Promise<void> {
       throw new ArgumentError('google-kms requires an existing immutable CryptoKeyVersion keyRef');
     }
     if (source.settings && (Object.keys(source.settings).some(key => key !== 'algorithm')
-      || (source.settings.algorithm !== undefined && source.settings.algorithm !== 'EC_SIGN_ED25519'))) {
-      throw new ArgumentError('google-kms settings allow only algorithm EC_SIGN_ED25519; use ambient credentials');
+      || (source.settings.algorithm !== undefined && source.settings.algorithm !== 'EdDSA'))) {
+      throw new ArgumentError('google-kms settings allow only algorithm EdDSA; use ambient credentials');
     }
     try {
       const factory = await import('@dnsid-ai/key-gcp');

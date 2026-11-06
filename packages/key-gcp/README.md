@@ -22,11 +22,24 @@ and returned version bindings. Google transport and permission errors propagate;
 there is no local signing fallback, key import, or generation during opening.
 
 Configuration selects this optional package with `provider: "google-kms"`, the
-immutable version as `keyRef`, and optional `settings.algorithm: "EC_SIGN_ED25519"`.
+immutable version as `keyRef`, and optional `settings.algorithm: "EdDSA"` (the
+only supported deployment algorithm). SDK composition translates `EdDSA` to the
+Cloud KMS `EC_SIGN_ED25519` algorithm; direct `GcpCloudKmsConfig.algorithm` remains
+`EC_SIGN_ED25519`, as in the example above.
 Only the selected package is imported; injected providers bypass selection.
 
-An explicit `generateKey()` creates a pending software Ed25519 version under the
-same CryptoKey. It does not change deployment configuration or the active signer.
+```ts
+const keySource = {
+  provider: 'google-kms',
+  keyRef: 'projects/p/locations/l/keyRings/r/cryptoKeys/k/cryptoKeyVersions/1',
+  settings: { algorithm: 'EdDSA' },
+};
+```
+
+An explicit `generateKey()` or `generateKey('EdDSA')` creates a pending software
+Ed25519 version under the same CryptoKey. Other requested algorithms are rejected
+before creation. `validateKeyGeneration('EdDSA')` checks algorithm support without
+creating a version. Generation does not change deployment configuration or the active signer.
 Pending keys support `jwk` and `signKey`; `activate` drains in-flight signatures
 and blocks new signing while promoting the pending key. `listKeyIds` contains
 only the active ID, or is empty after local supersession. `supersede` and its

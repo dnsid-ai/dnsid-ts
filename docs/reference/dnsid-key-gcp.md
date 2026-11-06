@@ -27,11 +27,24 @@ and returned version bindings. Google transport and permission errors propagate;
 there is no local signing fallback, key import, or generation during opening.
 
 Configuration selects this optional package with `provider: "google-kms"`, the
-immutable version as `keyRef`, and optional `settings.algorithm: "EC_SIGN_ED25519"`.
+immutable version as `keyRef`, and optional `settings.algorithm: "EdDSA"` (the
+only supported deployment algorithm). SDK composition translates `EdDSA` to the
+Cloud KMS `EC_SIGN_ED25519` algorithm; direct `GcpCloudKmsConfig.algorithm` remains
+`EC_SIGN_ED25519`, as in the example above.
 Only the selected package is imported; injected providers bypass selection.
 
-An explicit `generateKey()` creates a pending software Ed25519 version under the
-same CryptoKey. It does not change deployment configuration or the active signer.
+```ts
+const keySource = {
+  provider: 'google-kms',
+  keyRef: 'projects/p/locations/l/keyRings/r/cryptoKeys/k/cryptoKeyVersions/1',
+  settings: { algorithm: 'EdDSA' },
+};
+```
+
+An explicit `generateKey()` or `generateKey('EdDSA')` creates a pending software
+Ed25519 version under the same CryptoKey. Other requested algorithms are rejected
+before creation. `validateKeyGeneration('EdDSA')` checks algorithm support without
+creating a version. Generation does not change deployment configuration or the active signer.
 Pending keys support `jwk` and `signKey`; `activate` drains in-flight signatures
 and blocks new signing while promoting the pending key. `listKeyIds` contains
 only the active ID, or is empty after local supersession. `supersede` and its
@@ -69,7 +82,7 @@ Opens one existing software Ed25519 version without cloud mutation or fallback.
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L144)
+Defined in: [index.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L148)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -93,12 +106,18 @@ The previously active key transitions to retained.
 ##### generateKey()
 
 ```ts
-generateKey(): Promise<string>;
+generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L126)
+Defined in: [index.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L129)
 
-Explicit operator generation only; never called by configuration opening.
+Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation. Never called by configuration opening.
+
+###### Parameters
+
+###### algorithm?
+
+`string`
 
 ###### Returns
 
@@ -165,7 +184,7 @@ their public JWKs remain available through `jwk` for historical verification.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L171)
+Defined in: [index.ts:175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L175)
 
 Alias for local supersession; never disables or destroys a cloud version.
 
@@ -269,7 +288,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L163)
+Defined in: [index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L167)
 
 Removes local signing eligibility from an active, pending, or already
 superseded key. Superseding the active key leaves no active signer and an
@@ -290,6 +309,32 @@ Never disables, destroys, or otherwise mutates the remote CryptoKeyVersion.
 ###### Implementation of
 
 [`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`supersede`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#supersede)
+
+<a id="validatekeygeneration"></a>
+
+##### validateKeyGeneration()
+
+```ts
+validateKeyGeneration(algorithm): Promise<void>;
+```
+
+Defined in: [index.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L125)
+
+Validates generation settings and algorithm support without creating a key.
+
+###### Parameters
+
+###### algorithm
+
+`string`
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`KeyProvider`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#keyprovider-1).[`validateKeyGeneration`](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#validatekeygeneration)
 
 <a id="load"></a>
 
