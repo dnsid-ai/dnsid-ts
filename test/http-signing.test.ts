@@ -414,6 +414,12 @@ describe('HTTP Message Signature reusable primitives', () => {
 // ---- createSignedHttpRequest ----
 
 describe('HttpSignaturesProfile.createSignedHttpRequest()', () => {
+  it('rejects a body over the verification size limit', async () => {
+    const manager = new HttpSignaturesProfile({ domain: SIGNER_CONFIG.domain, keyProvider: makeKeyProvider(), identityResolver: resolverStub });
+    const req = new Request('https://api.example.com/', { method: 'POST', body: new Uint8Array(8 * 1024 * 1024 + 1) });
+    await expect(manager.createSignedHttpRequest(req)).rejects.toThrow('size limit');
+  });
+
   it('adds Signature-Input and Signature headers to a GET request', async () => {
     const manager = new HttpSignaturesProfile({ domain: SIGNER_CONFIG.domain, keyProvider: makeKeyProvider(), identityResolver: resolverStub });
     const signed = await manager.createSignedHttpRequest(makeGetRequest());
