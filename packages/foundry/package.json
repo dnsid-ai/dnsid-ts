@@ -1,0 +1,52 @@
+{
+  "name": "@dnsid-ai/foundry",
+  "author": "Known Systems AI, Inc.",
+  "version": "0.35.0",
+  "private": true,
+  "description": "Known Foundry named identity creation and durable recovery.",
+  "type": "module",
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "NOTICE.txt"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dnsid-ai/dnsid-ts.git",
+    "directory": "packages/foundry"
+  },
+  "bugs": {
+    "url": "https://github.com/dnsid-ai/dnsid-ts/issues"
+  },
+  "homepage": "https://github.com/dnsid-ai/dnsid-ts#readme",
+  "keywords": [
+    "dnsid",
+    "foundry",
+    "identity"
+  ],
+  "scripts": {
+    "prepack": "node ../../scripts/copy-notice.mjs",
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dnsid-ai/sdk": "^0.35.0",
+    "@dnsid-ai/registry": "^0.35.0",
+    "@dnsid-ai/transport": "^0.35.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.35.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0"
+}

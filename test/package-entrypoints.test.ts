@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { create as createFoundry, FileFoundryStore, FoundryIdentity, SigningPaused } from '@dnsid-ai/foundry';
+import * as sdk from '@dnsid-ai/sdk';
 
 import { IdentityManager, LogRegistry, VerificationCode } from '@dnsid-ai/protocol';
 import { LocalKeyProvider, createNodeIdentityVerifier } from '@dnsid-ai/sdk/node';
@@ -40,6 +42,9 @@ import { C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog } 
 
 describe('modular package entrypoints', () => {
   it('export the expected public package surfaces', () => {
+    for (const value of [createFoundry, FileFoundryStore, FoundryIdentity, SigningPaused]) expect(value).toBeTypeOf('function');
+    expect(sdk).not.toHaveProperty('create');
+    expect(sdk).not.toHaveProperty('FoundryIdentity');
     expect(VerificationCode.RecordNotFound).toBe('RecordNotFound');
     expect(SDKVerificationCode.RecordNotFound).toBe(VerificationCode.RecordNotFound);
     expect(IdentityManager).toBeTypeOf('function');
