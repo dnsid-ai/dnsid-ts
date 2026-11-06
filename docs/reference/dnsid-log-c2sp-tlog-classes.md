@@ -4068,7 +4068,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ScanStreamSource
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:141](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L141)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L148)
 
 StreamSource that performs a complete scan of a C2SP tlog-tiles log: it
 fetches the checkpoint, authenticates it via the configured callback, then
@@ -4088,7 +4088,7 @@ downloads every fixed-geometry entry bundle up to the checkpoint tree size.
 new ScanStreamSource(options, resourceFetcher?): ScanStreamSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L148)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L155)
 
 ###### Parameters
 
@@ -4118,7 +4118,7 @@ discoverEntry(
 ): Promise<IndexedEntry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L167)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:174](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L174)
 
 Reads the entry at `index` from its one entry bundle under an authenticated checkpoint; the entry itself is not authenticated.
 
@@ -4158,7 +4158,7 @@ Reads the entry at `index` from its one entry bundle under an authenticated chec
 load(prefix, options?): Promise<StreamEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L161)
+Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:168](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L168)
 
 Loads and authenticates the checkpoint, then every entry of the log at `prefix` (`complete` is always true).
 
