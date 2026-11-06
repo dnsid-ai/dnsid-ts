@@ -18,5 +18,6 @@ API reference for the [DNSid TypeScript SDK](https://github.com/dnsid-ai/dnsid-t
 - [Profile: Web Bot Auth](https://docs.dnsid.ai/reference/ts/dnsid-web-bot-auth/) (`@dnsid-ai/web-bot-auth`) — Web Bot Auth profile: signed bot requests and the key-directory endpoint.
 - [Profile: OIDC](https://docs.dnsid.ai/reference/ts/dnsid-oidc/) (`@dnsid-ai/oidc`) — OIDC federation profile: token minting and verification (server-side).
 - [Key providers: AWS KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-aws/) (`@dnsid-ai/key-aws`) — AWS KMS-backed key provider.
+- [Key providers: Google Cloud KMS](https://docs.dnsid.ai/reference/ts/dnsid-key-gcp/) (`@dnsid-ai/key-gcp`) — Google Cloud KMS-backed software Ed25519 key provider.
 - [Registry](https://docs.dnsid.ai/reference/ts/dnsid-registry/) (`@dnsid-ai/registry`) — Registry client and TXT publishing helpers.
 - [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog/) (`@dnsid-ai/log-c2sp-tlog`) — C2SP tlog-backed lifecycle log reader, writer, and verifier.

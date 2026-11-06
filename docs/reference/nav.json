@@ -66,6 +66,10 @@
     "slug": "reference/ts/dnsid-key-aws"
   },
   {
+    "label": "Key providers: Google Cloud KMS",
+    "slug": "reference/ts/dnsid-key-gcp"
+  },
+  {
     "label": "Registry",
     "slug": "reference/ts/dnsid-registry"
   },

@@ -90,7 +90,7 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 | `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
 | `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |
 
-`@dnsid-ai/key-gcp` remains in the workspace as a private placeholder and is not published.
+`@dnsid-ai/key-gcp` is an optional Node.js provider for existing software Ed25519 Google Cloud KMS versions. See its package README for the runtime API and current configuration/lifecycle limits.
 
 ## Package layout
 

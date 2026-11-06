@@ -162,7 +162,7 @@ package via OIDC):
 3. Subsequent versions are staged automatically by the release workflow and
    approved as above.
 
-Packages marked `"private": true` (currently `@dnsid-ai/key-gcp`) are skipped.
+Packages marked `"private": true` are skipped. New public packages (including `@dnsid-ai/key-gcp`) need an initial manual npm publication and trusted-publisher setup before release automation can publish them.
 
 ## Reporting security issues
 

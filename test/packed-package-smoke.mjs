@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws'];
+const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws', 'key-gcp'];
 const browserCapablePackages = ['protocol', 'http-signatures', 'jose', 'registry', 'web-bot-auth', 'log-c2sp-tlog', 'sdk'];
 
 for (const name of browserCapablePackages) {
@@ -20,10 +20,11 @@ function run(command, args, options = {}) {
     cwd: root,
     stdio: 'inherit',
     shell: process.platform === 'win32',
+    timeout: 180_000,
     ...options,
   });
   if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status}`);
+    throw new Error(`${command} ${args.join(' ')} failed: ${result.error?.message ?? `exit ${result.status}`}`);
   }
 }
 
@@ -45,6 +46,7 @@ for (const name of packages) {
   const result = spawnSync('npm', ['pack', path.join(root, 'packages', name), '--json', '--pack-destination', tarballDir], {
     cwd: root,
     encoding: 'utf8',
+    timeout: 180_000,
     stdio: ['ignore', 'pipe', 'inherit'],
     shell: process.platform === 'win32',
   });
@@ -60,7 +62,7 @@ for (const name of packages) {
 }
 
 await writeFile(path.join(consumerDir, 'package.json'), JSON.stringify({ type: 'module', private: true }, null, 2));
-run('npm', ['install', '--ignore-scripts', '--no-audit', '--package-lock=false', ...tarballs], { cwd: consumerDir });
+run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--fetch-retries=0', '--fetch-timeout=20000', '--package-lock=false', ...tarballs], { cwd: consumerDir });
 
 for (const name of packages) {
   const installed = path.join(consumerDir, 'node_modules', '@dnsid-ai', name);
@@ -94,8 +96,9 @@ import {
 } from '@dnsid-ai/sdk';
 import { LocalKeyProvider, createNodeIdentityManager } from '@dnsid-ai/sdk/node';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
-for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade]) {
+for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade, GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected ESM function export');
 }
 if (DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
@@ -118,8 +121,9 @@ const c2spTlogVersion = require('@dnsid-ai/log-c2sp-tlog/version');
 const sdk = require('@dnsid-ai/sdk');
 const sdkNode = require('@dnsid-ai/sdk/node');
 const keyAws = require('@dnsid-ai/key-aws');
+const keyGcp = require('@dnsid-ai/key-gcp');
 
-for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade]) {
+for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade, keyGcp.GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected CJS function export');
 }
 if (sdk.DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
@@ -179,6 +183,26 @@ try {
 }
 `);
 
+// Same real-publication consumer assertions against installed tarballs, not source aliases.
+for (const format of ['esm', 'cjs']) {
+  const output = path.join(consumerDir, `gcp-consumer.${format === 'esm' ? 'mjs' : 'cjs'}`);
+  run(path.join(root, 'node_modules', '.bin', 'esbuild'), [
+    'test/helpers/gcp-consumer.ts', '--bundle', '--platform=node', `--format=${format}`,
+    '--external:@dnsid-ai/*', '--external:@google-cloud/kms', `--outfile=${output}`,
+  ]);
+}
+await writeFile(path.join(consumerDir, 'gcp-loading.mjs'), `
+import { gcpConsumer } from './gcp-consumer.mjs';
+await gcpConsumer();
+console.log('packed GCP ESM real publication and public HTTP verification passed');
+`);
+await writeFile(path.join(consumerDir, 'gcp-loading.cjs'), `
+const assert = require('node:assert/strict');
+require('@dnsid-ai/sdk/node');
+assert.equal(require.cache[require.resolve('@dnsid-ai/key-gcp')], undefined, 'base SDK must not eagerly require GCP');
+require('./gcp-consumer.cjs').gcpConsumer().then(() => console.log('packed GCP CJS real publication and public HTTP verification passed')).catch(error => { console.error(error); process.exitCode = 1; });
+`);
+
 await writeFile(path.join(consumerDir, 'browser.mjs'), `
 import {
   DomainLog,
@@ -200,6 +224,10 @@ globalThis.__dnsidBrowserExports = [
 run('node', ['esm.mjs'], { cwd: consumerDir });
 run('node', ['cjs.cjs'], { cwd: consumerDir });
 run('node', ['aws-loading.mjs'], { cwd: consumerDir });
+// Explicit non-secret project avoids ambient project discovery/metadata probes.
+const gcpSmokeOptions = { cwd: consumerDir, env: { ...process.env, GOOGLE_CLOUD_PROJECT: 'packed-test', METADATA_SERVER_DETECTION: 'none' } };
+run('node', ['gcp-loading.mjs'], gcpSmokeOptions);
+run('node', ['gcp-loading.cjs'], gcpSmokeOptions);
 run(path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'), ['browser.mjs', '--bundle', '--platform=browser', '--format=esm', '--outfile=browser-bundle.mjs'], { cwd: consumerDir });
 
 const browserBundle = await readFile(path.join(consumerDir, 'browser-bundle.mjs'), 'utf8');

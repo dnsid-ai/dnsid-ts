@@ -927,7 +927,7 @@ function createNodeIdentityManagerFromDnsid(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:479](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L479)
+Defined in: [packages/sdk/src/config-loading.ts:499](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L499)
 
 #### Parameters
 
@@ -961,7 +961,7 @@ function createNodeIdentityManagerFromEnvironment(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:475](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L475)
+Defined in: [packages/sdk/src/config-loading.ts:495](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L495)
 
 #### Parameters
 
@@ -995,7 +995,7 @@ function createNodeIdentityManagerFromFile(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:483](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L483)
+Defined in: [packages/sdk/src/config-loading.ts:503](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L503)
 
 #### Parameters
 
@@ -1053,7 +1053,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
-Defined in: [packages/sdk/src/config-loading.ts:488](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L488)
+Defined in: [packages/sdk/src/config-loading.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L508)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 
