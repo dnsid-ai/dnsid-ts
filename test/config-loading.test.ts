@@ -46,7 +46,7 @@ const TRUST_PROFILE = {
   ],
 };
 
-afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); vi.doUnmock('@dnsid-ai/key-gcp'); });
 
 function matchingPublication() {
   return vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence').mockImplementation(async function (this: IdentityManager) {
@@ -333,6 +333,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
 
   // Mode: fake-only (unavailable Google factory); not Google success proof.
   it('names unavailable google-kms without local fallback or warning', () => withTemp(async root => {
+    vi.doMock('@dnsid-ai/key-gcp', () => { throw Object.assign(new Error('package absent'), { code: 'ERR_MODULE_NOT_FOUND' }); });
     const store = join(root, 'keys.json');
     await LocalKeyProvider.load(store, true);
     const local = vi.spyOn(LocalKeyProvider, 'load');
@@ -340,7 +341,7 @@ describe('constructIdentityManager() and convenience constructors', () => {
     const verify = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence');
     const base = mergeLoadedConfig(await loadEnvironment(IDENTITY_ENV), { keySource: { keyStorePath: store } });
     const loaded = mergeLoadedConfig(base, { keySource: { provider: 'google-kms', keyRef: 'projects/test/locations/global/keyRings/test/cryptoKeys/agent/cryptoKeyVersions/1' } });
-    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow(/google-kms/);
+    await expect(constructIdentityManager(loaded, deps)).rejects.toThrow('google-kms unavailable');
     expect(local).not.toHaveBeenCalled();
     expect(verify).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
