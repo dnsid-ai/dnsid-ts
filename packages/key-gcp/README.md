@@ -14,12 +14,23 @@ const keyProvider = await GcpCloudKmsKeyProvider.load(new KeyManagementServiceCl
 });
 ```
 
-Use ambient Google credentials with permission to read the public key and sign.
+Use ambient Google credentials with `cloudkms.cryptoKeyVersions.viewPublicKey`
+and `cloudkms.cryptoKeyVersions.useToSign` permissions. Explicit creation also
+requires `cloudkms.cryptoKeys.get`, `cloudkms.cryptoKeyVersions.create`, and
+`cloudkms.cryptoKeyVersions.get`.
 The reference must name a numeric immutable version, not a parent or alias. The
 provider exports only the public Ed25519 JWK, with an RFC 7638 thumbprint as `kid`.
 It sends raw data (never a digest) and verifies request/response CRC32C integrity
 and returned version bindings. Google transport and permission errors propagate;
 there is no local signing fallback, key import, or generation during opening.
+
+For first-key creation, explicitly call `GcpCloudKmsKeyProvider.create` with an
+existing `ASYMMETRIC_SIGN` CryptoKey parent whose version template is
+`EC_SIGN_ED25519` / `SOFTWARE`; no prior version is required. See the
+[KMS-first setup guide](../../docs/kms-first-setup.md) for pending-key activation,
+reference handoff, publication boundaries, and failure recovery. Subsequent
+startup must reopen the saved immutable version with `load`, never recreate it;
+normal configuration remains open-only.
 
 Configuration selects this optional package with `provider: "google-kms"`, the
 immutable version as `keyRef`, and optional `settings.algorithm: "EdDSA"` (the
