@@ -388,8 +388,12 @@ export class AwsKmsKeyProvider implements KeyProvider {
     }
 
     const canonicalKid = result.keyId ?? kid;
-    if (exact && canonicalKid !== kid) {
-      throw new ArgumentError('AWS KMS public key reference mismatch');
+    if (exact) {
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const arnKeyId = result.keyId?.match(/^arn:[a-z0-9-]+:kms:[a-z0-9-]+:[0-9]{12}:key\/([0-9a-f-]+)$/)?.[1];
+      if (!result.keyId || (result.keyId !== kid && !(uuid.test(kid) && arnKeyId === kid))) {
+        throw new ArgumentError('AWS KMS public key reference mismatch');
+      }
     }
     validateKid(canonicalKid);
     const jwk = await spkiToJwk(result.publicKey, this.config.algorithm, canonicalKid);
