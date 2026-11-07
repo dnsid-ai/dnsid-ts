@@ -2,19 +2,18 @@ import crypto, { createHash, createPrivateKey, createPublicKey, sign, verify } f
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
+import { syncBuiltinESMExports } from 'node:module';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
 import type { DnsIdJWK } from '@dnsid-ai/protocol';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
-import type { AwsKmsConfig, AwsKmsFacade, AwsSdkKmsClient } from '@dnsid-ai/key-aws';
+import type { AwsSdkKmsClient } from '@dnsid-ai/key-aws';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
-import type { GcpCloudKmsClient } from '@dnsid-ai/key-gcp';
 
 // #58: compliance@df23a7cdd2e5acfe0c23ca832acbe35225496936,
 // docs/sdk-design/01 (KMS-first creation), 12 (parent validation/open-only).
-// All dependencies fake. Missing create assertions are PUBLIC-SURFACE RED ONLY;
-// downstream functional assertions are unexecuted until real create code exists.
+// All service dependencies are fake; crypto identity checks use independent fixtures.
 const ARN = 'arn:aws:kms:us-east-1:111122223333:key/11111111-1111-4111-8111-111111111111';
 const OTHER_ARN = ARN.replace('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222');
 const PARENT = 'projects/first/locations/global/keyRings/agents/cryptoKeys/operational';
@@ -60,8 +59,7 @@ function gcpCloud() {
   const f = fixture(); let exists = false;
   const metadata = { name: VERSION, state: 'ENABLED', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' };
   const client = {
-    // Native metadata method required by parent/template contract; current public
-    // GcpCloudKmsClient declaration lacks it. Structural fake is not typing proof.
+    // Native parent metadata is validated before creating the first version.
     getCryptoKey: vi.fn(async ({ name }: { name: string }) => {
       expect(name).toBe(PARENT);
       return [{ name: PARENT, purpose: 'ASYMMETRIC_SIGN', versionTemplate: { algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' } }];
@@ -86,18 +84,6 @@ function gcpCloud() {
   };
   return { client, f };
 }
-type AwsResult = { provider: AwsKmsKeyProvider; kid: string; keyRef: string };
-type GcpResult = { provider: GcpCloudKmsKeyProvider; kid: string; keyRef: string };
-function awsCreate() {
-  const member: unknown = Reflect.get(AwsKmsKeyProvider, 'create');
-  expect(typeof member, 'public-surface RED only: AwsKmsKeyProvider.create must exist').toBe('function');
-  return (member as (client: AwsKmsFacade, config: Omit<AwsKmsConfig, 'activeKeyId' | 'state'>) => Promise<AwsResult>).bind(AwsKmsKeyProvider);
-}
-function gcpCreate() {
-  const member: unknown = Reflect.get(GcpCloudKmsKeyProvider, 'create');
-  expect(typeof member, 'public-surface RED only: GcpCloudKmsKeyProvider.create must exist').toBe('function');
-  return (member as (client: GcpCloudKmsClient, config: { parent: string; algorithm: string }) => Promise<GcpResult>).bind(GcpCloudKmsKeyProvider);
-}
 function publicIdentity(actual: DnsIdJWK, f: ReturnType<typeof fixture>, kid: string, expectedKid = f.kid) {
   // AWS preserves canonical KMS-reference kids; GCP uses RFC7638 kids. Neither
   // substitutes kid equality for independently checking public-key identity.
@@ -120,7 +106,7 @@ function noGcpMutation(c: ReturnType<typeof gcpCloud>['client']) {
 describe('#58 AWS native first key', () => {
   it('Given zero keys, When create then activate and reopen, Then immutable identity and independently verified raw signatures persist [Mode: real-capable]', async () => {
     const { client, f } = awsCloud(); const config = { ...AWS_CONFIG };
-    const { provider, kid, keyRef } = await awsCreate()(client, config);
+    const { provider, kid, keyRef } = await AwsKmsKeyProvider.create(client, config);
     expect(provider).toBeInstanceOf(AwsKmsKeyProvider); expect(keyRef).toBe(ARN);
     expect(client.createSigningKey).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ keySpec: 'ECC_NIST_EDWARDS25519' }));
     expect(await provider.listKeyIds()).toEqual([]);
@@ -137,7 +123,7 @@ describe('#58 AWS native first key', () => {
   });
   for (const fault of ['denied', 'service', 'missing-ref', 'mutable-ref', 'public-denied', 'wrong-binding', 'wrong-spec', 'wrong-usage', 'wrong-algorithm', 'bad-public', 'wrong-key-type'] as const) {
     it(`Given ${fault}, When first create fails, Then no result, recreation, import, deletion or caller disposal [Mode: fake-only]`, async () => {
-      const create = awsCreate(); const { client } = awsCloud();
+      const create = AwsKmsKeyProvider.create; const { client } = awsCloud();
       if (fault === 'denied' || fault === 'service') client.createSigningKey.mockRejectedValueOnce(new Error(fault));
       if (fault === 'missing-ref') client.createSigningKey.mockResolvedValueOnce({ keyId: '' });
       if (fault === 'mutable-ref') client.createSigningKey.mockResolvedValueOnce({ keyId: 'alias/first' });
@@ -159,7 +145,7 @@ describe('#58 AWS native first key', () => {
   }
   for (const fault of ['wrong-key', 'wrong-algorithm'] as const) {
     it(`Given ${fault} sign response, When pending proof signs, Then reject without activation [Mode: fake-only]`, async () => {
-      const { client } = awsCloud(); const { provider, kid } = await awsCreate()(client, { ...AWS_CONFIG });
+      const { client } = awsCloud(); const { provider, kid } = await AwsKmsKeyProvider.create(client, { ...AWS_CONFIG });
       const original = client.sign.getMockImplementation()!;
       client.sign.mockImplementationOnce(async input => ({ ...await original(input), ...(fault === 'wrong-key' ? { keyId: OTHER_ARN } : { signingAlgorithm: 'ECDSA_SHA_256' }) }));
       await expect(provider.signKey(kid, MESSAGE)).rejects.toThrow(); expect(await provider.listKeyIds()).toEqual([]);
@@ -180,7 +166,7 @@ describe('#58 AWS initial creation resource binding', () => {
         return publicMaterial;
       }),
     };
-    await expect(awsCreate()(unbound, { ...AWS_CONFIG })).rejects.toThrow();
+    await expect(AwsKmsKeyProvider.create(unbound, { ...AWS_CONFIG })).rejects.toThrow();
     expect(client.createSigningKey).toHaveBeenCalledTimes(1);
     expect(unbound.getPublicKey).toHaveBeenCalledExactlyOnceWith({ keyId: ARN });
     expect(client.sign).not.toHaveBeenCalled(); noAwsMutation(client);
@@ -215,7 +201,7 @@ describe('#58 AWS initial creation resource binding', () => {
 
   it('F2 Given native CreateKey bare UUID fallback, When public response has matching ARN, Then succeed with canonical ARN kid and immutable reopen [Mode: fake-only]', async () => {
     const { f, facade, send, destroy, commands, uuid } = nativeUuidCloud(ARN);
-    const creation = awsCreate()(facade, { ...AWS_CONFIG });
+    const creation = AwsKmsKeyProvider.create(facade, { ...AWS_CONFIG });
     await expect(creation).resolves.toMatchObject({ kid: ARN, keyRef: ARN });
     const { provider, kid, keyRef } = await creation;
     expect(commands().slice(0, 2)).toEqual(['CreateKeyCommand', 'GetPublicKeyCommand']);
@@ -236,7 +222,7 @@ describe('#58 AWS initial creation resource binding', () => {
 
   it('F2 Given native CreateKey bare UUID fallback, When public response ARN has unrelated UUID, Then reject without signing or recreation [Mode: fake-only]', async () => {
     const { facade, destroy, commands } = nativeUuidCloud(OTHER_ARN);
-    await expect(awsCreate()(facade, { ...AWS_CONFIG })).rejects.toThrow();
+    await expect(AwsKmsKeyProvider.create(facade, { ...AWS_CONFIG })).rejects.toThrow();
     expect(commands()).toEqual(['CreateKeyCommand', 'GetPublicKeyCommand']);
     expect(destroy).not.toHaveBeenCalled();
   });
@@ -245,7 +231,7 @@ describe('#58 AWS initial creation resource binding', () => {
 describe('#58 GCP native first version', () => {
   it('Given parent but zero versions, When create then activate and reopen, Then exact version identity and raw signatures persist [Mode: real-capable]', async () => {
     const { client, f } = gcpCloud(); const config = { ...GCP_CONFIG };
-    const { provider, kid, keyRef } = await gcpCreate()(client, config);
+    const { provider, kid, keyRef } = await GcpCloudKmsKeyProvider.create(client, config);
     expect(provider).toBeInstanceOf(GcpCloudKmsKeyProvider); expect(keyRef).toBe(VERSION);
     expect(client.getCryptoKey).toHaveBeenCalledWith(expect.objectContaining({ name: PARENT }));
     expect(client.createCryptoKeyVersion).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ parent: PARENT }));
@@ -262,7 +248,7 @@ describe('#58 GCP native first version', () => {
   });
   for (const fault of ['create-denied', 'service', 'parent-denied', 'wrong-purpose', 'wrong-template', 'wrong-parent-binding', 'missing-ref', 'foreign-parent', 'parent-only', 'wrong-algorithm', 'disabled', 'destroyed', 'public-denied', 'wrong-binding', 'bad-pem', 'pem-integrity', 'wrong-key-type'] as const) {
     it(`Given ${fault}, When first version create fails, Then no fallback, recreation or caller disposal [Mode: fake-only]`, async () => {
-      const create = gcpCreate(); const { client } = gcpCloud();
+      const create = GcpCloudKmsKeyProvider.create; const { client } = gcpCloud();
       if (fault === 'parent-denied') client.getCryptoKey.mockRejectedValueOnce(new Error('parent denied'));
       if (fault === 'wrong-purpose' || fault === 'wrong-template' || fault === 'wrong-parent-binding') {
         const get = client.getCryptoKey.getMockImplementation()!;
@@ -303,7 +289,7 @@ describe('#58 GCP native first version', () => {
   it('Given PENDING_GENERATION, When same version becomes ready, Then poll without recreation and remain locally pending [Mode: fake-only]', async () => {
     const { client } = gcpCloud(); const generate = client.createCryptoKeyVersion.getMockImplementation()!;
     client.createCryptoKeyVersion.mockImplementationOnce(async input => { const [v] = await generate(input); return [{ ...v, state: 'PENDING_GENERATION' }]; });
-    const { provider, keyRef, kid } = await gcpCreate()(client, { ...GCP_CONFIG });
+    const { provider, keyRef, kid } = await GcpCloudKmsKeyProvider.create(client, { ...GCP_CONFIG });
     expect(keyRef).toBe(VERSION); expect(client.getCryptoKeyVersion).toHaveBeenCalledWith(expect.objectContaining({ name: VERSION }));
     expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1); expect(await provider.listKeyIds()).toEqual([]);
     await expect(provider.sign(MESSAGE)).rejects.toThrow(); expect(await provider.jwk(kid)).toHaveProperty('kid', kid); noGcpMutation(client);
@@ -361,6 +347,7 @@ describe('#58 GCP native first version', () => {
           return importKey(...args);
         });
         traps.push({ mockRestore: importTrap.mockRestore.bind(importTrap) } as ReturnType<typeof vi.spyOn>);
+        syncBuiltinESMExports();
         // Attach rejection handling before advancing existing fake timer controls.
         const rejection = expect(GcpCloudKmsKeyProvider.create(nativeClient, { ...GCP_CONFIG })).rejects.toThrow();
         await vi.runAllTimersAsync(); await rejection;
@@ -374,6 +361,7 @@ describe('#58 GCP native first version', () => {
         expect(vi.getTimerCount()).toBe(0);
       } finally {
         for (const trap of traps.reverse()) trap.mockRestore();
+        syncBuiltinESMExports();
         vi.useRealTimers(); process.chdir(cwd);
         await fsp.rm(directory, { recursive: true, force: true });
         expect(fs.existsSync(directory)).toBe(false);
@@ -381,7 +369,7 @@ describe('#58 GCP native first version', () => {
     });
   }
   it('Given permanently pending version, When readiness budget expires, Then fail boundedly without recreation [Mode: fake-only]', async () => {
-    const create = gcpCreate(); const { client } = gcpCloud(); const generate = client.createCryptoKeyVersion.getMockImplementation()!;
+    const create = GcpCloudKmsKeyProvider.create; const { client } = gcpCloud(); const generate = client.createCryptoKeyVersion.getMockImplementation()!;
     client.createCryptoKeyVersion.mockImplementationOnce(async input => { const [v] = await generate(input); return [{ ...v, state: 'PENDING_GENERATION' }]; });
     client.getCryptoKeyVersion.mockResolvedValue([{ name: VERSION, state: 'PENDING_GENERATION', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' }]);
     vi.useFakeTimers();
@@ -393,7 +381,7 @@ describe('#58 GCP native first version', () => {
   });
   for (const fault of ['wrong-name', 'unverified-data', 'signature-integrity'] as const) {
     it(`Given ${fault}, When pending proof receives corrupt response, Then fail with no partial activation [Mode: fake-only]`, async () => {
-      const { client } = gcpCloud(); const { provider, kid } = await gcpCreate()(client, { ...GCP_CONFIG });
+      const { client } = gcpCloud(); const { provider, kid } = await GcpCloudKmsKeyProvider.create(client, { ...GCP_CONFIG });
       const original = client.asymmetricSign.getMockImplementation()!;
       client.asymmetricSign.mockImplementationOnce(async input => {
         const [result] = await original(input);
@@ -412,18 +400,18 @@ describe('#58 GCP native first version', () => {
 // semantics are separately pre-characterized by the existing regression suites.
 for (const parent of ['', 'alias/current', VERSION]) {
   it(`Given invalid GCP parent ${JSON.stringify(parent)}, When create is requested, Then reject before version creation [Mode: fake-only]`, async () => {
-    const create = gcpCreate(); const { client } = gcpCloud();
+    const create = GcpCloudKmsKeyProvider.create; const { client } = gcpCloud();
     await expect(create(client, { ...GCP_CONFIG, parent })).rejects.toThrow();
     expect(client.createCryptoKeyVersion).not.toHaveBeenCalled(); noGcpMutation(client);
   });
 }
 it('Given incompatible GCP algorithm, When create is requested, Then reject before metadata or mutation [Mode: fake-only]', async () => {
-  const create = gcpCreate(); const { client } = gcpCloud();
+  const create = GcpCloudKmsKeyProvider.create; const { client } = gcpCloud();
   await expect(create(client, { ...GCP_CONFIG, algorithm: 'RSA_SIGN_PKCS1_2048_SHA256' })).rejects.toThrow();
   expect(client.getCryptoKey).not.toHaveBeenCalled(); expect(client.createCryptoKeyVersion).not.toHaveBeenCalled(); noGcpMutation(client);
 });
 it('Given incompatible AWS spec and algorithm, When create is requested, Then reject before creation [Mode: fake-only]', async () => {
-  const create = awsCreate(); const { client } = awsCloud();
+  const create = AwsKmsKeyProvider.create; const { client } = awsCloud();
   await expect(create(client, { algorithm: 'ED25519_SHA_512', keySpec: 'ECC_NIST_P256' })).rejects.toThrow();
   expect(client.createSigningKey).not.toHaveBeenCalled(); noAwsMutation(client);
 });
@@ -432,7 +420,6 @@ it('Given incompatible AWS spec and algorithm, When create is requested, Then re
 // precedes traps, and all traps are restored before isolated directory cleanup.
 for (const vendor of ['AWS', 'GCP'] as const) for (const fail of [false, true]) {
   it(`Given ${vendor} ${fail ? 'failure' : 'success'} and empty setup directory, When creating, Then no local generation or key-file fallback [Mode: fake-only]`, async () => {
-    const create = vendor === 'AWS' ? awsCreate() : gcpCreate();
     const aws = awsCloud(); const gcp = gcpCloud();
     if (fail) { aws.client.createSigningKey.mockRejectedValueOnce(new Error('denied')); gcp.client.createCryptoKeyVersion.mockRejectedValueOnce(new Error('denied')); }
     const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'dnsid58-')); const cwd = process.cwd();
@@ -455,9 +442,10 @@ for (const vendor of ['AWS', 'GCP'] as const) for (const fail of [false, true]) 
       traps.push({ mockRestore: restoreImport } as ReturnType<typeof vi.spyOn>);
       traps.push(vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden), vi.spyOn(fs, 'writeFile').mockImplementation(forbidden), vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden));
       traps.push(vi.spyOn(fs, 'mkdirSync').mockImplementation(forbidden), vi.spyOn(fsp, 'mkdir').mockImplementation(forbidden));
+      syncBuiltinESMExports();
       const operation = vendor === 'AWS'
-        ? (create as ReturnType<typeof awsCreate>)(aws.client, { ...AWS_CONFIG })
-        : (create as ReturnType<typeof gcpCreate>)(gcp.client, { ...GCP_CONFIG });
+        ? AwsKmsKeyProvider.create(aws.client, { ...AWS_CONFIG })
+        : GcpCloudKmsKeyProvider.create(gcp.client, { ...GCP_CONFIG });
       if (fail) await expect(operation).rejects.toThrow('denied');
       else {
         const result = await operation;
@@ -467,7 +455,13 @@ for (const vendor of ['AWS', 'GCP'] as const) for (const fail of [false, true]) 
       expect(privateImports).toBe(0);
       for (const trap of traps) if ('mock' in trap) expect(trap).not.toHaveBeenCalled();
       expect(await fsp.readdir(directory)).toEqual([]); noAwsMutation(aws.client); noGcpMutation(gcp.client);
-    } finally { for (const trap of traps.reverse()) trap.mockRestore(); process.chdir(cwd); await fsp.rm(directory, { recursive: true, force: true }); }
+    } finally {
+      for (const trap of traps.reverse()) trap.mockRestore();
+      syncBuiltinESMExports();
+      process.chdir(cwd);
+      await fsp.rm(directory, { recursive: true, force: true });
+      expect(fs.existsSync(directory)).toBe(false);
+    }
   });
 }
 
@@ -565,7 +559,9 @@ describe('GCP post-create recovery reference', () => {
       const updateCryptoKeyVersion = vi.fn();
       vi.useFakeTimers();
       try {
-        const outcome = GcpCloudKmsKeyProvider.create({ ...client, updateCryptoKeyVersion }, { ...GCP_CONFIG })
+        syncBuiltinESMExports();
+        const recoveryClient = { ...client, updateCryptoKeyVersion };
+        const outcome = GcpCloudKmsKeyProvider.create(recoveryClient, { ...GCP_CONFIG })
           .then(value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
         await vi.runAllTimersAsync();
         const result = await outcome;
@@ -586,8 +582,31 @@ describe('GCP post-create recovery reference', () => {
         expect(error.message, 'caller needs exact immutable version for operator-owned reconciliation').toContain(VERSION);
       } finally {
         for (const trap of traps.reverse()) trap.mockRestore();
+        syncBuiltinESMExports();
         vi.useRealTimers();
       }
     });
+  }
+});
+
+it('Given named builtin imports through Vite, When custody guard is installed, Then generation and writes are intercepted [Mode: fake-only]', async () => {
+  const { namedGeneration, namedWrite, namedAsyncWrite } = await import('./kms-first-custody-canary.js');
+  const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'dnsid58-canary-'));
+  const forbidden = () => { throw new Error('forbidden local custody operation'); };
+  const traps = [vi.spyOn(crypto, 'generateKeyPairSync').mockImplementation(forbidden),
+    vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden),
+    vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden)];
+  syncBuiltinESMExports();
+  try {
+    expect(namedGeneration).toThrow('forbidden local custody operation');
+    expect(() => namedWrite(path.join(directory, 'sync'))).toThrow('forbidden local custody operation');
+    await expect(async () => namedAsyncWrite(path.join(directory, 'async'))).rejects.toThrow('forbidden local custody operation');
+    for (const trap of traps) expect(trap).toHaveBeenCalledTimes(1);
+    expect(await fsp.readdir(directory)).toEqual([]);
+  } finally {
+    for (const trap of traps.reverse()) trap.mockRestore();
+    syncBuiltinESMExports();
+    await fsp.rm(directory, { recursive: true, force: true });
+    expect(fs.existsSync(directory)).toBe(false);
   }
 });
