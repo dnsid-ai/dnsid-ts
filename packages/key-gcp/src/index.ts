@@ -1,4 +1,4 @@
-/** Existing-version Google Cloud KMS Ed25519 signing. Private keys never leave KMS.
+/** Google Cloud KMS Ed25519 signing with explicit native version creation. Private keys never leave KMS.
  * @packageDocumentation
  */
 import { createPublicKey } from 'node:crypto';
@@ -16,6 +16,10 @@ export interface GcpCloudKmsConfig {
 
 /** Structural seam implemented by the official KeyManagementServiceClient. */
 export interface GcpCloudKmsClient {
+  /** Required only for initial creation; reads the existing signing parent/template. */
+  getCryptoKey?(request: { name: string }): Promise<readonly unknown[]>;
+  /** Required when a newly created version is still PENDING_GENERATION. */
+  getCryptoKeyVersion?(request: { name: string }): Promise<readonly unknown[]>;
   createCryptoKeyVersion?(request: { parent: string; cryptoKeyVersion: { state: 'ENABLED' } }): Promise<readonly unknown[]>;
   getPublicKey(request: { name: string }): Promise<readonly unknown[]>;
   asymmetricSign(request: { name: string; data: Uint8Array; dataCrc32c: { value: number } }): Promise<readonly unknown[]>;
@@ -31,7 +35,7 @@ type SignResponse = {
   signatureCrc32c?: Checksum; verifiedDataCrc32c?: boolean;
 };
 
-/** Opens one existing software Ed25519 version without cloud mutation or fallback. */
+/** Opens existing software Ed25519 versions, or explicitly creates pending versions. */
 export class GcpCloudKmsKeyProvider implements KeyProvider {
   private readonly keys = new Map<string, { version: string; jwk: Readonly<DnsIdJWK>; state: 'active' | 'pending' | 'superseded' }>();
   private activeKid: string | undefined;
@@ -40,10 +44,43 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
   private constructor(
     private readonly client: GcpCloudKmsClient,
     private readonly version: string,
-    publicKey: Readonly<DnsIdJWK>,
+    publicKey?: Readonly<DnsIdJWK>,
   ) {
-    this.activeKid = publicKey.kid;
-    this.keys.set(publicKey.kid, { version, jwk: publicKey, state: 'active' });
+    if (publicKey) {
+      this.activeKid = publicKey.kid;
+      this.keys.set(publicKey.kid, { version, jwk: publicKey, state: 'active' });
+    }
+  }
+
+  /**
+   * Creates one version under an existing ASYMMETRIC_SIGN CryptoKey with a
+   * SOFTWARE EC_SIGN_ED25519 template, without opening any prior version.
+   * Returns a locally pending provider and immutable reference; activate(kid)
+   * explicitly before initial manager injection. Never provisions the parent,
+   * writes files, deletes keys, or closes the caller-owned client.
+   * Pending generation polls the same version at most 20 times, 250ms apart.
+   * Each transport call uses the caller's client timeout configuration.
+   * Failed/indeterminate creation may leave an operator-owned remote version;
+   * do not blindly retry. Normal load/configuration remains open-only.
+   */
+  static async create(
+    client: GcpCloudKmsClient,
+    config: { parent: string; algorithm: string },
+  ): Promise<{ provider: GcpCloudKmsKeyProvider; kid: string; keyRef: string }> {
+    if (config.algorithm !== 'EC_SIGN_ED25519') throw new ArgumentError('Google Cloud KMS algorithm must be EC_SIGN_ED25519');
+    if (typeof config.parent !== 'string' || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]+\/cryptoKeys\/[A-Za-z0-9_-]+$/.test(config.parent)) {
+      throw new ArgumentError('Google Cloud KMS creation requires a CryptoKey parent');
+    }
+    if (!client.getCryptoKey || !client.createCryptoKeyVersion) throw new ArgumentError('Google Cloud KMS client does not support initial creation');
+    const [raw] = await client.getCryptoKey({ name: config.parent });
+    const parent = raw as { name?: string; purpose?: string | number; versionTemplate?: { algorithm?: string | number; protectionLevel?: string | number } } | undefined;
+    if (parent?.name !== config.parent || (parent.purpose !== 'ASYMMETRIC_SIGN' && parent.purpose !== 5)
+      || !ed25519Software(parent.versionTemplate)) {
+      throw new ArgumentError('Google Cloud KMS requires a compatible signing parent/template');
+    }
+    const provider = new GcpCloudKmsKeyProvider(client, config.parent);
+    const kid = await provider.generatePendingKey(undefined, true);
+    return { provider, kid, keyRef: provider.keys.get(kid)!.version };
   }
 
   static async load(client: GcpCloudKmsClient | undefined, config: GcpCloudKmsConfig): Promise<GcpCloudKmsKeyProvider> {
@@ -127,22 +164,35 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
   }
   /** Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation. Never called by configuration opening. */
   async generateKey(algorithm?: string): Promise<string> {
+    return this.generatePendingKey(algorithm, false);
+  }
+  private async generatePendingKey(algorithm: string | undefined, waitForReadiness: boolean): Promise<string> {
     await this.validateKeyGeneration(algorithm ?? 'EdDSA');
     if (!this.client.createCryptoKeyVersion) throw new ArgumentError('Google Cloud KMS client does not support version creation');
-    const parent = this.version.slice(0, this.version.lastIndexOf('/cryptoKeyVersions/'));
+    const parent = this.version.includes('/cryptoKeyVersions/')
+      ? this.version.slice(0, this.version.lastIndexOf('/cryptoKeyVersions/')) : this.version;
     const [raw] = await this.client.createCryptoKeyVersion({ parent, cryptoKeyVersion: { state: 'ENABLED' } });
-    const created = raw as { name?: string; algorithm?: string | number; protectionLevel?: string | number; state?: string | number } | undefined;
-    if (!created?.name?.startsWith(parent + '/cryptoKeyVersions/')
-      || (created.algorithm !== 'EC_SIGN_ED25519' && created.algorithm !== 40)
-      || (created.protectionLevel !== 'SOFTWARE' && created.protectionLevel !== 1)
-      || (created.state !== 'ENABLED' && created.state !== 1)) {
+    let created = raw as VersionResponse | undefined;
+    const name = created?.name;
+    if (typeof name !== 'string' || !name.startsWith(parent + '/cryptoKeyVersions/')
+      || !/^[1-9][0-9]*$/.test(name.slice((parent + '/cryptoKeyVersions/').length))) {
       throw new ArgumentError('Google Cloud KMS created an unexpected key version');
     }
+    for (let poll = 0; ; poll++) {
+      if (created?.name !== name || !ed25519Software(created)) throw new ArgumentError('Google Cloud KMS created an unexpected key version');
+      if (created.state === 'ENABLED' || created.state === 1) break;
+      if (!waitForReadiness || (created.state !== 'PENDING_GENERATION' && created.state !== 5) || poll >= 20 || !this.client.getCryptoKeyVersion) {
+        throw new ArgumentError('Google Cloud KMS version is not ready for signing');
+      }
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const [metadata] = await this.client.getCryptoKeyVersion({ name });
+      created = metadata as VersionResponse | undefined;
+    }
     // Reuse the same integrity and immutable-version validation as existing-key opening.
-    const pending = await GcpCloudKmsKeyProvider.load(this.client, { activeKeyVersion: created.name, algorithm: 'EC_SIGN_ED25519' });
+    const pending = await GcpCloudKmsKeyProvider.load(this.client, { activeKeyVersion: name, algorithm: 'EC_SIGN_ED25519' });
     const jwk = await pending.signingKey();
     if (this.keys.has(jwk.kid)) throw new ArgumentError('Google Cloud KMS generated duplicate public key');
-    this.keys.set(jwk.kid, { version: created.name, jwk: Object.freeze(jwk), state: 'pending' });
+    this.keys.set(jwk.kid, { version: name, jwk: Object.freeze(jwk), state: 'pending' });
     return jwk.kid;
   }
   async activate(kid: string): Promise<void> {
@@ -193,4 +243,11 @@ function crc32c(bytes: Uint8Array): number {
     for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0);
   }
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+type VersionResponse = { name?: string; algorithm?: string | number; protectionLevel?: string | number; state?: string | number };
+
+function ed25519Software(value: VersionResponse | undefined): boolean {
+  return !!value && (value.algorithm === 'EC_SIGN_ED25519' || value.algorithm === 40)
+    && (value.protectionLevel === 'SOFTWARE' || value.protectionLevel === 1);
 }

@@ -196,8 +196,8 @@ export class AwsKmsKeyProvider implements KeyProvider {
   private readonly config: Required<Pick<AwsKmsConfig, 'algorithm' | 'keySpec' | 'scheduleKeyDeletionOnPurge' | 'deletionWindowInDays'>>
     & Pick<AwsKmsConfig, 'description' | 'tags'>;
 
-  private constructor(client: AwsKmsFacade, config: AwsKmsConfig) {
-    const state = stateFromConfig(config);
+  private constructor(client: AwsKmsFacade, config: AwsKmsConfig, initial = false) {
+    const state = initial ? { activeKeyId: '', retainedKeyIds: [], pendingKeyIds: [] } : stateFromConfig(config);
     this.client = client;
     this.state = state;
     this.config = {
@@ -209,8 +209,26 @@ export class AwsKmsKeyProvider implements KeyProvider {
       deletionWindowInDays: config.deletionWindowInDays ?? 30,
     };
 
-    validateKid(this.state.activeKeyId);
+    if (!initial) validateKid(this.state.activeKeyId);
     for (const kid of [...this.state.retainedKeyIds, ...this.state.pendingKeyIds]) validateKid(kid);
+  }
+
+  /**
+   * Explicitly creates a native KMS signing key, locally pending until activate(kid).
+   * Returns its canonical immutable reference; never writes state or imports private keys.
+   * The caller owns the client and recovery of remote keys after ambiguous failures.
+   * Normal load/configuration opening never creates keys.
+   */
+  static async create(
+    client: AwsKmsFacade,
+    config: Pick<AwsKmsConfig, 'algorithm' | 'keySpec' | 'description' | 'tags' | 'scheduleKeyDeletionOnPurge' | 'deletionWindowInDays'>,
+  ): Promise<{ provider: AwsKmsKeyProvider; kid: string; keyRef: string }> {
+    if (!['ED25519_SHA_512', 'ECDSA_SHA_256'].includes(config.algorithm)) {
+      throw new ArgumentError('unsupported AWS KMS signing algorithm');
+    }
+    const provider = new AwsKmsKeyProvider(client, config, true);
+    const kid = await provider.generateKey();
+    return { provider, kid, keyRef: kid };
   }
 
   static async load(client: AwsKmsFacade, config: AwsKmsConfig): Promise<AwsKmsKeyProvider> {
@@ -226,6 +244,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async signingKey(): Promise<DnsIdJWK> {
+    if (!this.state.activeKeyId) throw new ArgumentError('AWS KMS has no active key');
     return this.jwk(this.state.activeKeyId);
   }
 
@@ -237,7 +256,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async listKeyIds(): Promise<string[]> {
-    return [this.state.activeKeyId, ...this.state.retainedKeyIds];
+    return [this.state.activeKeyId, ...this.state.retainedKeyIds].filter(Boolean);
   }
 
   stateSnapshot(): AwsKmsKeyState {
@@ -249,6 +268,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
   }
 
   async sign(payload: Uint8Array): Promise<Uint8Array> {
+    if (!this.state.activeKeyId) throw new ArgumentError('AWS KMS has no active key');
     return this.signKey(this.state.activeKeyId, payload);
   }
 
@@ -301,9 +321,11 @@ export class AwsKmsKeyProvider implements KeyProvider {
       description: this.config.description,
       tags: this.config.tags,
     });
-    if (!result.keyId) throw new ArgumentError('AWS KMS create key response did not include a key ID');
+    if (!result.keyId || result.keyId.startsWith('alias/') || result.keyId.includes(':alias/')) {
+      throw new ArgumentError('AWS KMS create key response requires an immutable key reference');
+    }
     try {
-      const kid = (await this.publicJwk(result.keyId)).kid;
+      const kid = (await this.publicJwk(result.keyId, true)).kid;
       this.state.pendingKeyIds.push(kid);
       return kid;
     } catch (e) {
@@ -320,7 +342,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
       const idx = this.state.pendingKeyIds.indexOf(canonicalKid);
       if (idx === -1) throw new ArgumentError(`no pending key with kid "${kid}"`);
       this.state.pendingKeyIds.splice(idx, 1);
-      this.state.retainedKeyIds.push(this.state.activeKeyId);
+      if (this.state.activeKeyId) this.state.retainedKeyIds.push(this.state.activeKeyId);
       this.state.activeKeyId = canonicalKid;
     } finally { this.activating = false; }
   }
@@ -351,7 +373,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
     await this.supersede(kid);
   }
 
-  private async publicJwk(kid: string): Promise<DnsIdJWK> {
+  private async publicJwk(kid: string, exact = false): Promise<DnsIdJWK> {
     const cached = this.jwkCache.get(kid);
     if (cached) return cached;
 
@@ -366,6 +388,9 @@ export class AwsKmsKeyProvider implements KeyProvider {
     }
 
     const canonicalKid = result.keyId ?? kid;
+    if (exact && canonicalKid !== kid) {
+      throw new ArgumentError('AWS KMS public key reference mismatch');
+    }
     validateKid(canonicalKid);
     const jwk = await spkiToJwk(result.publicKey, this.config.algorithm, canonicalKid);
     this.jwkCache.set(kid, jwk);
