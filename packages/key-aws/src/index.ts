@@ -329,7 +329,9 @@ export class AwsKmsKeyProvider implements KeyProvider {
       this.state.pendingKeyIds.push(kid);
       return kid;
     } catch (e) {
-      throw new ArgumentError(`created AWS KMS key ${result.keyId} but failed to load its public key: ${(e as Error).message}`);
+      const error = new ArgumentError(`created AWS KMS key ${result.keyId} but failed to load its public key: ${(e as Error).message}`);
+      error.cause = e;
+      throw error;
     }
   }
 
