@@ -6,8 +6,8 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
 import type { DnsIdJWK } from '@dnsid-ai/protocol';
-import { AwsKmsKeyProvider } from '@dnsid-ai/key-aws';
-import type { AwsKmsConfig, AwsKmsFacade } from '@dnsid-ai/key-aws';
+import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import type { AwsKmsConfig, AwsKmsFacade, AwsSdkKmsClient } from '@dnsid-ai/key-aws';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 import type { GcpCloudKmsClient } from '@dnsid-ai/key-gcp';
 
@@ -166,6 +166,80 @@ describe('#58 AWS native first key', () => {
       await expect(provider.sign(MESSAGE)).rejects.toThrow(); expect(client.createSigningKey).toHaveBeenCalledTimes(1); noAwsMutation(client);
     });
   }
+});
+
+// F1/F2: native public creation binding, derived from shared 01 and independent
+// externally observed response cases, not provider implementation details.
+describe('#58 AWS initial creation resource binding', () => {
+  it('F1 Given omitted public-response keyId, When creating, Then reject despite valid Ed25519 public material [Mode: fake-only]', async () => {
+    const { client } = awsCloud();
+    const unbound = {
+      ...client,
+      getPublicKey: vi.fn(async (input: { keyId: string }) => {
+        const { keyId: _omitted, ...publicMaterial } = await client.getPublicKey(input);
+        return publicMaterial;
+      }),
+    };
+    await expect(awsCreate()(unbound, { ...AWS_CONFIG })).rejects.toThrow();
+    expect(client.createSigningKey).toHaveBeenCalledTimes(1);
+    expect(unbound.getPublicKey).toHaveBeenCalledExactlyOnceWith({ keyId: ARN });
+    expect(client.sign).not.toHaveBeenCalled(); noAwsMutation(client);
+  });
+
+  // Real AwsSdkKmsFacade, fake SDK transport: no AWS network or credentials.
+  // CreateKey supplies only its immutable UUID; GetPublicKey supplies the ARN.
+  function nativeUuidCloud(publicArn: string) {
+    const f = fixture(); const uuid = '11111111-1111-4111-8111-111111111111';
+    let created = false;
+    const send = vi.fn(async (command: { constructor: { name: string }; input: Record<string, unknown> }) => {
+      switch (command.constructor.name) {
+        case 'CreateKeyCommand':
+          expect(created).toBe(false); created = true;
+          expect(command.input).toMatchObject({ KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY' });
+          return { KeyMetadata: { KeyId: uuid } }; // Arn deliberately absent.
+        case 'GetPublicKeyCommand':
+          expect(created).toBe(true); expect([uuid, ARN]).toContain(command.input.KeyId);
+          return { KeyId: publicArn, PublicKey: f.der, KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: ['ED25519_SHA_512'] };
+        case 'SignCommand':
+          expect(created).toBe(true);
+          expect(command.input).toMatchObject({ KeyId: ARN, MessageType: 'RAW', SigningAlgorithm: 'ED25519_SHA_512' });
+          return { KeyId: ARN, SigningAlgorithm: 'ED25519_SHA_512', Signature: f.remoteSign(command.input.Message as Uint8Array) };
+        default: throw new Error(`unexpected SDK command: ${command.constructor.name}`);
+      }
+    });
+    const destroy = vi.fn();
+    const facade = new AwsSdkKmsFacade({ send, destroy } as unknown as AwsSdkKmsClient);
+    const commands = () => send.mock.calls.map(([command]) => command.constructor.name);
+    return { f, facade, send, destroy, commands, uuid };
+  }
+
+  it('F2 Given native CreateKey bare UUID fallback, When public response has matching ARN, Then succeed with canonical ARN kid and immutable reopen [Mode: fake-only]', async () => {
+    const { f, facade, send, destroy, commands, uuid } = nativeUuidCloud(ARN);
+    const creation = awsCreate()(facade, { ...AWS_CONFIG });
+    await expect(creation).resolves.toMatchObject({ kid: ARN, keyRef: ARN });
+    const { provider, kid, keyRef } = await creation;
+    expect(commands().slice(0, 2)).toEqual(['CreateKeyCommand', 'GetPublicKeyCommand']);
+    expect(send.mock.calls[1]![0].input).toEqual({ KeyId: uuid });
+    expect(provider.stateSnapshot()).toMatchObject({ pendingKeyIds: [ARN] });
+    expect(provider.stateSnapshot().activeKeyId).toBeFalsy();
+    expect(await provider.listKeyIds()).toEqual([]);
+    await expect(provider.sign(MESSAGE)).rejects.toThrow();
+    publicIdentity(await provider.jwk(kid), f, kid, ARN); verified(await provider.signKey(kid, MESSAGE), f);
+    await provider.activate(kid);
+    publicIdentity(await provider.signingKey(), f, kid, ARN); verified(await provider.sign(MESSAGE), f);
+    const reopened = await AwsKmsKeyProvider.load(facade, { ...AWS_CONFIG, activeKeyId: keyRef });
+    publicIdentity(await reopened.signingKey(), f, kid, ARN); verified(await reopened.sign(MESSAGE), f);
+    expect(commands().filter(name => name === 'CreateKeyCommand')).toHaveLength(1);
+    expect(commands().every(name => ['CreateKeyCommand', 'GetPublicKeyCommand', 'SignCommand'].includes(name))).toBe(true);
+    expect(destroy).not.toHaveBeenCalled();
+  });
+
+  it('F2 Given native CreateKey bare UUID fallback, When public response ARN has unrelated UUID, Then reject without signing or recreation [Mode: fake-only]', async () => {
+    const { facade, destroy, commands } = nativeUuidCloud(OTHER_ARN);
+    await expect(awsCreate()(facade, { ...AWS_CONFIG })).rejects.toThrow();
+    expect(commands()).toEqual(['CreateKeyCommand', 'GetPublicKeyCommand']);
+    expect(destroy).not.toHaveBeenCalled();
+  });
 });
 
 describe('#58 GCP native first version', () => {
