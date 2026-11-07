@@ -32,7 +32,7 @@ there is no local signing fallback, key import, or generation during opening.
 For first-key creation, explicitly call `GcpCloudKmsKeyProvider.create` with an
 existing `ASYMMETRIC_SIGN` CryptoKey parent whose version template is
 `EC_SIGN_ED25519` / `SOFTWARE`; no prior version is required. See the
-[KMS-first setup guide](../_media/kms-first-setup.md) for pending-key activation,
+[KMS-first setup guide](https://github.com/dnsid-ai/dnsid-ts/blob/main/docs/kms-first-setup.md) for pending-key activation,
 reference handoff, publication boundaries, and failure recovery. Subsequent
 startup must reopen the saved immutable version with `load`, never recreate it;
 normal configuration remains open-only.
