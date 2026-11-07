@@ -612,10 +612,48 @@ describe('NR25 finite resource bounds and cleanup', () => {
     await vi.waitFor(() => expect(cancel).toHaveBeenCalled());
   });
   it('disposes responses arriving after cancellation of a non-cooperative transport', async () => {
-    const cancel = vi.fn(); let finish!: () => void;
-    const fetch = client.createSignedFetch({ fetch: vi.fn(), timeoutMs: 10, responseTransport: () => new Promise(resolve => { finish = () => resolve({ response: new Response(new ReadableStream({ cancel })) }); }), signing: { responseSignature: policy } });
-    await expect(fetch(`https://${domain}`)).rejects.toMatchObject({ transient: true });
-    finish(); await new Promise(resolve => setImmediate(resolve)); expect(cancel).toHaveBeenCalled();
+    vi.useFakeTimers();
+    let releaseSigner!: () => void, entered!: () => void, disposed!: () => void;
+    const signerGate = new Promise<void>(resolve => { releaseSigner = resolve; });
+    const transportEntered = new Promise<void>(resolve => { entered = resolve; });
+    const canceled = new Promise<void>(resolve => { disposed = resolve; });
+    // Delay only key lookup: the request still crosses the real signing/SDK boundary.
+    vi.mocked(provider.signingKey).mockImplementationOnce(async () => { await signerGate; return key; });
+    const cancel = vi.fn(() => { disposed(); });
+    let finish!: () => void;
+    let responseSettled = false;
+    const transport = vi.fn(() => new Promise<{ response: Response }>(resolve => {
+      finish = () => resolve({ response: new Response(new ReadableStream({ cancel })) });
+      entered();
+    }));
+    const fetch = client.createSignedFetch({ fetch: vi.fn(), timeoutMs: 10, responseTransport: transport, signing: { responseSignature: policy } });
+    const outcome = fetch(`https://${domain}`).catch(error => error);
+    try {
+      // Exercise an asynchronous signer without spending the invocation's deadline.
+      await vi.advanceTimersByTimeAsync(0);
+      expect(provider.signingKey).toHaveBeenCalledTimes(1);
+      expect(transport).not.toHaveBeenCalled();
+      releaseSigner();
+      await transportEntered;
+      expect(transport).toHaveBeenCalledTimes(1);
+      // Hold the clock through real signing, then expire the original 10ms budget.
+      await vi.advanceTimersByTimeAsync(10);
+      expect(await outcome).toMatchObject({ transient: true });
+      expect(transport).toHaveBeenCalledTimes(1);
+      expect(cancel).not.toHaveBeenCalled();
+      responseSettled = true;
+      finish();
+      await canceled;
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(transport).toHaveBeenCalledTimes(1);
+    } finally {
+      // Drain owned work even if a harness assertion fails on an adverse schedule.
+      releaseSigner();
+      await transportEntered;
+      if (!responseSettled) finish();
+      await canceled;
+      vi.useRealTimers();
+    }
   });
 });
 
