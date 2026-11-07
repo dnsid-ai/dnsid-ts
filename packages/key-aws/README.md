@@ -37,6 +37,13 @@ const jwk = await provider.signingKey();
 
 Persist `provider.stateSnapshot()` after `generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied `state` object, but persistence is the caller's job.
 
+For first-key creation, explicitly call `AwsKmsKeyProvider.create`; no existing
+key is required. See the
+[KMS-first setup guide](https://github.com/dnsid-ai/dnsid-ts/blob/main/docs/kms-first-setup.md)
+for pending-key activation, canonical ARN handoff, publication boundaries, and
+failure recovery. Subsequent startup must reopen the saved key with `load`,
+never recreate it; normal configuration remains open-only.
+
 ## SDK configuration
 
 The Node SDK lazily selects this optional package for `keySource.provider: "aws-kms"`.
@@ -72,6 +79,10 @@ Minimum runtime permissions:
 
 - `kms:GetPublicKey`
 - `kms:Sign`
+
+First-key creation permission:
+
+- `kms:CreateKey` for `AwsKmsKeyProvider.create()`
 
 Rotation permissions, if used:
 
