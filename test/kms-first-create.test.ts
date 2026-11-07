@@ -531,3 +531,63 @@ for (const vendor of ['AWS', 'GCP'] as const) {
     noAwsMutation(aws.client); noGcpMutation(gcp.client);
   });
 }
+
+// Shared 01/12: an operator must be able to reconcile the known remote version
+// after validation fails; error recovery must not perform another provisioning.
+describe('GCP post-create recovery reference', () => {
+  for (const fault of ['readiness-permission', 'readiness-timeout', 'public-permission', 'public-binding', 'public-crc'] as const) {
+    it(`Given known first version then ${fault}, When public create rejects, Then error retains recovery reference and cause [Mode: fake-only]`, async () => {
+      const { client } = gcpCloud();
+      const denied = Object.assign(new Error('fixture permission denied'), { code: 7 });
+      const create = client.createCryptoKeyVersion.getMockImplementation()!;
+      if (fault.startsWith('readiness-')) {
+        client.createCryptoKeyVersion.mockImplementationOnce(async input => {
+          const [version] = await create(input);
+          return [{ ...version, state: 'PENDING_GENERATION' }];
+        });
+        if (fault === 'readiness-permission') client.getCryptoKeyVersion.mockRejectedValue(denied);
+        else client.getCryptoKeyVersion.mockResolvedValue([{ name: VERSION, state: 'PENDING_GENERATION', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' }]);
+      }
+      if (fault === 'public-permission') client.getPublicKey.mockRejectedValue(denied);
+      const get = client.getPublicKey.getMockImplementation()!;
+      if (fault === 'public-binding' || fault === 'public-crc') client.getPublicKey.mockImplementationOnce(async input => {
+        const [pub] = await get(input);
+        if (fault === 'public-binding') pub.name = `${PARENT}/cryptoKeyVersions/2`;
+        else pub.pemCrc32c.value ^= 1;
+        return [pub];
+      });
+      // Prepare fake private material before installing local-custody traps.
+      const forbidden = () => { throw new Error('forbidden local custody'); };
+      const traps = [vi.spyOn(crypto, 'generateKeyPair').mockImplementation(forbidden),
+        vi.spyOn(crypto, 'generateKeyPairSync').mockImplementation(forbidden),
+        vi.spyOn(crypto.subtle, 'generateKey').mockImplementation(forbidden),
+        vi.spyOn(crypto, 'createPrivateKey').mockImplementation(forbidden)];
+      const updateCryptoKeyVersion = vi.fn();
+      vi.useFakeTimers();
+      try {
+        const outcome = GcpCloudKmsKeyProvider.create({ ...client, updateCryptoKeyVersion }, { ...GCP_CONFIG })
+          .then(value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+        await vi.runAllTimersAsync();
+        const result = await outcome;
+        expect(result.value).toBeUndefined(); expect(result.error).toBeInstanceOf(Error);
+        expect(client.createCryptoKeyVersion).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ parent: PARENT }));
+        expect(client.asymmetricSign).not.toHaveBeenCalled(); expect(updateCryptoKeyVersion).not.toHaveBeenCalled();
+        noGcpMutation(client);
+        if (fault.startsWith('readiness-')) expect(client.getPublicKey).not.toHaveBeenCalled();
+        for (const trap of traps) expect(trap).not.toHaveBeenCalled();
+        expect(vi.getTimerCount()).toBe(0);
+        const error = result.error as Error;
+        if (fault.endsWith('permission')) {
+          // Wrapping is allowed, but the original native error/code must survive.
+          const chain: unknown[] = []; let next: unknown = error;
+          while (next instanceof Error && !chain.includes(next)) { chain.push(next); next = next.cause; }
+          expect(chain).toContain(denied); expect(denied.code).toBe(7);
+        }
+        expect(error.message, 'caller needs exact immutable version for operator-owned reconciliation').toContain(VERSION);
+      } finally {
+        for (const trap of traps.reverse()) trap.mockRestore();
+        vi.useRealTimers();
+      }
+    });
+  }
+});
