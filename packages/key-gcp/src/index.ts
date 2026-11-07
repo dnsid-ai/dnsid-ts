@@ -178,22 +178,26 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
       || !/^[1-9][0-9]*$/.test(name.slice((parent + '/cryptoKeyVersions/').length))) {
       throw new ArgumentError('Google Cloud KMS created an unexpected key version');
     }
-    for (let poll = 0; ; poll++) {
-      if (created?.name !== name || !ed25519Software(created)) throw new ArgumentError('Google Cloud KMS created an unexpected key version');
-      if (created.state === 'ENABLED' || created.state === 1) break;
-      if (!waitForReadiness || (created.state !== 'PENDING_GENERATION' && created.state !== 5) || poll >= 20 || !this.client.getCryptoKeyVersion) {
-        throw new ArgumentError('Google Cloud KMS version is not ready for signing');
+    try {
+      for (let poll = 0; ; poll++) {
+        if (created?.name !== name || !ed25519Software(created)) throw new ArgumentError('Google Cloud KMS created an unexpected key version');
+        if (created.state === 'ENABLED' || created.state === 1) break;
+        if (!waitForReadiness || (created.state !== 'PENDING_GENERATION' && created.state !== 5) || poll >= 20 || !this.client.getCryptoKeyVersion) {
+          throw new ArgumentError('Google Cloud KMS version is not ready for signing');
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+        const [metadata] = await this.client.getCryptoKeyVersion({ name });
+        created = metadata as VersionResponse | undefined;
       }
-      await new Promise(resolve => setTimeout(resolve, 250));
-      const [metadata] = await this.client.getCryptoKeyVersion({ name });
-      created = metadata as VersionResponse | undefined;
+      // Reuse the same integrity and immutable-version validation as existing-key opening.
+      const pending = await GcpCloudKmsKeyProvider.load(this.client, { activeKeyVersion: name, algorithm: 'EC_SIGN_ED25519' });
+      const jwk = await pending.signingKey();
+      if (this.keys.has(jwk.kid)) throw new ArgumentError('Google Cloud KMS generated duplicate public key');
+      this.keys.set(jwk.kid, { version: name, jwk: Object.freeze(jwk), state: 'pending' });
+      return jwk.kid;
+    } catch (cause) {
+      throw new Error(`Google Cloud KMS created version ${name}: ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
     }
-    // Reuse the same integrity and immutable-version validation as existing-key opening.
-    const pending = await GcpCloudKmsKeyProvider.load(this.client, { activeKeyVersion: name, algorithm: 'EC_SIGN_ED25519' });
-    const jwk = await pending.signingKey();
-    if (this.keys.has(jwk.kid)) throw new ArgumentError('Google Cloud KMS generated duplicate public key');
-    this.keys.set(jwk.kid, { version: name, jwk: Object.freeze(jwk), state: 'pending' });
-    return jwk.kid;
   }
   async activate(kid: string): Promise<void> {
     if (this.activating) throw new ArgumentError('Google Cloud KMS activation is already in progress');
