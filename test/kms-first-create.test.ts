@@ -308,6 +308,78 @@ describe('#58 GCP native first version', () => {
     expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1); expect(await provider.listKeyIds()).toEqual([]);
     await expect(provider.sign(MESSAGE)).rejects.toThrow(); expect(await provider.jwk(kid)).toHaveProperty('kid', kid); noGcpMutation(client);
   });
+  // QA F1: shared 01 KMS-first creation and 12 Google Cloud KMS Ed25519;
+  // public declaration requires SOFTWARE protection and caller-owned lifetime.
+  // Characterizes unchanged behavior: valid initial pending metadata does not
+  // authorize accepting a later invalid readiness observation.
+  for (const fault of ['wrong-version', 'wrong-algorithm', 'wrong-protection', 'disabled', 'destroyed',
+    'missing-name', 'missing-state', 'missing-algorithm', 'missing-protection', 'missing-metadata',
+    'permission-denied', 'service-unavailable'] as const) {
+    it(`Given valid pending creation then polling ${fault}, When public create awaits readiness, Then reject without public read, signing, fallback or cleanup [Mode: fake-only]`, async () => {
+      const { client } = gcpCloud();
+      const generate = client.createCryptoKeyVersion.getMockImplementation()!;
+      client.createCryptoKeyVersion.mockImplementationOnce(async input => {
+        const [version] = await generate(input);
+        return [{ ...version, state: 'PENDING_GENERATION' }];
+      });
+      const metadata: Record<string, unknown> = {
+        name: VERSION, state: 'ENABLED', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE',
+      };
+      if (fault === 'wrong-version') metadata.name = `${PARENT}/cryptoKeyVersions/2`;
+      if (fault === 'wrong-algorithm') metadata.algorithm = 'RSA_SIGN_PKCS1_2048_SHA256';
+      if (fault === 'wrong-protection') metadata.protectionLevel = 'HSM';
+      if (fault === 'disabled') metadata.state = 'DISABLED';
+      if (fault === 'destroyed') metadata.state = 'DESTROYED';
+      if (fault === 'missing-name') delete metadata.name;
+      if (fault === 'missing-state') delete metadata.state;
+      if (fault === 'missing-algorithm') delete metadata.algorithm;
+      if (fault === 'missing-protection') delete metadata.protectionLevel;
+      const poll = vi.fn(async (_request: { name: string }): Promise<readonly unknown[]> => {
+        if (fault === 'permission-denied' || fault === 'service-unavailable') throw new Error(fault);
+        return fault === 'missing-metadata' ? [] : [metadata];
+      });
+      const nativeClient = { ...client, getCryptoKeyVersion: poll };
+      // Same narrow custody instrumentation as the existing success/failure
+      // guards. Build fake-service private material before installing traps.
+      const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'dnsid58-'));
+      const cwd = process.cwd(); const traps: ReturnType<typeof vi.spyOn>[] = [];
+      const forbidden = () => { throw new Error('forbidden local custody operation'); };
+      const importKey = crypto.subtle.importKey.bind(crypto.subtle);
+      let privateImports = 0;
+      vi.useFakeTimers();
+      try {
+        process.chdir(directory);
+        traps.push(vi.spyOn(crypto, 'generateKeyPair').mockImplementation(forbidden), vi.spyOn(crypto, 'generateKeyPairSync').mockImplementation(forbidden));
+        traps.push(vi.spyOn(crypto.subtle, 'generateKey').mockImplementation(forbidden), vi.spyOn(crypto, 'createPrivateKey').mockImplementation(forbidden));
+        traps.push(vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden), vi.spyOn(fs, 'writeFile').mockImplementation(forbidden), vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden));
+        traps.push(vi.spyOn(fs, 'mkdirSync').mockImplementation(forbidden), vi.spyOn(fsp, 'mkdir').mockImplementation(forbidden));
+        const importTrap = vi.spyOn(crypto.subtle, 'importKey').mockImplementation((...args: Parameters<typeof crypto.subtle.importKey>) => {
+          const format: string = args[0]; const data: unknown = args[1];
+          if (format === 'pkcs8' || (format === 'jwk' && data !== null && typeof data === 'object' && 'd' in data)) {
+            privateImports++; return Promise.reject(new Error('private-key import forbidden'));
+          }
+          return importKey(...args);
+        });
+        traps.push({ mockRestore: importTrap.mockRestore.bind(importTrap) } as ReturnType<typeof vi.spyOn>);
+        // Attach rejection handling before advancing existing fake timer controls.
+        const rejection = expect(GcpCloudKmsKeyProvider.create(nativeClient, { ...GCP_CONFIG })).rejects.toThrow();
+        await vi.runAllTimersAsync(); await rejection;
+        expect(client.createCryptoKeyVersion).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ parent: PARENT }));
+        expect(poll).toHaveBeenCalledExactlyOnceWith({ name: VERSION });
+        expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.asymmetricSign).not.toHaveBeenCalled();
+        noGcpMutation(client);
+        expect(privateImports).toBe(0);
+        for (const trap of traps) if ('mock' in trap) expect(trap).not.toHaveBeenCalled();
+        expect(await fsp.readdir(directory)).toEqual([]);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        for (const trap of traps.reverse()) trap.mockRestore();
+        vi.useRealTimers(); process.chdir(cwd);
+        await fsp.rm(directory, { recursive: true, force: true });
+        expect(fs.existsSync(directory)).toBe(false);
+      }
+    });
+  }
   it('Given permanently pending version, When readiness budget expires, Then fail boundedly without recreation [Mode: fake-only]', async () => {
     const create = gcpCreate(); const { client } = gcpCloud(); const generate = client.createCryptoKeyVersion.getMockImplementation()!;
     client.createCryptoKeyVersion.mockImplementationOnce(async input => { const [v] = await generate(input); return [{ ...v, state: 'PENDING_GENERATION' }]; });
