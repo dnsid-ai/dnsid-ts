@@ -1,3 +1,4 @@
+import { clearTimeout as clearRealTimeout, setTimeout as setRealTimeout } from 'node:timers';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { exportJWK, generateKeyPair } from 'jose';
 import {
@@ -611,14 +612,14 @@ describe('NR25 finite resource bounds and cleanup', () => {
     // On a slow runner the response can arrive after the deadline and is disposed asynchronously.
     await vi.waitFor(() => expect(cancel).toHaveBeenCalled());
   });
-  it('disposes responses arriving after cancellation of a non-cooperative transport', async () => {
+  async function lateResponseCase(signerFailure?: Error) {
     vi.useFakeTimers();
     let releaseSigner!: () => void, entered!: () => void, disposed!: () => void;
     const signerGate = new Promise<void>(resolve => { releaseSigner = resolve; });
     const transportEntered = new Promise<void>(resolve => { entered = resolve; });
     const canceled = new Promise<void>(resolve => { disposed = resolve; });
     // Delay only key lookup: the request still crosses the real signing/SDK boundary.
-    vi.mocked(provider.signingKey).mockImplementationOnce(async () => { await signerGate; return key; });
+    vi.mocked(provider.signingKey).mockImplementationOnce(async () => { await signerGate; if (signerFailure) throw signerFailure; return key; });
     const cancel = vi.fn(() => { disposed(); });
     let finish!: () => void;
     let responseSettled = false;
@@ -627,14 +628,20 @@ describe('NR25 finite resource bounds and cleanup', () => {
       entered();
     }));
     const fetch = client.createSignedFetch({ fetch: vi.fn(), timeoutMs: 10, responseTransport: transport, signing: { responseSignature: policy } });
-    const outcome = fetch(`https://${domain}`).catch(error => error);
+    const controller = new AbortController();
+    const outcome = fetch(`https://${domain}`, { signal: controller.signal }).catch(error => error);
     try {
       // Exercise an asynchronous signer without spending the invocation's deadline.
       await vi.advanceTimersByTimeAsync(0);
       expect(provider.signingKey).toHaveBeenCalledTimes(1);
       expect(transport).not.toHaveBeenCalled();
       releaseSigner();
-      await transportEntered;
+      if (signerFailure) {
+        const error = await outcome;
+        expect(transport).not.toHaveBeenCalled();
+        throw error;
+      }
+      await Promise.race([transportEntered, outcome.then(error => { throw error; })]);
       expect(transport).toHaveBeenCalledTimes(1);
       // Hold the clock through real signing, then expire the original 10ms budget.
       await vi.advanceTimersByTimeAsync(10);
@@ -647,11 +654,48 @@ describe('NR25 finite resource bounds and cleanup', () => {
       expect(cancel).toHaveBeenCalledTimes(1);
       expect(transport).toHaveBeenCalledTimes(1);
     } finally {
-      // Drain owned work even if a harness assertion fails on an adverse schedule.
+      // Restore globals before any fallible drain; a signer failure never enters transport.
+      vi.useRealTimers();
+      controller.abort();
       releaseSigner();
-      await transportEntered;
-      if (!responseSettled) finish();
-      await canceled;
+      let cleanupTimer: ReturnType<typeof setRealTimeout> | undefined;
+      try {
+        await Promise.race([
+          (async () => {
+            await Promise.race([transportEntered, outcome]);
+            if (finish) {
+              if (!responseSettled) finish();
+              await canceled;
+            }
+            await outcome;
+          })(),
+          new Promise<never>((_, reject) => {
+            cleanupTimer = setRealTimeout(() => reject(new Error('late-response cleanup exceeded 1000ms')), 1000);
+          }),
+        ]);
+      } finally {
+        clearRealTimeout(cleanupTimer);
+      }
+    }
+  }
+  it('disposes responses arriving after cancellation of a non-cooperative transport', async () => {
+    await lateResponseCase();
+  });
+  it('restores timers and preserves signer rejection before transport entry', async () => {
+    const failure = new Error('controlled pre-transport signer rejection');
+    const pending = lateResponseCase(failure).catch(error => error);
+    let guardTimer: ReturnType<typeof setRealTimeout> | undefined;
+    try {
+      const error = await Promise.race([
+        pending,
+        new Promise<never>((_, reject) => {
+          guardTimer = setRealTimeout(() => reject(new Error('late-response harness cleanup must settle')), 1500);
+        }),
+      ]);
+      expect(error).toBe(failure);
+      expect(vi.isFakeTimers()).toBe(false);
+    } finally {
+      clearRealTimeout(guardTimer);
       vi.useRealTimers();
     }
   });
