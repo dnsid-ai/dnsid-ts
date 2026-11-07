@@ -4,6 +4,8 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import type { DnsIdJWK } from '@dnsid-ai/protocol';
 import { AwsKmsKeyProvider } from '@dnsid-ai/key-aws';
 import type { AwsKmsConfig, AwsKmsFacade } from '@dnsid-ai/key-aws';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
@@ -23,8 +25,8 @@ const GCP_CONFIG = { parent: PARENT, algorithm: 'EC_SIGN_ED25519' } as const;
 
 // Independent RFC8032 test1 seed; private key remains in fake-service closure.
 // Production crypto/JWK/thumbprint helpers are not expected-value oracles.
-function fixture() {
-  const privateKey = createPrivateKey({ key: Buffer.from('302e020100300506032b6570042204209d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60', 'hex'), format: 'der', type: 'pkcs8' });
+function fixture(seed = '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60') {
+  const privateKey = createPrivateKey({ key: Buffer.from('302e020100300506032b657004220420' + seed, 'hex'), format: 'der', type: 'pkcs8' });
   const publicKey = createPublicKey(privateKey);
   const jwk = { crv: 'Ed25519', kty: 'OKP', x: publicKey.export({ format: 'jwk' }).x! };
   return { publicKey, jwk, kid: createHash('sha256').update(JSON.stringify(jwk)).digest('base64url'),
@@ -96,8 +98,13 @@ function gcpCreate() {
   expect(typeof member, 'public-surface RED only: GcpCloudKmsKeyProvider.create must exist').toBe('function');
   return (member as (client: GcpCloudKmsClient, config: { parent: string; algorithm: string }) => Promise<GcpResult>).bind(GcpCloudKmsKeyProvider);
 }
-function publicIdentity(actual: unknown, f: ReturnType<typeof fixture>, kid: string) {
-  expect(kid).toBe(f.kid); expect(actual).toMatchObject({ ...f.jwk, kid, alg: 'EdDSA' }); expect(actual).not.toHaveProperty('d');
+function publicIdentity(actual: DnsIdJWK, f: ReturnType<typeof fixture>, kid: string, expectedKid = f.kid) {
+  // AWS preserves canonical KMS-reference kids; GCP uses RFC7638 kids. Neither
+  // substitutes kid equality for independently checking public-key identity.
+  expect(kid).toBe(expectedKid); expect(kid).not.toContain('#');
+  expect(actual).toMatchObject({ ...f.jwk, kid, alg: 'EdDSA' }); expect(actual).not.toHaveProperty('d');
+  const thumbprint = createHash('sha256').update(JSON.stringify({ crv: actual.crv, kty: actual.kty, x: actual.x })).digest('base64url');
+  expect(thumbprint).toBe(f.kid);
 }
 function verified(signature: Uint8Array, f: ReturnType<typeof fixture>) {
   expect(signature).toHaveLength(64); expect(verify(null, MESSAGE, f.publicKey, signature)).toBe(true);
@@ -118,13 +125,13 @@ describe('#58 AWS native first key', () => {
     expect(client.createSigningKey).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ keySpec: 'ECC_NIST_EDWARDS25519' }));
     expect(await provider.listKeyIds()).toEqual([]);
     await expect(provider.sign(MESSAGE)).rejects.toThrow(); await expect(provider.signingKey()).rejects.toThrow();
-    publicIdentity(await provider.jwk(kid), f, kid); verified(await provider.signKey(kid, MESSAGE), f);
+    publicIdentity(await provider.jwk(kid), f, kid, ARN); verified(await provider.signKey(kid, MESSAGE), f);
     expect(provider.stateSnapshot()).toMatchObject({ pendingKeyIds: [keyRef] }); expect(provider.stateSnapshot().activeKeyId).toBeFalsy();
     await provider.activate(kid); expect(await provider.listKeyIds()).toEqual([kid]);
-    publicIdentity(await provider.signingKey(), f, kid); verified(await provider.sign(MESSAGE), f);
+    publicIdentity(await provider.signingKey(), f, kid, ARN); verified(await provider.sign(MESSAGE), f);
     expect(provider.stateSnapshot().activeKeyId).toBe(keyRef);
     const reopened = await AwsKmsKeyProvider.load(client, { ...AWS_CONFIG, activeKeyId: keyRef });
-    publicIdentity(await reopened.signingKey(), f, kid); verified(await reopened.sign(MESSAGE), f);
+    publicIdentity(await reopened.signingKey(), f, kid, ARN); verified(await reopened.sign(MESSAGE), f);
     expect(client.createSigningKey).toHaveBeenCalledTimes(1); expect(config).toEqual(AWS_CONFIG); noAwsMutation(client);
     expect(client.getPublicKey.mock.calls.every(([input]) => input.keyId === ARN)).toBe(true);
   });
@@ -315,5 +322,66 @@ for (const vendor of ['AWS', 'GCP'] as const) for (const fail of [false, true]) 
       for (const trap of traps) if ('mock' in trap) expect(trap).not.toHaveBeenCalled();
       expect(await fsp.readdir(directory)).toEqual([]); noAwsMutation(aws.client); noGcpMutation(gcp.client);
     } finally { for (const trap of traps.reverse()) trap.mockRestore(); process.chdir(cwd); await fsp.rm(directory, { recursive: true, force: true }); }
+  });
+}
+
+// Executable consumer of docs/kms-first-setup.md: real manager composition and
+// public getKeySet only. No DNS publication, issuance, status ACTIVE, or live
+// cloud interoperability is simulated or claimed. All service dependencies fake.
+for (const vendor of ['AWS', 'GCP'] as const) {
+  it(`Given new ${vendor} native key, When pending proof then activate and inject into manager then immutable reopen, Then manager JWKS preserves operational identity [Mode: real-capable]`, async () => {
+    const aws = awsCloud(); const gcp = gcpCloud();
+    // Distinct RFC8032 TEST2 entity key; never sourced from the operational SDK.
+    const entity = fixture('4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb');
+    const f = vendor === 'AWS' ? aws.f : gcp.f;
+    const created = vendor === 'AWS'
+      ? await AwsKmsKeyProvider.create(aws.client, { ...AWS_CONFIG })
+      : await GcpCloudKmsKeyProvider.create(gcp.client, { ...GCP_CONFIG });
+    const expectedKid = vendor === 'AWS' ? ARN : f.kid;
+    const expectedRef = vendor === 'AWS' ? ARN : VERSION;
+    expect(created.keyRef).toBe(expectedRef);
+    publicIdentity(await created.provider.jwk(created.kid), f, created.kid, expectedKid);
+    expect(await created.provider.listKeyIds()).toEqual([]);
+    verified(await created.provider.signKey(created.kid, MESSAGE), f);
+    await expect(created.provider.sign(MESSAGE)).rejects.toThrow();
+    // App-owned in-memory handoff; no implicit file persistence.
+    const saved = { keyRef: created.keyRef, jwk: await created.provider.jwk(created.kid) };
+    await created.provider.activate(created.kid);
+    const entityJwk: DnsIdJWK = { ...entity.jwk, kid: entity.kid, alg: 'EdDSA', use: 'sig' };
+    expect(entity.kid).not.toBe(f.kid);
+    const entityKeyProvider = {
+      signingKey: async () => entityJwk, jwk: async () => entityJwk,
+      listKeyIds: async () => [entity.kid], sign: async (data: Uint8Array) => entity.remoteSign(data),
+      signKey: async (_kid: string, data: Uint8Array) => entity.remoteSign(data),
+      generateKey: async () => { throw new Error('entity generation forbidden'); },
+      activate: async () => { throw new Error('entity activation forbidden'); },
+      supersede: async () => { throw new Error('entity supersession forbidden'); },
+    };
+    const fetchJson = vi.fn(async () => { throw new Error('no publication/network expected'); });
+    const fetchTXT = vi.fn(async () => { throw new Error('no DNS expected'); });
+    const config = { identity: {
+      domain: 'agent.example.com', governanceId: 'example.com',
+      logRef: 'microledger:first-setup', statusUrl: 'https://agent.example.com/status',
+      ekUrl: 'https://example.com/entity-jwks.json', kuUrl: 'https://agent.example.com/jwks.json',
+    } };
+    const deps = { entityKeyProvider, logRegistry: new LogRegistry(), fetchJson, dnsResolver: { fetchTXT } };
+    const manager = new IdentityManager(config, { ...deps, keyProvider: created.provider });
+    expect(manager.getKeyProvider()).toBe(created.provider);
+    const published = await manager.getKeySet();
+    expect(published.keys).toHaveLength(1);
+    publicIdentity(published.keys[0]!, f, created.kid, expectedKid);
+    expect((await manager.getEntityKeySet()).keys).toEqual([entityJwk]);
+    verified(await manager.getKeyProvider().sign(MESSAGE), f);
+    const reopened = vendor === 'AWS'
+      ? await AwsKmsKeyProvider.load(aws.client, { ...AWS_CONFIG, activeKeyId: saved.keyRef })
+      : await GcpCloudKmsKeyProvider.load(gcp.client, { algorithm: GCP_CONFIG.algorithm, activeKeyVersion: saved.keyRef });
+    expect(await reopened.signingKey()).toEqual(saved.jwk);
+    const restartConsumer = new IdentityManager(config, { ...deps, keyProvider: reopened });
+    expect(await restartConsumer.getKeySet()).toEqual(published);
+    verified(await restartConsumer.getKeyProvider().sign(MESSAGE), f);
+    expect(fetchJson).not.toHaveBeenCalled(); expect(fetchTXT).not.toHaveBeenCalled();
+    expect(aws.client.createSigningKey).toHaveBeenCalledTimes(vendor === 'AWS' ? 1 : 0);
+    expect(gcp.client.createCryptoKeyVersion).toHaveBeenCalledTimes(vendor === 'GCP' ? 1 : 0);
+    noAwsMutation(aws.client); noGcpMutation(gcp.client);
   });
 }
