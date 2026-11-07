@@ -5,7 +5,7 @@ import os from 'node:os';
 import { syncBuiltinESMExports } from 'node:module';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
+import { ArgumentError, IdentityManager, LogRegistry } from '@dnsid-ai/protocol';
 import type { DnsIdJWK } from '@dnsid-ai/protocol';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
 import type { AwsSdkKmsClient } from '@dnsid-ai/key-aws';
@@ -104,6 +104,27 @@ function noGcpMutation(c: ReturnType<typeof gcpCloud>['client']) {
 }
 
 describe('#58 AWS native first key', () => {
+  it('Given AWS post-create public-key denial, When first create rejects, Then retain original cause and recovery ID without retry or activation [Mode: fake-only]', async () => {
+    const { client } = awsCloud();
+    const denied = Object.assign(new Error('fixture public-key access denied'), {
+      name: 'AccessDeniedException', code: 'AccessDenied',
+    });
+    client.getPublicKey.mockRejectedValueOnce(denied);
+    const config = { ...AWS_CONFIG };
+    const result = await AwsKmsKeyProvider.create(client, config)
+      .then(value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+    expect(result.value).toBeUndefined();
+    expect(result.error).toBeInstanceOf(ArgumentError);
+    expect(client.createSigningKey).toHaveBeenCalledTimes(1);
+    expect(client.getPublicKey).toHaveBeenCalledExactlyOnceWith({ keyId: ARN });
+    expect(client.sign).not.toHaveBeenCalled(); noAwsMutation(client);
+    expect(config).toEqual(AWS_CONFIG);
+    const error = result.error as Error;
+    expect(error.message, 'operator needs the created key reference for recovery').toContain(ARN);
+    // Inspect the public error; no assumption about ArgumentError constructor options.
+    expect(error.cause, 'original native error must survive post-create wrapping').toBe(denied);
+    expect(error.cause).toMatchObject({ name: 'AccessDeniedException', code: 'AccessDenied' });
+  });
   it('Given zero keys, When create then activate and reopen, Then immutable identity and independently verified raw signatures persist [Mode: real-capable]', async () => {
     const { client, f } = awsCloud(); const config = { ...AWS_CONFIG };
     const { provider, kid, keyRef } = await AwsKmsKeyProvider.create(client, config);
