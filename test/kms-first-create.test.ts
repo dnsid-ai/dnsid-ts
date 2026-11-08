@@ -316,6 +316,54 @@ describe('#58 AWS initial creation resource binding', () => {
 });
 
 describe('#58 GCP native first version', () => {
+  // Opening a deliberately selected immutable version does not require the
+  // creating provider's in-memory activation history. This is not protocol activation.
+  it('Given a never-activated first GCP version, When a fresh provider opens its immutable reference, Then it signs with the same public identity while the original stays pending [Mode: fake-only]', async () => {
+    // Independent private material belongs only to the fake cloud, before traps.
+    const { client, f } = gcpCloud();
+    const forbidden = () => { throw new Error('unexpected local write during create or reference opening'); };
+    const traps = [vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden),
+      vi.spyOn(fs, 'writeFile').mockImplementation(forbidden),
+      vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden),
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(forbidden),
+      vi.spyOn(fsp, 'mkdir').mockImplementation(forbidden)];
+    try {
+      syncBuiltinESMExports();
+      const { provider: original, kid, keyRef } = await GcpCloudKmsKeyProvider.create(client, { ...GCP_CONFIG });
+      const savedJwk = structuredClone(await original.jwk(kid));
+      expect(keyRef).toBe(VERSION);
+      publicIdentity(savedJwk, f, kid);
+      expect(await original.listKeyIds()).toEqual([]);
+      await expect(original.signingKey()).rejects.toThrow();
+      await expect(original.sign(MESSAGE)).rejects.toThrow();
+      expect(client.asymmetricSign).not.toHaveBeenCalled();
+
+      // Only the immutable reference and algorithm cross the restart boundary:
+      // no snapshot, pending state, saved JWK or original provider is supplied.
+      const reopened = await GcpCloudKmsKeyProvider.load(client, {
+        activeKeyVersion: keyRef, algorithm: GCP_CONFIG.algorithm,
+      });
+      expect(reopened).not.toBe(original);
+      expect(await reopened.signingKey()).toEqual(savedJwk);
+      expect(await reopened.listKeyIds()).toEqual([kid]);
+      publicIdentity(await reopened.signingKey(), f, kid);
+      verified(await reopened.sign(MESSAGE), f);
+      expect(client.asymmetricSign).toHaveBeenCalledTimes(1);
+      expect(client.asymmetricSign.mock.calls[0]![0].name).toBe(keyRef);
+      expect(client.createCryptoKeyVersion).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ parent: PARENT }));
+      noGcpMutation(client);
+
+      expect(await original.jwk(kid)).toEqual(savedJwk);
+      expect(await original.listKeyIds()).toEqual([]);
+      await expect(original.signingKey()).rejects.toThrow();
+      await expect(original.sign(MESSAGE)).rejects.toThrow();
+      expect(client.asymmetricSign).toHaveBeenCalledTimes(1);
+      for (const trap of traps) expect(trap).not.toHaveBeenCalled();
+    } finally {
+      for (const trap of traps.reverse()) trap.mockRestore();
+      syncBuiltinESMExports();
+    }
+  });
   for (const pending of [false, true]) {
     it(`Given numeric ${pending ? 'pending then ready' : 'enabled'} metadata, When first version create succeeds, Then exact identity remains locally pending [Mode: fake-only]`, async () => {
       const { client, f } = gcpCloud();

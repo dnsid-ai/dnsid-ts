@@ -24,7 +24,7 @@ import { ArgumentError } from '@dnsid-ai/protocol';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
 // Mode: fake-only for every TC (Google fault injection + fake clock).
-// Contract: user-approved PR152 rotation readiness/error boundary;
+// Contract: rotation readiness and service-error boundaries;
 // packages/key-gcp/README.md (generation, pending eligibility, active signer);
 // docs/reference/dnsid-key-gcp.md#create (20 delayed reads, 250ms, caller deadlines);
 // docs/reference/dnsid-protocol-classes.md#argumenterror (invalid caller argument).
@@ -113,7 +113,7 @@ async function unchanged(ctx: Awaited<ReturnType<typeof setup>>) {
 }
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
 
-describe('GCP generateKey approved decisions [Mode: fake-only]', () => {
+describe('GCP generateKey readiness and error boundaries [Mode: fake-only]', () => {
   it('Given unsupported caller algorithm, When generateKey runs, Then ArgumentError precedes Google creation', async () => {
     const ctx = await setup();
     await expect(ctx.provider.generateKey('ES256')).rejects.toBeInstanceOf(ArgumentError);
