@@ -83,10 +83,12 @@ Minimum runtime permissions:
 First-key creation permission:
 
 - `kms:CreateKey` for `AwsKmsKeyProvider.create()`
+- `kms:TagResource` only when `tags` are supplied
 
 Rotation permissions, if used:
 
 - `kms:CreateKey` for `generateKey()`
+- `kms:TagResource` only when `tags` are supplied
 - `kms:ScheduleKeyDeletion` for `supersede()` when `scheduleKeyDeletionOnPurge` is enabled
 
 ## Rotation
