@@ -91,7 +91,7 @@ production DNSSEC validator. DNS-over-HTTPS (DoH) is not supported.
 
 ### FetchResult
 
-Defined in: [transport/src/index.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L34)
+Defined in: transport/src/index.ts:34
 
 Result of [fetchJson](#fetchjson): the parsed body plus the TLS certificate presented by the peer.
 
@@ -105,7 +105,7 @@ Result of [fetchJson](#fetchjson): the parsed body plus the TLS certificate pres
 data: unknown;
 ```
 
-Defined in: [transport/src/index.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L36)
+Defined in: transport/src/index.ts:36
 
 JSON-decoded response body.
 
@@ -117,7 +117,7 @@ JSON-decoded response body.
 tlsCert: TLSCertificate;
 ```
 
-Defined in: [transport/src/index.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L38)
+Defined in: transport/src/index.ts:38
 
 Peer certificate details (expiry and DNS SANs) captured from the TLS session.
 
@@ -127,7 +127,7 @@ Peer certificate details (expiry and DNS SANs) captured from the TLS session.
 
 ### HTTPSFetchOptions
 
-Defined in: [transport/src/index.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L42)
+Defined in: transport/src/index.ts:42
 
 Options controlling [fetchJson](#fetchjson).
 
@@ -141,7 +141,7 @@ Options controlling [fetchJson](#fetchjson).
 optional allowedHost?: string;
 ```
 
-Defined in: [transport/src/index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L48)
+Defined in: transport/src/index.ts:48
 
 If set, the URL host (and every redirect host) must match this host exactly.
 
@@ -153,7 +153,7 @@ If set, the URL host (and every redirect host) must match this host exactly.
 optional caBundlePath?: string;
 ```
 
-Defined in: [transport/src/index.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L54)
+Defined in: transport/src/index.ts:54
 
 Path to a PEM CA bundle appended to the system root certificates.
 
@@ -165,7 +165,7 @@ Path to a PEM CA bundle appended to the system root certificates.
 optional dnsServer?: string;
 ```
 
-Defined in: [transport/src/index.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L56)
+Defined in: transport/src/index.ts:56
 
 Custom DNS server (`host`, `host:port`, or `[ipv6]:port`) used to resolve the target.
 
@@ -177,7 +177,7 @@ Custom DNS server (`host`, `host:port`, or `[ipv6]:port`) used to resolve the ta
 optional domainBoundary?: boolean;
 ```
 
-Defined in: [transport/src/index.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L50)
+Defined in: transport/src/index.ts:50
 
 With `allowedHost`, also accept subdomains of the allowed host (`*.allowedHost`).
 
@@ -189,7 +189,7 @@ With `allowedHost`, also accept subdomains of the allowed host (`*.allowedHost`)
 optional maxResponseBytes?: number;
 ```
 
-Defined in: [transport/src/index.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L58)
+Defined in: transport/src/index.ts:58
 
 Maximum accepted response body size in bytes. Defaults to 1 MiB.
 
@@ -201,7 +201,7 @@ Maximum accepted response body size in bytes. Defaults to 1 MiB.
 optional privateAddressHosts?: readonly string[];
 ```
 
-Defined in: [transport/src/index.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L60)
+Defined in: transport/src/index.ts:60
 
 Same as `TransportConfig.privateAddressHosts`: hostnames or `.suffix` entries that may resolve to loopback/private addresses.
 
@@ -213,7 +213,7 @@ Same as `TransportConfig.privateAddressHosts`: hostnames or `.suffix` entries th
 optional revalidate?: boolean;
 ```
 
-Defined in: [transport/src/index.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L44)
+Defined in: transport/src/index.ts:44
 
 Bypass local caches and revalidate upstream evidence.
 
@@ -225,7 +225,7 @@ Bypass local caches and revalidate upstream evidence.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [transport/src/index.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L46)
+Defined in: transport/src/index.ts:46
 
 Shared verification deadline/cancellation, including redirects.
 
@@ -237,7 +237,7 @@ Shared verification deadline/cancellation, including redirects.
 optional timeoutMs?: number;
 ```
 
-Defined in: [transport/src/index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L52)
+Defined in: transport/src/index.ts:52
 
 Request timeout in milliseconds. Defaults to 10 000.
 
@@ -247,7 +247,7 @@ Request timeout in milliseconds. Defaults to 10 000.
 
 ### SsrfSafeFetchOptions
 
-Defined in: [transport/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L87)
+Defined in: transport/src/index.ts:87
 
 Explicit exceptions for trusted test/private deployments using [createSsrfSafeFetch](#createssrfsafefetch).
 
@@ -261,7 +261,7 @@ Explicit exceptions for trusted test/private deployments using [createSsrfSafeFe
 optional decompress?: boolean;
 ```
 
-Defined in: [transport/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L89)
+Defined in: transport/src/index.ts:89
 
 Set false to preserve encoded response bytes and Content-Encoding, for signed-directory verification. Default: true.
 
@@ -273,7 +273,7 @@ Set false to preserve encoded response bytes and Content-Encoding, for signed-di
 optional privateAddressHosts?: readonly string[];
 ```
 
-Defined in: [transport/src/index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L96)
+Defined in: transport/src/index.ts:96
 
 Hostnames, or leading-dot suffixes such as `.test`, whose resolved RFC 1918/ULA private or
 loopback addresses may be contacted. Link-local and other unsafe ranges remain blocked, IP-literal
@@ -286,7 +286,7 @@ URLs are never exempted, and nothing is allowed by default. Same semantics as
 
 ### TransportConfig
 
-Defined in: [protocol/src/types.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L105)
+Defined in: protocol/src/types.ts:105
 
 SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never alters protocol semantics.
 
@@ -300,7 +300,7 @@ SDK-managed DNS and HTTPS deployment settings (`DnsidConfig.transport`). Never a
 optional caBundlePath?: string;
 ```
 
-Defined in: [protocol/src/types.ts:109](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L109)
+Defined in: protocol/src/types.ts:109
 
 Path to a PEM CA bundle appended to the system root certificates for TLS verification.
 
@@ -312,7 +312,7 @@ Path to a PEM CA bundle appended to the system root certificates for TLS verific
 optional dnsServer?: string;
 ```
 
-Defined in: [protocol/src/types.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L107)
+Defined in: protocol/src/types.ts:107
 
 Custom DNS server (`host`, `host:port`, or `[ipv6]:port`). Omit to use the system resolver.
 
@@ -324,7 +324,7 @@ Custom DNS server (`host`, `host:port`, or `[ipv6]:port`). Omit to use the syste
 optional privateAddressHosts?: readonly string[];
 ```
 
-Defined in: [protocol/src/types.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L121)
+Defined in: protocol/src/types.ts:121
 
 Hostnames, or leading-dot suffixes such as `.test`, whose SDK-managed HTTPS destinations may
 resolve to loopback or private-use addresses. An exact entry matches only that name; `.test`
@@ -346,7 +346,7 @@ field.
 type FetchLike = (input, init?) => Promise<Response>;
 ```
 
-Defined in: [transport/src/index.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L31)
+Defined in: transport/src/index.ts:31
 
 Minimal WHATWG-fetch-compatible function signature returned by the fetch factories.
 
@@ -374,7 +374,7 @@ Minimal WHATWG-fetch-compatible function signature returned by the fetch factori
 function createDefaultDnsResolver(config): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:289](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L289)
+Defined in: transport/src/index.ts:289
 
 Creates the DNS resolver used to fetch DNSid identity records (TXT).
 
@@ -402,7 +402,7 @@ system TXT API is the fallback (TTL 0). DNSSEC state is always `UNKNOWN`.
 function createDnsidFetch(config): FetchLike;
 ```
 
-Defined in: [transport/src/index.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L123)
+Defined in: transport/src/index.ts:123
 
 Creates a fetch function honoring the transport configuration.
 
@@ -449,7 +449,7 @@ const [records, dnssec] = await dnsResolver.fetchTXT('_dnsid.agent.example');
 function createDnsResolverFromServer(server): DNSResolver;
 ```
 
-Defined in: [transport/src/index.ts:322](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L322)
+Defined in: transport/src/index.ts:322
 
 Creates a [DNSResolver](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsresolver) that queries a specific DNS server.
 
@@ -481,7 +481,7 @@ DNS server address, optionally with port.
 function createLookup(dnsServer): LookupFunction;
 ```
 
-Defined in: [transport/src/index.ts:395](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L395)
+Defined in: transport/src/index.ts:395
 
 Creates a Node `lookup` function that resolves A/AAAA records via the given
 DNS server instead of the system resolver.
@@ -515,7 +515,7 @@ function createResponseSignatureTransport(config?): (request) => Promise<{
 }>;
 ```
 
-Defined in: [transport/src/index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L144)
+Defined in: transport/src/index.ts:144
 
 Creates the single-send transport consumed by HTTP signatures' responseTransport option.
 Sends HTTPS once per call, without redirects, retries, caches, or content decoding, and
@@ -548,7 +548,7 @@ private addresses are not filtered and proxy environment variables are not used.
 function createSsrfSafeFetch(config?, options?): FetchLike;
 ```
 
-Defined in: [transport/src/index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L214)
+Defined in: transport/src/index.ts:214
 
 Creates a fetch function that rejects connections to private, loopback,
 link-local, and other non-routable addresses (SSRF protection).
@@ -590,7 +590,7 @@ A [FetchLike](#fetchlike) with address filtering applied on every lookup.
 function fetchJson(url, opts?): Promise<FetchResult>;
 ```
 
-Defined in: [transport/src/index.ts:358](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L358)
+Defined in: transport/src/index.ts:358
 
 Fetches a JSON document over HTTPS with strict transport checks, returning
 the parsed body together with the peer TLS certificate.
@@ -639,7 +639,7 @@ VerificationError with `VerificationCode.TLSError` for policy or
 function formatDnsServer(address, port?): string;
 ```
 
-Defined in: [transport/src/index.ts:380](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L380)
+Defined in: transport/src/index.ts:380
 
 Formats a resolved address (bracketing IPv6) with an optional port for `Resolver.setServers`.
 
@@ -667,7 +667,7 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:524](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L524)
+Defined in: transport/src/index.ts:524
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
@@ -699,7 +699,7 @@ function parseDnsServer(server):
   | null;
 ```
 
-Defined in: [transport/src/index.ts:369](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L369)
+Defined in: transport/src/index.ts:369
 
 Splits a DNS server string into host and optional port.
 
