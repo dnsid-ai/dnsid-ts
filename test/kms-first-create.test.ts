@@ -103,6 +103,29 @@ function noGcpMutation(c: ReturnType<typeof gcpCloud>['client']) {
   expect(c.createCryptoKey).not.toHaveBeenCalled(); expect(c.importCryptoKeyVersion).not.toHaveBeenCalled(); expect(c.destroyCryptoKeyVersion).not.toHaveBeenCalled(); expect(c.close).not.toHaveBeenCalled();
 }
 
+// Recovery diagnostics must retain a returned (but invalid) reference without
+// exposing a provider or persisting it. Only cloud responses are faked.
+async function rejectedReferenceWithoutPersistence(operation: () => Promise<unknown>) {
+  const forbidden = () => { throw new Error('unexpected persistence during rejected creation'); };
+  const traps = [vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden),
+    vi.spyOn(fs, 'writeFile').mockImplementation(forbidden),
+    vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden),
+    vi.spyOn(fs, 'mkdirSync').mockImplementation(forbidden),
+    vi.spyOn(fsp, 'mkdir').mockImplementation(forbidden)];
+  try {
+    syncBuiltinESMExports();
+    const result = await operation().then(
+      value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+    expect(result.value).toBeUndefined();
+    expect(result.error).toBeInstanceOf(Error);
+    for (const trap of traps) expect(trap).not.toHaveBeenCalled();
+    return result.error as Error;
+  } finally {
+    for (const trap of traps.reverse()) trap.mockRestore();
+    syncBuiltinESMExports();
+  }
+}
+
 describe('#58 AWS native first key', () => {
   it('Given AWS post-create public-key denial, When first create rejects, Then retain original cause and recovery ID without retry or activation [Mode: fake-only]', async () => {
     const { client } = awsCloud();
@@ -160,7 +183,13 @@ describe('#58 AWS native first key', () => {
         if (fault === 'wrong-key-type') result.publicKey = new Uint8Array(crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).publicKey.export({ type: 'spki', format: 'der' }));
         return result;
       });
-      await expect(create(client, { ...AWS_CONFIG })).rejects.toThrow();
+      if (fault === 'mutable-ref') {
+        const error = await rejectedReferenceWithoutPersistence(() => create(client, { ...AWS_CONFIG }));
+        expect(client.createSigningKey).toHaveBeenCalledTimes(1); noAwsMutation(client);
+        expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.sign).not.toHaveBeenCalled();
+        // Validation has no native cause to preserve or missing ID to invent.
+        expect(error.message, 'operator needs the actual returned alias for reconciliation').toContain('alias/first');
+      } else await expect(create(client, { ...AWS_CONFIG })).rejects.toThrow();
       expect(client.createSigningKey).toHaveBeenCalledTimes(1); noAwsMutation(client);
     });
   }
@@ -301,7 +330,15 @@ describe('#58 GCP native first version', () => {
         if (fault === 'wrong-key-type') { pub.pem = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).publicKey.export({ type: 'spki', format: 'pem' }).toString(); pub.pemCrc32c.value = crc(Buffer.from(pub.pem)); }
         return [pub];
       });
-      await expect(create(client, { ...GCP_CONFIG })).rejects.toThrow();
+      if (fault === 'foreign-parent') {
+        const error = await rejectedReferenceWithoutPersistence(() => create(client, { ...GCP_CONFIG }));
+        expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1); noGcpMutation(client);
+        expect(client.getCryptoKeyVersion).not.toHaveBeenCalled();
+        expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.asymmetricSign).not.toHaveBeenCalled();
+        // Keep the raw nonempty response, not the requested parent's valid version.
+        expect(error.message, 'operator needs the actual returned malformed name for reconciliation')
+          .toContain(VERSION.replace('/cryptoKeys/operational/', '/cryptoKeys/other/'));
+      } else await expect(create(client, { ...GCP_CONFIG })).rejects.toThrow();
       if (['parent-denied', 'wrong-purpose', 'wrong-template', 'wrong-parent-binding'].includes(fault)) expect(client.createCryptoKeyVersion).not.toHaveBeenCalled();
       else expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1);
       noGcpMutation(client);
