@@ -79,7 +79,7 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
       throw new ArgumentError('Google Cloud KMS requires a compatible signing parent/template');
     }
     const provider = new GcpCloudKmsKeyProvider(client, config.parent);
-    const kid = await provider.generatePendingKey(undefined, true);
+    const kid = await provider.generatePendingKey(undefined);
     return { provider, kid, keyRef: provider.keys.get(kid)!.version };
   }
 
@@ -162,11 +162,18 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
   async validateKeyGeneration(algorithm: string): Promise<void> {
     if (algorithm !== 'EdDSA') throw new ArgumentError(`Google Cloud KMS generation settings do not support ${algorithm}`);
   }
-  /** Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation. Never called by configuration opening. */
+  /**
+   * Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation.
+   * Pending generation polls the exact created version at most 20 times, 250ms apart,
+   * using the caller's transport timeouts, just as initial creation does.
+   * Returns a locally pending key without changing the active signer. Failures after
+   * creation retain the version reference and cause, without retrying or deleting it.
+   * Service/integrity failures are not caller-argument errors. Never called by configuration opening.
+   */
   async generateKey(algorithm?: string): Promise<string> {
-    return this.generatePendingKey(algorithm, false);
+    return this.generatePendingKey(algorithm);
   }
-  private async generatePendingKey(algorithm: string | undefined, waitForReadiness: boolean): Promise<string> {
+  private async generatePendingKey(algorithm: string | undefined): Promise<string> {
     await this.validateKeyGeneration(algorithm ?? 'EdDSA');
     if (!this.client.createCryptoKeyVersion) throw new ArgumentError('Google Cloud KMS client does not support version creation');
     const parent = this.version.includes('/cryptoKeyVersions/')
@@ -182,7 +189,7 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
       for (let poll = 0; ; poll++) {
         if (created?.name !== name || !ed25519Software(created)) throw new ArgumentError('Google Cloud KMS created an unexpected key version');
         if (created.state === 'ENABLED' || created.state === 1) break;
-        if (!waitForReadiness || (created.state !== 'PENDING_GENERATION' && created.state !== 5) || poll >= 20 || !this.client.getCryptoKeyVersion) {
+        if ((created.state !== 'PENDING_GENERATION' && created.state !== 5) || poll >= 20 || !this.client.getCryptoKeyVersion) {
           throw new ArgumentError('Google Cloud KMS version is not ready for signing');
         }
         await new Promise(resolve => setTimeout(resolve, 250));

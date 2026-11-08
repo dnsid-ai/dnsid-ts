@@ -52,7 +52,12 @@ const keySource = {
 An explicit `generateKey()` or `generateKey('EdDSA')` creates a pending software
 Ed25519 version under the same CryptoKey. Other requested algorithms are rejected
 before creation. `validateKeyGeneration('EdDSA')` checks algorithm support without
-creating a version. Generation does not change deployment configuration or the active signer.
+creating a version. Like first-key creation, generation waits for the exact created
+version to become enabled, polling pending generation at most 20 times, 250ms apart.
+Transport call deadlines remain caller-owned. Post-create failures retain the known
+version reference and cause; service/integrity failures are not caller-argument
+errors. There is no automatic recreation or deletion on failure.
+Generation does not change deployment configuration or the active signer.
 Pending keys support `jwk` and `signKey`; `activate` drains in-flight signatures
 and blocks new signing while promoting the pending key. `listKeyIds` contains
 only the active ID, or is empty after local supersession. `supersede` and its
