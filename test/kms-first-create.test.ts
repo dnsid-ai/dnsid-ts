@@ -392,13 +392,36 @@ describe('#58 GCP native first version', () => {
   it('Given permanently pending version, When readiness budget expires, Then fail boundedly without recreation [Mode: fake-only]', async () => {
     const create = GcpCloudKmsKeyProvider.create; const { client } = gcpCloud(); const generate = client.createCryptoKeyVersion.getMockImplementation()!;
     client.createCryptoKeyVersion.mockImplementationOnce(async input => { const [v] = await generate(input); return [{ ...v, state: 'PENDING_GENERATION' }]; });
-    client.getCryptoKeyVersion.mockResolvedValue([{ name: VERSION, state: 'PENDING_GENERATION', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' }]);
+    const readTimes: number[] = [];
+    client.getCryptoKeyVersion.mockImplementation(async () => {
+      readTimes.push(Date.now());
+      return [{ name: VERSION, state: 'PENDING_GENERATION', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' }];
+    });
     vi.useFakeTimers();
     try {
-      const result = create(client, { ...GCP_CONFIG }).then(value => ({ ok: true, value }), error => ({ ok: false, error }));
-      await vi.runAllTimersAsync(); expect(await result).toMatchObject({ ok: false });
-      expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1); noGcpMutation(client);
-    } finally { vi.useRealTimers(); }
+      const start = Date.now(); let settled = false;
+      const result = create(client, { ...GCP_CONFIG }).then(
+        value => { settled = true; return { ok: true, value }; },
+        error => { settled = true; return { ok: false, error }; });
+      // Immediate fake RPCs isolate the delayed-read budget. Real RPC duration
+      // is additional; this is not a hard five-second end-to-end deadline.
+      await vi.advanceTimersByTimeAsync(0);
+      expect(client.getCryptoKeyVersion).not.toHaveBeenCalled(); expect(settled).toBe(false);
+      for (let read = 1; read <= 20; read++) {
+        await vi.advanceTimersByTimeAsync(249);
+        expect(client.getCryptoKeyVersion).toHaveBeenCalledTimes(read - 1);
+        expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(client.getCryptoKeyVersion).toHaveBeenCalledTimes(read);
+        expect(settled).toBe(read === 20);
+      }
+      expect(await result).toMatchObject({ ok: false });
+      expect(readTimes.map(time => time - start)).toEqual(Array.from({ length: 20 }, (_, index) => (index + 1) * 250));
+      expect(client.getCryptoKeyVersion.mock.calls).toEqual(Array.from({ length: 20 }, () => [{ name: VERSION }]));
+      expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1);
+      expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.asymmetricSign).not.toHaveBeenCalled(); noGcpMutation(client);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.clearAllTimers(); vi.useRealTimers(); }
   });
   for (const fault of ['wrong-name', 'unverified-data', 'signature-integrity'] as const) {
     it(`Given ${fault}, When pending proof receives corrupt response, Then fail with no partial activation [Mode: fake-only]`, async () => {
