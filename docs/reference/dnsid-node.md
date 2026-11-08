@@ -22,7 +22,7 @@ and preserves that state, while stricter policies require a DNSSEC-aware resolve
 
 ### LocalKeyProvider
 
-Defined in: packages/sdk/src/local-key-provider.ts:38
+Defined in: [packages/sdk/src/local-key-provider.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L38)
 
 File-backed KeyProvider that stores Ed25519 or ECDSA P-256 keys as a JSON file.
 
@@ -47,7 +47,7 @@ memory follows the visible file. Inspect the store before retrying a failed muta
 activate(kid): Promise<void>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:161
+Defined in: [packages/sdk/src/local-key-provider.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L161)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -74,7 +74,7 @@ The previously active key transitions to retained.
 generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:151
+Defined in: [packages/sdk/src/local-key-provider.ts:151](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L151)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -101,7 +101,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:114
+Defined in: [packages/sdk/src/local-key-provider.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L114)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -128,7 +128,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:123
+Defined in: [packages/sdk/src/local-key-provider.ts:123](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L123)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -149,7 +149,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:188
+Defined in: [packages/sdk/src/local-key-provider.ts:188](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L188)
 
 ###### Parameters
 
@@ -177,7 +177,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:127
+Defined in: [packages/sdk/src/local-key-provider.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L127)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -204,7 +204,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:110
+Defined in: [packages/sdk/src/local-key-provider.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L110)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -225,7 +225,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:131
+Defined in: [packages/sdk/src/local-key-provider.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L131)
 
 Signs with a specified active or pending key.
 
@@ -255,7 +255,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:176
+Defined in: [packages/sdk/src/local-key-provider.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L176)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -281,7 +281,7 @@ Supersedes and removes a retained key from this provider's published key set.
 validateKeyGeneration(algorithm): Promise<void>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:147
+Defined in: [packages/sdk/src/local-key-provider.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L147)
 
 Validates generation settings and algorithm support without creating a key.
 
@@ -307,7 +307,7 @@ Validates generation settings and algorithm support without creating a key.
 static fromDirectory(dir): Promise<LocalKeyProvider>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:83
+Defined in: [packages/sdk/src/local-key-provider.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L83)
 
 ###### Parameters
 
@@ -327,7 +327,7 @@ Defined in: packages/sdk/src/local-key-provider.ts:83
 static fromDomain(domain, dnsidDir?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:106
+Defined in: [packages/sdk/src/local-key-provider.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L106)
 
 ###### Parameters
 
@@ -351,7 +351,7 @@ Defined in: packages/sdk/src/local-key-provider.ts:106
 static fromFile(filePath): Promise<LocalKeyProvider>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:100
+Defined in: [packages/sdk/src/local-key-provider.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L100)
 
 Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 
@@ -373,7 +373,7 @@ Loads a single private JWK file, including DNSid CLI `entity_key_path` files.
 static generate(algorithm?): Promise<LocalKeyProvider>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:79
+Defined in: [packages/sdk/src/local-key-provider.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L79)
 
 ###### Parameters
 
@@ -397,7 +397,7 @@ static load(
 ): Promise<LocalKeyProvider>;
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:51
+Defined in: [packages/sdk/src/local-key-provider.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L51)
 
 ###### Parameters
 
@@ -423,7 +423,7 @@ Defined in: packages/sdk/src/local-key-provider.ts:51
 
 ### KeySource
 
-Defined in: packages/sdk/src/config-loading.ts:50
+Defined in: [packages/sdk/src/config-loading.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L50)
 
 #### Properties
 
@@ -435,7 +435,7 @@ Defined in: packages/sdk/src/config-loading.ts:50
 optional cliDirectory?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:58
+Defined in: [packages/sdk/src/config-loading.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L58)
 
 DNSid CLI identity directory; key files are located under the effective identity domain.
 
@@ -447,7 +447,7 @@ DNSid CLI identity directory; key files are located under the effective identity
 optional entityKeyPath?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:60
+Defined in: [packages/sdk/src/config-loading.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L60)
 
 Accountable-entity private JWK file.
 
@@ -459,7 +459,7 @@ Accountable-entity private JWK file.
 optional generation?: object;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:55
+Defined in: [packages/sdk/src/config-loading.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L55)
 
 File generation locator; cloud factories without atomic discovery require keyRef.
 
@@ -483,7 +483,7 @@ locator: string;
 optional keyRef?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:53
+Defined in: [packages/sdk/src/config-loading.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L53)
 
 Existing stable key reference; never combined with generation.
 
@@ -495,7 +495,7 @@ Existing stable key reference; never combined with generation.
 optional keyStorePath?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:62
+Defined in: [packages/sdk/src/config-loading.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L62)
 
 `LocalKeyProvider` key-store file; used only when `cliDirectory` is absent.
 
@@ -507,7 +507,7 @@ Defined in: packages/sdk/src/config-loading.ts:62
 optional provider?: "file" | "aws-kms" | "google-kms" | "azure-key-vault";
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:51
+Defined in: [packages/sdk/src/config-loading.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L51)
 
 <a id="settings"></a>
 
@@ -517,7 +517,7 @@ Defined in: packages/sdk/src/config-loading.ts:51
 optional settings?: Record<string, unknown>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:56
+Defined in: [packages/sdk/src/config-loading.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L56)
 
 ***
 
@@ -525,7 +525,7 @@ Defined in: packages/sdk/src/config-loading.ts:56
 
 ### LoadedConfig
 
-Defined in: packages/sdk/src/config-loading.ts:81
+Defined in: [packages/sdk/src/config-loading.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L81)
 
 Partial configuration from one source. Every field is present only when sourced.
 
@@ -539,7 +539,7 @@ Partial configuration from one source. Every field is present only when sourced.
 optional dnsid?: LoadedDnsidConfig;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:82
+Defined in: [packages/sdk/src/config-loading.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L82)
 
 <a id="keysource-1"></a>
 
@@ -549,7 +549,7 @@ Defined in: packages/sdk/src/config-loading.ts:82
 optional keySource?: KeySource;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:87
+Defined in: [packages/sdk/src/config-loading.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L87)
 
 <a id="logtrust"></a>
 
@@ -559,7 +559,7 @@ Defined in: packages/sdk/src/config-loading.ts:87
 optional logTrust?: LogTrust;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:83
+Defined in: [packages/sdk/src/config-loading.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L83)
 
 <a id="registration"></a>
 
@@ -569,7 +569,7 @@ Defined in: packages/sdk/src/config-loading.ts:83
 optional registration?: Partial<ManagedRegistrationConfig>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:86
+Defined in: [packages/sdk/src/config-loading.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L86)
 
 Setup expectations only; never identity or counterparty acceptance defaults.
 
@@ -581,7 +581,7 @@ Setup expectations only; never identity or counterparty acceptance defaults.
 optional registry?: LoadedRegistryConfig;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:84
+Defined in: [packages/sdk/src/config-loading.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L84)
 
 ***
 
@@ -589,7 +589,7 @@ Defined in: packages/sdk/src/config-loading.ts:84
 
 ### LoadedDnsidConfig
 
-Defined in: packages/sdk/src/config-loading.ts:76
+Defined in: [packages/sdk/src/config-loading.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L76)
 
 `DnsidConfig` with a partial `identity`: sources may supply some publication fields and leave the rest to an overlay.
 
@@ -607,7 +607,7 @@ Defined in: packages/sdk/src/config-loading.ts:76
 optional identity?: Partial<IdentityConfig>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:77
+Defined in: [packages/sdk/src/config-loading.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L77)
 
 <a id="transport"></a>
 
@@ -617,7 +617,7 @@ Defined in: packages/sdk/src/config-loading.ts:77
 optional transport?: TransportConfig;
 ```
 
-Defined in: packages/protocol/src/types.ts:128
+Defined in: [packages/protocol/src/types.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L128)
 
 ###### Inherited from
 
@@ -631,7 +631,7 @@ Defined in: packages/protocol/src/types.ts:128
 optional verification?: VerificationConfig;
 ```
 
-Defined in: packages/protocol/src/types.ts:127
+Defined in: [packages/protocol/src/types.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L127)
 
 ###### Inherited from
 
@@ -643,7 +643,7 @@ Defined in: packages/protocol/src/types.ts:127
 
 ### LoadedRegistryConfig
 
-Defined in: packages/sdk/src/config-loading.ts:71
+Defined in: [packages/sdk/src/config-loading.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L71)
 
 #### Properties
 
@@ -655,7 +655,7 @@ Defined in: packages/sdk/src/config-loading.ts:71
 optional registryUrl?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:72
+Defined in: [packages/sdk/src/config-loading.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L72)
 
 ***
 
@@ -663,7 +663,7 @@ Defined in: packages/sdk/src/config-loading.ts:72
 
 ### LogTrust
 
-Defined in: packages/sdk/src/config-loading.ts:39
+Defined in: [packages/sdk/src/config-loading.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L39)
 
 Log trust for `deps.logRegistry`; exactly one variant is required at construction.
 
@@ -677,7 +677,7 @@ Log trust for `deps.logRegistry`; exactly one variant is required at constructio
 optional managed?: boolean;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:41
+Defined in: [packages/sdk/src/config-loading.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L41)
 
 `true` selects the embedded DNSid-managed catalog.
 
@@ -689,7 +689,7 @@ Defined in: packages/sdk/src/config-loading.ts:41
 optional policyDocument?: Uint8Array<ArrayBufferLike>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:45
+Defined in: [packages/sdk/src/config-loading.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L45)
 
 Trusted C2SP `tlog-policy` bytes.
 
@@ -701,7 +701,7 @@ Trusted C2SP `tlog-policy` bytes.
 optional policyUrl?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:47
+Defined in: [packages/sdk/src/config-loading.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L47)
 
 Trusted C2SP `tlog-policy` HTTPS URL.
 
@@ -713,7 +713,7 @@ Trusted C2SP `tlog-policy` HTTPS URL.
 optional profile?: Record<string, unknown>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:43
+Defined in: [packages/sdk/src/config-loading.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L43)
 
 `dnsid-c2sp-tlog-trust-profile@v1` document (parsed JSON).
 
@@ -723,7 +723,7 @@ Defined in: packages/sdk/src/config-loading.ts:43
 
 ### ManagedRegistrationConfig
 
-Defined in: packages/sdk/src/config-loading.ts:65
+Defined in: [packages/sdk/src/config-loading.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L65)
 
 #### Properties
 
@@ -735,7 +735,7 @@ Defined in: packages/sdk/src/config-loading.ts:65
 entityKeyUrl: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:68
+Defined in: [packages/sdk/src/config-loading.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L68)
 
 <a id="governanceid"></a>
 
@@ -745,7 +745,7 @@ Defined in: packages/sdk/src/config-loading.ts:68
 optional governanceId?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:67
+Defined in: [packages/sdk/src/config-loading.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L67)
 
 <a id="organizationid"></a>
 
@@ -755,7 +755,7 @@ Defined in: packages/sdk/src/config-loading.ts:67
 optional organizationId?: string;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:66
+Defined in: [packages/sdk/src/config-loading.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L66)
 
 ***
 
@@ -763,7 +763,7 @@ Defined in: packages/sdk/src/config-loading.ts:66
 
 ### ResponseSigningMiddlewareOptions
 
-Defined in: packages/sdk/src/node-response-signing.ts:9
+Defined in: [packages/sdk/src/node-response-signing.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L9)
 
 Options for [createResponseSigningMiddleware](#createresponsesigningmiddleware).
 
@@ -777,7 +777,7 @@ Options for [createResponseSigningMiddleware](#createresponsesigningmiddleware).
 optional origin?: string;
 ```
 
-Defined in: packages/sdk/src/node-response-signing.ts:14
+Defined in: [packages/sdk/src/node-response-signing.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L14)
 
 Public origin the client used, such as `https://bob.test`. Set it behind a
 TLS-terminating proxy. Default: the socket's scheme and the Host header.
@@ -792,7 +792,7 @@ TLS-terminating proxy. Default: the socket's scheme and the Host header.
 type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:36
+Defined in: [packages/sdk/src/config-loading.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L36)
 
 ***
 
@@ -804,7 +804,7 @@ Defined in: packages/sdk/src/config-loading.ts:36
 type LocalKeyAlgorithm = "EdDSA" | "ES256";
 ```
 
-Defined in: packages/sdk/src/local-key-provider.ts:16
+Defined in: [packages/sdk/src/local-key-provider.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/local-key-provider.ts#L16)
 
 ***
 
@@ -816,7 +816,7 @@ Defined in: packages/sdk/src/local-key-provider.ts:16
 type NodeMiddleware = (req, res, next) => void;
 ```
 
-Defined in: packages/sdk/src/node-response-signing.ts:18
+Defined in: [packages/sdk/src/node-response-signing.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L18)
 
 Connect-style middleware, usable with Express, Connect, or a plain `node:http` handler.
 
@@ -848,7 +848,7 @@ Connect-style middleware, usable with Express, Connect, or a plain `node:http` h
 function constructIdentityManager(loaded, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:350
+Defined in: [packages/sdk/src/config-loading.ts:350](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L350)
 
 Fills `deps.logRegistry` from `logTrust` and key providers from `keySource` only when the caller
 did not supply them, then calls [createNodeIdentityManager](#createnodeidentitymanager). Adds no configuration values.
@@ -879,7 +879,7 @@ Initial setup injects its provider and owns its binding checks; missing publicat
 function createNodeIdentityManager(config, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/node-identity-manager.ts:32
+Defined in: [packages/sdk/src/node-identity-manager.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L32)
 
 Creates an IdentityManager with Node.js DNS and HTTPS defaults.
 
@@ -927,7 +927,7 @@ function createNodeIdentityManagerFromDnsid(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:499
+Defined in: [packages/sdk/src/config-loading.ts:499](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L499)
 
 #### Parameters
 
@@ -961,7 +961,7 @@ function createNodeIdentityManagerFromEnvironment(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:495
+Defined in: [packages/sdk/src/config-loading.ts:495](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L495)
 
 #### Parameters
 
@@ -995,7 +995,7 @@ function createNodeIdentityManagerFromFile(
 ): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:503
+Defined in: [packages/sdk/src/config-loading.ts:503](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L503)
 
 #### Parameters
 
@@ -1025,7 +1025,7 @@ Defined in: packages/sdk/src/config-loading.ts:503
 function createNodeIdentityVerifier(config?, deps?): Promise<IdentityManager>;
 ```
 
-Defined in: packages/sdk/src/node-identity-manager.ts:58
+Defined in: [packages/sdk/src/node-identity-manager.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-identity-manager.ts#L58)
 
 Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults (`config.identity` omitted).
 
@@ -1053,7 +1053,7 @@ Creates a verification-only IdentityManager with Node.js DNS and HTTPS defaults 
 function createRegistryClientFromEnvironment(env?, options?): Promise<RegistryClient>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:508
+Defined in: [packages/sdk/src/config-loading.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L508)
 
 `RegistryClient` from `DNSID_REGISTRY_URL` and `DNSID_API_KEY`; explicit options win, including transport overrides. The constructor defaults to the local registry.
 
@@ -1081,7 +1081,7 @@ Defined in: packages/sdk/src/config-loading.ts:508
 function createResponseSigningMiddleware(profile, options?): NodeMiddleware;
 ```
 
-Defined in: packages/sdk/src/node-response-signing.ts:31
+Defined in: [packages/sdk/src/node-response-signing.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/node-response-signing.ts#L31)
 
 Signs responses to requests that carry Accept-Signature, for `node:http` servers.
 Requests without negotiation pass through unbuffered. Negotiated responses are
@@ -1117,7 +1117,7 @@ sent directly and are not signed.
 function loadCliDirectory(dnsidDir?): Promise<LoadedConfig>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:268
+Defined in: [packages/sdk/src/config-loading.ts:268](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L268)
 
 Reads a DNSid CLI directory (`~/.dnsid` by default): `config.json`, following a root `domain`
 pointer to `<domain>/config.json` when that file exists. Maps the snake_case publication fields
@@ -1144,7 +1144,7 @@ Never consults `DNSID_CONFIG_DIR`.
 function loadEnvironment(env?): Promise<LoadedConfig>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:105
+Defined in: [packages/sdk/src/config-loading.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L105)
 
 Reads configuration from `DNSID_*`. Secrets such as `DNSID_API_KEY` stay out of `LoadedConfig`.
 
@@ -1168,7 +1168,7 @@ Reads configuration from `DNSID_*`. Secrets such as `DNSID_API_KEY` stay out of 
 function loadFile(filePath): Promise<LoadedConfig>;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:152
+Defined in: [packages/sdk/src/config-loading.ts:152](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L152)
 
 Reads a JSON deployment file: `{ dnsid?, logTrust?, registry?, registration? }`. Unknown members, mistyped
 values, and duplicate members are rejected; semantic `dnsid` validation stays with the constructor.
@@ -1193,7 +1193,7 @@ values, and duplicate members are rejected; semantic `dnsid` validation stays wi
 function mergeLoadedConfig(base, overlay): LoadedConfig;
 ```
 
-Defined in: packages/sdk/src/config-loading.ts:308
+Defined in: [packages/sdk/src/config-loading.ts:308](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/config-loading.ts#L308)
 
 Field-wise merge; presence wins, not truthiness. Lists replace. `logTrust` is replaced as a
 whole section when `overlay` sets any variant. Operational key-source fields replace together;
