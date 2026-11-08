@@ -322,7 +322,7 @@ export class AwsKmsKeyProvider implements KeyProvider {
       tags: this.config.tags,
     });
     if (!result.keyId || result.keyId.startsWith('alias/') || result.keyId.includes(':alias/')) {
-      throw new ArgumentError('AWS KMS create key response requires an immutable key reference');
+      throw new ArgumentError(`AWS KMS create key response requires an immutable key reference${result.keyId ? `: ${result.keyId}` : ''}`);
     }
     try {
       const kid = (await this.publicJwk(result.keyId, true)).kid;

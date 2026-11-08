@@ -176,7 +176,7 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     const name = created?.name;
     if (typeof name !== 'string' || !name.startsWith(parent + '/cryptoKeyVersions/')
       || !/^[1-9][0-9]*$/.test(name.slice((parent + '/cryptoKeyVersions/').length))) {
-      throw new ArgumentError('Google Cloud KMS created an unexpected key version');
+      throw new ArgumentError(`Google Cloud KMS created an unexpected key version${typeof name === 'string' && name ? `: ${name}` : ''}`);
     }
     try {
       for (let poll = 0; ; poll++) {
