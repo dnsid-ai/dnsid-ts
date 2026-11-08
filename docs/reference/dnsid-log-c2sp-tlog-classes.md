@@ -13,7 +13,7 @@ Part of [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlo
 
 ### C2spCheckpointConsistencyError
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L49)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:49
 
 An authenticated checkpoint contradicts remembered log history; never authorizes a reset.
 
@@ -37,7 +37,7 @@ new C2spCheckpointConsistencyError(
 ): C2spCheckpointConsistencyError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L56)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:56
 
 ###### Parameters
 
@@ -79,7 +79,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:56](https://github.c
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -109,7 +109,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -125,7 +125,7 @@ Classification of the failure.
 readonly errorCategory: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:39
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
@@ -169,7 +169,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 readonly observedRootHash: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L54)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:54
 
 <a id="observedtreesize"></a>
 
@@ -179,7 +179,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:54](https://github.c
 readonly observedTreeSize: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L52)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:52
 
 <a id="origin"></a>
 
@@ -189,7 +189,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:52](https://github.c
 readonly origin: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L50)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:50
 
 <a id="stack"></a>
 
@@ -213,7 +213,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -227,7 +227,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -243,7 +243,7 @@ True when retrying the verification may succeed.
 readonly trustedRootHash: Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L53)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:53
 
 <a id="trustedtreesize"></a>
 
@@ -253,7 +253,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:53](https://github.c
 readonly trustedTreeSize: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L51)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:51
 
 <a id="verifiedentitykeythumbprint"></a>
 
@@ -263,7 +263,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:51](https://github.c
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -279,7 +279,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -423,7 +423,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spCheckpointStoreError
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L68)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:68
 
 Storage failed. A failed CAS may already have published; reconcile before recovery.
 
@@ -441,7 +441,7 @@ Storage failed. A failed CAS may already have published; reconcile before recove
 new C2spCheckpointStoreError(message, cause?): C2spCheckpointStoreError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L69)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:69
 
 ###### Parameters
 
@@ -471,7 +471,7 @@ Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:69](https://github.c
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -501,7 +501,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -517,7 +517,7 @@ Classification of the failure.
 readonly errorCategory: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:39
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
@@ -575,7 +575,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -589,7 +589,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -605,7 +605,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -621,7 +621,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -765,7 +765,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogBinding
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:671](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L671)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:671
 
 Read/write binding for a c2sp-tlog stream: extends [C2spTlogReader](#c2sptlogreader)
 with the prepared-event workflow (prepare, sign per role, finalize, append).
@@ -794,7 +794,7 @@ The generic `writeEvent` is intentionally unimplemented; appends go through
 new C2spTlogBinding(lr, options): C2spTlogBinding;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 ###### Parameters
 
@@ -824,7 +824,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 ###### Inherited from
 
@@ -838,7 +838,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L127)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:127
 
 ###### Inherited from
 
@@ -854,7 +854,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L161)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:161
 
 ###### Parameters
 
@@ -878,7 +878,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L156)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:156
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -910,7 +910,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:684](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L684)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:684
 
 ###### Parameters
 
@@ -934,7 +934,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:684](https://github.com/dnsid-
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L165)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:165
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -965,7 +965,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:676](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L676)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:676
 
 ###### Parameters
 
@@ -989,7 +989,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:676](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:672](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L672)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:672
 
 ###### Parameters
 
@@ -1013,7 +1013,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:672](https://github.com/dnsid-
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L236)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:236
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -1040,7 +1040,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L299)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:299
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -1071,7 +1071,7 @@ returned.
 rebuildHistoryThrough(domain, finalRef): Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:307](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L307)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:307
 
 Verifies every logical event and conflict through an exact signed cutoff and exports
 ACTIVE keys, stitched history, and aligned references. Later source events are excluded.
@@ -1109,7 +1109,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:680](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L680)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:680
 
 ###### Parameters
 
@@ -1149,7 +1149,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L173)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:173
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -1187,7 +1187,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L210)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:210
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -1223,7 +1223,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L199)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:199
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -1257,7 +1257,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:692](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L692)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:692
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1285,7 +1285,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:688](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L688)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:688
 
 ###### Parameters
 
@@ -1307,7 +1307,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:688](https://github.com/dnsid-
 
 ### ~~C2spTlogClient~~
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:698](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L698)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:698
 
 #### Deprecated
 
@@ -1327,7 +1327,7 @@ Use C2spTlogBinding.
 new C2spTlogClient(lr, options): C2spTlogClient;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 ###### Parameters
 
@@ -1357,7 +1357,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 ###### Inherited from
 
@@ -1371,7 +1371,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L127)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:127
 
 ###### Inherited from
 
@@ -1387,7 +1387,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L161)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:161
 
 ###### Parameters
 
@@ -1411,7 +1411,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L156)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:156
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -1439,7 +1439,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 entryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:684](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L684)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:684
 
 ###### Parameters
 
@@ -1467,7 +1467,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:684](https://github.com/dnsid-
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L165)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:165
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -1498,7 +1498,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 parsePreparedEvent(bytes, context?): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:676](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L676)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:676
 
 ###### Parameters
 
@@ -1526,7 +1526,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:676](https://github.com/dnsid-
 prepareEvent(event, chain?): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:672](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L672)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:672
 
 ###### Parameters
 
@@ -1554,7 +1554,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:672](https://github.com/dnsid-
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L236)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:236
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -1581,7 +1581,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L299)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:299
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -1612,7 +1612,7 @@ returned.
 rebuildHistoryThrough(domain, finalRef): Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:307](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L307)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:307
 
 Verifies every logical event and conflict through an exact signed cutoff and exports
 ACTIVE keys, stitched history, and aligned references. Later source events are excluded.
@@ -1650,7 +1650,7 @@ signPreparedEvent(
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:680](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L680)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:680
 
 ###### Parameters
 
@@ -1694,7 +1694,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L173)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:173
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -1732,7 +1732,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L210)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:210
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -1768,7 +1768,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L199)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:199
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -1802,7 +1802,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 writeEvent(_event): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:692](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L692)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:692
 
 Appends a signed event to the log.
 The event MUST already carry the signatures required by its log method before writeEvent is called.
@@ -1830,7 +1830,7 @@ Returns a LogRef identifying the recorded entry.
 writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:688](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L688)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:688
 
 ###### Parameters
 
@@ -1856,7 +1856,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:688](https://github.com/dnsid-
 
 ### C2spTlogError
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L8)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:8
 
 Base error for all c2sp-tlog failures.
 
@@ -1879,7 +1879,7 @@ Base error for all c2sp-tlog failures.
 new C2spTlogError(message, options?): C2spTlogError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:11](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L11)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:11
 
 ###### Parameters
 
@@ -1923,7 +1923,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:11](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -1953,7 +1953,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -1969,7 +1969,7 @@ Classification of the failure.
 readonly optional errorCategory?: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
+Defined in: packages/protocol/src/errors.ts:100
 
 Lifecycle conformance category, when the failure maps to a lifecycle state-machine rule.
 
@@ -2027,7 +2027,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 <a id="transient-2"></a>
 
@@ -2037,7 +2037,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -2053,7 +2053,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -2069,7 +2069,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -2213,7 +2213,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogParseError
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L29)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:29
 
 Thrown when c2sp-tlog input (checkpoint, entry, reference, bundle, ...) is malformed or non-canonical.
 
@@ -2231,7 +2231,7 @@ Thrown when c2sp-tlog input (checkpoint, entry, reference, bundle, ...) is malfo
 new C2spTlogParseError(message, cause?): C2spTlogParseError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:30](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L30)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:30
 
 ###### Parameters
 
@@ -2261,7 +2261,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:30](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -2291,7 +2291,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -2307,7 +2307,7 @@ Classification of the failure.
 readonly optional errorCategory?: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L100)
+Defined in: packages/protocol/src/errors.ts:100
 
 Lifecycle conformance category, when the failure maps to a lifecycle state-machine rule.
 
@@ -2365,7 +2365,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -2379,7 +2379,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -2395,7 +2395,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -2411,7 +2411,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -2555,7 +2555,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogReader
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L126)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:126
 
 LogReader for the `c2sp-tlog` method: verifies an agent's identity-record
 lifecycle against a C2SP tlog-tiles log. Evidence is loaded from a verified
@@ -2586,7 +2586,7 @@ VerificationError (LogError) from every LogReader boundary.
 new C2spTlogReader(lr, options): C2spTlogReader;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 ###### Parameters
 
@@ -2612,7 +2612,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly lr: string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L135)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:135
 
 <a id="parsed-2"></a>
 
@@ -2622,7 +2622,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:135](https://github.com/dnsid-
 readonly parsed: ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L127)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:127
 
 #### Methods
 
@@ -2634,7 +2634,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:127](https://github.com/dnsid-
 additionalSignerRoles(event): LogSignerRole[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L161)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:161
 
 ###### Parameters
 
@@ -2654,7 +2654,7 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:161](https://github.com/dnsid-
 canonical(event): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L156)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:156
 
 Returns the canonical byte representation of the event for this log method.
 Used to verify the signatures required by the log method on events read from the log.
@@ -2682,7 +2682,7 @@ MUST produce identical output to Log.canonical for the same supported event.
 keyTimestamp(domain, keyThumbprint): Promise<Date>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L165)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:165
 
 Returns the timestamp at which the given key thumbprint was bound to the domain
 (ISSUANCE or KEY_ROTATION event). Used for ka validation.
@@ -2713,7 +2713,7 @@ Returns the timestamp at which the given key thumbprint was bound to the domain
 readEvent(ref): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L236)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:236
 
 Reads a single event by its log reference.
 MUST verify inclusion proof and timestamp proof before returning.
@@ -2740,7 +2740,7 @@ MUST verify inclusion proof and timestamp proof before returning.
 rebuildHistory(domain): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L299)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:299
 
 Rebuilds the full event history for the domain in authoritative log order.
 MUST verify inclusion proofs, timestamp proofs, append-only consistency, and
@@ -2771,7 +2771,7 @@ returned.
 rebuildHistoryThrough(domain, finalRef): Promise<MigrationVerificationResult>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:307](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L307)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:307
 
 Verifies every logical event and conflict through an exact signed cutoff and exports
 ACTIVE keys, stitched history, and aligned references. Later source events are excluded.
@@ -2808,7 +2808,7 @@ verifyBilateralBinding(
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L173)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:173
 
 Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 
@@ -2846,7 +2846,7 @@ Verifies draft-01 bilateral ISSUANCE binding for the current TXT record.
 verifyNonRevocation(domain, at): Promise<LoggedStateEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L210)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:210
 
 Verifies that the domain is neither REVOKED nor RETIRED at the given timestamp.
 Raises on a terminal state or if complete, fresh evidence cannot be established.
@@ -2882,7 +2882,7 @@ verifyOperationalContinuity(
 ): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/reader.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/reader.ts#L199)
+Defined in: packages/log-c2sp-tlog/src/reader.ts:199
 
 Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
@@ -2914,7 +2914,7 @@ Verifies KEY_ROTATION continuity from ISSUANCE to the current operational key.
 
 ### C2spTlogResourceLimitError
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L49)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:49
 
 A finite verification budget was exceeded; this must never be candidate noise.
 
@@ -2932,7 +2932,7 @@ A finite verification budget was exceeded; this must never be candidate noise.
 new C2spTlogResourceLimitError(message, cause?): C2spTlogResourceLimitError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L50)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:50
 
 ###### Parameters
 
@@ -2962,7 +2962,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:50](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -2992,7 +2992,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -3008,7 +3008,7 @@ Classification of the failure.
 readonly errorCategory: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:39
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
@@ -3066,7 +3066,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -3080,7 +3080,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -3096,7 +3096,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -3112,7 +3112,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -3256,7 +3256,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### C2spTlogVerificationError
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:37](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L37)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:37
 
 Thrown when well-formed c2sp-tlog evidence fails cryptographic or policy verification.
 
@@ -3285,7 +3285,7 @@ new C2spTlogVerificationError(
 ): C2spTlogVerificationError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:41
 
 ###### Parameters
 
@@ -3319,7 +3319,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -3349,7 +3349,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -3365,7 +3365,7 @@ Classification of the failure.
 readonly errorCategory: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:39
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
@@ -3423,7 +3423,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -3437,7 +3437,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -3453,7 +3453,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -3469,7 +3469,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -3613,7 +3613,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### InMemoryTrustedC2spCheckpointStore
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L76)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:76
 
 Non-persistent, per-process trusted checkpoint store.
 
@@ -3650,7 +3650,7 @@ compareAndSwap(
 ): Promise<boolean>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L85)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:85
 
 Atomically replaces `expected` with `candidate`; returns false on a lost race.
 Implementations must honor cancellation at the commit boundary: an aborted
@@ -3690,7 +3690,7 @@ signal must prevent a pending write, not merely reject its returned promise.
 load(origin, signal?): Promise<TrustedC2spCheckpoint | undefined>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L79)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:79
 
 Returns the currently trusted checkpoint for `origin`, if any.
 
@@ -3718,7 +3718,7 @@ Returns the currently trusted checkpoint for `origin`, if any.
 
 ### MissingC2spConsistencyEvidenceError
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:46](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L46)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:46
 
 Signals that a valid newer checkpoint needs independent consistency evidence.
 
@@ -3740,7 +3740,7 @@ new MissingC2spConsistencyEvidenceError(
 ): MissingC2spConsistencyEvidenceError;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L41)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:41
 
 ###### Parameters
 
@@ -3774,7 +3774,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:41](https://github.com/dnsid-a
 readonly optional agentState?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L98)
+Defined in: packages/protocol/src/errors.ts:98
 
 Agent state reported by the status document, when the failure is state-related.
 
@@ -3804,7 +3804,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 readonly code: VerificationCode;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L94)
+Defined in: packages/protocol/src/errors.ts:94
 
 Classification of the failure.
 
@@ -3820,7 +3820,7 @@ Classification of the failure.
 readonly errorCategory: LifecycleErrorCategory;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:39
 
 Lifecycle conformance category for this failure; defaults to `INVALID_EVIDENCE`.
 
@@ -3878,7 +3878,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 readonly optional status?: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/errors.ts#L9)
+Defined in: packages/log-c2sp-tlog/src/errors.ts:9
 
 ###### Inherited from
 
@@ -3892,7 +3892,7 @@ Defined in: [packages/log-c2sp-tlog/src/errors.ts:9](https://github.com/dnsid-ai
 readonly transient: boolean;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L96)
+Defined in: packages/protocol/src/errors.ts:96
 
 True when retrying the verification may succeed.
 
@@ -3908,7 +3908,7 @@ True when retrying the verification may succeed.
 readonly optional verifiedEntityKeyThumbprint?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L104)
+Defined in: packages/protocol/src/errors.ts:104
 
 Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only). Never echoes configured pins.
 
@@ -3924,7 +3924,7 @@ Observed verified record-signing key thumbprint (`CounterpartyNotAccepted` only)
 readonly optional verifiedGovernanceId?: string;
 ```
 
-Defined in: [packages/protocol/src/errors.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L102)
+Defined in: packages/protocol/src/errors.ts:102
 
 Observed verified governance ID (`CounterpartyNotAccepted` only). Never echoes configured policy.
 
@@ -4068,7 +4068,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### ScanStreamSource
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L148)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:148
 
 StreamSource that performs a complete scan of a C2SP tlog-tiles log: it
 fetches the checkpoint, authenticates it via the configured callback, then
@@ -4088,7 +4088,7 @@ downloads every fixed-geometry entry bundle up to the checkpoint tree size.
 new ScanStreamSource(options, resourceFetcher?): ScanStreamSource;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L155)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:155
 
 ###### Parameters
 
@@ -4118,7 +4118,7 @@ discoverEntry(
 ): Promise<IndexedEntry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:174](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L174)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:174
 
 Reads the entry at `index` from its one entry bundle under an authenticated checkpoint; the entry itself is not authenticated.
 
@@ -4158,7 +4158,7 @@ Reads the entry at `index` from its one entry bundle under an authenticated chec
 load(prefix, options?): Promise<StreamEvidence>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:168](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L168)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:168
 
 Loads and authenticates the checkpoint, then every entry of the log at `prefix` (`complete` is always true).
 
