@@ -127,6 +127,43 @@ async function rejectedReferenceWithoutPersistence(operation: () => Promise<unkn
 }
 
 describe('#58 AWS native first key', () => {
+  for (const fault of ['omitted', 'mismatched'] as const) {
+    it(`Given rotation public keyId ${fault}, When generateKey rejects, Then preserve active state and original created recovery ID [Mode: fake-only]`, async () => {
+      const { client, f } = awsCloud();
+      const rotationClient = {
+        ...client,
+        createSigningKey: vi.fn(async (_input: unknown) => ({ keyId: OTHER_ARN })),
+        getPublicKey: vi.fn(async ({ keyId }: { keyId: string }) => {
+          if (keyId !== OTHER_ARN) return client.getPublicKey({ keyId });
+          const material = { publicKey: f.der, keySpec: AWS_CONFIG.keySpec, keyUsage: 'SIGN_VERIFY', signingAlgorithms: [AWS_CONFIG.algorithm] };
+          return fault === 'omitted' ? material : { ...material, keyId: ARN };
+        }),
+      };
+      // Establish the active signer through actual creation and explicit activation.
+      // The second external create alone returns the distinct rotation reference.
+      rotationClient.createSigningKey.mockImplementationOnce(input => client.createSigningKey(input));
+      const { provider, kid } = await AwsKmsKeyProvider.create(rotationClient, { ...AWS_CONFIG });
+      await provider.activate(kid);
+      const before = structuredClone(provider.stateSnapshot());
+      const active = await provider.listKeyIds();
+      const signingKey = await provider.signingKey();
+      const creates = rotationClient.createSigningKey.mock.calls.length;
+      const reads = rotationClient.getPublicKey.mock.calls.length;
+      const signs = client.sign.mock.calls.length;
+      const result = await provider.generateKey('EdDSA').then(
+        value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+      expect(result.value).toBeUndefined(); expect(result.error).toBeInstanceOf(Error);
+      expect((result.error as Error).message).toContain(OTHER_ARN);
+      expect(provider.stateSnapshot()).toEqual(before);
+      expect(await provider.listKeyIds()).toEqual(active);
+      expect(await provider.signingKey()).toEqual(signingKey);
+      expect(rotationClient.createSigningKey).toHaveBeenCalledTimes(creates + 1);
+      expect(rotationClient.getPublicKey.mock.calls.slice(reads)).toEqual([[{ keyId: OTHER_ARN }]]);
+      expect(client.sign).toHaveBeenCalledTimes(signs); noAwsMutation(client);
+      verified(await provider.sign(MESSAGE), f);
+      expect(provider.stateSnapshot()).toEqual(before); noAwsMutation(client);
+    });
+  }
   it('Given AWS post-create public-key denial, When first create rejects, Then retain original cause and recovery ID without retry or activation [Mode: fake-only]', async () => {
     const { client } = awsCloud();
     const denied = Object.assign(new Error('fixture public-key access denied'), {
@@ -279,6 +316,64 @@ describe('#58 AWS initial creation resource binding', () => {
 });
 
 describe('#58 GCP native first version', () => {
+  for (const pending of [false, true]) {
+    it(`Given numeric ${pending ? 'pending then ready' : 'enabled'} metadata, When first version create succeeds, Then exact identity remains locally pending [Mode: fake-only]`, async () => {
+      const { client, f } = gcpCloud();
+      // Official CryptoKey/Version protobuf values: signing purpose 5,
+      // Ed25519 40, SOFTWARE 1, PENDING_GENERATION 5 and ENABLED 1.
+      const numericClient = {
+        ...client,
+        getCryptoKey: vi.fn(async (input: { name: string }) => {
+          const [parent] = await client.getCryptoKey(input);
+          return [{ ...parent, purpose: 5, versionTemplate: { algorithm: 40, protectionLevel: 1 } }];
+        }),
+        createCryptoKeyVersion: vi.fn(async (input: Parameters<typeof client.createCryptoKeyVersion>[0]) => {
+          const [version] = await client.createCryptoKeyVersion(input);
+          return [{ ...version, state: pending ? 5 : 1, algorithm: 40, protectionLevel: 1 }];
+        }),
+        getCryptoKeyVersion: vi.fn(async (input: { name: string }) => {
+          const [version] = await client.getCryptoKeyVersion(input);
+          return [{ ...version, state: 1, algorithm: 40, protectionLevel: 1 }];
+        }),
+        getPublicKey: vi.fn(async (input: { name: string }) => {
+          const [publicKey] = await client.getPublicKey(input);
+          return [{ ...publicKey, algorithm: 40, protectionLevel: 1 }];
+        }),
+      };
+      vi.useFakeTimers();
+      try {
+        let settled = false;
+        const outcome = GcpCloudKmsKeyProvider.create(numericClient, { ...GCP_CONFIG }).then(
+          value => { settled = true; return { value, error: undefined }; },
+          (error: unknown) => { settled = true; return { value: undefined, error }; });
+        await vi.advanceTimersByTimeAsync(0);
+        if (pending) {
+          expect(settled).toBe(false);
+          expect(numericClient.getCryptoKeyVersion).not.toHaveBeenCalled();
+          expect(numericClient.getPublicKey).not.toHaveBeenCalled();
+          await vi.advanceTimersByTimeAsync(249);
+          expect(settled).toBe(false);
+          expect(numericClient.getCryptoKeyVersion).not.toHaveBeenCalled();
+          expect(numericClient.getPublicKey).not.toHaveBeenCalled();
+          await vi.advanceTimersByTimeAsync(1);
+        }
+        const result = await outcome;
+        expect(result.error).toBeUndefined(); expect(result.value).toBeDefined();
+        const { provider, kid, keyRef } = result.value!;
+        expect(keyRef).toBe(VERSION);
+        expect(numericClient.getCryptoKey).toHaveBeenCalledExactlyOnceWith({ name: PARENT });
+        expect(numericClient.createCryptoKeyVersion).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ parent: PARENT }));
+        expect(numericClient.getCryptoKeyVersion.mock.calls).toEqual(pending ? [[{ name: VERSION }]] : []);
+        expect(numericClient.getPublicKey).toHaveBeenCalledExactlyOnceWith({ name: VERSION });
+        expect(await provider.listKeyIds()).toEqual([]);
+        await expect(provider.signingKey()).rejects.toThrow(); await expect(provider.sign(MESSAGE)).rejects.toThrow();
+        publicIdentity(await provider.jwk(kid), f, kid);
+        verified(await provider.signKey(kid, MESSAGE), f);
+        expect(await provider.listKeyIds()).toEqual([]); noGcpMutation(client);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally { vi.clearAllTimers(); vi.useRealTimers(); }
+    });
+  }
   it('Given parent but zero versions, When create then activate and reopen, Then exact version identity and raw signatures persist [Mode: real-capable]', async () => {
     const { client, f } = gcpCloud(); const config = { ...GCP_CONFIG };
     const { provider, kid, keyRef } = await GcpCloudKmsKeyProvider.create(client, config);
