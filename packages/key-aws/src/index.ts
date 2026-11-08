@@ -103,6 +103,13 @@ export interface AwsKmsScheduleKeyDeletionInput {
 
 export interface AwsKmsFacade {
   createSigningKey(input: AwsKmsCreateSigningKeyInput): Promise<{ keyId: string }>;
+  /**
+   * For newly created keys, including rotation through `generateKey()`, the response
+   * must include a nonempty immutable `keyId` matching the created reference. A bare
+   * key UUID may resolve to its matching canonical key ARN. Omitted or unrelated
+   * IDs reject generation after remote creation and before pending-key insertion.
+   * Response `keyId` remains optional when opening an existing key with `load()`.
+   */
   getPublicKey(input: AwsKmsGetPublicKeyInput): Promise<{
     keyId?: string;
     publicKey: Uint8Array;

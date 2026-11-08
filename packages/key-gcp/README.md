@@ -1,8 +1,10 @@
 # @dnsid-ai/key-gcp
 
-Optional Node.js Google Cloud KMS provider for an existing **software
-EC_SIGN_ED25519** key version. Install this package separately from the base SDK;
-its Google dependency is not required by base SDK consumers.
+Optional Node.js Google Cloud KMS provider that opens existing **software
+EC_SIGN_ED25519** key versions or explicitly creates a pending first version
+through `create()` under an existing compatible CryptoKey. Install this package
+separately from the base SDK; its Google dependency is not required by base SDK
+consumers.
 
 ```ts
 import { KeyManagementServiceClient } from '@google-cloud/kms';

@@ -93,6 +93,14 @@ Rotation permissions, if used:
 
 ## Rotation
 
+Like first-key `create()`, `generateKey()` requires the `getPublicKey` response
+for the newly created key to include a nonempty immutable `keyId` matching the
+created reference. A bare key UUID may resolve to its matching canonical key ARN.
+An omitted or unrelated response ID rejects generation before adding a pending
+key, even though the remote key has already been created; the operator owns
+reconciliation and cleanup. Response `keyId` remains optional when opening an
+existing key with `load()`.
+
 ```ts
 const nextKid = await provider.generateKey();
 await provider.activate(nextKid);
