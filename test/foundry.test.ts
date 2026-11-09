@@ -1,42 +1,32 @@
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { create, SigningPaused, deriveRegistrationKey, deriveIssuanceKey, validateName, FoundryError } from '@dnsid-ai/foundry';
-import { IdentityManager, JoseProfile, LogRegistry, VerificationCode, VerificationError, jwkThumbprint } from '@dnsid-ai/sdk';
+import { ArgumentError, IdentityManager, JoseProfile, LogRegistry, VerificationCode, VerificationError, jwkThumbprint } from '@dnsid-ai/sdk';
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { RegistryRequestError } from '@dnsid-ai/registry';
 import { withTemp } from './helpers/cli-directory.ts';
 import { DOMAIN, GI, ORG, foundryFixture } from './helpers/foundry.ts';
+
+const vectors = JSON.parse(readFileSync(new URL('./vectors/foundry-registration.json', import.meta.url), 'utf8')) as {
+  organizationId: string; initialKeyId: string;
+  registration: Array<{ name: string; registrationKey: string }>;
+  issuance: Array<{ registrationKey: string; issuanceKey: string }>;
+  rejectedNames: string[];
+};
 
 const key = { registryUrl: 'https://registry.example', organizationId: ORG, name: 'agent' };
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe('Known Foundry create', () => {
   it('passes every shared RFC 8785 name and hash vector without normalization', () => {
-    const initial = 'kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k';
-    const registration = deriveRegistrationKey(ORG, 'billing-agent', initial);
-    expect(registration).toBe('2sWNUpI4tnAzJ3quPrT78uJNVdo96m4En3cZsggktcA');
-    expect(deriveIssuanceKey(registration)).toBe('pxQMSC0k-V9nn9qLqMRDczyUxyNyQE87LbGuK5SEWGw');
-    const vectors = [
-      ['agent', 'ksFWEjxU0Yf_F7-_UEwFWQ3J97VRmQPVLjVM5l-3YlY'],
-      ['Agent', '43mRUDBHeMLHZ6AZKy6RTQXox_LZxBDLa3IXLQ0qCGI'],
-      ['agent ', 'eVX-4H-42OOxnU2EbgtKoEzYad0bIaaRoCkf5T2BIEM'],
-      ['café', 'kBdivhIHZhZ_20_Ku_KnIVYE7x0iSw4K1ceQb2s6fxs'],
-      ['cafe\u0301', 'WxS5QzyfB3D0utVhJDzJQTY6eXDMagDV3tqOImr_u6A'],
-      ['\u00a0cafe\u0301\u3000', 'x6ARjxrBFYbZ1jCSznnOWBUX9DpFr4edVmYy1zLnyTc'],
-      ['😀'.repeat(255), 'AEttzAMd8C-GpyQqR_y5G-IfIawJpRWIMi4ZpfbkqWU'],
-      ['a"b', '2bWVuTgcCN056vagU5cF40TRXcroeKQCLhd5hTVjhcM'],
-      ['a\\b', 'g8sOgOWQxkQncp1g_H2nI81dTe-60Y8p6ryb87s3Vrk'],
-      ['a\u0001b', 'oNMzk-Vz7VqZ75bxvj4srioM6Dtxd0lNFT3W_-uOF0A'],
-      ['a\nb', 'yM6te8_oTYfg8b2Co21WukeVw4SfYQgCG9brN_W9Bio'],
-      ['<a>&', 'D-ZrRgfx1r9BUVg-wF9Pbey_cfLsZjWeOUCRCsYhTnk'],
-      ['a\u2028b', '-0mnonROfh4y6N--aNbASSi_x7pWEcBu8-Ldwmop4mU'],
-      ['a\u007fb', 'V9Xm6mXYXgQCT7DLYtBfT-etOMFRmX9mgKK60ocWtTA'],
-      ['a/b', 'vQvjQxYsTU1TyU3oai2SQY07iNjuCrSBPH5fCjHqhiE'],
-    ];
-    for (const [name, expected] of vectors) expect(deriveRegistrationKey(ORG, name!, initial)).toBe(expected);
-    expect(validateName('\u00a0cafe\u0301\u3000')).toBe('\u00a0cafe\u0301\u3000');
-    expect(validateName('😀'.repeat(255))).toHaveLength(510);
-    for (const invalid of ['', '\ud800', '\udfff', '😀'.repeat(256)]) expect(() => validateName(invalid)).toThrow();
+    expect(vectors.registration.length + vectors.issuance.length).toBe(17);
+    for (const { name, registrationKey } of vectors.registration) {
+      expect(validateName(name)).toBe(name);
+      expect(deriveRegistrationKey(vectors.organizationId, name, vectors.initialKeyId)).toBe(registrationKey);
+    }
+    for (const { registrationKey, issuanceKey } of vectors.issuance) expect(deriveIssuanceKey(registrationKey)).toBe(issuanceKey);
+    for (const invalid of vectors.rejectedNames) expect(() => validateName(invalid)).toThrow();
   });
 
   it('durably creates, pauses signing, completes the shared issuance flow and verifies public readiness', async () => {
@@ -359,6 +349,17 @@ describe('Known Foundry create', () => {
       vi.mocked(f.registry.getOrganizationOnboarding).mockRejectedValue(new RegistryRequestError(httpStatus, 'NOT_FOUND', 'no endpoint'));
       await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'UnsupportedRegistry', httpStatus });
       expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  it.each(['DNSID_DOMAIN', 'DNSID_GOVERNANCE_ID'])('rejects ordinary identity environment variable %s before any registry call', async variable => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      vi.stubEnv(variable, GI);
+      await expect(create('agent', { ...f.options, config: undefined })).rejects.toMatchObject({
+        cause: expect.any(ArgumentError), message: 'Foundry create does not accept ordinary identity selectors',
+      });
+      for (const method of Object.values(f.registry)) expect(method).not.toHaveBeenCalled();
     });
   });
 

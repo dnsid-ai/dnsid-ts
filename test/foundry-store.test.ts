@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { canonicalBytes } from '@dnsid-ai/log-c2sp-tlog';
 import { Deadline, FileFoundryStore, create, parseFoundryOperation, type FoundryOperation, type FoundryTransaction } from '@dnsid-ai/foundry';
 import { ORG, foundryFixture } from './helpers/foundry.ts';
@@ -64,6 +65,24 @@ describe('FileFoundryStore', () => {
       }
       expect(() => parseFoundryOperation(new TextEncoder().encode('{"schemaVersion":1,"schemaVersion":1}'))).toThrow();
       expect(() => parseFoundryOperation(new Uint8Array([0xff]))).toThrow();
+    });
+  });
+
+  it('allows different creation and initial key thumbprints only with current key and verified-history acceptance', async () => {
+    await withTemp(async root => {
+      const { store } = await initial(root);
+      const document = parseFoundryOperation(await store.export(key));
+      document.creationInput.public_key = { ...document.initialPublicKey, kid: 'same-material-different-id' };
+      expect(parseFoundryOperation(canonicalBytes(document))).toEqual(document);
+      document.creationInput.public_key = await (await LocalKeyProvider.generate()).signingKey();
+      expect(() => parseFoundryOperation(canonicalBytes(document))).toThrow(new TypeError('conflicting frozen creationInput'));
+      document.currentPublicKey = document.creationInput.public_key;
+      document.issuance = { acceptance: { source: 'registry' } };
+      expect(() => parseFoundryOperation(canonicalBytes(document))).toThrow(new TypeError('conflicting frozen creationInput'));
+      document.issuance.acceptance = { source: 'verified-history' };
+      expect(parseFoundryOperation(canonicalBytes(document))).toEqual(document);
+      delete document.currentPublicKey;
+      expect(() => parseFoundryOperation(canonicalBytes(document))).toThrow(new TypeError('conflicting frozen creationInput'));
     });
   });
 

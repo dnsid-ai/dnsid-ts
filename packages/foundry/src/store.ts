@@ -152,8 +152,8 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
       if (typeof publication[member] !== 'string' || !publication[member]) throw new TypeError(`publicationConfig requires ${member}`);
     }
   }
-  if (raw.issuance !== undefined) {
-    const issuance = object(raw.issuance, 'issuance');
+  const issuance = raw.issuance === undefined ? undefined : object(raw.issuance, 'issuance');
+  if (issuance) {
     for (const member of ['preparedEntryBytes', 'entryBytes']) {
       if (issuance[member] !== undefined) decodeBytes(issuance[member]);
     }
@@ -161,6 +161,9 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
       throw new TypeError('issuance entryHash does not match completed bytes');
     }
   }
+  // Both keys are Ed25519; x is their only variable RFC 7638 thumbprint member.
+  if (creationKey.x !== initial.x && (raw.currentPublicKey === undefined
+    || (issuance?.acceptance as { source?: unknown } | undefined)?.source !== 'verified-history')) throw new TypeError('conflicting frozen creationInput');
   if (raw.phase === 'complete' || raw.phase === 'issuance-accepted') {
     if (!raw.publicationConfig || !raw.entityPublicKey || !raw.issuance) throw new TypeError('accepted issuance requires publication, entity key, and acceptance facts');
     const issuance = raw.issuance as Record<string, unknown>;

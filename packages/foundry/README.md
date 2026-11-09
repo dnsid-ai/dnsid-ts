@@ -26,6 +26,6 @@ Export and import use version-1 UTF-8 JCS recovery documents. Duplicate members,
 
 Create never generates, provisions, or selects a key. An empty provider (`listKeyIds()` returns an empty list) returns `KEY_MISSING`; create the key first, for example through explicit KMS-first creation. Key provisioning and replica convergence remain the provider's responsibility. A missing or different key never triggers replacement.
 
-`foundry.organizationId` and `foundry.governanceId` come only from the deployment file or code. `DNSID_GOVERNANCE_ID` configures ordinary `dnsid.identity.governanceId`, not Foundry's expected GI.
+`foundry.organizationId` and `foundry.governanceId` come only from the deployment file or code. Foundry create rejects configuration that contains ordinary identity fields, including the DNSID_DOMAIN and DNSID_GOVERNANCE_ID environment variables. Foundry's expected GI is foundry.governanceId.
 
 CLI, hosted cross-SDK scenarios, key-provider provisioning internals, rotation, and retirement/revocation workflows are not implemented here. Same-name replacement is disabled and returns a terminal error.
