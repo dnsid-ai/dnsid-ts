@@ -218,7 +218,7 @@ Raw JSON envelope of a DNSid lifecycle event as stored in a c2sp-tlog entry.
 ### C2spSignerRole
 
 ```ts
-type C2spSignerRole = 
+type C2spSignerRole =
   | "Entity"
   | "OperationalCountersignature"
   | "PreviousOperational"
@@ -236,7 +236,7 @@ Role a signature is produced under when signing a prepared lifecycle event.
 ### C2spTlogQuorumRule
 
 ```ts
-type C2spTlogQuorumRule = 
+type C2spTlogQuorumRule =
   | {
   kind: "none";
 }

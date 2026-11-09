@@ -15,10 +15,10 @@ Part of [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlo
 
 ```ts
 function advanceTrustedC2spCheckpoint(
-   store, 
-   reference, 
-   checkpoint, 
-   witnessTime, 
+   store,
+   reference,
+   checkpoint,
+   witnessTime,
    options?
 ): Promise<TrustedC2spCheckpoint>;
 ```
@@ -526,11 +526,11 @@ C2spTlogParseError when an entry exceeds 65535 bytes.
 
 ```ts
 function enforceCheckpointPolicy(
-   checkpoint, 
-   origin, 
-   policy, 
-   scope, 
-   nowMs?, 
+   checkpoint,
+   origin,
+   policy,
+   scope,
+   nowMs?,
    maxClockSkewMs?
 ): CheckpointPolicyResult;
 ```
@@ -586,8 +586,8 @@ C2spTlogVerificationError when any requirement is not met.
 
 ```ts
 function entryBundlePath(
-   prefix, 
-   n, 
+   prefix,
+   n,
    width?
 ): string;
 ```
@@ -622,8 +622,8 @@ URL of entry bundle `n` under the C2SP tlog-tiles layout; `width` selects a part
 
 ```ts
 function eventToC2spEnvelope(
-   event, 
-   context?, 
+   event,
+   context?,
    includeSigs?
 ): C2spJsonEvent;
 ```
@@ -684,9 +684,9 @@ cryptographically secure randomness, encoded as unpadded base64url.
 
 ```ts
 function inclusionRoot(
-   leaf, 
-   index, 
-   treeSize, 
+   leaf,
+   index,
+   treeSize,
    proof
 ): Uint8Array;
 ```
@@ -905,8 +905,8 @@ C2spTlogVerificationError when a line is malformed, names collide,
 
 ```ts
 function parseC2spSignatures(
-   value, 
-   type, 
+   value,
+   type,
    requireComplete?
 ): C2spSignatures;
 ```
@@ -1156,8 +1156,8 @@ C2spTlogParseError when the line does not match the signed-note format.
 
 ```ts
 function parsePreparedC2spTlogEvent(
-   bytes, 
-   lr, 
+   bytes,
+   lr,
    context?
 ): Promise<PreparedC2spTlogEvent>;
 ```
@@ -1340,8 +1340,8 @@ C2spTlogParseError when the event or its public binding is invalid.
 
 ```ts
 function prepareC2spTlogEventForSigning(
-   event, 
-   lr, 
+   event,
+   lr,
    chain?
 ): PreparedC2spTlogEvent;
 ```
@@ -1515,9 +1515,9 @@ Canonical to-be-signed bytes for `event`: its envelope without signatures.
 
 ```ts
 function signPreparedC2spTlogEvent(
-   prepared, 
-   role, 
-   keyProvider, 
+   prepared,
+   role,
+   keyProvider,
    options?
 ): Promise<PreparedC2spTlogEvent>;
 ```
@@ -1589,8 +1589,8 @@ Base64url hash of a lifecycle state object (domain-separated SHA-256 over canoni
 
 ```ts
 function stitchVerifiedMigrationHistory(
-   domain, 
-   currentEvents, 
+   domain,
+   currentEvents,
    migration
 ): Promise<LogEvent[]>;
 ```
@@ -1637,9 +1637,9 @@ C2spTlogVerificationError (`INVALID_MIGRATION`) when the prior
 
 ```ts
 function tilePath(
-   prefix, 
-   level, 
-   n, 
+   prefix,
+   level,
+   n,
    width?
 ): string;
 ```
@@ -1734,10 +1734,10 @@ The cosignature timestamp, or undefined when the key is not a
 
 ```ts
 function verifyC2spConsistencyProof(
-   fromSize, 
-   toSize, 
-   fromRoot, 
-   toRoot, 
+   fromSize,
+   toSize,
+   fromRoot,
+   toRoot,
    proof
 ): boolean;
 ```
@@ -1826,12 +1826,12 @@ C2spTlogVerificationError when any verification step fails.
 
 ```ts
 function verifyC2spTlogProof(
-   entryBytes, 
-   proof, 
-   policy, 
-   origin?, 
-   scope?, 
-   nowMs?, 
+   entryBytes,
+   proof,
+   policy,
+   origin?,
+   scope?,
+   nowMs?,
    maxClockSkewMs?
 ): TlogProofV1;
 ```
@@ -1924,10 +1924,10 @@ Returns true when any checkpoint signature matches `key` by name/key ID and veri
 
 ```ts
 function verifyInclusion(
-   entryBytes, 
-   index, 
-   treeSize, 
-   rootHash, 
+   entryBytes,
+   index,
+   treeSize,
+   rootHash,
    proof
 ): boolean;
 ```
@@ -2048,8 +2048,8 @@ VerificationError (SignatureInvalid) when verification fails.
 
 ```ts
 function verifyNoteSignature(
-   message, 
-   sig, 
+   message,
+   sig,
    key
 ): boolean;
 ```
@@ -2086,8 +2086,8 @@ Supports plain log signatures (type 0x01) and timestamped C2SP cosignatures
 
 ```ts
 function verifyStreamLifecycle(
-   entries, 
-   domain, 
+   entries,
+   domain,
    options?
 ): Promise<VerifiedLifecycleEvent[]>;
 ```

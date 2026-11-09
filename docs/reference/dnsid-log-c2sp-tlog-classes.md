@@ -29,10 +29,10 @@ An authenticated checkpoint contradicts remembered log history; never authorizes
 
 ```ts
 new C2spCheckpointConsistencyError(
-   message, 
-   category, 
-   trusted, 
-   observed, 
+   message,
+   category,
+   trusted,
+   observed,
    cause?
 ): C2spCheckpointConsistencyError;
 ```
@@ -1102,9 +1102,9 @@ entityKey or a prior bilateral binding; recursion uses this reader's cumulative 
 
 ```ts
 signPreparedEvent(
-   prepared, 
-   role, 
-   keyProvider, 
+   prepared,
+   role,
+   keyProvider,
    options?
 ): Promise<PreparedC2spTlogEvent>;
 ```
@@ -1139,8 +1139,8 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:680](https://github.com/dnsid-
 
 ```ts
 verifyBilateralBinding(
-   record, 
-   entityKey, 
+   record,
+   entityKey,
    operationalKey
 ): Promise<{
   initialEntityThumbprint: string;
@@ -1217,8 +1217,8 @@ Returns the accepted proof boundary.
 
 ```ts
 verifyOperationalContinuity(
-   domain, 
-   initialOperationalThumbprint, 
+   domain,
+   initialOperationalThumbprint,
    currentOperationalThumbprint
 ): Promise<void>;
 ```
@@ -1643,9 +1643,9 @@ entityKey or a prior bilateral binding; recursion uses this reader's cumulative 
 
 ```ts
 signPreparedEvent(
-   prepared, 
-   role, 
-   keyProvider, 
+   prepared,
+   role,
+   keyProvider,
    options?
 ): Promise<PreparedC2spTlogEvent>;
 ```
@@ -1684,8 +1684,8 @@ Defined in: [packages/log-c2sp-tlog/src/reader.ts:680](https://github.com/dnsid-
 
 ```ts
 verifyBilateralBinding(
-   record, 
-   entityKey, 
+   record,
+   entityKey,
    operationalKey
 ): Promise<{
   initialEntityThumbprint: string;
@@ -1762,8 +1762,8 @@ Returns the accepted proof boundary.
 
 ```ts
 verifyOperationalContinuity(
-   domain, 
-   initialOperationalThumbprint, 
+   domain,
+   initialOperationalThumbprint,
    currentOperationalThumbprint
 ): Promise<void>;
 ```
@@ -2798,8 +2798,8 @@ entityKey or a prior bilateral binding; recursion uses this reader's cumulative 
 
 ```ts
 verifyBilateralBinding(
-   record, 
-   entityKey, 
+   record,
+   entityKey,
    operationalKey
 ): Promise<{
   initialEntityThumbprint: string;
@@ -2876,8 +2876,8 @@ Returns the accepted proof boundary.
 
 ```ts
 verifyOperationalContinuity(
-   domain, 
-   initialOperationalThumbprint, 
+   domain,
+   initialOperationalThumbprint,
    currentOperationalThumbprint
 ): Promise<void>;
 ```
@@ -3279,8 +3279,8 @@ Thrown when well-formed c2sp-tlog evidence fails cryptographic or policy verific
 
 ```ts
 new C2spTlogVerificationError(
-   message, 
-   errorCategory?, 
+   message,
+   errorCategory?,
    cause?
 ): C2spTlogVerificationError;
 ```
@@ -3643,9 +3643,9 @@ new InMemoryTrustedC2spCheckpointStore(): InMemoryTrustedC2spCheckpointStore;
 
 ```ts
 compareAndSwap(
-   origin, 
-   expected, 
-   candidate, 
+   origin,
+   expected,
+   candidate,
    signal?
 ): Promise<boolean>;
 ```
@@ -3734,8 +3734,8 @@ Signals that a valid newer checkpoint needs independent consistency evidence.
 
 ```ts
 new MissingC2spConsistencyEvidenceError(
-   message, 
-   errorCategory?, 
+   message,
+   errorCategory?,
    cause?
 ): MissingC2spConsistencyEvidenceError;
 ```
@@ -4112,8 +4112,8 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:155](https://github.com
 
 ```ts
 discoverEntry(
-   prefix, 
-   index, 
+   prefix,
+   index,
    options?
 ): Promise<IndexedEntry>;
 ```

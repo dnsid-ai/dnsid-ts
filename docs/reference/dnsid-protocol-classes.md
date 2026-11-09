@@ -1096,8 +1096,8 @@ Loads the full verified event history for a domain from its bound lifecycle log.
 
 ```ts
 refreshDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```
@@ -1222,9 +1222,9 @@ Defined in: [packages/protocol/src/identity-manager.ts:419](https://github.com/d
 
 ```ts
 signEventWithProvider(
-   event, 
-   role, 
-   keyProvider, 
+   event,
+   role,
+   keyProvider,
    logBinding?
 ): Promise<LogEvent>;
 ```
@@ -1259,8 +1259,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:429](https://github.com/d
 
 ```ts
 verifyDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```
@@ -1947,8 +1947,8 @@ returned.
 
 ```ts
 verifyBilateralBinding(
-   _record, 
-   _entityKey, 
+   _record,
+   _entityKey,
    _operationalKey
 ): Promise<{
   initialEntityThumbprint: string;
@@ -2025,8 +2025,8 @@ Returns the accepted proof boundary.
 
 ```ts
 verifyOperationalContinuity(
-   _domain, 
-   _initialOperationalThumbprint, 
+   _domain,
+   _initialOperationalThumbprint,
    _currentOperationalThumbprint
 ): Promise<void>;
 ```

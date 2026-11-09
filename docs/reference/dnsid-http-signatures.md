@@ -332,10 +332,10 @@ VerificationError with VerificationCode.SignatureInvalid for missing headers,
 
 ```ts
 verifySignedHttpResponse(
-   request, 
-   response, 
-   opts, 
-   peerCert?, 
+   request,
+   response,
+   opts,
+   peerCert?,
    budget?
 ): Promise<VerifiedDomain>;
 ```
@@ -463,7 +463,7 @@ Required when response authentication is enabled; ordinary fetch cannot disable 
 ##### signing?
 
 ```ts
-optional signing?: 
+optional signing?:
   | HttpSigningOptions
   | ((request) => HttpSigningOptions | undefined);
 ```
@@ -904,7 +904,7 @@ Defined in: [http-signatures/src/index.ts:116](https://github.com/dnsid-ai/dnsid
 ### ComponentIdentifier
 
 ```ts
-type ComponentIdentifier = 
+type ComponentIdentifier =
   | string
   | {
   name: string;
@@ -954,7 +954,7 @@ A fetch-compatible function, e.g. the global `fetch` or a wrapper around it.
 ### HttpMessage
 
 ```ts
-type HttpMessage = 
+type HttpMessage =
   | Request
   | Response
   | {
@@ -1492,8 +1492,8 @@ VerificationError with VerificationCode.RecordInvalid if the header is malformed
 
 ```ts
 function readBoundedBody(
-   request, 
-   signal, 
+   request,
+   signal,
    maxBytes?
 ): Promise<ArrayBuffer>;
 ```
@@ -1608,9 +1608,9 @@ Serializes a bare value as an RFC 8941 structured field Item (bytes become `:bas
 
 ```ts
 function setDictionaryMember(
-   headers, 
-   name, 
-   label, 
+   headers,
+   name,
+   label,
    value
 ): void;
 ```
@@ -1650,9 +1650,9 @@ to `label=value`, replacing any existing member with that label and preserving t
 
 ```ts
 function signHttpMessage<T>(
-   msg, 
-   params, 
-   keyProvider, 
+   msg,
+   params,
+   keyProvider,
    signingKey?
 ): Promise<T>;
 ```

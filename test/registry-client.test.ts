@@ -3,6 +3,7 @@ import {
   DEFAULT_REGISTRY_URL,
   PreparedEventSubmissionError,
   RegistryClient,
+  RegistryRequestError,
   awaitRegistryManagedPublication,
   publishClientControlledRecord,
   publishToRegistry,
@@ -104,6 +105,48 @@ function keyProvider(jwk: DnsIdJWK = TEST_JWK, sig = new Uint8Array([1, 2, 3])):
 }
 
 describe('RegistryClient', () => {
+  describe('Live and issuance request options', () => {
+    const requests: Array<[string, (registry: RegistryClient, options: { signal: AbortSignal }) => Promise<unknown>]> = [
+      ['Live registration', (registry, options) => registry.registerLiveAgent({ publicKeyJwk: TEST_JWK }, 'live-1', options)],
+      ['Live proof', (registry, options) => registry.submitLiveProof('live.example', {
+        requestId: 'live-1', challenge: 'challenge-1', publicKeyJwk: TEST_JWK, signature: new Uint8Array([1, 2, 3]),
+      }, options)],
+      ['Live proof reissue', (registry, options) => registry.reissueLiveProof('live.example', 'live-1', TEST_JWK, options)],
+      ['ISSUANCE preparation', (registry, options) => registry.prepareIssuance('live.example', 'issuance-1', options)],
+      ['prepared submission', (registry, options) => registry.submitPreparedEvent('live.example', new Uint8Array([1]), 'issuance-1', options)],
+    ];
+
+    it.each(requests)('forwards the caller signal and preserves cancellation for %s', async (_name, call) => {
+      const controller = new AbortController();
+      const reason = new DOMException('caller cancelled', 'AbortError');
+      const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+        expect(init?.signal).toBe(controller.signal);
+        controller.abort(reason);
+        throw reason;
+      }) as unknown as typeof fetch;
+      const result = call(client(fetchMock), { signal: controller.signal });
+      await expect(result).rejects.toBe(reason);
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+
+    for (const httpStatus of [401, 422]) {
+      it.each(requests)(`preserves the structured HTTP ${httpStatus} error for %s`, async (name, call) => {
+        const body = { error: httpStatus === 401 ? 'UNAUTHORIZED' : 'TLOG_PREPARATION_MISMATCH', message: 'server explanation' };
+        const fetchMock = vi.fn(async () => Response.json(body, { status: httpStatus })) as unknown as typeof fetch;
+        const result = call(client(fetchMock), { signal: new AbortController().signal });
+        await expect(result).rejects.toBeInstanceOf(name === 'prepared submission' ? PreparedEventSubmissionError : RegistryRequestError);
+        await expect(result).rejects.toMatchObject({ httpStatus, code: body.error, message: expect.stringContaining(body.message) });
+        expect(fetchMock).toHaveBeenCalledOnce();
+      });
+    }
+
+    it('keeps an HTTP failure structured when the response body is not JSON', async () => {
+      const fetchMock = vi.fn(async () => new Response('upstream unavailable', { status: 503, statusText: 'Service Unavailable' })) as unknown as typeof fetch;
+      const result = client(fetchMock).prepareIssuance('live.example', 'issuance-1');
+      await expect(result).rejects.toBeInstanceOf(RegistryRequestError);
+      await expect(result).rejects.toMatchObject({ httpStatus: 503, code: undefined, message: expect.stringContaining('Service Unavailable') });
+    });
+  });
   it.each([
     [{}, false],
     [{ gi: { domain: 'example.com', state: 'pending', gate_authorized: true }, ek: { status: 'verified' } }, false],
@@ -115,6 +158,21 @@ describe('RegistryClient', () => {
     const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
     await expect(registry.getOrganizationOnboarding({ organizationId: 'org-1', governanceId: 'EXAMPLE.COM.' }))
       .resolves.toMatchObject({ organizationId: 'org-1', governanceId: 'example.com', ready });
+  });
+
+  it('returns not-ready for absent governance_domain without weakening explicit expected-GI checks', async () => {
+    const fetch = vi.fn(async () => Response.json({ org_id: 'org-1',
+      gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'verified' } }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding()).resolves.toMatchObject({ governanceId: undefined, ready: false });
+    await expect(registry.getOrganizationOnboarding({ governanceId: 'example.com' })).rejects.toThrow('governance binding mismatch');
+  });
+
+  it('preserves an absent gate_authorized as undefined rather than false', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: 'example.com',
+      gi: { domain: 'example.com', state: 'verified' }, ek: { status: 'verified' } }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding()).resolves.toMatchObject({ ready: false, gi: { gateAuthorized: undefined } });
   });
 
   it.each([

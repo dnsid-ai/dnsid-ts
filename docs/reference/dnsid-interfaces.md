@@ -1111,8 +1111,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:97](https://github.com/dn
 
 ```ts
 verifyDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```
@@ -2474,8 +2474,8 @@ returned.
 
 ```ts
 verifyBilateralBinding(
-   record, 
-   entityKey, 
+   record,
+   entityKey,
    operationalKey
 ): Promise<{
   initialEntityThumbprint: string;
@@ -2544,8 +2544,8 @@ Returns the accepted proof boundary.
 
 ```ts
 verifyOperationalContinuity(
-   domain, 
-   initialOperationalThumbprint, 
+   domain,
+   initialOperationalThumbprint,
    currentOperationalThumbprint
 ): Promise<void>;
 ```
@@ -2710,8 +2710,8 @@ Defined in: [packages/sdk/src/managed-issuance.ts:19](https://github.com/dnsid-a
 
 ```ts
 submitPreparedEvent(
-   domain, 
-   entryBytes, 
+   domain,
+   entryBytes,
    idempotencyKey
 ): Promise<SubmissionResult>;
 ```
@@ -3009,8 +3009,8 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:24](https://github.com/dns
 
 ```ts
 prepareKeyRotation(
-   domain, 
-   request, 
+   domain,
+   request,
    idempotencyKey
 ): Promise<PreparedRegistryEvent>;
 ```
@@ -3041,8 +3041,8 @@ Defined in: [packages/sdk/src/managed-key-rotation.ts:25](https://github.com/dns
 
 ```ts
 submitPreparedEvent(
-   domain, 
-   entryBytes, 
+   domain,
+   entryBytes,
    idempotencyKey
 ): Promise<SubmissionResult>;
 ```
@@ -3478,8 +3478,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:101](https://github.com/d
 
 ```ts
 refreshDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```
@@ -3510,8 +3510,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:102](https://github.com/d
 
 ```ts
 verifyDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```
@@ -4138,7 +4138,7 @@ BaseLogEvent.operationalCountersig
 ##### reason
 
 ```ts
-reason: 
+reason:
   | "keyCompromise"
   | "policyViolation"
   | "superseded"
@@ -4539,8 +4539,8 @@ Defined in: [packages/protocol/src/identity-manager.ts:107](https://github.com/d
 
 ```ts
 verifyDomain(
-   domain, 
-   peerCert?, 
+   domain,
+   peerCert?,
    options?
 ): Promise<VerifiedDomain>;
 ```

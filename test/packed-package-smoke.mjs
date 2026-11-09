@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws', 'key-gcp'];
+const packages = ['protocol', 'http-signatures', 'jose', 'oidc', 'registry', 'transport', 'web-bot-auth', 'log-c2sp-tlog', 'sdk', 'key-aws', 'key-gcp', 'foundry'];
 const browserCapablePackages = ['protocol', 'http-signatures', 'jose', 'registry', 'web-bot-auth', 'log-c2sp-tlog', 'sdk'];
 
 for (const name of browserCapablePackages) {
@@ -96,11 +96,13 @@ import {
 } from '@dnsid-ai/sdk';
 import { LocalKeyProvider, createNodeIdentityManager } from '@dnsid-ai/sdk/node';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade } from '@dnsid-ai/key-aws';
+import { create as createFoundry, FileFoundryStore, SigningPaused } from '@dnsid-ai/foundry';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
 for (const value of [IdentityManager, RootIdentityManager, LocalKeyProvider, LogRegistry, RootLogRegistry, RootDnsIdTxtRecord, HttpSignaturesProfile, JoseProfile, OIDCProfile, OIDCTokenMinter, createOIDCKeyProviderFromJWK, createOIDCTokenMinter, mintOIDCToken, RegistryClient, publishToRegistry, createDnsidFetch, WebBotAuthProfile, C2spTlogReader, createC2spTlogVerificationRegistry, registerC2spTlog, parsePreparedC2spTlogEvent, parsePreparedC2spTlogIssuance, parseRootIssuance, createIdentityManager, createNodeIdentityManager, AwsKmsKeyProvider, AwsSdkKmsFacade, GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected ESM function export');
 }
+for (const value of [createFoundry, FileFoundryStore, SigningPaused]) if (typeof value !== 'function') throw new Error('expected Foundry ESM function export');
 if (DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
 if (JWKS_MAX_RESPONSE_BYTES !== 256 * 1024) throw new Error('expected root JWKS_MAX_RESPONSE_BYTES export');
 if (STATUS_MAX_RESPONSE_BYTES !== 16 * 1024) throw new Error('expected root STATUS_MAX_RESPONSE_BYTES export');
@@ -122,10 +124,13 @@ const sdk = require('@dnsid-ai/sdk');
 const sdkNode = require('@dnsid-ai/sdk/node');
 const keyAws = require('@dnsid-ai/key-aws');
 const keyGcp = require('@dnsid-ai/key-gcp');
+const foundry = require('@dnsid-ai/foundry');
 
 for (const value of [core.IdentityManager, sdk.IdentityManager, sdkNode.LocalKeyProvider, core.LogRegistry, sdk.LogRegistry, sdk.DnsIdTxtRecord, http.HttpSignaturesProfile, jose.JoseProfile, oidc.OIDCProfile, oidc.OIDCTokenMinter, oidc.createOIDCKeyProviderFromJWK, oidc.createOIDCTokenMinter, oidc.mintOIDCToken, registry.RegistryClient, registry.publishToRegistry, transport.createDnsidFetch, webBotAuth.WebBotAuthProfile, c2spTlog.C2spTlogReader, c2spTlog.createC2spTlogVerificationRegistry, c2spTlog.registerC2spTlog, c2spTlogWriter.parsePreparedC2spTlogEvent, c2spTlogWriter.parsePreparedC2spTlogIssuance, c2spTlog.parsePreparedC2spTlogIssuance, sdk.createIdentityManager, sdkNode.createNodeIdentityManager, keyAws.AwsKmsKeyProvider, keyAws.AwsSdkKmsFacade, keyGcp.GcpCloudKmsKeyProvider]) {
   if (typeof value !== 'function') throw new Error('expected CJS function export');
 }
+for (const value of [foundry.create, foundry.FileFoundryStore, foundry.SigningPaused]) if (typeof value !== 'function') throw new Error('expected Foundry CJS function export');
+if ('create' in sdk || 'FoundryIdentity' in sdk) throw new Error('core must not re-export Foundry');
 if (sdk.DNSSECState.VALID !== 'VALID') throw new Error('expected root DNSSECState export');
 if (sdk.JWKS_MAX_RESPONSE_BYTES !== 256 * 1024) throw new Error('expected root JWKS_MAX_RESPONSE_BYTES export');
 if (sdk.STATUS_MAX_RESPONSE_BYTES !== 16 * 1024) throw new Error('expected root STATUS_MAX_RESPONSE_BYTES export');

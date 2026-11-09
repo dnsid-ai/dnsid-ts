@@ -106,7 +106,7 @@ export interface LiveProvisioningResponse {
   status: string;
   challenge: string;
   challengeMessage: string;
-  /** Assigned domain, derived from a validated challenge transcript while challenge_pending. */
+  /** Assigned domain from the validated challenge, or the replay response's domain member. */
   domain?: string;
   challengeTranscript?: LiveChallengeTranscript;
   raw?: unknown;
@@ -393,7 +393,7 @@ export class RegistryClient {
     }
   }
 
-  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string): Promise<LiveProvisioningResponse> {
+  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<LiveProvisioningResponse> {
     for (const field of ['domain', 'zoneId', 'governanceDomain', 'rootDomain', 'tier', 'managed']) {
       if (field in input) throw new ArgumentError(`Live registration forbids ${field}`);
     }
@@ -411,7 +411,7 @@ export class RegistryClient {
       environment: input.environment ?? 'production',
       managed: true,
       capabilities_url: input.capabilitiesUrl,
-    }, idempotencyKey);
+    }, idempotencyKey, options);
     if (resp.status !== 202) throw new Error(`invalid registry live registration response: expected HTTP 202, received ${resp.status}`);
     const raw = await readJsonObject(resp, 'registry live registration response');
     const requestId = requiredString(raw, 'request_id', 'registry live registration response');
@@ -420,12 +420,14 @@ export class RegistryClient {
     const status = requiredString(raw, 'status', 'registry live registration response');
     const challenge = wireString(raw, 'challenge', 'registry live registration response');
     const challengeMessage = wireString(raw, 'challenge_message', 'registry live registration response');
-    const response: LiveProvisioningResponse = { requestId, agentId, status, challenge, challengeMessage, raw };
+    if (raw.domain !== undefined && raw.domain !== null && typeof raw.domain !== 'string') throw new Error('invalid registry live registration response: domain must be a string');
+    const wireDomain = optionalString(raw, 'domain');
+    const domain = wireDomain === undefined ? undefined : normalizeFQDN(wireDomain, true);
+    const response: LiveProvisioningResponse = { requestId, agentId, status, challenge, challengeMessage, ...(domain === undefined ? {} : { domain }), raw };
     if (normalizeRegistryStatus(status) !== 'CHALLENGE_PENDING') return response;
-    return {
-      ...response,
-      ...parseLiveChallenge(challenge, challengeMessage, agentId, expectedKeyId),
-    };
+    const parsed = parseLiveChallenge(challenge, challengeMessage, agentId, expectedKeyId);
+    if (domain !== undefined && domain !== parsed.domain) throw new Error('invalid registry live registration response: domain does not match challenge');
+    return { ...response, ...parsed };
   }
 
   async registerSelfManagedAgent(input: Omit<AgentRegistrationInput, 'managed' | 'zoneId'> & { domain: string }): Promise<AgentRegistration> {
@@ -455,7 +457,7 @@ export class RegistryClient {
     return lifecycleResultFromResponse(await readJsonObject(resp, 'registry challenge response'));
   }
 
-  async submitLiveProof(domain: string, input: LiveProofInput): Promise<LiveProofResponse> {
+  async submitLiveProof(domain: string, input: LiveProofInput, options: { signal?: AbortSignal } = {}): Promise<LiveProofResponse> {
     validateIdempotencyKey(input.requestId);
     assertManagedLivePublicJwk(input.publicKeyJwk);
     const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/proof`, {
@@ -463,7 +465,7 @@ export class RegistryClient {
       challenge: input.challenge,
       public_key: input.publicKeyJwk,
       signature: signatureText(input.signature),
-    }, input.requestId);
+    }, input.requestId, options);
     if (resp.status !== 202) throw new Error(`invalid registry live proof response: expected HTTP 202, received ${resp.status}`);
     const raw = await readJsonObject(resp, 'registry live proof response');
     const requestId = requiredString(raw, 'request_id', 'registry live proof response');
@@ -476,13 +478,13 @@ export class RegistryClient {
     };
   }
 
-  async reissueLiveProof(domain: string, requestId: string, publicKeyJwk: DnsIdJWK): Promise<LiveProofReissueResponse> {
+  async reissueLiveProof(domain: string, requestId: string, publicKeyJwk: DnsIdJWK, options: { signal?: AbortSignal } = {}): Promise<LiveProofReissueResponse> {
     validateIdempotencyKey(requestId);
     assertManagedLivePublicJwk(publicKeyJwk);
     const expectedKeyId = await jwkThumbprint({ ...publicKeyJwk });
     const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/proof/reissue`, {
       request_id: requestId,
-    }, requestId);
+    }, requestId, options);
     if (resp.status !== 202) throw new Error(`invalid registry live proof reissue response: expected HTTP 202, received ${resp.status}`);
     const raw = await readJsonObject(resp, 'registry live proof reissue response');
     const responseRequestId = requiredString(raw, 'request_id', 'registry live proof reissue response');
@@ -603,7 +605,7 @@ export class RegistryClient {
     const proofDomain = proof && optionalString(proof, 'domain');
     const domain = proofDomain === undefined ? undefined : normalizeFQDN(proofDomain, true);
     if (options.governanceId !== undefined && governanceId !== normalizeFQDN(options.governanceId, true)
-      || domain !== undefined && domain !== governanceId) {
+      || domain !== undefined && governanceId !== undefined && domain !== governanceId) {
       throw new ArgumentError('organization onboarding governance binding mismatch');
     }
     const entityKeyStatus = ek && optionalString(ek as Record<string, unknown>, 'status');
@@ -614,7 +616,7 @@ export class RegistryClient {
         && proof?.state === 'verified' && proof.gate_authorized === true && entityKeyStatus === 'verified',
       gi: proof && {
         domain, state: optionalString(proof, 'state'),
-        gateAuthorized: proof.gate_authorized === true,
+        gateAuthorized: typeof proof.gate_authorized === 'boolean' ? proof.gate_authorized : undefined,
       },
       entityKeyStatus,
     };
@@ -651,13 +653,14 @@ export class RegistryClient {
     return this.getRegistration(domain);
   }
 
-  async prepareIssuance(domain: string, idempotencyKey: string): Promise<PreparedRegistryEvent> {
+  async prepareIssuance(domain: string, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<PreparedRegistryEvent> {
     if (!domain || domain.trim() !== domain) throw new Error('domain is required');
     validateIdempotencyKey(idempotencyKey);
     const resp = await this.postRaw(
       `/api/v1/agent/${encodeURIComponent(domain)}/tlog/issuance/prepare`,
       undefined,
       idempotencyKey,
+      options,
     );
     return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
@@ -678,7 +681,7 @@ export class RegistryClient {
     return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
 
-  async submitPreparedEvent(domain: string, entryBytes: Uint8Array, idempotencyKey: string): Promise<SubmissionResult> {
+  async submitPreparedEvent(domain: string, entryBytes: Uint8Array, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<SubmissionResult> {
     if (entryBytes.length === 0) throw new Error('entryBytes must not be empty');
     validateIdempotencyKey(idempotencyKey);
     // Snapshot once so the bytes hashed below are exactly the bytes passed to
@@ -688,6 +691,7 @@ export class RegistryClient {
       `/api/v1/agent/${encodeURIComponent(domain)}/tlog/events`,
       submittedEntry.buffer.slice(submittedEntry.byteOffset, submittedEntry.byteOffset + submittedEntry.byteLength) as ArrayBuffer,
       idempotencyKey,
+      options,
     );
     if (!resp.ok) throw await preparedEventSubmissionError(resp);
     try {
@@ -761,21 +765,24 @@ export class RegistryClient {
     }
   }
 
-  private async post(path: string, body?: unknown, idempotencyKey?: string): Promise<Response> {
-    return this.postRaw(path, body === undefined ? undefined : JSON.stringify(body), idempotencyKey);
+  private async post(path: string, body?: unknown, idempotencyKey?: string, options: { signal?: AbortSignal } = {}): Promise<Response> {
+    return this.postRaw(path, body === undefined ? undefined : JSON.stringify(body), idempotencyKey, options);
   }
 
-  private async postRaw(path: string, body?: BodyInit, idempotencyKey?: string): Promise<Response> {
-    const resp = await this.postRawResponse(path, body, idempotencyKey);
-    if (!resp.ok) throw new Error(`registry request failed: HTTP ${await responseDetail(resp)}`);
+  private async postRaw(path: string, body?: BodyInit, idempotencyKey?: string, options: { signal?: AbortSignal } = {}): Promise<Response> {
+    const resp = await this.postRawResponse(path, body, idempotencyKey, options);
+    if (!resp.ok) {
+      const error = await readErrorResponse(resp);
+      throw new RegistryRequestError(resp.status, error.code, error.message ?? resp.statusText);
+    }
     return resp;
   }
 
-  private async postRawResponse(path: string, body?: BodyInit, idempotencyKey?: string): Promise<Response> {
+  private async postRawResponse(path: string, body?: BodyInit, idempotencyKey?: string, options: { signal?: AbortSignal } = {}): Promise<Response> {
     const headers = new Headers(this.headers);
     headers.set('Content-Type', 'application/json');
     if (idempotencyKey) headers.set('Idempotency-Key', idempotencyKey);
-    return this.request(path, { method: 'POST', headers, body });
+    return this.request(path, { method: 'POST', headers, body, signal: options.signal });
   }
 
   private async request(path: string, init: RequestInit): Promise<Response> {

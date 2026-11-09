@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DNSSECState, LogRegistry } from '@dnsid-ai/sdk';
 import type { DNSResolver, JsonFetcher } from '@dnsid-ai/sdk';
-import { createC2spTlogVerificationRegistry, createDnsidManagedVerificationRegistry } from '@dnsid-ai/log-c2sp-tlog';
+import { createC2spTlogVerificationRegistry, createDnsidManagedVerificationRegistry, createDefaultC2spBoundedResourceFetcher } from '@dnsid-ai/log-c2sp-tlog';
 import { constructIdentityManager, createNodeIdentityManagerFromEnvironment } from '@dnsid-ai/sdk/node';
 
 vi.mock('@dnsid-ai/log-c2sp-tlog', async importOriginal => ({
   ...await importOriginal<typeof import('@dnsid-ai/log-c2sp-tlog')>(),
+  createDefaultC2spBoundedResourceFetcher: vi.fn(() => ({ fetchBounded: vi.fn() })),
   createC2spTlogVerificationRegistry: vi.fn(async () => new LogRegistry()),
   createDnsidManagedVerificationRegistry: vi.fn(async () => new LogRegistry()),
 }));
@@ -34,9 +35,12 @@ describe('constructIdentityManager() log trust wiring', () => {
     });
   });
 
-  it('managed: true calls the managed factory with no options', async () => {
-    await constructIdentityManager({ logTrust: { managed: true } }, deps);
-    expect(createDnsidManagedVerificationRegistry).toHaveBeenLastCalledWith();
+  it('managed: true uses the configured transport for its bounded resource fetcher', async () => {
+    const transport = { caBundlePath: '/etc/dnsid/ca.pem', privateAddressHosts: ['.test'] };
+    await constructIdentityManager({ dnsid: { transport }, logTrust: { managed: true } });
+    expect(createDefaultC2spBoundedResourceFetcher).toHaveBeenLastCalledWith(transport);
+    const fetcher = vi.mocked(createDefaultC2spBoundedResourceFetcher).mock.results.at(-1)!.value;
+    expect(createDnsidManagedVerificationRegistry).toHaveBeenLastCalledWith({ resourceFetcher: fetcher });
   });
 
   it('skips every factory when deps.logRegistry is supplied', async () => {
