@@ -31,7 +31,7 @@ export async function gcpConsumer(mode: 'EdDSA' | 'existing' = 'EdDSA') {
   published.kid = await jwkThumbprint(published);
   const fixture = await currentProfileFixture('agent.example.com', published);
   const prototype = KeyManagementServiceClient.prototype;
-  const names = ['getPublicKey', 'asymmetricSign', 'createCryptoKeyVersion', 'createCryptoKey',
+  const names = ['getPublicKey', 'getCryptoKeyVersion', 'asymmetricSign', 'createCryptoKeyVersion', 'createCryptoKey',
     'importCryptoKeyVersion', 'updateCryptoKeyVersion', 'destroyCryptoKeyVersion', 'updateCryptoKeyPrimaryVersion'] as const;
   const originals = names.map(name => [name, prototype[name]] as const);
   let reads = 0; let creates = 0; let signs = 0;
@@ -44,6 +44,10 @@ export async function gcpConsumer(mode: 'EdDSA' | 'existing' = 'EdDSA') {
     if (name === b && failure === 'read') throw new Error('read denied');
     const pem = createPublicKey(keys.get(name)!).export({ format: 'pem', type: 'spki' }).toString();
     return [{ name, algorithm, protectionLevel: 'SOFTWARE', pem, pemCrc32c: { value: crc(Buffer.from(pem)) } }];
+  };
+  rpc.getCryptoKeyVersion = async ({ name }: { name: string }) => {
+    assert.equal(name, b);
+    return [{ name, algorithm, protectionLevel: 'SOFTWARE', state: failure === 'metadata' ? 'DISABLED' : 'ENABLED' }];
   };
   rpc.createCryptoKeyVersion = async (request: { parent: string }) => {
     creates++; assert.equal(request.parent, parent);
