@@ -102,6 +102,35 @@ describe('Foundry registry adapters', () => {
     });
   });
 
+  it.each([['gi'], ['governance_domain'], ['gi', 'governance_domain']])('treats absent governance onboarding as resumable before comparing configured bindings: %j', async (...missing) => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const body: Record<string, unknown> = { org_id: 'not-the-configured-org', governance_domain: GI,
+        gi: { domain: GI, state: 'pending', gate_authorized: false }, ek: { status: 'pending' } };
+      for (const member of missing) delete body[member];
+      const send = vi.fn<typeof fetch>(async () => Response.json(body));
+      const registry = new RegistryClient({ fetch: send as typeof fetch });
+      await expect(create('agent', { ...f.options, registryClient: registry })).rejects.toMatchObject({
+        category: 'workflow-outcome', message: 'organization onboarding is not ready', resumable: true,
+      });
+      expect(send).toHaveBeenCalledOnce();
+      expect(String(send.mock.calls[0]![0])).toContain('/org/onboarding');
+    });
+  });
+
+  it.each(['org_id', 'ek', 'domain', 'state', 'gate_authorized'])('rejects an onboarding contract missing required field %s', async missing => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const gi: Record<string, unknown> = { domain: GI, state: 'verified', gate_authorized: true };
+      const body: Record<string, unknown> = { org_id: ORG, governance_domain: GI, gi, ek: { status: 'verified' } };
+      if (missing in gi) delete gi[missing]; else delete body[missing];
+      const send = vi.fn<typeof fetch>(async () => Response.json(body));
+      const registry = new RegistryClient({ fetch: send as typeof fetch });
+      await expect(create('agent', { ...f.options, registryClient: registry })).rejects.toMatchObject({ category: 'UnsupportedRegistry', resumable: false });
+      expect(send).toHaveBeenCalledOnce();
+    });
+  });
+
   it('keeps the local-registry connection diagnostic resumable', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);

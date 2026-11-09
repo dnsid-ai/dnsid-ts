@@ -160,6 +160,14 @@ describe('RegistryClient', () => {
       .resolves.toMatchObject({ organizationId: 'org-1', governanceId: 'example.com', ready });
   });
 
+  it('returns not-ready for absent governance_domain without weakening explicit expected-GI checks', async () => {
+    const fetch = vi.fn(async () => Response.json({ org_id: 'org-1',
+      gi: { domain: 'example.com', state: 'verified', gate_authorized: true }, ek: { status: 'verified' } }));
+    const registry = new RegistryClient({ baseUrl: 'https://registry.example', fetch });
+    await expect(registry.getOrganizationOnboarding()).resolves.toMatchObject({ governanceId: undefined, ready: false });
+    await expect(registry.getOrganizationOnboarding({ governanceId: 'example.com' })).rejects.toThrow('governance binding mismatch');
+  });
+
   it('preserves an absent gate_authorized as undefined rather than false', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: 'example.com',
       gi: { domain: 'example.com', state: 'verified' }, ek: { status: 'verified' } }));

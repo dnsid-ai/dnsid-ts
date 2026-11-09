@@ -605,7 +605,7 @@ export class RegistryClient {
     const proofDomain = proof && optionalString(proof, 'domain');
     const domain = proofDomain === undefined ? undefined : normalizeFQDN(proofDomain, true);
     if (options.governanceId !== undefined && governanceId !== normalizeFQDN(options.governanceId, true)
-      || domain !== undefined && domain !== governanceId) {
+      || domain !== undefined && governanceId !== undefined && domain !== governanceId) {
       throw new ArgumentError('organization onboarding governance binding mismatch');
     }
     const entityKeyStatus = ek && optionalString(ek as Record<string, unknown>, 'status');

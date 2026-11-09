@@ -1,4 +1,4 @@
-/** Known Foundry named Live creation. Requires the server gates documented at compliance e01bcf3. */
+/** Known Foundry named Live creation. Requires the server gates documented at compliance 56d0e77. */
 import {
   ArgumentError, IdentityManager, JWKS, VerificationCode, VerificationError,
   issueManagedIdentity, jwkThumbprint, normalizeFQDN, validateDnsidConfig, verifyWithKey, ValidationError,
@@ -525,7 +525,9 @@ async function onboarding(context: Context) {
     if (cause instanceof SyntaxError || cause instanceof Error && cause.message.startsWith('invalid organization onboarding response:')) throw new UnsupportedRegistry({ cause });
     throw cause;
   }
-  if (!account.organizationId || !account.governanceId || !account.gi || account.gi.domain === undefined || account.gi.state === undefined || account.gi.gateAuthorized === undefined || account.entityKeyStatus === undefined) throw new UnsupportedRegistry();
+  if (!account.organizationId || account.entityKeyStatus === undefined) throw new UnsupportedRegistry();
+  if (account.gi && (account.gi.domain === undefined || account.gi.state === undefined || account.gi.gateAuthorized === undefined)) throw new UnsupportedRegistry();
+  if (!account.governanceId || !account.gi) throw new FoundryError('workflow-outcome', 'organization onboarding is not ready', { resumable: true });
   const expected = context.config.foundry;
   if (expected?.organizationId !== undefined && expected.organizationId !== account.organizationId
     || expected?.governanceId !== undefined && normalizeFQDN(expected.governanceId, true) !== normalizeFQDN(account.governanceId, true)) throw new FoundryError('binding', 'configured Foundry account does not match onboarding', { resumable: false });

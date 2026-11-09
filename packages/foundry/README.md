@@ -4,9 +4,9 @@ Known Foundry named Live creation for the Identity Digital registry. This Node.j
 
 ## Contract and server gate
 
-Implements the [Known Foundry create contract at compliance commit `e01bcf3`](https://github.com/dnsid-ai/dnsid-sdk-compliance/blob/e01bcf3/docs/sdk-design/13-known-foundry.md).
+Implements the [Known Foundry create contract at compliance commit `56d0e77`](https://github.com/dnsid-ai/dnsid-sdk-compliance/blob/56d0e77/docs/sdk-design/13-known-foundry.md).
 
-The package is marked `private: true`, so the release workflow skips packing and publishing it. Remove that flag only after the [initial-create server acceptance checks](https://github.com/dnsid-ai/dnsid-sdk-compliance/blob/e01bcf3/docs/known-foundry-server-requirements.md#acceptance-checks) pass, and record the accepted server revision with the SDK release. Acceptance includes returning the terminal identity for its key and refusing terminal-name replacement for new or unrelated keys; without local state, the SDK cannot detect a replacement. There is no sandbox fallback, ordinary-registration fallback, or capability probe beyond authenticated onboarding.
+The package is marked `private: true`, so the release workflow skips packing and publishing it. Remove that flag only after the [initial-create server acceptance checks](https://github.com/dnsid-ai/dnsid-sdk-compliance/blob/56d0e77/docs/known-foundry-server-requirements.md#acceptance-checks) pass, and record the accepted server revision with the SDK release. Acceptance includes returning the terminal identity for its key and refusing terminal-name replacement for new or unrelated keys; without local state, the SDK cannot detect a replacement. There is no sandbox fallback, ordinary-registration fallback, or capability probe beyond authenticated onboarding.
 
 While the package is private, it is excluded from the public API reference and index. Add it back to `scripts/build-docs-reference.mjs` (`PAGES`) and `typedoc.json` when it is published.
 
