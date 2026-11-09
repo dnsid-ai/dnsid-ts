@@ -7,7 +7,7 @@ import { withTemp } from './helpers/cli-directory.ts';
 
 const key = { registryUrl: 'https://registry.example', organizationId: ORG, name: 'agent' };
 
-describe('Foundry issuance recovery order (665aa67)', () => {
+describe('Foundry issuance recovery order (e01bcf3)', () => {
   it('does not scan lifecycle history before preparation or submission', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
@@ -25,6 +25,17 @@ describe('Foundry issuance recovery order (665aa67)', () => {
       });
       await (await create('agent', f.options)).active();
       expect(f.reader.rebuildHistory).toHaveBeenCalled();
+    });
+  });
+
+  it('never prepares an ISSUANCE for READY without saved issuance, even when history has not caught up', async () => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root); f.registryStatus = 'READY';
+      const id = await create('agent', f.options);
+      await expect(id.active()).rejects.toMatchObject({ category: 'resumable', resumable: true });
+      await expect((await create('agent', f.options)).active()).rejects.toMatchObject({ category: 'resumable', resumable: true });
+      expect(f.registry.prepareIssuance).not.toHaveBeenCalled();
+      expect(f.registry.submitPreparedEvent).not.toHaveBeenCalled();
     });
   });
 
@@ -126,6 +137,25 @@ describe('Foundry issuance recovery order (665aa67)', () => {
       expect(calls).toHaveLength(2);
       expect(calls[1]!.slice(0, 3)).toEqual(calls[0]!.slice(0, 3));
       expect(f.registry.prepareIssuance).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('verifies its own countersignature before saving completed bytes, and retries the saved preparation', async () => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const sign = vi.spyOn(f.provider, 'signKey').mockResolvedValueOnce(new Uint8Array(64));
+      const id = await create('agent', f.options);
+      await expect(id.active()).rejects.toThrow();
+      const saved = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
+      expect(saved.issuance.preparedEntryBytes).toBe(Buffer.from(f.prepared()!).toString('base64url'));
+      expect(saved.issuance.entryBytes).toBeUndefined();
+      expect(saved.issuance.terminalFailure).toBeUndefined();
+      expect(f.registry.submitPreparedEvent).not.toHaveBeenCalled();
+      await id.active();
+      expect(sign).toHaveBeenCalledTimes(2);
+      expect(sign.mock.calls[1]!.slice(0, 2)).toEqual(sign.mock.calls[0]!.slice(0, 2));
+      expect(f.registry.prepareIssuance).toHaveBeenCalledOnce();
+      expect(f.registry.submitPreparedEvent).toHaveBeenCalledOnce();
     });
   });
 

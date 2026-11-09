@@ -420,6 +420,7 @@ export class RegistryClient {
     const status = requiredString(raw, 'status', 'registry live registration response');
     const challenge = wireString(raw, 'challenge', 'registry live registration response');
     const challengeMessage = wireString(raw, 'challenge_message', 'registry live registration response');
+    if (raw.domain !== undefined && raw.domain !== null && typeof raw.domain !== 'string') throw new Error('invalid registry live registration response: domain must be a string');
     const wireDomain = optionalString(raw, 'domain');
     const domain = wireDomain === undefined ? undefined : normalizeFQDN(wireDomain, true);
     const response: LiveProvisioningResponse = { requestId, agentId, status, challenge, challengeMessage, ...(domain === undefined ? {} : { domain }), raw };

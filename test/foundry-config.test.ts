@@ -19,7 +19,8 @@ describe('Foundry configuration loading', () => {
   it('merges Foundry fields by presence, without adding SDK-specific environment variables', async () => {
     expect(mergeLoadedConfig({ foundry: { organizationId: 'Org-A', governanceId: 'example.com' } },
       { foundry: { organizationId: '' } })).toEqual({ foundry: { organizationId: '', governanceId: 'example.com' } });
-    expect(await loadEnvironment({ DNSID_FOUNDRY_ORGANIZATION_ID: 'ignored' })).toEqual({});
+    expect(await loadEnvironment({ DNSID_FOUNDRY_ORGANIZATION_ID: 'ignored', DNSID_FOUNDRY_GOVERNANCE_ID: 'ignored' })).toEqual({});
+    expect(await loadEnvironment({ DNSID_GOVERNANCE_ID: 'ordinary.example' })).toEqual({ dnsid: { identity: { governanceId: 'ordinary.example' } } });
     expect(mergeLoadedConfig({}, {})).not.toHaveProperty('foundry');
   });
   it.each([{ unknown: 'x' }, { organizationId: 42 }, { governanceId: null }, []])('rejects unknown or mistyped values: %j', async foundry => {

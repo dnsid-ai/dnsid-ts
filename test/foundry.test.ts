@@ -11,14 +11,29 @@ const key = { registryUrl: 'https://registry.example', organizationId: ORG, name
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe('Known Foundry create', () => {
-  it('passes the shared Python name and hash vectors without normalization', () => {
+  it('passes every shared RFC 8785 name and hash vector without normalization', () => {
     const initial = 'kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k';
     const registration = deriveRegistrationKey(ORG, 'billing-agent', initial);
     expect(registration).toBe('2sWNUpI4tnAzJ3quPrT78uJNVdo96m4En3cZsggktcA');
     expect(deriveIssuanceKey(registration)).toBe('pxQMSC0k-V9nn9qLqMRDczyUxyNyQE87LbGuK5SEWGw');
-    expect(deriveRegistrationKey(ORG, 'café', initial)).toBe('kBdivhIHZhZ_20_Ku_KnIVYE7x0iSw4K1ceQb2s6fxs');
-    const names = ['agent', 'Agent', 'agent ', 'café', 'cafe\u0301', '\u00a0cafe\u0301\u3000'];
-    expect(new Set(names.map(name => deriveRegistrationKey(ORG, name, initial))).size).toBe(names.length);
+    const vectors = [
+      ['agent', 'ksFWEjxU0Yf_F7-_UEwFWQ3J97VRmQPVLjVM5l-3YlY'],
+      ['Agent', '43mRUDBHeMLHZ6AZKy6RTQXox_LZxBDLa3IXLQ0qCGI'],
+      ['agent ', 'eVX-4H-42OOxnU2EbgtKoEzYad0bIaaRoCkf5T2BIEM'],
+      ['café', 'kBdivhIHZhZ_20_Ku_KnIVYE7x0iSw4K1ceQb2s6fxs'],
+      ['cafe\u0301', 'WxS5QzyfB3D0utVhJDzJQTY6eXDMagDV3tqOImr_u6A'],
+      ['\u00a0cafe\u0301\u3000', 'x6ARjxrBFYbZ1jCSznnOWBUX9DpFr4edVmYy1zLnyTc'],
+      ['😀'.repeat(255), 'AEttzAMd8C-GpyQqR_y5G-IfIawJpRWIMi4ZpfbkqWU'],
+      ['a"b', '2bWVuTgcCN056vagU5cF40TRXcroeKQCLhd5hTVjhcM'],
+      ['a\\b', 'g8sOgOWQxkQncp1g_H2nI81dTe-60Y8p6ryb87s3Vrk'],
+      ['a\u0001b', 'oNMzk-Vz7VqZ75bxvj4srioM6Dtxd0lNFT3W_-uOF0A'],
+      ['a\nb', 'yM6te8_oTYfg8b2Co21WukeVw4SfYQgCG9brN_W9Bio'],
+      ['<a>&', 'D-ZrRgfx1r9BUVg-wF9Pbey_cfLsZjWeOUCRCsYhTnk'],
+      ['a\u2028b', '-0mnonROfh4y6N--aNbASSi_x7pWEcBu8-Ldwmop4mU'],
+      ['a\u007fb', 'V9Xm6mXYXgQCT7DLYtBfT-etOMFRmX9mgKK60ocWtTA'],
+      ['a/b', 'vQvjQxYsTU1TyU3oai2SQY07iNjuCrSBPH5fCjHqhiE'],
+    ];
+    for (const [name, expected] of vectors) expect(deriveRegistrationKey(ORG, name!, initial)).toBe(expected);
     expect(validateName('\u00a0cafe\u0301\u3000')).toBe('\u00a0cafe\u0301\u3000');
     expect(validateName('😀'.repeat(255))).toHaveLength(510);
     for (const invalid of ['', '\ud800', '\udfff', '😀'.repeat(256)]) expect(() => validateName(invalid)).toThrow();
@@ -33,7 +48,7 @@ describe('Known Foundry create', () => {
       expect(id.registryStatus).toBe('VERIFIED');
       await expect(id.sign(new Uint8Array([1]))).rejects.toBeInstanceOf(SigningPaused);
       expect(() => id.identityManager()).toThrow(SigningPaused);
-      expect(await id.active({ timeoutMs: 1000 })).toBe(id);
+      expect(await id.active()).toBe(id);
       expect(id.state).toBe('ACTIVE');
       const manager = id.identityManager();
       expect(id.identityManager()).toBe(manager);
@@ -187,18 +202,20 @@ describe('Known Foundry create', () => {
     });
   });
 
-  it('provisions only an empty new provider with ensureSigningKey', async () => {
+  it.each([false, true])('rejects an empty provider without selecting or provisioning a key (saved=%s)', async saved => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
-      const p = Object.create(f.provider) as typeof f.provider & { activeSigningKey?: () => Promise<null>; ensureSigningKey?: () => Promise<void> };
-      p.activeSigningKey = vi.fn(async () => null);
-      await expect(create('agent', { ...f.options, keyProvider: p })).rejects.toMatchObject({ category: 'KEY_MISSING', message: expect.stringContaining('ensureSigningKey({signal})') });
-      p.ensureSigningKey = vi.fn(async () => {});
-      await create('agent', { ...f.options, keyProvider: p });
-      expect(p.ensureSigningKey).toHaveBeenCalledOnce();
-      vi.mocked(p.ensureSigningKey).mockClear();
-      await expect(create('agent', { ...f.options, keyProvider: p })).rejects.toMatchObject({ category: 'KEY_MISSING' });
-      expect(p.ensureSigningKey).not.toHaveBeenCalled();
+      if (saved) await create('agent', f.options);
+      vi.mocked(f.registry.registerLiveAgent).mockClear();
+      vi.spyOn(f.provider, 'listKeyIds').mockResolvedValue([]);
+      const signingKey = vi.spyOn(f.provider, 'signingKey');
+      const generate = vi.spyOn(f.provider, 'generateKey');
+      const activate = vi.spyOn(f.provider, 'activate');
+      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'KEY_MISSING', resumable: true, message: expect.stringContaining('create the key first') });
+      expect(signingKey).not.toHaveBeenCalled();
+      expect(generate).not.toHaveBeenCalled();
+      expect(activate).not.toHaveBeenCalled();
+      expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
     });
   });
 
@@ -237,7 +254,15 @@ describe('Known Foundry create', () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); const id = await create('agent', f.options);
       if (fault === 'missing-dns') f.dnsMissing = true; else f.publicState = 'PENDING';
-      await expect(id.active({ timeoutMs: 120 })).rejects.toMatchObject({ category: 'deadline', resumable: true });
+      const controller = new AbortController();
+      const verify = IdentityManager.prototype.verifyLocalPublication;
+      const check = vi.spyOn(IdentityManager.prototype, 'verifyLocalPublication').mockImplementationOnce(async function (this: IdentityManager, options) {
+        try { return await verify.call(this, options); }
+        finally { controller.abort(new DOMException('public readiness deadline', 'TimeoutError')); }
+      });
+      await expect(id.active({ signal: controller.signal })).rejects.toMatchObject({ category: 'deadline', resumable: true });
+      expect(check).toHaveBeenCalledOnce();
+      check.mockRestore();
       await expect(id.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
       await expect(JoseProfile.fromIdentityManager(id.identityManager()).createJWT({ audience: DOMAIN })).rejects.toBeInstanceOf(SigningPaused);
       f.dnsMissing = false; f.publicState = 'ACTIVE'; await id.active();

@@ -35,6 +35,7 @@ export interface FoundryOperation extends FoundryOperationKey {
   domain?: string;
   requestId?: string;
   registryStatus?: string;
+  signingPaused?: boolean;
   proof?: Record<string, unknown>;
   publicationConfig?: Record<string, unknown>;
   entityPublicKey?: DnsIdJWK;
@@ -119,11 +120,13 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
   if (initial.kty !== 'OKP' || initial.crv !== 'Ed25519' || initial.alg !== 'EdDSA') throw new TypeError('Live creation requires Ed25519');
   if (raw.currentPublicKey !== undefined) publicKey(raw.currentPublicKey);
   if (raw.entityPublicKey !== undefined) publicKey(raw.entityPublicKey);
+  if (raw.signingPaused !== undefined && typeof raw.signingPaused !== 'boolean') throw new TypeError('invalid recovery signingPaused');
   const input = object(raw.creationInput, 'creationInput');
+  const creationKey = publicKey(input.public_key);
+  if (creationKey.kty !== 'OKP' || creationKey.crv !== 'Ed25519' || creationKey.alg !== 'EdDSA') throw new TypeError('Live creation requires Ed25519');
   if (input.name !== raw.name || input.tier !== 'live' || input.managed !== true
     || input.environment !== undefined && input.environment !== 'production'
-    || ['domain', 'zone_id', 'governance_domain', 'root_domain'].some(field => field in input)
-    || canonicalJson(publicKey(input.public_key)) !== canonicalJson(initial)) throw new TypeError('conflicting frozen creationInput');
+    || ['domain', 'zone_id', 'governance_domain', 'root_domain'].some(field => field in input)) throw new TypeError('conflicting frozen creationInput');
   for (const member of ['identityId', 'domain', 'requestId', 'registryStatus', 'oidcIssuerUrl']) {
     if (raw[member] !== undefined && (typeof raw[member] !== 'string' || !raw[member])) throw new TypeError(`invalid recovery ${member}`);
   }
@@ -139,7 +142,7 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
     if (proof.request !== undefined) {
       const request = object(proof.request, 'proof.request');
       if (request.requestId !== raw.requestId || request.challenge !== proof.challenge
-        || canonicalJson(publicKey(request.publicKeyJwk)) !== canonicalJson(initial)) throw new TypeError('conflicting proof signature request');
+        || canonicalJson(publicKey(request.publicKeyJwk)) !== canonicalJson(creationKey)) throw new TypeError('conflicting proof signature request');
       if (decodeBytes(request.signature).length !== 64) throw new TypeError('invalid proof signature');
     }
   }

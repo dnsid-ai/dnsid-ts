@@ -52,6 +52,7 @@ describe('FileFoundryStore', () => {
       for (const modify of [
         (value: any) => { value.schemaVersion = 2; },
         (value: any) => { value.phase = 'later'; },
+        (value: any) => { value.signingPaused = 'false'; },
         (value: any) => { value.extension = '\ud800'; },
         (value: any) => { value.initialPublicKey.d = 'private'; },
         (value: any) => { value.creationInput.name = 'different'; },

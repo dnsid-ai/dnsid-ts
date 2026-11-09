@@ -56,7 +56,7 @@ export async function foundryFixture(directory: string) {
     getOrganizationOnboarding: vi.fn(async () => ({ organizationId: fixture.organizationId, governanceId: fixture.governanceId, ready: fixture.ready,
       gi: { domain: fixture.governanceId, state: fixture.ready ? 'verified' : 'pending', gateAuthorized: fixture.ready }, entityKeyStatus: 'verified' })),
     registerLiveAgent: vi.fn(async (input, idempotencyKey) => {
-      if (await jwkThumbprint(input.publicKeyJwk) !== await jwkThumbprint(operationalKey)) throw new RegistryRequestError(409, 'KEY_MISMATCH', 'name is bound to a different initial key');
+      if (await jwkThumbprint(input.publicKeyJwk) !== await jwkThumbprint(fixture.publicKey)) throw new RegistryRequestError(409, 'KEY_MISMATCH', 'name is bound to a different initial key');
       registrationKey = idempotencyKey;
       if (fixture.proofRequired) return proof();
       return { requestId: idempotencyKey, agentId: 'agent-1', status: fixture.registryStatus, challenge: '', challengeMessage: '',

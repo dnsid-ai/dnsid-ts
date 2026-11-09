@@ -18,6 +18,16 @@ describe('Foundry registry adapters', () => {
     });
   });
 
+  it.each(['not a domain', 42, false, {}])('rejects an invalid present replay domain: %j', async domain => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const registry = new RegistryClient({ fetch: vi.fn(async () => Response.json({
+        request_id: 'key', agent_id: 'agent-1', status: 'provider_deferred', challenge: '', challenge_message: '', domain,
+      }, { status: 202 })) as typeof fetch });
+      await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toThrow();
+    });
+  });
+
   it('rejects disagreement between the wire domain and challenge domain', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.proofRequired = true;
@@ -82,12 +92,32 @@ describe('Foundry registry adapters', () => {
     });
   });
 
+  it.each(['not json', '[]', '{}'])('reports an incompatible onboarding response as UnsupportedRegistry: %s', async body => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(body)));
+      await expect(create('agent', { ...f.options, registryClient: undefined,
+        config: { registry: { registryUrl: 'http://127.0.0.1:7755' } } })).rejects.toMatchObject({ category: 'UnsupportedRegistry', resumable: false });
+      expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  it('keeps the local-registry connection diagnostic resumable', async () => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed', { cause: Object.assign(new Error('refused'), { code: 'ECONNREFUSED' }) }); }));
+      await expect(create('agent', { ...f.options, registryClient: undefined,
+        config: { registry: { registryUrl: 'http://127.0.0.1:7755' } } })).rejects.toMatchObject({ category: 'resumable', resumable: true, message: expect.stringContaining('no registry at') });
+      expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
+    });
+  });
+
   it('rejects an oversized registry body during the stream read', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array(1024 * 1024 + 1))));
       await expect(create('agent', { ...f.options, registryClient: undefined,
-        config: { registry: { registryUrl: 'http://127.0.0.1:7755' } } })).rejects.toThrow('onboarding contract');
+        config: { registry: { registryUrl: 'http://127.0.0.1:7755' } } })).rejects.toMatchObject({ category: 'resumable', resumable: true, message: 'registry response exceeds 1 MiB' });
       expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
     });
   });

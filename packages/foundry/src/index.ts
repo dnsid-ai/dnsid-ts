@@ -1,4 +1,4 @@
-/** Known Foundry named Live creation. Requires the server gates documented at compliance 665aa67. */
+/** Known Foundry named Live creation. Requires the server gates documented at compliance e01bcf3. */
 import {
   ArgumentError, IdentityManager, JWKS, VerificationCode, VerificationError,
   issueManagedIdentity, jwkThumbprint, normalizeFQDN, validateDnsidConfig, verifyWithKey, ValidationError,
@@ -81,7 +81,7 @@ export async function create(name: string, options: CreateOptions = {}): Promise
         await validateSavedOperation(operation);
         registryOutcome(operation);
       }
-      const key = await signingKey(context, operation !== undefined);
+      const key = await signingKey(context);
       if (operation) await assertKey(operation.currentPublicKey ?? operation.initialPublicKey, key, operation);
       else {
         operation = {
@@ -175,7 +175,7 @@ export class FoundryIdentity {
           await validateSavedOperation(operation);
           if (operation.domain !== this.domain) throw failure('binding', operation, 'assigned domain changed');
           registryOutcome(operation);
-          const key = await signingKey(context, true);
+          const key = await signingKey(context);
           await assertKey(operation.currentPublicKey ?? operation.initialPublicKey, key, operation);
           let registration = await this.waitForRegistry(context, transaction);
           if (!operation.publicationConfig) throw failure('unsupported-contract', operation, 'registry did not supply publication configuration');
@@ -236,9 +236,8 @@ export class FoundryIdentity {
         } catch (cause) {
           const error = normalizeError(cause, operation, deadline);
           if (['binding', 'KEY_MISMATCH', 'terminal'].includes(error.category)) {
-            this.signer.pause();
             operation.signingPaused = true;
-            await transaction.save(operation);
+            await transaction.save(operation).finally(() => this.signer.pause());
           }
           throw error;
         }
@@ -282,7 +281,7 @@ export class FoundryIdentity {
     const waitingForProof = !['VERIFIED', 'READY'].includes(operation.registryStatus!.toUpperCase());
     if (Date.parse(proof.expiresAt as string) <= Date.now() && (proof.submissionState !== 'submitting' || waitingForProof)) {
       try {
-        const replacement = await retry(context, () => context.registry.reissueLiveProof(this.domain, operation.requestId!, operation.initialPublicKey, { signal: context.deadline.signal }));
+        const replacement = await retry(context, () => context.registry.reissueLiveProof(this.domain, operation.requestId!, operation.creationInput.public_key, { signal: context.deadline.signal }));
         proof = operation.proof = await challenge(operation, replacement);
       } catch (cause) {
         if (!(cause instanceof RegistryRequestError) || cause.httpStatus !== 409) throw cause;
@@ -294,8 +293,8 @@ export class FoundryIdentity {
       await transaction.save(operation);
     }
     if (!proof.request) {
-      const signature = await providerCall(context, 'signKey', operation.initialPublicKey.kid, decodeBytes(proof.challengeMessage));
-      proof.request = { requestId: operation.requestId!, challenge: proof.challenge, publicKeyJwk: operation.initialPublicKey, signature: Buffer.from(signature).toString('base64url') };
+      const signature = await providerCall(context, 'signKey', operation.creationInput.public_key.kid, decodeBytes(proof.challengeMessage));
+      proof.request = { requestId: operation.requestId!, challenge: proof.challenge, publicKeyJwk: operation.creationInput.public_key, signature: Buffer.from(signature).toString('base64url') };
       proof.submissionState = 'prepared';
       await transaction.save(operation);
     }
@@ -318,8 +317,18 @@ export class FoundryIdentity {
       const history = await context.deadline.call(() => reader.rebuildHistory(this.domain));
       const first = history.find(event => event.type === 'ISSUANCE');
       if (!first) throw failure('resumable', operation, 'accepted ISSUANCE is not visible in lifecycle history yet', true);
-      await assertInitialIssuance(operation, first);
+      const initial = first.initialOperationalPublicKey;
+      if (!initial || await jwkThumbprint(initial) !== first.initialOperationalThumbprint) throw failure('binding', operation, 'accepted ISSUANCE has no matching operational public key');
+      const creation = operation.creationInput.public_key;
+      const creationThumbprint = await jwkThumbprint(creation);
+      if (first.initialOperationalThumbprint !== creationThumbprint) {
+        await context.deadline.call(() => reader.verifyOperationalContinuity(this.domain, first.initialOperationalThumbprint!, creationThumbprint));
+      }
+      const recovered = { ...operation, initialPublicKey: publicKey(initial) };
+      await assertInitialIssuance(recovered, first);
       const evidence = await context.deadline.call(() => reader.verifyNonRevocation(this.domain, new Date()));
+      operation.initialPublicKey = recovered.initialPublicKey;
+      if (first.initialOperationalThumbprint !== creationThumbprint) operation.currentPublicKey = creation;
       operation.issuance = {
         ...operation.issuance,
         // This acceptance is independent of the losing replica's bytes and receipt.
@@ -337,7 +346,7 @@ export class FoundryIdentity {
 
   private async issue(context: Context, transaction: FoundryTransaction, key: DnsIdJWK): Promise<void> {
     const operation = this.operation;
-    if (operation.issuance?.acceptance || (operation.issuance?.submission as { state?: string } | undefined)?.state === 'accepted' || operation.issuance?.rejection) {
+    if ((operation.registryStatus?.toUpperCase() === 'READY' && !operation.issuance) || operation.issuance?.acceptance || (operation.issuance?.submission as { state?: string } | undefined)?.state === 'accepted' || operation.issuance?.rejection) {
       await this.recoverIssuance(context, transaction, key);
       return;
     }
@@ -446,13 +455,13 @@ async function compose(config: LoadedConfig, deps: FoundryDependencies, deadline
   if (!provider) {
     try { provider = await deadline.call(() => operationalKeyProvider(config.keySource ?? {}, '')); }
     catch (cause) {
-      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') throw new FoundryError('KEY_MISSING', 'configured signing key does not exist; supply a provider with an existing key or ensureSigningKey({signal})', { resumable: true, cause });
+      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') throw new FoundryError('KEY_MISSING', 'configured signing key does not exist; create the key first, for example through explicit KMS-first creation', { resumable: true, cause });
       throw cause;
     }
   }
   if (!provider) {
     console.warn('Local private-key files are unsuitable for production. Configure a cloud key provider.');
-    throw new FoundryError('KEY_MISSING', 'no signing key provider is configured', { resumable: true });
+    throw new FoundryError('KEY_MISSING', 'no signing key provider is configured; create the key first and configure its provider', { resumable: true });
   }
   const registryUrl = new URL(config.registry?.registryUrl ?? DEFAULT_REGISTRY_URL).toString().replace(/\/$/, '');
   const transport = validated.transport ?? {};
@@ -513,7 +522,7 @@ async function onboarding(context: Context) {
   catch (cause) {
     if (cause instanceof RegistryRequestError && [404, 405].includes(cause.httpStatus)) throw new UnsupportedRegistry({ httpStatus: cause.httpStatus, code: cause.code, cause });
     if (cause instanceof ArgumentError) throw new FoundryError('binding', 'invalid organization onboarding binding', { resumable: false, cause });
-    if (!(cause instanceof RegistryRequestError) && !(cause instanceof FoundryError) && !(cause instanceof VerificationError)) throw new UnsupportedRegistry({ cause });
+    if (cause instanceof SyntaxError || cause instanceof Error && cause.message.startsWith('invalid organization onboarding response:')) throw new UnsupportedRegistry({ cause });
     throw cause;
   }
   if (!account.organizationId || !account.governanceId || !account.gi || account.gi.domain === undefined || account.gi.state === undefined || account.gi.gateAuthorized === undefined || account.entityKeyStatus === undefined) throw new UnsupportedRegistry();
@@ -529,15 +538,9 @@ function assertBindings(context: Context, operation: FoundryOperation, organizat
   if (operation.logTrust !== undefined && context.config.logTrust !== undefined && canonicalJson(operation.logTrust) !== canonicalJson(portable(context.config.logTrust))) throw failure('binding', operation, 'saved log trust does not match configuration');
 }
 
-async function signingKey(context: Context, established: boolean): Promise<DnsIdJWK> {
-  let key = context.provider.activeSigningKey ? await providerCall(context, 'activeSigningKey') : await providerCall(context, 'signingKey');
-  if (!key) {
-    const provider = context.provider as KeyProvider & { ensureSigningKey?: (options?: { signal: AbortSignal }) => Promise<unknown> };
-    if (!established && provider.ensureSigningKey) {
-      await context.deadline.call(() => provider.ensureSigningKey!({ signal: context.deadline.signal }));
-      key = await providerCall(context, 'signingKey');
-    } else throw new FoundryError('KEY_MISSING', 'provider has no signing key; supply it or a provider with ensureSigningKey({signal})', { resumable: true });
-  }
+async function signingKey(context: Context): Promise<DnsIdJWK> {
+  if (!(await providerCall(context, 'listKeyIds')).length) throw new FoundryError('KEY_MISSING', 'provider has no signing key; create the key first, for example through explicit KMS-first creation', { resumable: true });
+  const key = await providerCall(context, 'signingKey');
   if (key.kty !== 'OKP' || key.crv !== 'Ed25519' || key.alg !== 'EdDSA') throw new FoundryError('unsupported-algorithm', 'Foundry Live creation requires Ed25519 with EdDSA', { resumable: false });
   const result = publicKey(key);
   await context.deadline.call(() => new JWKS([result]).validateRecordSigningKeyset());
@@ -561,7 +564,7 @@ async function validateSavedOperation(operation: FoundryOperation): Promise<void
     await challenge(operation, { requestId: operation.requestId!, agentId: operation.identityId!, status: 'challenge_pending',
       challenge: operation.proof.challenge as string, challengeMessage: operation.proof.challengeMessage as string, domain: operation.domain });
     const request = operation.proof.request as { signature: string } | undefined;
-    if (request && !await verifyWithKey(decodeBytes(operation.proof.challengeMessage), decodeBytes(request.signature), operation.initialPublicKey, 'EdDSA')) throw failure('binding', operation, 'saved proof signature is invalid');
+    if (request && !await verifyWithKey(decodeBytes(operation.proof.challengeMessage), decodeBytes(request.signature), operation.creationInput.public_key, 'EdDSA')) throw failure('binding', operation, 'saved proof signature is invalid');
   }
   for (const member of ['preparedEntryBytes', 'entryBytes']) {
     if (!operation.issuance?.[member]) continue;
@@ -581,7 +584,7 @@ async function assertInitialIssuance(operation: FoundryOperation, event: LogEven
 }
 
 async function registrationId(operation: FoundryOperation): Promise<string> {
-  return deriveRegistrationKey(operation.organizationId, operation.name, await jwkThumbprint(operation.initialPublicKey));
+  return deriveRegistrationKey(operation.organizationId, operation.name, await jwkThumbprint(operation.creationInput.public_key));
 }
 
 async function challenge(operation: FoundryOperation, response: LiveProvisioningResponse): Promise<Record<string, unknown>> {
@@ -589,7 +592,7 @@ async function challenge(operation: FoundryOperation, response: LiveProvisioning
   if (!transcript || typeof transcript !== 'object' || Array.isArray(transcript)
     || transcript.protocol !== 'dnsid-live-provisioning-pop/v1' || transcript.org_id !== operation.organizationId
     || transcript.agent_id !== operation.identityId || transcript.nonce !== response.challenge
-    || transcript.key_id !== await jwkThumbprint(operation.initialPublicKey)
+    || transcript.key_id !== await jwkThumbprint(operation.creationInput.public_key)
     || response.agentId !== operation.identityId || response.requestId !== operation.requestId
     || typeof transcript.fqdn !== 'string' || typeof transcript.expires_at !== 'string' || !Number.isFinite(Date.parse(transcript.expires_at))) throw failure('binding', operation, 'Live challenge does not match the saved operation and key');
   const domain = normalizeFQDN(transcript.fqdn, true);
