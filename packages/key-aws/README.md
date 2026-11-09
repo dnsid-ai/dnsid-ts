@@ -35,7 +35,18 @@ const signature = await provider.sign(new TextEncoder().encode('payload'));
 const jwk = await provider.signingKey();
 ```
 
-Persist `provider.stateSnapshot()` after `generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied `state` object, but persistence is the caller's job.
+For an existing active provider, persist `provider.stateSnapshot()` after
+`generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied
+`state` object, but persistence is the caller's job.
+
+First-key `create()` is different: persist the returned immutable `keyRef` and
+public-key binding in application-owned durable storage before activation. Its
+pending-only snapshot has no active key ID and cannot be reopened with
+`load({ state })`. If restarting with only the handed-off reference, deliberately
+select it with `load({ activeKeyId: savedKeyRef, ... })`; prior local activation
+is not required, and the reopened key is locally active. Do not discard saved
+provider or managed-rotation state to use this reference-only path. Local
+signing eligibility does not establish publication or protocol identity status.
 
 For first-key creation, explicitly call `AwsKmsKeyProvider.create`; no existing
 key is required. See the

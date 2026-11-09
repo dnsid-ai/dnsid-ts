@@ -37,7 +37,11 @@ No prior version is required. The SDK validates the parent, creates only a
 version, and checks its readiness and public key. It does not create projects,
 key rings, or CryptoKeys. Pending generation has a finite polling budget; set
 transport deadlines on the supplied client as well. Grant least-privilege
-create/public-key/sign permissions (and Google parent/version metadata reads).
+create/public-key/sign permissions. Google initial `create()` additionally needs
+`cloudkms.cryptoKeys.get` for parent validation; both `create()` and rotation
+through `generateKey()` need `cloudkms.cryptoKeyVersions.create` and
+`cloudkms.cryptoKeyVersions.get` for creation and readiness metadata reads.
+Grant these before creation: a metadata-read failure can leave a created version.
 AWS Ed25519 availability depends on the service/region; errors do not select a
 different algorithm.
 
@@ -45,6 +49,12 @@ Both results contain `{ provider, kid, keyRef }`. `keyRef` is an immutable cloud
 reference, not necessarily the same as the binding's `kid`. Private material is
 generated and retained inside KMS. The SDK writes no key/state files, performs
 no private-key import, and never falls back to a local signer.
+
+Persist the immutable `keyRef` and public-key binding in application-owned
+durable storage before local activation, as shown below. Creation leaves the
+key pending in the creating process. In AWS, that pending-only
+`stateSnapshot()` has no active key ID and cannot be reopened with
+`load({ state })`; it is not a substitute for the reference handoff.
 
 ## Initial manager injection and publication
 
@@ -79,8 +89,11 @@ The example does not simulate acceptance or claim publication/issuance succeeded
 
 ## Subsequent startup: reopen, never recreate
 
-Use the saved immutable reference, check its public binding against the saved
-public key, and preserve normal authenticated startup/publication verification:
+With only the handed-off immutable reference, deliberately select that existing
+key with `load`, even if the creating process never activated it. Prior local
+activation or persisted proof of it is not required; the selected reopened key
+is locally active. Check its public binding against the saved public key and
+preserve normal authenticated startup/publication verification:
 
 ```ts
 // AWS; use its own caller-owned facade and saved keyRef.
@@ -93,8 +106,11 @@ const provider = await GcpCloudKmsKeyProvider.load(client, {
 });
 ```
 
-These are alternatives, not two declarations in one program. Loading reads
-existing public keys and never creates a replacement. Cloud ENABLED or local
+These are alternatives, not two declarations in one program. Reference-only
+startup cannot reconstruct unavailable supersession history. Do not discard saved
+pending or superseded provider state or bypass managed-rotation recovery checks;
+selecting a reference does not authorize replacement of an established signer.
+Loading reads existing public keys and never creates a replacement. Cloud ENABLED or local
 activation does not establish protocol identity status. Keep caller-owned
 clients alive until signing completes and close them in application cleanup.
 

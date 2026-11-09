@@ -17,9 +17,13 @@ const keyProvider = await GcpCloudKmsKeyProvider.load(new KeyManagementServiceCl
 ```
 
 Use ambient Google credentials with `cloudkms.cryptoKeyVersions.viewPublicKey`
-and `cloudkms.cryptoKeyVersions.useToSign` permissions. Explicit creation also
-requires `cloudkms.cryptoKeys.get`, `cloudkms.cryptoKeyVersions.create`, and
-`cloudkms.cryptoKeyVersions.get`.
+and `cloudkms.cryptoKeyVersions.useToSign` permissions. Both initial `create()`
+and rotation through `generateKey()` also require
+`cloudkms.cryptoKeyVersions.create` and `cloudkms.cryptoKeyVersions.get` for
+version creation and readiness metadata reads. Initial `create()` additionally
+requires `cloudkms.cryptoKeys.get` to validate the existing parent. Grant the
+version metadata-read permission before either operation: a readiness read can
+fail after the remote version has already been created.
 The reference must name a numeric immutable version, not a parent or alias. The
 provider exports only the public Ed25519 JWK, with an RFC 7638 thumbprint as `kid`.
 It sends raw data (never a digest) and verifies request/response CRC32C integrity
