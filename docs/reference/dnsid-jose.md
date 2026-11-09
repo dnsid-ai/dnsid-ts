@@ -67,7 +67,7 @@ from a signing IdentityManager via [JoseProfile.fromIdentityManager](#fromidenti
 
 ### JoseProfile
 
-Defined in: jose/src/index.ts:110
+Defined in: [jose/src/index.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L110)
 
 JOSE JWT/JWS helpers built on narrow DNSid core contracts.
 
@@ -85,7 +85,7 @@ verifies inbound tokens by resolving the issuer's DNSid identity (via its
 new JoseProfile(opts): JoseProfile;
 ```
 
-Defined in: jose/src/index.ts:134
+Defined in: [jose/src/index.ts:134](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L134)
 
 ###### Parameters
 
@@ -111,7 +111,7 @@ ArgumentError if `opts.domain` is not a valid agent FQDN.
 createJWS(payload): Promise<string>;
 ```
 
-Defined in: jose/src/index.ts:343
+Defined in: [jose/src/index.ts:343](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L343)
 
 Signs an arbitrary byte payload as a compact JWS with `typ: "jose"`.
 The header `kid` is the compound form `<domain>#<kid>` so verifiers can
@@ -141,7 +141,7 @@ ArgumentError if the operational signing key's kid contains `#`.
 createJWT(opts): Promise<string>;
 ```
 
-Defined in: jose/src/index.ts:157
+Defined in: [jose/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L157)
 
 Creates a signed compact JWT with `iss`/`sub` set to the local domain,
 `aud` set to the normalized audience, and a fresh `jti`. The header carries
@@ -173,7 +173,7 @@ ArgumentError if the audience is missing or not a valid FQDN, if
 verifyJWS(jws, options?): Promise<VerifyJWSResult>;
 ```
 
-Defined in: jose/src/index.ts:381
+Defined in: [jose/src/index.ts:381](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L381)
 
 Verifies a compact JWS whose header `kid` is the compound
 `<domain>#<kid>` form produced by [createJWS](#createjws).
@@ -215,7 +215,7 @@ VerificationError with `VerificationCode.RecordInvalid` for a
 verifyJWT(jwt, options?): Promise<VerifiedDomain>;
 ```
 
-Defined in: jose/src/index.ts:217
+Defined in: [jose/src/index.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L217)
 
 Verifies an inbound compact JWT issued by a remote DNSid agent.
 
@@ -258,7 +258,7 @@ VerificationError with `VerificationCode.RecordInvalid` for
 static fromIdentityManager(identityManager, jose?): JoseProfile;
 ```
 
-Defined in: jose/src/index.ts:116
+Defined in: [jose/src/index.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L116)
 
 Builds a profile from a signing IdentityManager, reusing its domain,
 key provider, and identity resolution.
@@ -285,7 +285,7 @@ Optional JOSE-specific limits (max lifetime, clock skew).
 
 ### CreateJWTInput
 
-Defined in: jose/src/index.ts:93
+Defined in: [jose/src/index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L93)
 
 Input to [JoseProfile.createJWT](#createjwt). Alias of [JWTOptions](#jwtoptions).
 
@@ -303,7 +303,7 @@ Input to [JoseProfile.createJWT](#createjwt). Alias of [JWTOptions](#jwtoptions)
 optional additionalClaims?: Record<string, unknown>;
 ```
 
-Defined in: jose/src/index.ts:48
+Defined in: [jose/src/index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L48)
 
 Extra claims merged into the payload.
 Must not override the reserved claims `iss`, `sub`, `aud`, `iat`, `exp`, or `jti`.
@@ -320,7 +320,7 @@ Must not override the reserved claims `iss`, `sub`, `aud`, `iat`, `exp`, or `jti
 audience: string;
 ```
 
-Defined in: jose/src/index.ts:38
+Defined in: [jose/src/index.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L38)
 
 Intended recipient's DNSid agent FQDN. Becomes the `aud` claim (normalized).
 
@@ -336,7 +336,7 @@ Intended recipient's DNSid agent FQDN. Becomes the `aud` claim (normalized).
 optional expiry?: number;
 ```
 
-Defined in: jose/src/index.ts:43
+Defined in: [jose/src/index.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L43)
 
 Token lifetime in seconds (`exp = iat + expiry`).
 Default: [DEFAULT\_JWT\_EXPIRY\_SECONDS](#default_jwt_expiry_seconds). Must not exceed the profile's `maxLifetime`.
@@ -351,7 +351,7 @@ Default: [DEFAULT\_JWT\_EXPIRY\_SECONDS](#default_jwt_expiry_seconds). Must not 
 
 ### JoseProfileConfig
 
-Defined in: jose/src/index.ts:73
+Defined in: [jose/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L73)
 
 Tunable verification and issuance limits for a [JoseProfile](#joseprofile).
 
@@ -365,7 +365,7 @@ Tunable verification and issuance limits for a [JoseProfile](#joseprofile).
 optional clockSkew?: number;
 ```
 
-Defined in: jose/src/index.ts:77
+Defined in: [jose/src/index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L77)
 
 Allowed clock skew in seconds when checking JWT `iat` and `nbf`. Default: 60.
 
@@ -377,7 +377,7 @@ Allowed clock skew in seconds when checking JWT `iat` and `nbf`. Default: 60.
 optional maxLifetime?: number;
 ```
 
-Defined in: jose/src/index.ts:75
+Defined in: [jose/src/index.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L75)
 
 Maximum accepted JWT lifetime (`exp - iat`) in seconds. Default: 900.
 
@@ -387,7 +387,7 @@ Maximum accepted JWT lifetime (`exp - iat`) in seconds. Default: 900.
 
 ### JoseProfileOptions
 
-Defined in: jose/src/index.ts:81
+Defined in: [jose/src/index.ts:81](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L81)
 
 Construction options for [JoseProfile](#joseprofile) / [createJoseProfile](#createjoseprofile).
 
@@ -401,7 +401,7 @@ Construction options for [JoseProfile](#joseprofile) / [createJoseProfile](#crea
 optional domain?: string;
 ```
 
-Defined in: jose/src/index.ts:83
+Defined in: [jose/src/index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L83)
 
 Local DNSid identity FQDN.
 
@@ -413,7 +413,7 @@ Local DNSid identity FQDN.
 identityResolver: IdentityResolver;
 ```
 
-Defined in: jose/src/index.ts:87
+Defined in: [jose/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L87)
 
 Resolves and verifies remote DNSid identities when verifying inbound JWTs/JWS.
 
@@ -425,7 +425,7 @@ Resolves and verifies remote DNSid identities when verifying inbound JWTs/JWS.
 optional jose?: JoseProfileConfig;
 ```
 
-Defined in: jose/src/index.ts:89
+Defined in: [jose/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L89)
 
 Optional JOSE-specific limits. Defaults: 900s max lifetime, 60s clock skew.
 
@@ -437,7 +437,7 @@ Optional JOSE-specific limits. Defaults: 900s max lifetime, 60s clock skew.
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: jose/src/index.ts:85
+Defined in: [jose/src/index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L85)
 
 Signs outgoing JWTs/JWS. Omit for a verification-only profile.
 
@@ -447,7 +447,7 @@ Signs outgoing JWTs/JWS. Omit for a verification-only profile.
 
 ### JWTOptions
 
-Defined in: jose/src/index.ts:36
+Defined in: [jose/src/index.ts:36](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L36)
 
 Options controlling the claims of a JWT created by [JoseProfile.createJWT](#createjwt).
 
@@ -465,7 +465,7 @@ Options controlling the claims of a JWT created by [JoseProfile.createJWT](#crea
 optional additionalClaims?: Record<string, unknown>;
 ```
 
-Defined in: jose/src/index.ts:48
+Defined in: [jose/src/index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L48)
 
 Extra claims merged into the payload.
 Must not override the reserved claims `iss`, `sub`, `aud`, `iat`, `exp`, or `jti`.
@@ -478,7 +478,7 @@ Must not override the reserved claims `iss`, `sub`, `aud`, `iat`, `exp`, or `jti
 audience: string;
 ```
 
-Defined in: jose/src/index.ts:38
+Defined in: [jose/src/index.ts:38](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L38)
 
 Intended recipient's DNSid agent FQDN. Becomes the `aud` claim (normalized).
 
@@ -490,7 +490,7 @@ Intended recipient's DNSid agent FQDN. Becomes the `aud` claim (normalized).
 optional expiry?: number;
 ```
 
-Defined in: jose/src/index.ts:43
+Defined in: [jose/src/index.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L43)
 
 Token lifetime in seconds (`exp = iat + expiry`).
 Default: [DEFAULT\_JWT\_EXPIRY\_SECONDS](#default_jwt_expiry_seconds). Must not exceed the profile's `maxLifetime`.
@@ -501,7 +501,7 @@ Default: [DEFAULT\_JWT\_EXPIRY\_SECONDS](#default_jwt_expiry_seconds). Must not 
 
 ### VerifyJWSResult
 
-Defined in: jose/src/index.ts:96
+Defined in: [jose/src/index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L96)
 
 Result of a successful [JoseProfile.verifyJWS](#verifyjws) call.
 
@@ -515,7 +515,7 @@ Result of a successful [JoseProfile.verifyJWS](#verifyjws) call.
 payload: Uint8Array;
 ```
 
-Defined in: jose/src/index.ts:98
+Defined in: [jose/src/index.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L98)
 
 The decoded (base64url) JWS payload bytes, exactly as signed.
 
@@ -527,7 +527,7 @@ The decoded (base64url) JWS payload bytes, exactly as signed.
 verifiedDomain: VerifiedDomain;
 ```
 
-Defined in: jose/src/index.ts:100
+Defined in: [jose/src/index.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L100)
 
 The signer's verified DNSid identity, resolved from the `kid` header's domain.
 
@@ -541,7 +541,7 @@ The signer's verified DNSid identity, resolved from the `kid` header's domain.
 type ApplicationJoseAlg = typeof APPLICATION_JOSE_ALGS[number];
 ```
 
-Defined in: jose/src/index.ts:62
+Defined in: [jose/src/index.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L62)
 
 Union of the algorithm identifiers in [APPLICATION\_JOSE\_ALGS](#application_jose_algs).
 
@@ -555,7 +555,7 @@ Union of the algorithm identifiers in [APPLICATION\_JOSE\_ALGS](#application_jos
 const APPLICATION_JOSE_ALGS: readonly ["EdDSA", "ES256", "ES384", "ES512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512"];
 ```
 
-Defined in: jose/src/index.ts:56
+Defined in: [jose/src/index.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L56)
 
 JOSE signature algorithms accepted at the application layer.
 A JWT/JWS whose `alg` header is outside this allowlist is rejected during
@@ -571,7 +571,7 @@ verification (notably `none` and all HMAC algorithms are excluded).
 const DEFAULT_JWT_EXPIRY_SECONDS: number;
 ```
 
-Defined in: jose/src/index.ts:65
+Defined in: [jose/src/index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L65)
 
 Default JWT lifetime in seconds (15 minutes) when [JWTOptions.expiry](#expiry-1) is omitted.
 
@@ -585,7 +585,7 @@ Default JWT lifetime in seconds (15 minutes) when [JWTOptions.expiry](#expiry-1)
 function createJoseProfile(opts): JoseProfile;
 ```
 
-Defined in: jose/src/index.ts:458
+Defined in: [jose/src/index.ts:458](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/jose/src/index.ts#L458)
 
 Creates a [JoseProfile](#joseprofile) for DNSid JWT/JWS workflows.
 
@@ -633,7 +633,7 @@ console.log(verifiedDomain.domain); // 'agent.example'
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: protocol/src/utils.ts:156
+Defined in: [protocol/src/utils.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L156)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -657,7 +657,7 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function parseKeyId(keyId): object;
 ```
 
-Defined in: protocol/src/utils.ts:116
+Defined in: [protocol/src/utils.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L116)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
@@ -705,7 +705,7 @@ ArgumentError if the key ID is malformed.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: protocol/src/utils.ts:144
+Defined in: [protocol/src/utils.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L144)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 
