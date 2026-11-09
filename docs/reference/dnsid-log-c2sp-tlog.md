@@ -207,7 +207,7 @@ values). Exceeding it is fatal INVALID_EVIDENCE, never candidate noise.
 type C2spJsonEvent = Record<string, unknown>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L20)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:20
 
 Raw JSON envelope of a DNSid lifecycle event as stored in a c2sp-tlog entry.
 
@@ -225,7 +225,7 @@ type C2spSignerRole =
   | "NewOperational";
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:29](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L29)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:29
 
 Role a signature is produced under when signing a prepared lifecycle event.
 
@@ -251,7 +251,7 @@ type C2spTlogQuorumRule =
 };
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L10)
+Defined in: packages/log-c2sp-tlog/src/policy.ts:10
 
 Witness-quorum requirement for accepting a checkpoint: no witnesses, a single
 named witness, or a threshold over nested member rules.
@@ -266,7 +266,7 @@ named witness, or a threshold over nested member rules.
 type C2spTlogScope = "public" | "testnet" | `private-${string}`;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/lr.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L5)
+Defined in: packages/log-c2sp-tlog/src/lr.ts:5
 
 Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS and a non-zero witness quorum. All scopes require chaining; lifecycle reads require witnessed checkpoints.
 
@@ -280,7 +280,7 @@ Deployment scope of a c2sp-tlog reference; `public` additionally requires HTTPS 
 const C2SP_ENTRIES_PER_BUNDLE: 256 = 256;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L68)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:68
 
 C2SP tlog-tiles fixes full entry bundles at 256 entries.
 
@@ -294,7 +294,7 @@ C2SP tlog-tiles fixes full entry bundles at 256 entries.
 const C2SP_TLOG_PROFILE_VERSION: 1;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/version.ts:2](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/version.ts#L2)
+Defined in: packages/log-c2sp-tlog/src/version.ts:2
 
 Exact external specifications implemented by this c2sp-tlog package.
 
@@ -317,7 +317,7 @@ const C2SP_TLOG_SPECIFICATIONS: Readonly<{
 }>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/version.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/version.ts#L8)
+Defined in: packages/log-c2sp-tlog/src/version.ts:8
 
 Pinned versions (URL or commit) of each C2SP specification this package implements.
 
@@ -331,7 +331,7 @@ Pinned versions (URL or commit) of each C2SP specification this package implemen
 const DEFAULT_C2SP_MAX_CHECKPOINT_BYTES: 1048576 = 1_048_576;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L70)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:70
 
 ***
 
@@ -343,7 +343,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:70](https://github.com/
 const DEFAULT_C2SP_MAX_ENTRY_BUNDLE_BYTES: 16777472 = 16_777_472;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L72)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:72
 
 256 * (2-byte prefix + 65,535-byte entry).
 
@@ -357,7 +357,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:72](https://github.com/
 const DEFAULT_C2SP_MAX_STREAM_BUNDLE_BYTES: number;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L21)
+Defined in: packages/log-c2sp-tlog/src/stream-bundle.ts:21
 
 ***
 
@@ -369,7 +369,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:21](https://github.com/
 const DEFAULT_C2SP_MAX_STREAM_BUNDLE_EVENTS: 10000 = 10_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L22)
+Defined in: packages/log-c2sp-tlog/src/stream-bundle.ts:22
 
 ***
 
@@ -381,7 +381,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:22](https://github.com/
 const DEFAULT_C2SP_MAX_TOTAL_ENTRY_BYTES: 268435456 = 268_435_456;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L73)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:73
 
 ***
 
@@ -393,7 +393,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:73](https://github.com/
 const DEFAULT_C2SP_MAX_TREE_SIZE: 1000000 = 1_000_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L69)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:69
 
 ***
 
@@ -405,7 +405,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:69](https://github.com/
 const DEFAULT_C2SP_REQUEST_TIMEOUT_MS: 10000 = 10_000;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L74)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:74
 
 ***
 
@@ -417,7 +417,7 @@ Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:74](https://github.com/
 const DNSID_C2SP_METHOD_REVISION: "d5a65d06f76eff4db81e50f8767a600d2ca7fc2a";
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/version.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/version.ts#L5)
+Defined in: packages/log-c2sp-tlog/src/version.ts:5
 
 DNSid method contract with signature-independent logical event identity.
 
