@@ -34,7 +34,13 @@ const offline = vi.hoisted(async () => {
 afterAll(async () => (await offline)());
 import { gcpConsumer } from './helpers/gcp-consumer.ts';
 
-it('Given deployment A and independent publication A, When composing actual GCP and SDK, Then public HTTP verifies, tampering and B binding reject, and local lifecycle preserves consumer A', () => gcpConsumer());
+it('Given deployment A and independent publication A, When composing actual GCP and SDK, Then public HTTP verifies, tampering and B binding reject, and local lifecycle preserves consumer A', async () => {
+  const date = globalThis.Date;
+  const timers = [setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate];
+  await gcpConsumer();
+  expect(globalThis.Date).toBe(date);
+  expect([setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate]).toEqual(timers);
+});
 
 it('Given existing default deployment settings, When exercising unchanged composition and local lifecycle, Then real publication and consumer verification succeed', () => gcpConsumer('existing'));
 
@@ -53,6 +59,10 @@ it('Given fake-only GCP consumer RPCs, When rotation reads version readiness, Th
   let implementation: (...args: any[]) => any = denied;
   // Observe only the fixture's public native-client seam. Never call the
   // original RPC: even the broken baseline must not attempt authentication.
+  // A direct spy installed here would be overwritten by the helper's deny-all
+  // and per-RPC assignments. This accessor deliberately observes both while
+  // keeping omission on a rejecting stub (not the credential-loading native
+  // method). A helper observer alone would not guard an omitted replacement.
   Object.defineProperty(prototype, 'getCryptoKeyVersion', {
     configurable: true,
     get: () => implementation,
@@ -85,3 +95,46 @@ it('Given fake-only GCP consumer RPCs, When rotation reads version readiness, Th
     Object.defineProperty(prototype, 'getCryptoKeyVersion', original);
   }
 }, 15_000);
+
+
+it('Given a consumer invocation, When its public KMS seam rejects, Then fixed Date semantics preserve explicit dates and real timers and restore the exact enclosing Date', async () => {
+  // Mode: fake-only. Observe through the native-client fixture seam, not SDK internals.
+  const date = globalThis.Date;
+  const timers = [setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate];
+  const prototype = KeyManagementServiceClient.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, 'getPublicKey')!;
+  const observations: unknown[] = [];
+  let implementation: (...args: any[]) => any = async () => { throw new Error('native RPC forbidden'); };
+  Object.defineProperty(prototype, 'getPublicKey', {
+    configurable: true,
+    get: () => implementation,
+    set: () => {
+      implementation = async () => {
+        observations.push({
+          now: Date.now(), constructed: new Date().toISOString(),
+          epoch: new Date(0).getTime(), explicit: new Date('2001-02-03T04:05:06Z').toISOString(),
+          components: new Date(2001, 1, 3, 4, 5, 6).getTime(),
+          parsed: Date.parse('2001-02-03T04:05:06Z'), utc: Date.UTC(2001, 1, 3, 4, 5, 6),
+          invalid: Number.isNaN(new Date(undefined as unknown as number).getTime()),
+          instance: new Date() instanceof date,
+          timers: [setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate],
+        });
+        throw new Error('intentional fixture clock restoration rejection');
+      };
+    },
+  });
+  try {
+    await expect(gcpConsumer()).rejects.toThrow('deployment must construct through the actual selected GCP package');
+    expect(observations).toEqual([{
+      now: date.parse('2026-10-27T12:00:00Z'), constructed: '2026-10-27T12:00:00.000Z',
+      epoch: 0, explicit: '2001-02-03T04:05:06.000Z',
+      components: new date(2001, 1, 3, 4, 5, 6).getTime(),
+      parsed: date.parse('2001-02-03T04:05:06Z'), utc: date.UTC(2001, 1, 3, 4, 5, 6),
+      invalid: true, instance: true, timers,
+    }]);
+    expect(globalThis.Date).toBe(date);
+    expect([setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate]).toEqual(timers);
+  } finally {
+    Object.defineProperty(prototype, 'getPublicKey', descriptor);
+  }
+});

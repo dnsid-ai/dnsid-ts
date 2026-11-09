@@ -1,9 +1,15 @@
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 // Install offline safety before provider imports execute. All credentials are fake;
 // injected clients below are the only permitted Google dependency.
-vi.hoisted(async () => {
+const offline = vi.hoisted(async () => {
+  const environment = [
+    'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_EC2_METADATA_DISABLED',
+    'GOOGLE_APPLICATION_CREDENTIALS', 'GCE_METADATA_HOST',
+  ].map(name => [name, process.env[name]] as const);
+  const restores: Array<() => void> = [];
+  const fetch = globalThis.fetch;
   process.env.AWS_ACCESS_KEY_ID = 'fake-offline';
   process.env.AWS_SECRET_ACCESS_KEY = 'fake-offline';
   process.env.AWS_EC2_METADATA_DISABLED = 'true';
@@ -15,10 +21,23 @@ vi.hoisted(async () => {
     ['node:net', ['connect', 'createConnection']], ['node:tls', ['connect']],
   ] as const) {
     const { default: api } = await import(module);
-    for (const method of methods) vi.spyOn(api, method).mockImplementation(forbidden);
+    for (const method of methods) {
+      const guard = vi.spyOn(api, method).mockImplementation(forbidden);
+      restores.push(() => guard.mockRestore());
+    }
   }
-  vi.stubGlobal('fetch', forbidden);
+  globalThis.fetch = forbidden;
+  return () => {
+    restores.reverse().forEach(restore => restore());
+    globalThis.fetch = fetch;
+    for (const [name, value] of environment) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
 });
+// Keep guards installed for every case, then restore only this file's mutations.
+afterAll(async () => (await offline)());
 
 import { ArgumentError } from '@dnsid-ai/protocol';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';

@@ -8,6 +8,8 @@ import { ArgumentError, jwkThumbprint } from '@dnsid-ai/protocol';
 export interface GcpCloudKmsConfig {
   /** Fully qualified immutable CryptoKeyVersion resource name. */
   activeKeyVersion: string;
+  /** Application-saved immutable pending version; never discovered or activated by load. */
+  pendingKeyVersion?: string;
   /** Retained-key loading is not supported by this runtime slice. */
   retainedKeyVersions?: string[];
   /** Must be EC_SIGN_ED25519. */
@@ -83,10 +85,20 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
     return { provider, kid, keyRef: provider.keys.get(kid)!.version };
   }
 
+  /**
+   * Opens the selected active version and, optionally, an application-saved pending
+   * version for recovery. Both bindings are validated; the pending key supports
+   * JWK lookup and rotation proof signing but is not the active signer or live
+   * inventory. No discovery, generation, or activation occurs. Applications own
+   * durable references and recovery checks; activate performs the local transition.
+   */
   static async load(client: GcpCloudKmsClient | undefined, config: GcpCloudKmsConfig): Promise<GcpCloudKmsKeyProvider> {
     const version = config.activeKeyVersion;
-    if (typeof version !== 'string' || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]+\/cryptoKeys\/[A-Za-z0-9_-]+\/cryptoKeyVersions\/[1-9][0-9]*$/.test(version)) {
-      throw new ArgumentError('Google Cloud KMS requires an immutable CryptoKeyVersion name');
+    validateVersion(version);
+    const pendingVersion = config.pendingKeyVersion;
+    if (pendingVersion !== undefined) {
+      validateVersion(pendingVersion);
+      if (pendingVersion === version) throw new ArgumentError('Google Cloud KMS active and pending versions must differ');
     }
     if (config.algorithm !== 'EC_SIGN_ED25519') throw new ArgumentError('Google Cloud KMS algorithm must be EC_SIGN_ED25519');
     if (config.retainedKeyVersions?.length) throw new ArgumentError('Google Cloud KMS retained key loading is not supported');
@@ -94,28 +106,12 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
       const { KeyManagementServiceClient } = await import('@google-cloud/kms');
       client = new KeyManagementServiceClient();
     }
-    const [raw] = await client.getPublicKey({ name: version });
-    const response = raw as PublicResponse | undefined;
-    if (response?.name !== version) throw new ArgumentError('Google Cloud KMS public key version mismatch');
-    // Official protobuf clients return numeric enums; REST and injected clients may use names.
-    if (response.algorithm !== 'EC_SIGN_ED25519' && response.algorithm !== 40) throw new ArgumentError('Google Cloud KMS public key algorithm mismatch');
-    if (response.protectionLevel !== 'SOFTWARE' && response.protectionLevel !== 1) throw new ArgumentError('Google Cloud KMS public key must use SOFTWARE protection');
-    if (typeof response.pem !== 'string' || !checksumMatches(Buffer.from(response.pem), response.pemCrc32c)) {
-      throw new ArgumentError('Google Cloud KMS public PEM checksum mismatch');
-    }
-    let publicKey: DnsIdJWK;
-    try {
-      if (!response.pem.startsWith('-----BEGIN PUBLIC KEY-----')) throw new Error();
-      const key = createPublicKey({ key: response.pem, format: 'pem', type: 'spki' });
-      if (key.asymmetricKeyType !== 'ed25519') throw new Error();
-      const exported = key.export({ format: 'jwk' });
-      publicKey = { kty: 'OKP', crv: 'Ed25519', x: exported.x!, kid: '', alg: 'EdDSA', use: 'sig' };
-    } catch {
-      // Do not include the response or parser error in diagnostics.
-      throw new ArgumentError('Google Cloud KMS returned invalid Ed25519 public SPKI');
-    }
-    publicKey.kid = await jwkThumbprint(publicKey);
-    return new GcpCloudKmsKeyProvider(client, version, Object.freeze(publicKey));
+    const publicKey = await loadPublicKey(client, version);
+    const pendingKey = pendingVersion === undefined ? undefined : await loadPublicKey(client, pendingVersion);
+    if (pendingKey?.kid === publicKey.kid) throw new ArgumentError('Google Cloud KMS pending version has duplicate public key');
+    const provider = new GcpCloudKmsKeyProvider(client, version, publicKey);
+    if (pendingKey) provider.keys.set(pendingKey.kid, { version: pendingVersion!, jwk: pendingKey, state: 'pending' });
+    return provider;
   }
 
   async signingKey(): Promise<DnsIdJWK> {
@@ -235,6 +231,37 @@ export class GcpCloudKmsKeyProvider implements KeyProvider {
   /** Alias for local supersession; never disables or destroys a cloud version. */
   async purge(kid: string): Promise<void> { return this.supersede(kid); }
 
+}
+
+function validateVersion(version: string): void {
+  if (typeof version !== 'string' || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]+\/cryptoKeys\/[A-Za-z0-9_-]+\/cryptoKeyVersions\/[1-9][0-9]*$/.test(version)) {
+    throw new ArgumentError('Google Cloud KMS requires an immutable CryptoKeyVersion name');
+  }
+}
+
+async function loadPublicKey(client: GcpCloudKmsClient, version: string): Promise<Readonly<DnsIdJWK>> {
+  const [raw] = await client.getPublicKey({ name: version });
+  const response = raw as PublicResponse | undefined;
+  if (response?.name !== version) throw new ArgumentError('Google Cloud KMS public key version mismatch');
+  // Official protobuf clients return numeric enums; REST and injected clients may use names.
+  if (response.algorithm !== 'EC_SIGN_ED25519' && response.algorithm !== 40) throw new ArgumentError('Google Cloud KMS public key algorithm mismatch');
+  if (response.protectionLevel !== 'SOFTWARE' && response.protectionLevel !== 1) throw new ArgumentError('Google Cloud KMS public key must use SOFTWARE protection');
+  if (typeof response.pem !== 'string' || !checksumMatches(Buffer.from(response.pem), response.pemCrc32c)) {
+    throw new ArgumentError('Google Cloud KMS public PEM checksum mismatch');
+  }
+  let publicKey: DnsIdJWK;
+  try {
+    if (!response.pem.startsWith('-----BEGIN PUBLIC KEY-----')) throw new Error();
+    const key = createPublicKey({ key: response.pem, format: 'pem', type: 'spki' });
+    if (key.asymmetricKeyType !== 'ed25519') throw new Error();
+    const exported = key.export({ format: 'jwk' });
+    publicKey = { kty: 'OKP', crv: 'Ed25519', x: exported.x!, kid: '', alg: 'EdDSA', use: 'sig' };
+  } catch {
+    // Do not include the response or parser error in diagnostics.
+    throw new ArgumentError('Google Cloud KMS returned invalid Ed25519 public SPKI');
+  }
+  publicKey.kid = await jwkThumbprint(publicKey);
+  return Object.freeze(publicKey);
 }
 
 function checksumMatches(bytes: Uint8Array, checksum: Checksum): boolean {

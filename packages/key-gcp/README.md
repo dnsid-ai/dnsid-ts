@@ -69,6 +69,14 @@ only the active ID, or is empty after local supersession. `supersede` and its
 destroyed. Historical public keys remain available through `jwk`.
 
 Lifecycle state is in memory. Applications own durable recovery and publication
-orchestration; reopening the configured version does not recover pending state.
+orchestration. For recovery, pass the application's saved immutable A reference
+as `activeKeyVersion` and saved B reference as optional `pendingKeyVersion` to
+`load`. Both versions and public bindings are validated; duplicate versions or
+public-key identities are rejected. B is inserted directly as pending: `jwk` and
+rotation `signKey` are available, while `signingKey`, `sign`, and `listKeyIds`
+continue to select only A. Existing `activate` performs the local transition.
+This input is saved application state, not key discovery or permission to activate;
+managed recovery still validates the saved rotation's exact bindings. Ordinary
+A-only loading is unchanged and does not discover pending state.
 Retained-key configuration loading is rejected. Lifecycle behavior implements
 the provisional shared #56 clarification, not a claim of contract acceptance.

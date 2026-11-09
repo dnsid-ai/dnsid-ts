@@ -814,7 +814,7 @@ describe('GCP post-create recovery reference', () => {
 });
 
 it('Given named builtin imports through Vite, When custody guard is installed, Then generation and writes are intercepted [Mode: fake-only]', async () => {
-  const { namedGeneration, namedWrite, namedAsyncWrite } = await import('./kms-first-custody-canary.js');
+  const { namedGeneration, namedWrite, namedAsyncWrite } = await import('./helpers/kms-first-custody-canary.js');
   const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'dnsid58-canary-'));
   const forbidden = () => { throw new Error('forbidden local custody operation'); };
   const traps = [vi.spyOn(crypto, 'generateKeyPairSync').mockImplementation(forbidden),
@@ -833,4 +833,196 @@ it('Given named builtin imports through Vite, When custody guard is installed, T
     await fsp.rm(directory, { recursive: true, force: true });
     expect(fs.existsSync(directory)).toBe(false);
   }
+});
+
+// Bounded premerge proof gaps: shared01 KMS-first, shared12 lifecycle rows
+// 1–3, shared08 reference-only restart. Only external native RPCs are faked.
+describe('#58 firstcreate gap closure', () => {
+  function nativeAws(algorithm: 'EdDSA' | 'ES256', resource = ARN, seed?: string) {
+    const ed = fixture(seed);
+    // Fixed scalar 1 on P-256, independent of SDK generation/JWK helpers.
+    const scalar = Buffer.alloc(32); scalar[31] = 1;
+    const ecdh = crypto.createECDH('prime256v1'); ecdh.setPrivateKey(scalar);
+    const point = ecdh.getPublicKey();
+    const ecJwk = { crv: 'P-256', kty: 'EC', x: point.subarray(1, 33).toString('base64url'), y: point.subarray(33).toString('base64url') };
+    const ecPrivate = createPrivateKey({ key: { ...ecJwk, d: scalar.toString('base64url') }, format: 'jwk' });
+    const publicKey = algorithm === 'EdDSA' ? ed.publicKey : createPublicKey(ecPrivate);
+    const jwk = algorithm === 'EdDSA' ? ed.jwk : ecJwk;
+    const keySpec = algorithm === 'EdDSA' ? 'ECC_NIST_EDWARDS25519' as const : 'ECC_NIST_P256' as const;
+    const signingAlgorithm = algorithm === 'EdDSA' ? 'ED25519_SHA_512' as const : 'ECDSA_SHA_256' as const;
+    const allocated: string[] = [];
+    const send = vi.fn(async (command: { constructor: { name: string }; input: Record<string, unknown> }) => {
+      switch (command.constructor.name) {
+        case 'CreateKeyCommand':
+          expect(command.input).toMatchObject({ KeySpec: keySpec, KeyUsage: 'SIGN_VERIFY' });
+          allocated.push(resource); return { KeyMetadata: { Arn: resource } };
+        case 'GetPublicKeyCommand':
+          expect(allocated).toEqual([resource]); expect(command.input.KeyId).toBe(resource);
+          return { KeyId: resource, PublicKey: publicKey.export({ format: 'der', type: 'spki' }), KeySpec: keySpec, KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: [signingAlgorithm] };
+        case 'SignCommand':
+          expect(command.input).toMatchObject({ KeyId: resource, MessageType: 'RAW', SigningAlgorithm: signingAlgorithm });
+          return { KeyId: resource, SigningAlgorithm: signingAlgorithm, Signature: algorithm === 'EdDSA'
+            ? ed.remoteSign(command.input.Message as Uint8Array)
+            : sign('sha256', command.input.Message as Uint8Array, ecPrivate) };
+        default: throw new Error(`unexpected native RPC ${command.constructor.name}`);
+      }
+    });
+    const destroy = vi.fn();
+    const facade = () => new AwsSdkKmsFacade({ send, destroy } as unknown as AwsSdkKmsClient);
+    return { allocated, send, destroy, facade, publicKey, jwk, config: { algorithm: signingAlgorithm, keySpec },
+      commands: () => send.mock.calls.map(([command]) => command.constructor.name) };
+  }
+
+  // Same custody instrumentation as the existing first-create tests; prepare
+  // fake remote private keys before entry. An empty owned directory is checked
+  // and removed even on failure. Public imports remain legitimate.
+  async function withoutLocalCustody(operation: () => Promise<void>) {
+    const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'dnsid58-firstcreate-gap-'));
+    const cwd = process.cwd(); const traps: ReturnType<typeof vi.spyOn>[] = [];
+    const forbidden = () => { throw new Error('forbidden local custody in firstcreate gap closure'); };
+    let privateImports = 0;
+    try {
+      process.chdir(directory);
+      traps.push(vi.spyOn(crypto, 'generateKeyPair').mockImplementation(forbidden), vi.spyOn(crypto, 'generateKeyPairSync').mockImplementation(forbidden),
+        vi.spyOn(crypto.subtle, 'generateKey').mockImplementation(forbidden), vi.spyOn(crypto, 'createPrivateKey').mockImplementation(forbidden),
+        vi.spyOn(fs, 'writeFileSync').mockImplementation(forbidden), vi.spyOn(fs, 'writeFile').mockImplementation(forbidden), vi.spyOn(fsp, 'writeFile').mockImplementation(forbidden),
+        vi.spyOn(fs, 'mkdirSync').mockImplementation(forbidden), vi.spyOn(fsp, 'mkdir').mockImplementation(forbidden));
+      const importKey = crypto.subtle.importKey.bind(crypto.subtle);
+      const importTrap = vi.spyOn(crypto.subtle, 'importKey').mockImplementation((...args: Parameters<typeof crypto.subtle.importKey>) => {
+        const format: string = args[0]; const data: unknown = args[1];
+        if (format === 'pkcs8' || (format === 'jwk' && data !== null && typeof data === 'object' && 'd' in data)) {
+          privateImports++; return Promise.reject(new Error('private import forbidden'));
+        }
+        return importKey(...args);
+      });
+      traps.push({ mockRestore: () => importTrap.mockRestore() } as ReturnType<typeof vi.spyOn>);
+      syncBuiltinESMExports();
+      await operation();
+      expect(privateImports).toBe(0);
+      for (const trap of traps) if ('mock' in trap) expect(trap).not.toHaveBeenCalled();
+      expect(await fsp.readdir(directory)).toEqual([]);
+    } finally {
+      for (const trap of traps.reverse()) trap.mockRestore();
+      syncBuiltinESMExports(); process.chdir(cwd);
+      await fsp.rm(directory, { recursive: true, force: true });
+      expect(fs.existsSync(directory)).toBe(false);
+    }
+  }
+
+  for (const algorithm of ['EdDSA', 'ES256'] as const) {
+    it(`Given never-activated AWS ${algorithm}, When a fresh native provider opens only its immutable reference, Then manager JWKS and independent signatures preserve identity with original pending [Mode: fake-only]`, async () => {
+      const cloud = nativeAws(algorithm);
+      // Distinct entity custody is a real provider too, not a system-owned mock.
+      const entityCloud = nativeAws('EdDSA', OTHER_ARN, '4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb');
+      const entity = await AwsKmsKeyProvider.create(entityCloud.facade(), entityCloud.config);
+      await entity.provider.activate(entity.kid);
+      const entityJwk = await entity.provider.signingKey();
+      const fetchJson = vi.fn(async () => { throw new Error('no HTTPS publication expected'); });
+      const fetchTXT = vi.fn(async () => { throw new Error('no DNS expected'); });
+      await withoutLocalCustody(async () => {
+        const { provider: original, kid, keyRef } = await AwsKmsKeyProvider.create(cloud.facade(), cloud.config);
+        expect(keyRef).toBe(ARN); expect(kid).toBe(ARN);
+        const pendingJwk = await original.jwk(kid);
+        expect(pendingJwk).toMatchObject({ ...cloud.jwk, kid: ARN, alg: algorithm });
+        expect(pendingJwk).not.toHaveProperty('d');
+        expect(await original.listKeyIds()).toEqual([]);
+        await expect(original.signingKey()).rejects.toThrow(); await expect(original.sign(MESSAGE)).rejects.toThrow();
+        expect(cloud.commands()).not.toContain('SignCommand');
+        // Only reference + non-secret algorithm settings cross this boundary.
+        // Fresh facade and provider; no original state/JWK/activation evidence.
+        const reopened = await AwsKmsKeyProvider.load(cloud.facade(), { ...cloud.config, activeKeyId: keyRef });
+        expect(reopened).not.toBe(original);
+        expect(await reopened.signingKey()).toEqual(pendingJwk); expect(await reopened.listKeyIds()).toEqual([kid]);
+        const manager = new IdentityManager({ identity: {
+          domain: 'agent.example.com', governanceId: 'example.com', logRef: 'microledger:first-setup',
+          statusUrl: 'https://agent.example.com/status', ekUrl: 'https://example.com/entity-jwks.json', kuUrl: 'https://agent.example.com/jwks.json',
+        } }, { keyProvider: reopened, entityKeyProvider: entity.provider, logRegistry: new LogRegistry(), fetchJson, dnsResolver: { fetchTXT } });
+        expect(manager.getKeyProvider()).toBe(reopened);
+        expect(await manager.getKeySet()).toEqual({ keys: [pendingJwk] });
+        expect((await manager.getEntityKeySet()).keys).toEqual([entityJwk]);
+        expect(pendingJwk).not.toEqual(entityJwk);
+        const signature = await manager.getKeyProvider().sign(MESSAGE);
+        expect(signature).toHaveLength(64);
+        const verifierKey = algorithm === 'EdDSA' ? cloud.publicKey : { key: cloud.publicKey, dsaEncoding: 'ieee-p1363' as const };
+        expect(verify(algorithm === 'EdDSA' ? null : 'sha256', MESSAGE, verifierKey, signature)).toBe(true);
+        expect(verify(algorithm === 'EdDSA' ? null : 'sha256', new Uint8Array([1, ...MESSAGE]), verifierKey, signature)).toBe(false);
+        expect(await original.jwk(kid)).toEqual(pendingJwk); expect(await original.listKeyIds()).toEqual([]);
+        await expect(original.signingKey()).rejects.toThrow(); await expect(original.sign(MESSAGE)).rejects.toThrow();
+        expect(cloud.commands().filter(name => name === 'CreateKeyCommand')).toHaveLength(1);
+        expect(cloud.commands().filter(name => name === 'SignCommand')).toHaveLength(1);
+        expect(cloud.commands().every(name => ['CreateKeyCommand', 'GetPublicKeyCommand', 'SignCommand'].includes(name))).toBe(true);
+        expect(cloud.allocated).toEqual([ARN]); expect(cloud.destroy).not.toHaveBeenCalled();
+        expect(fetchJson).not.toHaveBeenCalled(); expect(fetchTXT).not.toHaveBeenCalled();
+      });
+    });
+  }
+
+  for (const vendor of ['AWS', 'GCP'] as const) {
+    it(`Given ${vendor} allocates remotely then loses the create response, When native create rejects, Then no result, invented reference, retry, delete or local fallback [Mode: fake-only]`, async () => {
+      const lost = Object.assign(new Error('native create response lost'), { code: 'UNAVAILABLE' });
+      const aws = nativeAws('EdDSA'); const gcp = gcpCloud();
+      const allocated: string[] = [];
+      aws.send.mockImplementationOnce(async command => {
+        expect(command.constructor.name).toBe('CreateKeyCommand'); allocated.push(ARN); throw lost;
+      });
+      gcp.client.createCryptoKeyVersion.mockImplementationOnce(async ({ parent }) => {
+        expect(parent).toBe(PARENT); allocated.push(VERSION); throw lost;
+      });
+      await withoutLocalCustody(async () => {
+        const result = await (vendor === 'AWS' ? AwsKmsKeyProvider.create(aws.facade(), aws.config)
+          : GcpCloudKmsKeyProvider.create(gcp.client, { ...GCP_CONFIG })).then(
+          value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+        expect(allocated).toEqual([vendor === 'AWS' ? ARN : VERSION]);
+        expect(result.value).toBeUndefined(); expect(result.error).toBeInstanceOf(Error);
+        // Native identity is preserved directly or in the public cause chain;
+        // allocation is only known to the fake service, never returned to SDK.
+        const chain: unknown[] = []; let error: unknown = result.error;
+        while (error instanceof Error && !chain.includes(error)) { chain.push(error); error = error.cause; }
+        expect(chain).toContain(lost);
+        for (const item of chain as Error[]) {
+          expect(item.message).not.toContain(ARN); expect(item.message).not.toContain(VERSION);
+          expect(item).not.toHaveProperty('keyRef'); expect(item).not.toHaveProperty('provider');
+        }
+        if (vendor === 'AWS') {
+          expect(aws.commands()).toEqual(['CreateKeyCommand']); expect(aws.destroy).not.toHaveBeenCalled();
+          expect(gcp.client.createCryptoKeyVersion).not.toHaveBeenCalled();
+        } else {
+          expect(gcp.client.getCryptoKey).toHaveBeenCalledTimes(1); expect(gcp.client.createCryptoKeyVersion).toHaveBeenCalledTimes(1);
+          expect(gcp.client.getCryptoKeyVersion).not.toHaveBeenCalled(); expect(gcp.client.getPublicKey).not.toHaveBeenCalled();
+          expect(gcp.client.asymmetricSign).not.toHaveBeenCalled(); noGcpMutation(gcp.client); expect(aws.send).not.toHaveBeenCalled();
+        }
+      });
+    });
+  }
+
+  it('Given an HSM GCP parent template, When first creation validates it, Then reject before allocating a version [Mode: fake-only]', async () => {
+    const { client } = gcpCloud();
+    const native = { ...client, getCryptoKey: vi.fn(async () => [{ name: PARENT, purpose: 'ASYMMETRIC_SIGN', versionTemplate: { algorithm: 'EC_SIGN_ED25519', protectionLevel: 'HSM' } }]) };
+    await withoutLocalCustody(async () => {
+      await expect(GcpCloudKmsKeyProvider.create(native, { ...GCP_CONFIG })).rejects.toThrow();
+      expect(native.getCryptoKey).toHaveBeenCalledExactlyOnceWith({ name: PARENT });
+      expect(client.createCryptoKeyVersion).not.toHaveBeenCalled(); expect(client.getCryptoKeyVersion).not.toHaveBeenCalled();
+      expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.asymmetricSign).not.toHaveBeenCalled(); noGcpMutation(client);
+    });
+  });
+
+  it('Given pending GCP creation without a readiness RPC, When waiting for readiness, Then reject retaining known reference without public read or retry [Mode: fake-only]', async () => {
+    const { client } = gcpCloud();
+    const create = client.createCryptoKeyVersion.getMockImplementation()!;
+    client.createCryptoKeyVersion.mockImplementationOnce(async input => { const [version] = await create(input); return [{ ...version, state: 'PENDING_GENERATION' }]; });
+    const { getCryptoKeyVersion: _missing, ...native } = client;
+    vi.useFakeTimers();
+    try {
+      await withoutLocalCustody(async () => {
+        const outcome = GcpCloudKmsKeyProvider.create(native, { ...GCP_CONFIG }).then(
+          value => ({ value, error: undefined }), (error: unknown) => ({ value: undefined, error }));
+        await vi.advanceTimersByTimeAsync(5000);
+        const result = await outcome;
+        expect(result.value).toBeUndefined(); expect(result.error).toBeInstanceOf(Error);
+        expect((result.error as Error).message).toContain(VERSION);
+        expect(client.createCryptoKeyVersion).toHaveBeenCalledTimes(1); expect(client.getCryptoKeyVersion).not.toHaveBeenCalled();
+        expect(client.getPublicKey).not.toHaveBeenCalled(); expect(client.asymmetricSign).not.toHaveBeenCalled(); noGcpMutation(client);
+      });
+    } finally { vi.useRealTimers(); }
+  });
 });
