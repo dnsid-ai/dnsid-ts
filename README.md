@@ -91,7 +91,7 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 | `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
 | `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |
 
-`@dnsid-ai/key-gcp` is an optional Node.js provider for existing software Ed25519 Google Cloud KMS versions. See its package README for the runtime API and current configuration/lifecycle limits.
+`@dnsid-ai/key-gcp` is an optional Node.js provider for software Ed25519 Google Cloud KMS versions, with explicit first-version creation through `create()`. Ordinary configuration opens existing versions only. See its package README for the runtime API and current configuration/lifecycle limits.
 
 ## Package layout
 
@@ -303,6 +303,7 @@ Browser support should use injected browser-safe transport and key-provider impl
 
 - Guides and protocol documentation: [docs.dnsid.ai](https://docs.dnsid.ai/)
 - Generated API reference (this repo, one page per package): [`docs/reference/index.md`](docs/reference/index.md)
+- KMS-first operational key setup: [`docs/kms-first-setup.md`](docs/kms-first-setup.md)
 - Security and production operations: [`docs/security.md`](docs/security.md)
 - Examples: [`examples/`](https://github.com/dnsid-ai/dnsid-ts/tree/main/examples)
 - Operational key rotation and restart recovery: [`examples/key-rotation`](examples/key-rotation/README.md)

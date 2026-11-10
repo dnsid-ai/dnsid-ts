@@ -35,7 +35,25 @@ const signature = await provider.sign(new TextEncoder().encode('payload'));
 const jwk = await provider.signingKey();
 ```
 
-Persist `provider.stateSnapshot()` after `generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied `state` object, but persistence is the caller's job.
+For an existing active provider, persist `provider.stateSnapshot()` after
+`generateKey()`, `activate()`, or `supersede()`. The package mutates the supplied
+`state` object, but persistence is the caller's job.
+
+First-key `create()` is different: persist the returned immutable `keyRef` and
+public-key binding in application-owned durable storage before activation. Its
+pending-only snapshot has no active key ID and cannot be reopened with
+`load({ state })`. If restarting with only the handed-off reference, deliberately
+select it with `load({ activeKeyId: savedKeyRef, ... })`; prior local activation
+is not required, and the reopened key is locally active. Do not discard saved
+provider or managed-rotation state to use this reference-only path. Local
+signing eligibility does not establish publication or protocol identity status.
+
+For first-key creation, explicitly call `AwsKmsKeyProvider.create`; no existing
+key is required. See the
+[KMS-first setup guide](https://github.com/dnsid-ai/dnsid-ts/blob/main/docs/kms-first-setup.md)
+for pending-key activation, canonical ARN handoff, publication boundaries, and
+failure recovery. Subsequent startup must reopen the saved key with `load`,
+never recreate it; normal configuration remains open-only.
 
 ## SDK configuration
 
@@ -73,12 +91,26 @@ Minimum runtime permissions:
 - `kms:GetPublicKey`
 - `kms:Sign`
 
+First-key creation permission:
+
+- `kms:CreateKey` for `AwsKmsKeyProvider.create()`
+- `kms:TagResource` only when `tags` are supplied
+
 Rotation permissions, if used:
 
 - `kms:CreateKey` for `generateKey()`
+- `kms:TagResource` only when `tags` are supplied
 - `kms:ScheduleKeyDeletion` for `supersede()` when `scheduleKeyDeletionOnPurge` is enabled
 
 ## Rotation
+
+Like first-key `create()`, `generateKey()` requires the `getPublicKey` response
+for the newly created key to include a nonempty immutable `keyId` matching the
+created reference. A bare key UUID may resolve to its matching canonical key ARN.
+An omitted or unrelated response ID rejects generation before adding a pending
+key, even though the remote key has already been created; the operator owns
+reconciliation and cleanup. Response `keyId` remains optional when opening an
+existing key with `load()`.
 
 ```ts
 const nextKid = await provider.generateKey();
