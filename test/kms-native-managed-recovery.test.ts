@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { CreateKeyCommand, GetPublicKeyCommand, KMSClient, SignCommand } from '@aws-sdk/client-kms';
 import { AwsKmsKeyProvider, AwsSdkKmsFacade, type AwsKmsKeyState } from '@dnsid-ai/key-aws';
-import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
+import { GcpCloudKmsKeyProvider, type GcpCloudKmsConfig } from '@dnsid-ai/key-gcp';
 import { DNSSECState, DnsIdTxtRecord, jwkThumbprint, type DnsIdJWK, type KeyProvider } from '@dnsid-ai/protocol';
 import { RegistryClient } from '@dnsid-ai/registry';
 import { ManagedKeyRotationActivationError, rotateManagedOperationalKey, resumeManagedOperationalKeyRotation, type ManagedKeyRotationResult } from '@dnsid-ai/sdk';
@@ -68,8 +68,7 @@ async function native(vendor: 'AWS' | 'GCP', pendingFault?: 'name' | 'crc') {
   };
   const open = (ref = a, snapshot?: AwsKmsKeyState, pendingKeyVersion?: string): Promise<KeyProvider> => {
     if (vendor === 'AWS') return AwsKmsKeyProvider.load(new AwsSdkKmsFacade(awsClient!), { state: snapshot ?? { activeKeyId: ref }, algorithm: 'ED25519_SHA_512' });
-    // Structural input keeps the pre-implementation guard runnable, not a missing-type RED.
-    const config = { activeKeyVersion: ref, algorithm: 'EC_SIGN_ED25519',
+    const config: GcpCloudKmsConfig = { activeKeyVersion: ref, algorithm: 'EC_SIGN_ED25519',
       ...(pendingKeyVersion === undefined ? {} : { pendingKeyVersion }) };
     return GcpCloudKmsKeyProvider.load(gcp, config);
   };
@@ -338,3 +337,45 @@ for (const fault of ['name', 'crc'] as const) {
     } finally { cloud.close(); }
   });
 }
+
+// README saved A-active/B-pending duplicate rejection. Mode: fake-only.
+it('GCP pending load rejects identical immutable versions before any RPC', async () => {
+  // Given the application saved the same immutable reference for A and B.
+  const a = 'projects/test/locations/global/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7';
+  const gcp = {
+    getPublicKey: vi.fn(async () => { assert.fail('unexpected public-key RPC'); }),
+    createCryptoKeyVersion: vi.fn(async () => { assert.fail('unexpected version creation'); }),
+    asymmetricSign: vi.fn(async () => { assert.fail('unexpected signing RPC'); }),
+  };
+  // When loaded, Then reject the duplicate reference before any vendor RPC.
+  await assert.rejects(() => GcpCloudKmsKeyProvider.load(gcp, {
+    activeKeyVersion: a, pendingKeyVersion: a, algorithm: 'EC_SIGN_ED25519',
+  }), { message: 'Google Cloud KMS active and pending versions must differ' });
+  assert.equal(gcp.getPublicKey.mock.calls.length, 0);
+  assert.equal(gcp.createCryptoKeyVersion.mock.calls.length, 0);
+  assert.equal(gcp.asymmetricSign.mock.calls.length, 0);
+});
+
+// README saved A-active/B-pending duplicate rejection. Mode: fake-only.
+it('GCP pending load rejects distinct versions with the same public key', async () => {
+  // Given distinct immutable A/B references with valid metadata and identical A PEM.
+  const a = 'projects/test/locations/global/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7';
+  const b = a.replace('/7', '/8');
+  const pem = createPublicKey(secretA).export({ type: 'spki', format: 'pem' }).toString();
+  const gcp = {
+    getPublicKey: vi.fn(async ({ name }: { name: string }) => {
+      assert([a, b].includes(name));
+      return [{ name, algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE', pem,
+        pemCrc32c: { value: crc(Buffer.from(pem)) } }];
+    }),
+    createCryptoKeyVersion: vi.fn(async () => { assert.fail('unexpected version creation'); }),
+    asymmetricSign: vi.fn(async () => { assert.fail('unexpected signing RPC'); }),
+  };
+  // When loaded, Then reject B's duplicate public identity, not its valid binding.
+  await assert.rejects(() => GcpCloudKmsKeyProvider.load(gcp, {
+    activeKeyVersion: a, pendingKeyVersion: b, algorithm: 'EC_SIGN_ED25519',
+  }), { message: 'Google Cloud KMS pending version has duplicate public key' });
+  assert.deepEqual(gcp.getPublicKey.mock.calls.map(([request]) => request.name), [a, b]);
+  assert.equal(gcp.createCryptoKeyVersion.mock.calls.length, 0);
+  assert.equal(gcp.asymmetricSign.mock.calls.length, 0);
+});
