@@ -32,6 +32,8 @@ witness dnsid-witness-1 witness.dev.dnsid.ai/w1+50822ded+BAH9KuulelD3yZBDTneG46g
 quorum dnsid-witness-1
 `;
 const DEVELOPMENT_BUNDLE_KEY = 'dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0';
+// Signs dev bundles over the 4096-byte KMS limit (Identity-Digital/dnsid#3286).
+const DEVELOPMENT_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+62f7f9fa+ATdOWF5P759HgvDod9mIC0r1nXhTtJ7x1Ws0fjTvqwDV';
 const PRODUCTION_POLICY = `log log.dnsid.ai+f10a26bc+Aeo6u4o1XvQlcRczgY462ZdIGpm/ejBC2G3vSbyYYqqY
 witness dnsid-witness-1 witness.dnsid.ai/w1+706fd4fb+BLqX21Sx9xG5+5vK7kSK5omcu9+2il20PLdfpOp8lQOJ
 quorum dnsid-witness-1
@@ -107,7 +109,10 @@ describe('DNSid-managed C2SP trust', () => {
     expect(production.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
     expect(development.options.streamBundle).toMatchObject({
       policyDocument: new TextEncoder().encode(DEVELOPMENT_POLICY),
-      bundleKeys: [parseSignedNoteVerifierKey(DEVELOPMENT_BUNDLE_KEY)],
+      bundleKeys: [
+        parseSignedNoteVerifierKey(DEVELOPMENT_BUNDLE_KEY),
+        parseSignedNoteVerifierKey(DEVELOPMENT_OVERFLOW_BUNDLE_KEY),
+      ],
       maxBundleLifetimeMs: 600_000,
       checkpointFreshnessMs: 600_000,
     });
@@ -195,5 +200,40 @@ describe('DNSid-managed C2SP trust', () => {
     expect(result.bundle.signature.kid).toBe('dnsid-stream-bundle+b1e0b597');
     expect(result.bundle.state.loggedState).toBe('ACTIVE');
     expect(result.events).toHaveLength(1);
+  });
+
+  // Reviewed service fixtures from Identity-Digital/dnsid#3286, captured 2026-11-10.
+  // The dev log signs a bundle of at most 4096 signed bytes with its KMS key and a
+  // larger one with a secret-held key, so the managed development reader must
+  // accept both: a two-event stream signed by the KMS key and a three-event stream
+  // (issuance, key rotation, revocation) signed by the secret-held key.
+  it.each([
+    ['c2sp-dev-stream-bundle-kms-key.json', 'dnsid-stream-bundle+0c241174', 2],
+    ['c2sp-dev-stream-bundle-overflow-key.json', 'dnsid-stream-bundle+62f7f9fa', 3],
+  ] as const)('verifies the dev bundle %s under the managed development profile', async (fixture, kid, events) => {
+    const registry = await createDnsidManagedVerificationRegistry();
+    const development = internals(registry.newReader(
+      'c2sp-tlog:public:https://log.dev.dnsid.ai#EREREREREREREREREREREQ',
+    ) as C2spTlogReader);
+    const trust = development.options.streamBundle!;
+    const bytes = readFileSync(new URL(`./vectors/${fixture}`, import.meta.url));
+    const bundle = JSON.parse(bytes.toString('utf8'));
+    const issuance = JSON.parse(Buffer.from(bundle.events[0].entry, 'base64url').toString('utf8'));
+    const result = await verifyC2spStreamBundle(bytes, {
+      expectedFqdn: bundle.fqdn,
+      expectedLogReference: bundle.lr,
+      policyBytes: trust.policyDocument,
+      bundleKeys: trust.bundleKeys,
+      entityKey: issuance.ek,
+      maxBundleBytes: 128 * 1024,
+      maxEvents: 16,
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      nowMs: (bundle.expires - 60) * 1000,
+      trustedCheckpointStore: new InMemoryTrustedC2spCheckpointStore(),
+    });
+    expect(result.bundle.signature.kid).toBe(kid);
+    expect(result.bundle.state.loggedState).toBe('REVOKED');
+    expect(result.events).toHaveLength(events);
   });
 });
