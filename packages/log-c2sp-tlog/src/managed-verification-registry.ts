@@ -17,7 +17,8 @@ const DEVELOPMENT_TRUST_PROFILE = new TextEncoder().encode(`{
   "log_prefix": "https://log.dev.dnsid.ai",
   "tlog_policy": "log log.dev.dnsid.ai+cad12acd+Afnd3sdzfp8nCXzDQchrnWn9QOox5AglR147bURESRqu\\nwitness dnsid-witness-1 witness.dev.dnsid.ai/w1+50822ded+BAH9KuulelD3yZBDTneG46gKZY+OWwdUPBmLmq/YjOkO\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0"
+    "dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0",
+    "dnsid-stream-bundle+62f7f9fa+ATdOWF5P759HgvDod9mIC0r1nXhTtJ7x1Ws0fjTvqwDV"
   ]
 }`);
 const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
