@@ -468,7 +468,7 @@ Normal load/configuration opening never creates keys.
 
 ###### config
 
-`Pick`\<[`AwsKmsConfig`](#awskmsconfig), 
+`Pick`\<[`AwsKmsConfig`](#awskmsconfig),
   \| `"algorithm"`
   \| `"keySpec"`
   \| `"description"`
