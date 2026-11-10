@@ -147,3 +147,44 @@ for (const size of [4096, 4097]) it(`AWS RAW boundary 61: Given ${size} bytes, W
   }
   expect(creates).toBe(0);
 });
+
+// COV-1 unchanged compatibility. Mode: real-capable (AWS=fake native SDK seam).
+for (const referenceMode of ['omitted-KeyId', 'alias-name', 'alias-ARN'] as const) {
+  it(`AWS compatibility COV-1: Given ${referenceMode}, When opened through official facade, Then canonical public binding signs without provisioning`, async () => {
+    const { AwsSdkKmsFacade } = await import('@dnsid-ai/key-aws');
+    const { GetPublicKeyCommand, SignCommand } = await import('@aws-sdk/client-kms');
+    const canonical = arns[0];
+    const requested = referenceMode === 'alias-name' ? 'alias/dnsid-current'
+      : referenceMode === 'alias-ARN' ? 'arn:aws:kms:us-east-1:123456789012:alias/dnsid-current' : canonical;
+    const calls: string[] = [];
+    // Only service responses are synthetic; native facade and provider are real.
+    const client = {
+      async send(command: { input: unknown; constructor: { name: string } }) {
+        calls.push(command.constructor.name);
+        if (command instanceof GetPublicKeyCommand) {
+          expect(command.input).toEqual({ KeyId: requested });
+          return { ...(referenceMode === 'omitted-KeyId' ? {} : { KeyId: canonical }),
+            PublicKey: publicKey.export({ format: 'der', type: 'spki' }),
+            KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: ['ED25519_SHA_512'] };
+        }
+        if (command instanceof SignCommand) {
+          expect(command.input.KeyId).toBe(canonical);
+          expect(command.input.MessageType).toBe('RAW');
+          expect(command.input.SigningAlgorithm).toBe('ED25519_SHA_512');
+          expect(Buffer.from(command.input.Message!)).toEqual(Buffer.from('COV-1 unchanged compatibility'));
+          return { KeyId: canonical, Signature: sign(null, command.input.Message!, privateKey), SigningAlgorithm: 'ED25519_SHA_512' };
+        }
+        throw new Error('no provisioning, fallback or other native operation permitted');
+      },
+    };
+    const provider = await AwsKmsKeyProvider.load(new AwsSdkKmsFacade(client), { activeKeyId: requested, algorithm: 'ED25519_SHA_512' });
+    const key = await provider.signingKey();
+    expect(key).toMatchObject({ kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA', kid: canonical, x });
+    expect(key).not.toHaveProperty('d'); expect(thumbprint(key.x!)).toBe(thumb);
+    expect(await provider.listKeyIds()).toEqual([canonical]);
+    expect(await provider.jwk(canonical)).toMatchObject({ kid: canonical, x });
+    const payload = Buffer.from('COV-1 unchanged compatibility');
+    expect(verify(null, payload, publicKey, await provider.sign(payload))).toBe(true);
+    expect(calls).toEqual(['GetPublicKeyCommand', 'SignCommand']);
+  });
+}
