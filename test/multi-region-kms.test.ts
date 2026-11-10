@@ -122,3 +122,28 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
     expect(seen.at(-1)).toBe('GetPublicKeyCommand');
   } finally { rpc.mockRestore(); }
 });
+
+// F2 Mode: fake-only (AWS call accounting), packet/vendor inclusive RAW bound.
+for (const size of [4096, 4097]) it(`AWS RAW boundary 61: Given ${size} bytes, When signing, Then enforce the bound before native Sign`, async () => {
+  const fixture = aws(arns[0]);
+  let creates = 0;
+  fixture.client.createSigningKey = async () => { creates++; throw new Error('unexpected generation'); };
+  const provider = await AwsKmsKeyProvider.load(fixture.client, { activeKeyId: arns[0], algorithm: 'ED25519_SHA_512' });
+  const payload = Buffer.alloc(size, 0x61);
+  // The fake signs either size, so rejection must come before native Sign.
+  for (const action of [() => provider.sign(payload), () => provider.signKey(arns[0], payload)]) {
+    const before = fixture.calls.filter(call => call === 'sign').length;
+    const result = await action().then(signature => ({ signature, error: undefined }), error => ({ signature: undefined, error }));
+    const nativeCalls = fixture.calls.filter(call => call === 'sign').length - before;
+    if (size === 4096) {
+      expect(result.error).toBeUndefined(); expect(result.signature).toBeDefined();
+      expect(nativeCalls).toBe(1);
+      expect(verify(null, payload, publicKey, result.signature!)).toBe(true);
+    } else {
+      expect.soft(result.error, '4097 bytes must return an error, no substitute signature').toBeDefined();
+      expect.soft(result.signature).toBeUndefined();
+      expect.soft(nativeCalls, '4097 bytes must fail before native Sign').toBe(0);
+    }
+  }
+  expect(creates).toBe(0);
+});
