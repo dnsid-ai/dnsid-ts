@@ -45,10 +45,24 @@ const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
   ]
 }`);
 
+// Matches the reviewed service profile embedded in the DNSid CLI;
+// the log's discovery endpoints are not trust anchors.
+const STAGING_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.stg.dnsid.ai",
+  "tlog_policy": "log log.stg.dnsid.ai+f6ad3bd8+ARl6baGOUzNIH2QvsnlqA8C71WM4SYecXE7eAwmytAsL\\nwitness dnsid-witness-1 witness.stg.dnsid.ai/w1+11a84cde+BEKB6hwsWXOm+PMnS7/JvO4i6bazjzJ8ojECphOTB3gt\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+65c31b14+AXCMTPR4I/fqOgSHge4AEMp+1pWcflDqC1YEDaHDe3Ps",
+    "dnsid-stream-bundle+cdd64875+ATu1SYXvRiZPBUzrUJAfKHeMH3eHr3T22jKez/C3Yl1m"
+  ]
+}`);
+
 const MANAGED_CATALOG = [
   { scope: 'public', logPrefix: 'https://log.dev.dnsid.ai', trustProfileDocument: DEVELOPMENT_TRUST_PROFILE },
   { scope: 'public', logPrefix: 'https://log.dnsid.ai', trustProfileDocument: PRODUCTION_TRUST_PROFILE },
   { scope: 'public', logPrefix: 'https://log.partners.dnsid.ai', trustProfileDocument: PARTNERS_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.stg.dnsid.ai', trustProfileDocument: STAGING_TRUST_PROFILE },
 ] as const;
 
 /** Shared infrastructure for {@link createDnsidManagedVerificationRegistry}. */
@@ -70,7 +84,8 @@ export interface DnsidManagedVerificationOptions {
  *
  * Trust snapshots are bundled with the SDK and selected only after parsing an
  * exact canonical `(scope, logPrefix)` pair. The catalog covers the
- * development, production, and partner (`https://log.partners.dnsid.ai`) logs.
+ * development, production, partner (`https://log.partners.dnsid.ai`), and staging
+ * (`https://log.stg.dnsid.ai`) logs.
  * Managed verification prefers signed stream bundles with safe raw-scan fallback.
  */
 export async function createDnsidManagedVerificationRegistry(

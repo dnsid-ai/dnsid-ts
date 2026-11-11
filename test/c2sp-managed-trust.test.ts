@@ -64,6 +64,13 @@ type ReaderInternals = {
 
 const internals = (reader: C2spTlogReader): ReaderInternals => reader as unknown as ReaderInternals;
 
+const STAGING_POLICY = `log log.stg.dnsid.ai+f6ad3bd8+ARl6baGOUzNIH2QvsnlqA8C71WM4SYecXE7eAwmytAsL
+witness dnsid-witness-1 witness.stg.dnsid.ai/w1+11a84cde+BEKB6hwsWXOm+PMnS7/JvO4i6bazjzJ8ojECphOTB3gt
+quorum dnsid-witness-1
+`;
+const STAGING_BUNDLE_KEY = 'dnsid-stream-bundle+65c31b14+AXCMTPR4I/fqOgSHge4AEMp+1pWcflDqC1YEDaHDe3Ps';
+// Signs staging bundles over the 4096-byte KMS limit (Identity-Digital/dnsid#3286).
+const STAGING_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+cdd64875+ATu1SYXvRiZPBUzrUJAfKHeMH3eHr3T22jKez/C3Yl1m';
 const PARTNERS_POLICY = `log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1
 witness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4
 quorum dnsid-witness-1
@@ -244,6 +251,69 @@ describe('DNSid-managed C2SP trust', () => {
     });
     expect(result.bundle.signature.kid).toBe(kid);
     expect(result.bundle.state.loggedState).toBe('REVOKED');
+    expect(result.events).toHaveLength(events);
+  });
+
+  it('selects the exact staging profile with the managed defaults', async () => {
+    const fetcher: C2spBoundedResourceFetcher = {
+      fetchBounded: vi.fn(async () => { throw new Error('not called during catalog construction'); }),
+      securityGuarantees: requiredC2spResourceFetchGuarantees,
+    };
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const registry = await createDnsidManagedVerificationRegistry({
+      resourceFetcher: fetcher,
+      trustedCheckpointStore: store,
+    });
+    const staging = internals(registry.newReader(
+      'c2sp-tlog:public:https://log.stg.dnsid.ai#EREREREREREREREREREREQ',
+    ) as C2spTlogReader);
+
+    expect(staging.checkpointStore).toBe(store);
+    expect(staging.source.resourceFetcher).toBe(fetcher);
+    expect(staging.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
+    expect(staging.options.streamBundle).toMatchObject({
+      policyDocument: new TextEncoder().encode(STAGING_POLICY),
+      bundleKeys: [
+        parseSignedNoteVerifierKey(STAGING_BUNDLE_KEY),
+        parseSignedNoteVerifierKey(STAGING_OVERFLOW_BUNDLE_KEY),
+      ],
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      required: undefined,
+    });
+  });
+
+  // Reviewed service fixtures captured from log.stg.dnsid.ai on 2026-11-11
+  // (Identity-Digital/dnsid#3286): a one-event stream small enough for the KMS bundle
+  // key and a three-event stream (issuance, key rotation, revocation) over the
+  // 4096-byte KMS limit, signed by the secret-held key.
+  it.each([
+    ['c2sp-staging-stream-bundle-kms-key.json', 'dnsid-stream-bundle+65c31b14', 'ACTIVE', 1],
+    ['c2sp-staging-stream-bundle-overflow-key.json', 'dnsid-stream-bundle+cdd64875', 'REVOKED', 3],
+  ] as const)('verifies the staging bundle %s under the managed staging profile', async (fixture, kid, state, events) => {
+    const registry = await createDnsidManagedVerificationRegistry();
+    const staging = internals(registry.newReader(
+      'c2sp-tlog:public:https://log.stg.dnsid.ai#EREREREREREREREREREREQ',
+    ) as C2spTlogReader);
+    const trust = staging.options.streamBundle!;
+    const bytes = readFileSync(new URL(`./vectors/${fixture}`, import.meta.url));
+    const bundle = JSON.parse(bytes.toString('utf8'));
+    const issuance = JSON.parse(Buffer.from(bundle.events[0].entry, 'base64url').toString('utf8'));
+    const result = await verifyC2spStreamBundle(bytes, {
+      expectedFqdn: bundle.fqdn,
+      expectedLogReference: bundle.lr,
+      policyBytes: trust.policyDocument,
+      bundleKeys: trust.bundleKeys,
+      entityKey: issuance.ek,
+      maxBundleBytes: 128 * 1024,
+      maxEvents: 16,
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      nowMs: (bundle.expires - 60) * 1000,
+      trustedCheckpointStore: new InMemoryTrustedC2spCheckpointStore(),
+    });
+    expect(result.bundle.signature.kid).toBe(kid);
+    expect(result.bundle.state.loggedState).toBe(state);
     expect(result.events).toHaveLength(events);
   });
 });
