@@ -1,4 +1,17 @@
 
+## [0.36.0] - 2026-11-11
+
+### Bug Fixes
+
+- fix(foundry): finish missing-key and private helper review fixes ([#156](https://github.com/dnsid-ai/dnsid-ts/pull/156))
+
+### Features
+
+- Feat/known foundry create ([#151](https://github.com/dnsid-ai/dnsid-ts/pull/151))
+- feat: explicit AWS/GCP KMS-first operational key setup (#58) ([#152](https://github.com/dnsid-ai/dnsid-ts/pull/152))
+- feat: trust dnsid-dev's secret-held stream-bundle key ([#154](https://github.com/dnsid-ai/dnsid-ts/pull/154))
+
+
 ## [0.35.0] - 2026-11-06
 
 ### Bug Fixes
