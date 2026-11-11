@@ -437,7 +437,7 @@ such as `dnsid local` is reachable for policy and log reads.
 function createDnsidManagedVerificationRegistry(options?): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L74)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L92)
 
 Creates a registry for the reviewed trust roots of DNSid-managed
 DNSid logs. Calling this separately named factory is an explicit application
@@ -445,7 +445,8 @@ trust decision; the generic factory never selects these roots implicitly.
 
 Trust snapshots are bundled with the SDK and selected only after parsing an
 exact canonical `(scope, logPrefix)` pair. The catalog covers the
-development, production, and partner (`https://log.partners.dnsid.ai`) logs.
+development, production, partner (`https://log.partners.dnsid.ai`), and staging
+(`https://log.stg.dnsid.ai`) logs.
 Managed verification prefers signed stream bundles with safe raw-scan fallback.
 
 #### Parameters
