@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/foundry",
   "author": "Known Systems AI, Inc.",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "private": true,
   "description": "Known Foundry named identity creation and durable recovery.",
   "type": "module",
@@ -40,10 +40,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/sdk": "^0.35.0",
-    "@dnsid-ai/registry": "^0.35.0",
-    "@dnsid-ai/transport": "^0.35.0",
-    "@dnsid-ai/log-c2sp-tlog": "^0.35.0"
+    "@dnsid-ai/sdk": "^0.36.0",
+    "@dnsid-ai/registry": "^0.36.0",
+    "@dnsid-ai/transport": "^0.36.0",
+    "@dnsid-ai/log-c2sp-tlog": "^0.36.0"
   },
   "publishConfig": {
     "access": "public"
