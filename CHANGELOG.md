@@ -1,4 +1,11 @@
 
+## [0.37.0] - 2026-11-11
+
+### Features
+
+- feat: trust new stream-bundle keys and add the staging log to the managed catalog ([#157](https://github.com/dnsid-ai/dnsid-ts/pull/157))
+
+
 ## [0.36.0] - 2026-11-11
 
 ### Bug Fixes
