@@ -39,6 +39,8 @@ witness dnsid-witness-1 witness.dnsid.ai/w1+706fd4fb+BLqX21Sx9xG5+5vK7kSK5omcu9+
 quorum dnsid-witness-1
 `;
 const PRODUCTION_BUNDLE_KEY = 'dnsid-stream-bundle+2e77a3f1+AbKj/zrAfK04/NM07Zj7kxP2YXbM5neT8ym6juXC2PXG';
+// Signs production bundles over the 4096-byte KMS limit (Identity-Digital/dnsid#3286).
+const PRODUCTION_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+0f5a76a0+AXavEa0+EGj/qZFH4QuAOeomigSukspWQHC7PrVJa7pj';
 
 type ReaderInternals = {
   checkpointStore: unknown;
@@ -67,6 +69,8 @@ witness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8F
 quorum dnsid-witness-1
 `;
 const PARTNERS_BUNDLE_KEY = 'dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ';
+// Signs partner bundles over the 4096-byte KMS limit (Identity-Digital/dnsid#3286).
+const PARTNERS_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+bc0d8136+AVfizbWWQD+s2N7OfpOeP7IaWF8nAeTqT4JpD03vKqc6';
 
 describe('DNSid-managed C2SP trust', () => {
   it('implements the managed trust selection conformance vectors', async () => {
@@ -119,7 +123,10 @@ describe('DNSid-managed C2SP trust', () => {
     expect(production.source).toBeInstanceOf(ScanStreamSource);
     expect(production.options.streamBundle).toMatchObject({
       policyDocument: new TextEncoder().encode(PRODUCTION_POLICY),
-      bundleKeys: [parseSignedNoteVerifierKey(PRODUCTION_BUNDLE_KEY)],
+      bundleKeys: [
+        parseSignedNoteVerifierKey(PRODUCTION_BUNDLE_KEY),
+        parseSignedNoteVerifierKey(PRODUCTION_OVERFLOW_BUNDLE_KEY),
+      ],
       maxBundleLifetimeMs: 600_000,
       checkpointFreshnessMs: 600_000,
       required: undefined,
@@ -156,7 +163,10 @@ describe('DNSid-managed C2SP trust', () => {
     expect(partners.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
     expect(partners.options.streamBundle).toMatchObject({
       policyDocument: new TextEncoder().encode(PARTNERS_POLICY),
-      bundleKeys: [parseSignedNoteVerifierKey(PARTNERS_BUNDLE_KEY)],
+      bundleKeys: [
+        parseSignedNoteVerifierKey(PARTNERS_BUNDLE_KEY),
+        parseSignedNoteVerifierKey(PARTNERS_OVERFLOW_BUNDLE_KEY),
+      ],
       maxBundleLifetimeMs: 600_000,
       checkpointFreshnessMs: 600_000,
       required: undefined,
