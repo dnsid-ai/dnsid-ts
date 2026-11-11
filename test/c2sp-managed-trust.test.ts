@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -20,6 +21,7 @@ const vector = JSON.parse(readFileSync(
   new URL('./vectors/c2sp-managed-trust-selection.json', import.meta.url),
   'utf8',
 )) as {
+  catalog: Array<{ id: string; scope: string; logPrefix: string }>;
   cases: Array<{
     id: string;
     lr: string;
@@ -315,5 +317,28 @@ describe('DNSid-managed C2SP trust', () => {
     expect(result.bundle.signature.kid).toBe(kid);
     expect(result.bundle.state.loggedState).toBe(state);
     expect(result.events).toHaveLength(events);
+  });
+
+  // Parsing checks only the key ID's length, so recompute each signed-note key ID
+  // (the first four bytes of SHA-256 over name, newline, type byte and key) for every
+  // managed bundle key, to catch a key copied with the wrong ID before its log uses it.
+  it('pins managed bundle keys whose IDs match their key bytes', async () => {
+    const registry = await createDnsidManagedVerificationRegistry();
+    for (const entry of vector.catalog) {
+      const reader = internals(registry.newReader(
+        `c2sp-tlog:${entry.scope}:${entry.logPrefix}#EREREREREREREREREREREQ`,
+      ) as C2spTlogReader);
+      const keys = reader.options.streamBundle!.bundleKeys;
+      expect(keys.length, entry.logPrefix).toBeGreaterThan(0);
+      for (const key of keys) {
+        const computed = createHash('sha256')
+          .update(`${key.name}\n`)
+          .update(key.signatureType ?? new Uint8Array([1]))
+          .update(key.keyBytes)
+          .digest()
+          .subarray(0, 4);
+        expect(Buffer.from(computed).toString('hex'), entry.logPrefix).toBe(Buffer.from(key.keyId!).toString('hex'));
+      }
+    }
   });
 });

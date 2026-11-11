@@ -45,7 +45,8 @@ const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
   ]
 }`);
 
-// Matches the reviewed service profile embedded in the DNSid CLI;
+// Matches the reviewed service profile internal/c2sptrust/profiles/staging.json in
+// Identity-Digital/dnsid (its second bundle key from Identity-Digital/dnsid#3526);
 // the log's discovery endpoints are not trust anchors.
 const STAGING_TRUST_PROFILE = new TextEncoder().encode(`{
   "version": 1,
