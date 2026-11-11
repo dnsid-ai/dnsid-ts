@@ -209,6 +209,18 @@ describe('Known Foundry create', () => {
     });
   });
 
+  it.each(['cliDirectory', 'keyRef'])('reports a missing %s key before any registry call', async source => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await expect(create('agent', { ...f.options, keyProvider: undefined,
+        config: { ...f.options.config, keySource: { [source]: source === 'cliDirectory' ? root : join(root, 'missing.json') } },
+      })).rejects.toMatchObject({ category: 'KEY_MISSING', resumable: true, cause: { cause: { code: 'ENOENT' } },
+        message: expect.stringContaining('create the key first') });
+      for (const method of Object.values(f.registry)) expect(method).not.toHaveBeenCalled();
+    });
+  });
+
   it('rejects a different provider key without generating or replacing anything', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);

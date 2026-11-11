@@ -503,7 +503,7 @@ async function identityKeyDir(dnsidDir: string, domain: string): Promise<string>
       if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
     }
   }
-  return path.join(dnsidDir, normalizeFQDN(domain, true));
+  return domain ? path.join(dnsidDir, normalizeFQDN(domain, true)) : dnsidDir;
 }
 
 // ---------------------------------------------------------------------------------------------

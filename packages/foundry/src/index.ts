@@ -6,9 +6,9 @@ import {
   type KeyProvider, type LogEvent, type LogRegistry, type ManagedIssuanceState, type VerifiedDomain,
 } from '@dnsid-ai/sdk';
 import {
-  loadEnvironment, logRegistryFromTrust, operationalKeyProvider, validateKeySource,
-  type FoundryConfig, type LoadedConfig,
+  loadEnvironment, type FoundryConfig, type LoadedConfig,
 } from '@dnsid-ai/sdk/node';
+import { logRegistryFromTrust, operationalKeyProvider, validateKeySource } from '../../sdk/src/config-loading.ts';
 import {
   DEFAULT_REGISTRY_URL, RegistryClient, RegistryRequestError,
   type AgentRegistration, type LiveAgentRegistrationInput, type LiveProvisioningResponse,
