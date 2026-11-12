@@ -18,7 +18,6 @@ import {
   SUPPORTED_PUBLISH_PROFILES,
   DnsIdTxtRecord,
   fromBase64Url,
-  jwkThumbprint,
   JWKS,
   normalizeFQDN,
   ParseError,
@@ -90,28 +89,6 @@ export interface LiveAgentRegistrationInput {
   capabilitiesUrl?: string;
 }
 
-export interface LiveChallengeTranscript {
-  protocol: 'dnsid-live-provisioning-pop/v1';
-  orgId: string;
-  agentId: string;
-  fqdn: string;
-  keyId: string;
-  nonce: string;
-  expiresAt: Date;
-}
-
-export interface LiveProvisioningResponse {
-  requestId: string;
-  agentId: string;
-  status: string;
-  challenge: string;
-  challengeMessage: string;
-  /** Assigned domain from the validated challenge, or the replay response's domain member. */
-  domain?: string;
-  challengeTranscript?: LiveChallengeTranscript;
-  raw?: unknown;
-}
-
 /**
  * Default registry base URL: the local registry started by `dnsid local up`.
  * Hosted use requires an explicit `baseUrl` (see `createRegistryClientFromEnvironment()` in
@@ -174,32 +151,6 @@ export interface SubmitIdentityRecordSignatureInput {
   signature: Uint8Array | string;
 }
 
-export interface ChallengeSignatureInput {
-  nonce: string;
-  signature: Uint8Array | string;
-}
-
-export interface LiveProofInput {
-  requestId: string;
-  challenge: string;
-  publicKeyJwk: DnsIdJWK;
-  signature: Uint8Array | string;
-}
-
-export interface LiveProofResponse {
-  requestId: string;
-  agentId: string;
-  status: string;
-  raw?: unknown;
-}
-
-export interface LiveProofReissueResponse extends LiveProofResponse {
-  challenge: string;
-  challengeMessage: string;
-  domain: string;
-  challengeTranscript: LiveChallengeTranscript;
-}
-
 export interface LifecycleResult {
   id: string;
   registryStatus: string;
@@ -217,11 +168,20 @@ export interface OrganizationOnboardingResponse {
   ready: boolean;
 }
 
+/** Missing required publication progress on authenticated registry-managed detail. */
+export class UnsupportedRegistryResponse extends Error {
+  constructor(readonly registration: AgentRegistration) {
+    super('registry-managed detail requires boolean dns_published');
+    this.name = 'UnsupportedRegistryResponse';
+  }
+}
+
 export interface AgentRegistration {
   id: string;
   domain: string;
   publicationAuthority: PublicationAuthority;
   registryStatus: string;
+  /** Required on authenticated registry-managed detail; true permits preparation during PROVISIONING. */
   dnsPublished?: boolean;
   protocolStatus?: AgentStatus;
   registryUrl: string;
@@ -283,7 +243,7 @@ export type PreparedEventSubmissionErrorState = 'pending' | 'rejected' | 'indete
  * `retryWithSameBytes` is deliberately true only when retrying the same
  * idempotency key and byte sequence is safe and required for reconciliation:
  * code `TLOG_SUBMISSION_BUSY` (state `pending`), code
- * `TLOG_SUBMISSION_INDETERMINATE`, or HTTP 408, 425, 429 or any 5xx whatever
+ * `TLOG_PUBLICATION_REQUIRED` (state `pending`), `TLOG_SUBMISSION_INDETERMINATE`, or HTTP 408, 425, 429 or any 5xx whatever
  * the code (state `indeterminate`). Code matching ignores case. Every other
  * failure is `rejected`.
  */
@@ -393,7 +353,8 @@ export class RegistryClient {
     }
   }
 
-  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<LiveProvisioningResponse> {
+  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<AgentRegistration> {
+    input = structuredClone(input);
     for (const field of ['domain', 'zoneId', 'governanceDomain', 'rootDomain', 'tier', 'managed']) {
       if (field in input) throw new ArgumentError(`Live registration forbids ${field}`);
     }
@@ -403,31 +364,36 @@ export class RegistryClient {
     validateIdempotencyKey(idempotencyKey);
     assertManagedLivePublicJwk(input.publicKeyJwk);
     const publicKeyJwk = { ...input.publicKeyJwk };
-    const expectedKeyId = await jwkThumbprint(publicKeyJwk);
-    const resp = await this.post('/api/v1/agent', {
-      name: input.name,
-      public_key: publicKeyJwk,
-      tier: 'live',
-      environment: input.environment ?? 'production',
-      managed: true,
-      capabilities_url: input.capabilitiesUrl,
-    }, idempotencyKey, options);
-    if (resp.status !== 202) throw new Error(`invalid registry live registration response: expected HTTP 202, received ${resp.status}`);
-    const raw = await readJsonObject(resp, 'registry live registration response');
-    const requestId = requiredString(raw, 'request_id', 'registry live registration response');
-    if (requestId !== idempotencyKey) throw new Error('invalid registry live registration response: request_id does not match Idempotency-Key');
-    const agentId = requiredString(raw, 'agent_id', 'registry live registration response');
-    const status = requiredString(raw, 'status', 'registry live registration response');
-    const challenge = wireString(raw, 'challenge', 'registry live registration response');
-    const challengeMessage = wireString(raw, 'challenge_message', 'registry live registration response');
-    if (raw.domain !== undefined && raw.domain !== null && typeof raw.domain !== 'string') throw new Error('invalid registry live registration response: domain must be a string');
-    const wireDomain = optionalString(raw, 'domain');
-    const domain = wireDomain === undefined ? undefined : normalizeFQDN(wireDomain, true);
-    const response: LiveProvisioningResponse = { requestId, agentId, status, challenge, challengeMessage, ...(domain === undefined ? {} : { domain }), raw };
-    if (normalizeRegistryStatus(status) !== 'CHALLENGE_PENDING') return response;
-    const parsed = parseLiveChallenge(challenge, challengeMessage, agentId, expectedKeyId);
-    if (domain !== undefined && domain !== parsed.domain) throw new Error('invalid registry live registration response: domain does not match challenge');
-    return { ...response, ...parsed };
+    let creation: Record<string, unknown> | undefined;
+    let httpStatus: number | undefined;
+    try {
+      const resp = await this.post('/api/v1/agent', {
+        name: input.name, public_key: publicKeyJwk, tier: 'live',
+        environment: input.environment ?? 'production', managed: true,
+        capabilities_url: input.capabilitiesUrl,
+      }, idempotencyKey, options);
+      httpStatus = resp.status;
+      creation = await readJsonObject(resp, 'registry live registration response');
+      if (resp.status !== 201) throw new Error('Live registration requires HTTP 201');
+      if (resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new Error('Live response Idempotency-Key does not match the request');
+      const domain = requiredString(creation, 'domain', 'registry live registration response');
+      if (normalizeFQDN(domain, true) !== domain) throw new Error('Live response domain must be canonical');
+      const publicationConfig = publicationConfigFromResponse(creation.publication_config);
+      if (!publicationConfig) throw new Error('Live response requires publication_config');
+      validatePublicationConfig(publicationConfig, domain);
+      return {
+        id: requiredString(creation, 'id', 'registry live registration response'), domain,
+        registryStatus: requiredString(creation, 'status', 'registry live registration response'),
+        publicationAuthority: 'registry', publicationConfig,
+        oidcIssuerUrl: requiredString(creation, 'oidc_issuer_url', 'registry live registration response'),
+        registryUrl: this.baseUrl, raw: creation,
+      };
+    } catch (cause) {
+      options.signal?.throwIfAborted();
+      if (cause instanceof RegistryRequestError) throw cause;
+      throw new RegistrationError(idempotencyKey, optionalString(creation ?? {}, 'domain'), cause,
+        input, creation, httpStatus);
+    }
   }
 
   async registerSelfManagedAgent(input: Omit<AgentRegistrationInput, 'managed' | 'zoneId'> & { domain: string }): Promise<AgentRegistration> {
@@ -438,69 +404,13 @@ export class RegistryClient {
     return this.registerAgent({ ...input, environment: input.environment ?? 'production', managed: true });
   }
 
-  async verifyAgent(domain: string): Promise<AgentRegistration> {
-    return this.triggerVerification(domain);
+  async verifyAgent(domain: string): Promise<LifecycleResult> {
+    const response = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/verify`);
+    return lifecycleResultFromResponse(await readJsonObject(response, 'registry verification response'));
   }
 
-  async triggerVerification(domain: string): Promise<AgentRegistration> {
-    await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/verify`);
-    const registration = await this.getRegistration(domain);
-    if (!registration) throw new Error(`registry did not return the verified agent ${domain}`);
-    return registration;
-  }
-
-  async submitChallengeSignature(domain: string, input: ChallengeSignatureInput): Promise<LifecycleResult> {
-    const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/challenge`, {
-      nonce: input.nonce,
-      signature: signatureText(input.signature),
-    });
-    return lifecycleResultFromResponse(await readJsonObject(resp, 'registry challenge response'));
-  }
-
-  async submitLiveProof(domain: string, input: LiveProofInput, options: { signal?: AbortSignal } = {}): Promise<LiveProofResponse> {
-    validateIdempotencyKey(input.requestId);
-    assertManagedLivePublicJwk(input.publicKeyJwk);
-    const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/proof`, {
-      request_id: input.requestId,
-      challenge: input.challenge,
-      public_key: input.publicKeyJwk,
-      signature: signatureText(input.signature),
-    }, input.requestId, options);
-    if (resp.status !== 202) throw new Error(`invalid registry live proof response: expected HTTP 202, received ${resp.status}`);
-    const raw = await readJsonObject(resp, 'registry live proof response');
-    const requestId = requiredString(raw, 'request_id', 'registry live proof response');
-    if (requestId !== input.requestId) throw new Error('invalid registry live proof response: request_id does not match Idempotency-Key');
-    return {
-      requestId,
-      agentId: requiredString(raw, 'agent_id', 'registry live proof response'),
-      status: requiredString(raw, 'status', 'registry live proof response'),
-      raw,
-    };
-  }
-
-  async reissueLiveProof(domain: string, requestId: string, publicKeyJwk: DnsIdJWK, options: { signal?: AbortSignal } = {}): Promise<LiveProofReissueResponse> {
-    validateIdempotencyKey(requestId);
-    assertManagedLivePublicJwk(publicKeyJwk);
-    const expectedKeyId = await jwkThumbprint({ ...publicKeyJwk });
-    const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/proof/reissue`, {
-      request_id: requestId,
-    }, requestId, options);
-    if (resp.status !== 202) throw new Error(`invalid registry live proof reissue response: expected HTTP 202, received ${resp.status}`);
-    const raw = await readJsonObject(resp, 'registry live proof reissue response');
-    const responseRequestId = requiredString(raw, 'request_id', 'registry live proof reissue response');
-    if (responseRequestId !== requestId) throw new Error('invalid registry live proof reissue response: request_id does not match Idempotency-Key');
-    const agentId = requiredString(raw, 'agent_id', 'registry live proof reissue response');
-    const challenge = requiredString(raw, 'challenge', 'registry live proof reissue response');
-    const challengeMessage = requiredString(raw, 'challenge_message', 'registry live proof reissue response');
-    return {
-      requestId: responseRequestId,
-      agentId,
-      status: requiredString(raw, 'status', 'registry live proof reissue response'),
-      challenge,
-      challengeMessage,
-      ...parseLiveChallenge(challenge, challengeMessage, agentId, expectedKeyId, domain),
-      raw,
-    };
+  async triggerVerification(domain: string): Promise<LifecycleResult> {
+    return this.verifyAgent(domain);
   }
 
   async getAgent(domain: string): Promise<AgentRegistration | undefined> {
@@ -634,7 +544,7 @@ export class RegistryClient {
     const publicationAuthority = managed === 'dnsid' ? 'registry' : managed === 'self' ? 'client' : undefined;
     if (!publicationAuthority) throw new Error(`unsupported registry managed mode: ${managed}`);
     const protocolStatusRaw = raw['protocolStatus'];
-    return {
+    const registration: AgentRegistration = {
       id: requiredString(raw, 'id', 'registry status response'),
       domain: optionalString(raw, 'domain') ?? domain,
       publicationAuthority,
@@ -646,6 +556,8 @@ export class RegistryClient {
       oidcIssuerUrl: optionalString(raw, 'oidc_issuer_url'),
       raw,
     };
+    if (publicationAuthority === 'registry' && typeof raw.dns_published !== 'boolean') throw new UnsupportedRegistryResponse(registration);
+    return registration;
   }
 
   /** @deprecated Use getRegistration(). */
@@ -682,6 +594,15 @@ export class RegistryClient {
   }
 
   async submitPreparedEvent(domain: string, entryBytes: Uint8Array, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<SubmissionResult> {
+    return this.submitEvent(domain, entryBytes, idempotencyKey, options, true);
+  }
+
+  /** Receipt hashes the server-completed entry; verify its inclusion and owner envelope before completion. */
+  async submitOwnerIssuance(domain: string, ownerEntryBytes: Uint8Array, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<SubmissionResult> {
+    return this.submitEvent(domain, ownerEntryBytes, idempotencyKey, options, false);
+  }
+
+  private async submitEvent(domain: string, entryBytes: Uint8Array, idempotencyKey: string, options: { signal?: AbortSignal }, complete: boolean): Promise<SubmissionResult> {
     if (entryBytes.length === 0) throw new Error('entryBytes must not be empty');
     validateIdempotencyKey(idempotencyKey);
     // Snapshot once so the bytes hashed below are exactly the bytes passed to
@@ -709,8 +630,7 @@ export class RegistryClient {
         if (!/^[0-9a-f]{64}$/.test(entryHash)) {
           throw new Error('invalid registry tlog submission response: accepted entry_hash must be lowercase SHA-256 hex');
         }
-        const expectedEntryHash = await sha256Hex(submittedEntry);
-        if (entryHash !== expectedEntryHash) {
+        if (complete && entryHash !== await sha256Hex(submittedEntry)) {
           throw new Error('registry accepted a different prepared-event entry_hash than the exact submitted bytes');
         }
       }
@@ -1035,7 +955,7 @@ async function preparedEventSubmissionError(resp: Response): Promise<PreparedEve
   const raw = await readErrorResponse(resp);
   const code = raw.code ?? `HTTP_${resp.status}`;
   const normalizedCode = code.toUpperCase();
-  const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY';
+  const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY' || normalizedCode === 'TLOG_PUBLICATION_REQUIRED';
   // The entry may already be in the log when the registry, or a proxy in
   // front of it, fails the request, so a 5xx or transient status is retried
   // with the same bytes whatever the code.
@@ -1111,11 +1031,6 @@ function requiredString(raw: Record<string, unknown>, field: string, label: stri
   if (typeof value !== 'string' || value.length === 0) throw new Error(`invalid ${label}: ${field} must be a non-empty string`);
   return value;
 }
-function wireString(raw: Record<string, unknown>, field: string, label: string): string {
-  const value = raw[field];
-  if (typeof value !== 'string') throw new Error(`invalid ${label}: ${field} must be a string`);
-  return value;
-}
 function optionalString(raw: Record<string, unknown>, field: string): string | undefined {
   const value = raw[field];
   return typeof value === 'string' && value.length > 0 ? value : undefined;
@@ -1188,54 +1103,6 @@ function lifecycleResultFromResponse(raw: Record<string, unknown>): LifecycleRes
     registryStatus: requiredString(raw, 'status', 'registry lifecycle response'),
     statusNote: optionalString(raw, 'status_note'),
     raw,
-  };
-}
-
-function parseLiveChallenge(
-  challenge: string,
-  challengeMessage: string,
-  agentId: string,
-  expectedKeyId: string,
-  expectedDomain?: string,
-): { domain: string; challengeTranscript: LiveChallengeTranscript } {
-  const label = 'registry Live challenge transcript';
-  // Each anchored character-class match is linear in its input length.
-  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
-  if (!/^[A-Za-z0-9_-]+$/.test(challenge) || !/^[A-Za-z0-9_-]+$/.test(challengeMessage)) {
-    throw new Error(`invalid ${label}: challenge and challenge_message must be non-empty unpadded base64url strings`);
-  }
-  let raw: unknown;
-  try {
-    raw = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(fromBase64Url(challengeMessage)));
-  } catch {
-    throw new Error(`invalid ${label}: challenge_message must encode a UTF-8 JSON object`);
-  }
-  if (!isObject(raw)) throw new Error(`invalid ${label}: expected JSON object`);
-  const protocol = requiredString(raw, 'protocol', label);
-  const orgId = requiredString(raw, 'org_id', label);
-  const transcriptAgentId = requiredString(raw, 'agent_id', label);
-  const fqdn = requiredString(raw, 'fqdn', label);
-  const keyId = requiredString(raw, 'key_id', label);
-  const nonce = requiredString(raw, 'nonce', label);
-  const expires = requiredString(raw, 'expires_at', label);
-  if (protocol !== 'dnsid-live-provisioning-pop/v1') throw new Error(`invalid ${label}: unsupported protocol`);
-  if (transcriptAgentId !== agentId || nonce !== challenge) throw new Error(`invalid ${label}: outer response binding mismatch`);
-  if (keyId !== expectedKeyId) throw new Error(`invalid ${label}: public key binding mismatch`);
-  let domain: string;
-  try {
-    domain = normalizeFQDN(fqdn, true);
-    if (expectedDomain && domain !== normalizeFQDN(expectedDomain, true)) throw new Error('mismatch');
-  } catch {
-    throw new Error(`invalid ${label}: fqdn is invalid or does not match the proof route`);
-  }
-  const expiresAt = new Date(expires);
-  if (Number.isNaN(expiresAt.getTime())) throw new Error(`invalid ${label}: expires_at must be a timestamp`);
-  return {
-    domain,
-    challengeTranscript: {
-      protocol: 'dnsid-live-provisioning-pop/v1', orgId, agentId: transcriptAgentId,
-      fqdn: domain, keyId, nonce, expiresAt,
-    },
   };
 }
 

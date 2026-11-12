@@ -8,13 +8,15 @@ const delays = [1000, 2000, 4000, 8000, 15_000, 15_000];
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe('Foundry polling budgets', () => {
-  it('backs off registry readiness polling from 1 second to a 15-second cap', async () => {
+  it.each(['PENDING', 'publication'])('backs off readiness polling from 1 second to a 15-second cap: %s', async gate => {
     await withTemp(async root => {
-      const f = await foundryFixture(root); f.registryStatus = 'PENDING';
+      const f = await foundryFixture(root);
+      if (gate === 'PENDING') f.registryStatus = 'PENDING'; else f.dnsPublished = false;
       const read = vi.mocked(f.registry.getRegistration).getMockImplementation()!;
       let observations = 0;
       vi.mocked(f.registry.getRegistration).mockImplementation(async (...args) => {
-        if (++observations > delays.length) f.registryStatus = 'VERIFIED';
+        if (++observations === delays.length + 1) { f.registryStatus = 'PROVISIONING'; f.dnsPublished = true; }
+        if (observations <= delays.length) expect(f.registry.prepareIssuance).not.toHaveBeenCalled();
         return read(...args);
       });
       const wait = vi.spyOn(Deadline.prototype, 'wait').mockResolvedValue();
@@ -54,6 +56,22 @@ describe('Foundry polling budgets', () => {
       expect(wait.mock.calls.map(call => call[0])).toEqual(delays);
       const calls = vi.mocked(f.registry.submitPreparedEvent).mock.calls;
       for (const call of calls) expect(call.slice(0, 3)).toEqual(calls[0]!.slice(0, 3));
+    });
+  });
+
+  it.each(['issuance', 'public'])('stops on management failure during %s polling and retains bytes', async phase => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      if (phase === 'issuance') vi.mocked(f.registry.submitPreparedEvent).mockRejectedValueOnce(new Error('outcome unknown'));
+      else f.dnsMissing = true;
+      vi.spyOn(Deadline.prototype, 'wait').mockImplementation(async () => { f.registryStatus = 'ERROR'; });
+      const id = await create('agent', f.options);
+      await expect(id.active()).rejects.toMatchObject({ category: 'workflow-outcome', registryStatus: 'ERROR' });
+      expect(f.registry.submitPreparedEvent).toHaveBeenCalledOnce();
+      const saved = JSON.parse(Buffer.from(await f.options.store!.export({ registryUrl: 'https://registry.example', organizationId: f.organizationId, name: 'agent' })).toString());
+      expect(saved.issuance.entryBytes).toBeDefined();
+      expect(saved.issuanceKey).toBeDefined();
+      expect(f.registry.registerLiveAgent).toHaveBeenCalledOnce();
     });
   });
 

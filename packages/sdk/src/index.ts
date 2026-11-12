@@ -65,6 +65,7 @@ export {
   RegistryClient,
   PreparedEventSubmissionError,
   RegistryWorkflowError,
+  UnsupportedRegistryResponse,
   awaitRegistryManagedPublication,
   publishClientControlledRecord,
   publishToRegistry,

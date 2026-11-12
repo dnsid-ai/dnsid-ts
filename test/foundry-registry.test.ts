@@ -4,39 +4,46 @@ import { RegistryClient } from '@dnsid-ai/registry';
 import { DOMAIN, ORG, GI, foundryFixture, publication } from './helpers/foundry.ts';
 import { withTemp } from './helpers/cli-directory.ts';
 
+const wirePublication = Object.fromEntries(Object.entries(publication).map(([name, value]) => [name.replace(/[A-Z]/g, char => '_' + char.toLowerCase()), value]));
+
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('Foundry registry adapters', () => {
-  it.each([undefined, null, '', DOMAIN.toUpperCase() + '.'])('reads the optional challenge-free replay domain: %s', async domain => {
+  it.each(['PROVISIONING', 'READY'])('decodes HTTP 201 Live create/replay without a detail read: %s', async status => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
-      const registry = new RegistryClient({ fetch: vi.fn(async () => new Response(JSON.stringify({
-        request_id: 'key', agent_id: 'agent-1', status: 'VERIFIED', challenge: '', challenge_message: '', ...(domain !== undefined ? { domain } : {}),
-      }), { status: 202 })) as typeof fetch });
-      const response = await registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
-      expect(response.domain).toBe(domain ? DOMAIN : undefined);
+      const send = vi.fn(async () => Response.json({ id: 'agent-1', domain: DOMAIN, status,
+        publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' },
+        { status: 201, headers: { 'Idempotency-Key': 'key' } }));
+      const response = await new RegistryClient({ fetch: send }).registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
+      expect(response).toMatchObject({ id: 'agent-1', domain: DOMAIN, registryStatus: status, publicationConfig: publication });
+      expect(send).toHaveBeenCalledOnce();
     });
   });
 
-  it.each(['not a domain', 42, false, {}])('rejects an invalid present replay domain: %j', async domain => {
+  it.each(['domain', 'id', 'status', 'publication_config', 'oidc_issuer_url', 'header', '202'])('retains creation facts for invalid Live response: %s', async missing => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
-      const registry = new RegistryClient({ fetch: vi.fn(async () => Response.json({
-        request_id: 'key', agent_id: 'agent-1', status: 'provider_deferred', challenge: '', challenge_message: '', domain,
-      }, { status: 202 })) as typeof fetch });
-      await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toThrow();
+      const raw: Record<string, unknown> = { id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING',
+        publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' };
+      delete raw[missing];
+      const registry = new RegistryClient({ fetch: async () => Response.json(raw, {
+        status: missing === '202' ? 202 : 201, headers: missing === 'header' ? {} : { 'Idempotency-Key': 'key' },
+      }) });
+      await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toMatchObject({ idempotencyKey: 'key', creation: raw });
     });
   });
 
-  it('rejects disagreement between the wire domain and challenge domain', async () => {
+  it.each([undefined, null, 'true', 1])('rejects unsupported managed publication progress with known facts: %s', async dnsPublished => {
     await withTemp(async root => {
-      const f = await foundryFixture(root); f.proofRequired = true;
-      const response = await f.registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
-      const registry = new RegistryClient({ fetch: vi.fn(async () => new Response(JSON.stringify({
-        request_id: 'key', agent_id: 'agent-1', status: 'challenge_pending', challenge: response.challenge,
-        challenge_message: response.challengeMessage, domain: 'different.example.com',
-      }), { status: 202 })) as typeof fetch });
-      await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toThrow('domain does not match challenge');
+      const f = await foundryFixture(root);
+      const id = await create('agent', f.options);
+      const read = vi.mocked(f.registry.getRegistration).getMockImplementation()!;
+      vi.mocked(f.registry.getRegistration).mockImplementation(async (...args) => ({ ...(await read(...args))!, dnsPublished: dnsPublished as never }));
+      await expect(id.active()).rejects.toMatchObject({ category: 'UnsupportedRegistry', identityId: 'agent-1', domain: DOMAIN });
+      expect(f.registry.prepareIssuance).not.toHaveBeenCalled();
+      expect(f.registry.registerLiveAgent).toHaveBeenCalledOnce();
+      await expect(id.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);
     });
   });
 
@@ -55,7 +62,7 @@ describe('Foundry registry adapters', () => {
         expect(init?.signal).toBeInstanceOf(AbortSignal);
         if (url.endsWith('/onboarding')) return Response.json({ org_id: ORG, governance_domain: GI,
           gi: { domain: GI, state: 'verified', gate_authorized: true }, ek: { status: 'verified' } });
-        if (url.endsWith('/status')) return Response.json({ id: 'agent-1', domain: DOMAIN, status: f.registryStatus, managed: 'dnsid', publication_config: wirePublication });
+        if (url.endsWith('/status')) return Response.json({ id: 'agent-1', domain: DOMAIN, status: f.registryStatus, managed: 'dnsid', dns_published: true, publication_config: wirePublication });
         const idempotencyKey = new Headers(init?.headers).get('Idempotency-Key')!;
         if (url.endsWith('/issuance/prepare')) {
           const prepared = await f.registry.prepareIssuance(DOMAIN, idempotencyKey);
@@ -66,7 +73,7 @@ describe('Foundry registry adapters', () => {
           return Response.json({ state: result.state, entry_hash: result.entryHash, index: result.index, lr: result.logRef });
         }
         expect(JSON.parse(String(init?.body))).toMatchObject({ tier: 'live', managed: true, name: 'agent', public_key: f.operationalKey });
-        return Response.json({ request_id: idempotencyKey, agent_id: 'agent-1', status: 'VERIFIED', domain: DOMAIN, challenge: '', challenge_message: '' }, { status: 202 });
+        return Response.json({ id: 'agent-1', status: f.registryStatus, domain: DOMAIN, publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' }, { status: 201, headers: { 'Idempotency-Key': idempotencyKey } });
       });
       vi.stubGlobal('fetch', send);
       const id = await create('agent', { ...f.options, registryClient: undefined, credential: 'registry-only-secret',

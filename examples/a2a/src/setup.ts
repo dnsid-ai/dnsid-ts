@@ -4,7 +4,6 @@ import { constructIdentityManager, loadEnvironment, mergeLoadedConfig, type Load
 import {
   awaitRegistryManagedPublication,
   RegistryClient,
-  toBase64Url,
 } from '@dnsid-ai/sdk';
 import type { IdentityManager, TransportConfig } from '@dnsid-ai/sdk';
 import { parseC2spTlogLr } from '@dnsid-ai/log-c2sp-tlog';
@@ -79,14 +78,8 @@ async function ensurePublished(idm: IdentityManager, transport: TransportConfig)
     baseUrl: parseC2spTlogLr(idm.config.identity!.logRef).logPrefix,
     fetch: createDnsidFetch(transport),
   });
-  let registration = await registry.getRegistration(idm.config.identity!.domain);
-
-  if (!registration || !['VERIFIED', 'READY'].includes(registration.registryStatus)) {
-    await verifyAgent(registry, idm, registration);
-  }
-
-  registration = await registry.getRegistration(idm.config.identity!.domain);
-  if (!registration) throw new Error('registry registration disappeared after verification');
+  const registration = await registry.getRegistration(idm.config.identity!.domain);
+  if (!registration) throw new Error('prepare the identity with dnsid local agent ensure and dnsid log issue before starting');
   if (registration.registryStatus !== 'READY') {
     if (registration.publicationAuthority !== 'registry') {
       throw new Error('client-controlled draft-01 publication requires an accountable-entity key workflow');
@@ -98,48 +91,4 @@ async function ensurePublished(idm: IdentityManager, transport: TransportConfig)
       publishProfile: idm.config.identity!.publishProfile,
     });
   }
-}
-
-async function verifyAgent(
-  registry: RegistryClient,
-  idm: IdentityManager,
-  registration: Awaited<ReturnType<RegistryClient['getRegistration']>>,
-): Promise<void> {
-  if (registration?.registryStatus !== 'VERIFICATION') {
-    await registry.verifyAgent(idm.config.identity!.domain);
-  }
-
-  const challengeStatus = await registry.waitForStatus(idm.config.identity!.domain, current => {
-    const raw = current.raw as { challenge?: unknown };
-    return typeof raw.challenge === 'string' || isRegistryFailure(current.registryStatus);
-  }, { intervalMs: 100, timeoutMs: 30_000 });
-  if (isRegistryFailure(challengeStatus.registryStatus)) {
-    throw new Error(`registry verification failed in ${challengeStatus.registryStatus}`);
-  }
-
-  const raw = challengeStatus.raw as { challenge?: unknown };
-  const challenge = typeof raw.challenge === 'string' ? raw.challenge : '';
-  if (!challenge) throw new Error('registry did not return a verification challenge');
-
-  const sig = await idm.getKeyProvider().sign(base64UrlBytes(challenge));
-  await registry.submitChallengeSignature(idm.config.identity!.domain, {
-    nonce: challenge,
-    signature: toBase64Url(sig),
-  });
-
-  const completed = await registry.waitForStatus(idm.config.identity!.domain,
-    current => ['VERIFIED', 'READY'].includes(current.registryStatus) || isRegistryFailure(current.registryStatus),
-    { intervalMs: 100, timeoutMs: 30_000 },
-  );
-  if (isRegistryFailure(completed.registryStatus)) {
-    throw new Error(`registry verification failed in ${completed.registryStatus}`);
-  }
-}
-
-function isRegistryFailure(status: string): boolean {
-  return ['ERROR', 'REJECTED', 'CANCELLED', 'REVOKED'].includes(status);
-}
-
-function base64UrlBytes(value: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(value, 'base64url'));
 }

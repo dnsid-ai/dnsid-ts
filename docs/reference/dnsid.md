@@ -514,7 +514,7 @@ Defined in: [packages/protocol/src/types.ts:14](https://github.com/dnsid-ai/dnsi
 type CreateIdentityManagerDependencies = IdentityManagerDependencies & Required<Pick<IdentityManagerDependencies, "dnsResolver" | "fetchJson">>;
 ```
 
-Defined in: [packages/sdk/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L103)
+Defined in: [packages/sdk/src/index.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L104)
 
 Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 
@@ -901,7 +901,7 @@ Replace with the spec's canonicalization/test vectors once they land.
 function createIdentityManager(config, deps): IdentityManager;
 ```
 
-Defined in: [packages/sdk/src/index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L127)
+Defined in: [packages/sdk/src/index.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L128)
 
 Creates a DNSid IdentityManager from explicitly injected runtime dependencies.
 
@@ -948,7 +948,7 @@ const verified = await idm.verifyDomain('agent.example');
 function createIdentityVerifier(config, deps): IdentityManager;
 ```
 
-Defined in: [packages/sdk/src/index.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L137)
+Defined in: [packages/sdk/src/index.ts:138](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L138)
 
 Creates a verification-only IdentityManager: same constructor, `config.identity` omitted.
 
@@ -1908,6 +1908,14 @@ Re-exports [RegistryClient](https://docs.dnsid.ai/reference/ts/dnsid-registry/#r
 ### RegistryWorkflowError
 
 Re-exports [RegistryWorkflowError](https://docs.dnsid.ai/reference/ts/dnsid-registry/#registryworkflowerror)
+
+***
+
+<a id="unsupportedregistryresponse"></a>
+
+### UnsupportedRegistryResponse
+
+Re-exports [UnsupportedRegistryResponse](https://docs.dnsid.ai/reference/ts/dnsid-registry/#unsupportedregistryresponse)
 
 ***
 

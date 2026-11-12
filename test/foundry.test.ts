@@ -35,9 +35,9 @@ describe('Known Foundry create', () => {
       const id = await create('agent', f.options);
       expect(id.domain).toBe(DOMAIN);
       expect(id.state).toBeUndefined();
-      expect(id.registryStatus).toBe('VERIFIED');
+      expect(id.registryStatus).toBe('PROVISIONING');
       await expect(id.sign(new Uint8Array([1]))).rejects.toBeInstanceOf(SigningPaused);
-      expect(() => id.identityManager()).toThrow(SigningPaused);
+      expect(id.identityManager()).toBeInstanceOf(IdentityManager);
       expect(await id.active()).toBe(id);
       expect(id.state).toBe('ACTIVE');
       const manager = id.identityManager();
@@ -80,7 +80,7 @@ describe('Known Foundry create', () => {
   it('saves known facts and returns a resumable error when replay omits the domain', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.replayWithoutDomain = true;
-      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable', identityId: 'agent-1', registryStatus: 'VERIFIED', resumable: true });
+      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable', identityId: 'agent-1', registryStatus: 'PROVISIONING', resumable: true });
       const state = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
       expect(state.identityId).toBe('agent-1'); expect(state.domain).toBeUndefined();
       await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable' });
@@ -112,8 +112,9 @@ describe('Known Foundry create', () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.replayWithoutDomain = true;
       await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable' });
+      f.replayWithoutDomain = false;
       const replay = vi.mocked(f.registry.registerLiveAgent).getMockImplementation()!;
-      vi.mocked(f.registry.registerLiveAgent).mockImplementationOnce(async (...args) => ({ ...await replay(...args), agentId: 'other-agent' }));
+      vi.mocked(f.registry.registerLiveAgent).mockImplementationOnce(async (...args) => ({ ...await replay(...args), id: 'other-agent' }));
       await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'binding', identityId: 'agent-1' });
     });
   });
@@ -127,27 +128,6 @@ describe('Known Foundry create', () => {
       expect(id.domain).toBe(DOMAIN);
       const calls = vi.mocked(f.registry.registerLiveAgent).mock.calls;
       expect(calls[1]!.slice(0, 2)).toEqual(calls[0]!.slice(0, 2));
-    });
-  });
-
-  it.each([false, true])('persists exact proof bytes before submission and reissues only unused expired proof (%s)', async expired => {
-    await withTemp(async root => {
-      const f = await foundryFixture(root); f.proofRequired = true; f.registryStatus = 'PENDING'; f.expiredProof = expired;
-      const submit = f.registry.submitLiveProof;
-      vi.mocked(f.registry.submitLiveProof).mockImplementationOnce(async (domain, request, options) => {
-        const saved = await import('node:fs/promises').then(async fs => {
-          const files = await fs.readdir(root);
-          const document = files.find(file => !file.startsWith('id-') && file.endsWith('.json'))!;
-          return JSON.parse(await fs.readFile(join(root, document), 'utf8'));
-        });
-        expect(saved.proof.request.signature).toBe(request.signature);
-        expect(saved.proof.submissionState).toBe('submitting');
-        f.registryStatus = 'VERIFIED';
-        return { requestId: request.requestId, agentId: 'agent-1', status: 'accepted' };
-      });
-      await (await create('agent', f.options)).active();
-      expect(submit).toHaveBeenCalledOnce();
-      expect(f.registry.reissueLiveProof).toHaveBeenCalledTimes(expired ? 1 : 0);
     });
   });
 
@@ -243,7 +223,7 @@ describe('Known Foundry create', () => {
     });
   });
 
-  it.each(['PENDING', 'UNRECOGNIZED'])('bounds waiting for registry %s and preserves it for diagnostics', async status => {
+  it.each(['PENDING', 'VERIFICATION', 'VERIFIED', 'UNRECOGNIZED'])('bounds waiting for registry %s and preserves it for diagnostics', async status => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.registryStatus = status;
       const id = await create('agent', f.options);

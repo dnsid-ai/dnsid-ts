@@ -4,11 +4,12 @@ import {
   PreparedEventSubmissionError,
   RegistryClient,
   RegistryRequestError,
+  UnsupportedRegistryResponse,
   awaitRegistryManagedPublication,
   publishClientControlledRecord,
   publishToRegistry,
 } from '@dnsid-ai/registry';
-import { ArgumentError, jwkThumbprint, toBase64Url } from '@dnsid-ai/protocol';
+import { ArgumentError, toBase64Url } from '@dnsid-ai/protocol';
 import type { IdentityConfig, IdentityManager, DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { DRAFT01_UNSIGNED_CANONICAL } from './fixtures/draft01-record-vectors.ts';
 
@@ -31,14 +32,14 @@ function client(fetchMock: typeof fetch = fetch): RegistryClient {
     const response = await fetchMock(url, init);
     if (url.endsWith('/api/v1/agent') && response.status === 201) {
       const raw = await response.json();
-      return new Response(JSON.stringify({ ...creation(raw.domain), ...raw }), { status: 201 });
+      return new Response(JSON.stringify({ ...creation(raw.domain), ...raw }), { status: 201, headers: response.headers });
     }
     if (!url.endsWith('/status')) return response;
     if (response.status === 404) {
       return new Response(JSON.stringify({ id: 'agent-1', domain: 'agent.example.com', status: 'READY', managed: 'self', dns_published: false }));
     }
     const raw = await response.clone().json() as Record<string, unknown>;
-    return new Response(JSON.stringify({ id: 'agent-1', domain: 'agent.example.com', managed: 'self', ...raw }), {
+    return new Response(JSON.stringify({ id: 'agent-1', domain: 'agent.example.com', managed: 'self', dns_published: false, ...raw }), {
       status: response.status,
       headers: response.headers,
     });
@@ -54,32 +55,10 @@ const TEST_JWK: DnsIdJWK = {
   crv: 'Ed25519',
   x: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
 };
-const OTHER_TEST_JWK: DnsIdJWK = {
-  ...TEST_JWK,
-  kid: 'test-key-2',
-  x: toBase64Url(new Uint8Array(32).fill(1)),
-};
 const JWKS_SHAPED_JWK = {
   ...TEST_JWK,
   keys: [{ ...TEST_JWK, d: 'private' }],
 } as DnsIdJWK;
-
-async function liveChallengeMessage(
-  challenge: string,
-  agentId = 'agent-live-1',
-  fqdn = 'live.example',
-  publicKeyJwk = TEST_JWK,
-): Promise<string> {
-  return toBase64Url(new TextEncoder().encode(JSON.stringify({
-    protocol: 'dnsid-live-provisioning-pop/v1',
-    org_id: 'org-1',
-    agent_id: agentId,
-    fqdn,
-    key_id: await jwkThumbprint(publicKeyJwk),
-    nonce: challenge,
-    expires_at: '2030-01-01T00:00:00Z',
-  })));
-}
 
 const BASE_CONFIG: IdentityConfig = {
   domain: 'agent.example.com',
@@ -108,10 +87,6 @@ describe('RegistryClient', () => {
   describe('Live and issuance request options', () => {
     const requests: Array<[string, (registry: RegistryClient, options: { signal: AbortSignal }) => Promise<unknown>]> = [
       ['Live registration', (registry, options) => registry.registerLiveAgent({ publicKeyJwk: TEST_JWK }, 'live-1', options)],
-      ['Live proof', (registry, options) => registry.submitLiveProof('live.example', {
-        requestId: 'live-1', challenge: 'challenge-1', publicKeyJwk: TEST_JWK, signature: new Uint8Array([1, 2, 3]),
-      }, options)],
-      ['Live proof reissue', (registry, options) => registry.reissueLiveProof('live.example', 'live-1', TEST_JWK, options)],
       ['ISSUANCE preparation', (registry, options) => registry.prepareIssuance('live.example', 'issuance-1', options)],
       ['prepared submission', (registry, options) => registry.submitPreparedEvent('live.example', new Uint8Array([1]), 'issuance-1', options)],
     ];
@@ -675,41 +650,12 @@ describe('RegistryClient', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('returns the distinct 202 Live provisioning response with a validated assigned domain', async () => {
-    const challengeMessage = await liveChallengeMessage('challenge-1');
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe('https://registry.example/api/v1/agent');
-      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('live-1');
-      expect(JSON.parse(String(init?.body))).toMatchObject({
-        tier: 'live',
-        managed: true,
-        environment: 'production',
-        public_key: TEST_JWK,
-      });
-      return new Response(JSON.stringify({
-        request_id: 'live-1', agent_id: 'agent-live-1', status: 'challenge_pending',
-        challenge: 'challenge-1', challenge_message: challengeMessage,
-      }), { status: 202 });
-    }) as unknown as typeof fetch;
-
-    await expect(client(fetchMock).registerLiveAgent({ publicKeyJwk: TEST_JWK }, 'live-1')).resolves.toMatchObject({
-      requestId: 'live-1', agentId: 'agent-live-1', status: 'challenge_pending',
-      challenge: 'challenge-1', challengeMessage, domain: 'live.example',
-      challengeTranscript: { agentId: 'agent-live-1', nonce: 'challenge-1', fqdn: 'live.example' },
-    });
-    expect(fetchMock).toHaveBeenCalledOnce();
-  });
-
-  it('accepts a valid Live replay after the challenge is complete', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      request_id: 'live-1', agent_id: 'agent-live-1', status: 'provider_deferred',
-      challenge: '', challenge_message: '',
-    }), { status: 202 })) as unknown as typeof fetch;
-
-    const response = await client(fetchMock).registerLiveAgent({ publicKeyJwk: TEST_JWK }, 'live-1');
-    expect(response).toMatchObject({ status: 'provider_deferred', challenge: '', challengeMessage: '' });
-    expect(response).not.toHaveProperty('domain');
-    expect(response).not.toHaveProperty('challengeTranscript');
+  it.each([undefined, null, 'true', 1])('requires boolean publication progress on authenticated managed detail: %s', async dns_published => {
+    const registry = new RegistryClient({ fetch: async () => Response.json({
+      id: 'agent-1', domain: 'agent.example.com', status: 'PROVISIONING', managed: 'dnsid', dns_published,
+    }) });
+    await expect(registry.getRegistration('agent.example.com')).rejects.toBeInstanceOf(UnsupportedRegistryResponse);
+    await expect(registry.getRegistration('agent.example.com')).rejects.toMatchObject({ registration: { id: 'agent-1', domain: 'agent.example.com' } });
   });
 
   it('rejects invalid Live inputs before making a request', async () => {
@@ -720,20 +666,8 @@ describe('RegistryClient', () => {
     await expect(registry.registerLiveAgent({ publicKeyJwk: {
       kty: 'EC', crv: 'P-256', alg: 'ES256', use: 'sig', kid: 'ec-1', x: 'AQ', y: 'Ag',
     } }, 'live-1')).rejects.toThrow('OKP/Ed25519');
-    await expect(registry.reissueLiveProof(
-      'live.example', 'live-1', { ...TEST_JWK, d: 'private' } as DnsIdJWK,
-    )).rejects.toThrow('private JWK member d');
+    await expect(registry.registerLiveAgent({ publicKeyJwk: { ...TEST_JWK, d: 'private' } as DnsIdJWK }, 'live-1')).rejects.toThrow('private JWK member d');
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects a Live response whose transcript does not match its outer challenge', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      request_id: 'live-1', agent_id: 'agent-live-1', status: 'challenge_pending',
-      challenge: 'challenge-1', challenge_message: await liveChallengeMessage('other-challenge'),
-    }), { status: 202 })) as unknown as typeof fetch;
-
-    await expect(client(fetchMock).registerLiveAgent({ publicKeyJwk: TEST_JWK }, 'live-1'))
-      .rejects.toThrow('outer response binding mismatch');
   });
 
   it('retires an immutable agent identity', async () => {
@@ -1025,6 +959,7 @@ describe('RegistryClient', () => {
   it.each([
     [503, JSON.stringify({ error: 'submission_indeterminate', message: 'retry later' }), 'submission_indeterminate', 'indeterminate'],
     [409, JSON.stringify({ error: 'tlog_submission_busy' }), 'tlog_submission_busy', 'pending'],
+    [409, JSON.stringify({ error: 'TLOG_PUBLICATION_REQUIRED' }), 'TLOG_PUBLICATION_REQUIRED', 'pending'],
     [502, null, 'HTTP_502', 'indeterminate'],
     [500, JSON.stringify({ error: 'SOMETHING_NEW' }), 'SOMETHING_NEW', 'indeterminate'],
     [429, JSON.stringify({ error: 'rate_limited' }), 'rate_limited', 'indeterminate'],
@@ -1034,82 +969,22 @@ describe('RegistryClient', () => {
       .rejects.toMatchObject({ code, httpStatus: status, state, retryable: true, retryWithSameBytes: true });
   });
 
+  it('sends exact owner-only bytes and retains the completed-entry receipt on replay', async () => {
+    const bytes = new TextEncoder().encode('{"owner":"envelope"}');
+    const hash = 'a'.repeat(64);
+    const send = vi.fn(async (_url, init) => {
+      expect(Buffer.from(init!.body as ArrayBuffer)).toEqual(Buffer.from(bytes));
+      expect(new Headers(init!.headers).get('Idempotency-Key')).toBe('owner-1');
+      return Response.json({ state: 'accepted', entry_hash: hash, index: 0, lr: 'stream@0' });
+    });
+    const registry = new RegistryClient({ fetch: send });
+    for (let i = 0; i < 2; i++) await expect(registry.submitOwnerIssuance('agent.example.com', bytes, 'owner-1')).resolves.toMatchObject({ entryHash: hash });
+  });
+
   it('rejects 4xx prepared-event submission failures with an unknown code', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: 'SOMETHING_NEW' }), { status: 400 })) as unknown as typeof fetch;
     await expect(client(fetchMock).submitPreparedEvent('agent.example.com', new Uint8Array([1]), 'rotation-1'))
       .rejects.toMatchObject({ code: 'SOMETHING_NEW', httpStatus: 400, state: 'rejected', retryable: false, retryWithSameBytes: false });
-  });
-
-  it('submits and reissues Live proof with the request ID as the idempotency key', async () => {
-    const challengeMessage = await liveChallengeMessage('challenge-2');
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('live-1');
-      if (url.endsWith('/proof/reissue')) {
-        expect(JSON.parse(String(init?.body))).toEqual({ request_id: 'live-1' });
-        return new Response(JSON.stringify({
-          request_id: 'live-1', agent_id: 'agent-live-1', status: 'challenge_pending',
-          challenge: 'challenge-2', challenge_message: challengeMessage,
-        }), { status: 202 });
-      }
-      expect(url).toBe('https://registry.example/api/v1/agent/live.example/proof');
-      expect(JSON.parse(String(init?.body))).toEqual({
-        request_id: 'live-1', challenge: 'challenge-1', public_key: TEST_JWK, signature: 'AQID',
-      });
-      return new Response(JSON.stringify({
-        request_id: 'live-1', agent_id: 'agent-live-1', status: 'provider_deferred',
-      }), { status: 202 });
-    }) as unknown as typeof fetch;
-    const registry = client(fetchMock);
-
-    await expect(registry.submitLiveProof('live.example', {
-      requestId: 'live-1', challenge: 'challenge-1', publicKeyJwk: TEST_JWK,
-      signature: new Uint8Array([1, 2, 3]),
-    })).resolves.toMatchObject({ requestId: 'live-1', agentId: 'agent-live-1', status: 'provider_deferred' });
-    await expect(registry.reissueLiveProof('live.example', 'live-1', TEST_JWK)).resolves.toMatchObject({
-      requestId: 'live-1', challenge: 'challenge-2', challengeMessage,
-      domain: 'live.example', challengeTranscript: { nonce: 'challenge-2', fqdn: 'live.example' },
-    });
-  });
-
-  it('rejects a reissued Live proof challenge bound to a different public key', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      request_id: 'live-1', agent_id: 'agent-live-1', status: 'challenge_pending',
-      challenge: 'challenge-2',
-      challenge_message: await liveChallengeMessage('challenge-2', 'agent-live-1', 'live.example', OTHER_TEST_JWK),
-    }), { status: 202 })) as unknown as typeof fetch;
-
-    await expect(client(fetchMock).reissueLiveProof('live.example', 'live-1', TEST_JWK))
-      .rejects.toThrow('public key binding mismatch');
-    expect(fetchMock).toHaveBeenCalledOnce();
-  });
-
-  it.each([
-    ['Live registration', (registry: RegistryClient, publicKeyJwk: DnsIdJWK) => registry.registerLiveAgent({ publicKeyJwk }, 'live-1')],
-    ['Live proof reissue', (registry: RegistryClient, publicKeyJwk: DnsIdJWK) => registry.reissueLiveProof('live.example', 'live-1', publicKeyJwk)],
-  ])('snapshots the public-key binding before network I/O for %s', async (_label, call) => {
-    const challengeMessage = await liveChallengeMessage('challenge-2');
-    let requestStarted!: () => void;
-    let sendResponse!: () => void;
-    const started = new Promise<void>(resolve => { requestStarted = resolve; });
-    const responseReady = new Promise<void>(resolve => { sendResponse = resolve; });
-    const fetchMock = vi.fn(async () => {
-      requestStarted();
-      await responseReady;
-      return new Response(JSON.stringify({
-        request_id: 'live-1', agent_id: 'agent-live-1', status: 'challenge_pending',
-        challenge: 'challenge-2', challenge_message: challengeMessage,
-      }), { status: 202 });
-    }) as unknown as typeof fetch;
-    const mutableKey = { ...TEST_JWK };
-
-    const result = call(client(fetchMock), mutableKey);
-    await started;
-    mutableKey.x = OTHER_TEST_JWK.x;
-    sendResponse();
-
-    await expect(result).resolves.toMatchObject({
-      challengeTranscript: { keyId: await jwkThumbprint(TEST_JWK) },
-    });
   });
 
   it('applies token, custom headers, credentials, and idempotency key', async () => {
@@ -1230,10 +1105,6 @@ describe('RegistryClient', () => {
   it.each([
     ['ordinary registration', (registry: RegistryClient) => registry.registerInZone({ zoneId: 'zone-1', publicKeyJwk: JWKS_SHAPED_JWK, idempotencyKey: 'registration-1' })],
     ['managed Live registration', (registry: RegistryClient) => registry.registerLiveAgent({ publicKeyJwk: JWKS_SHAPED_JWK }, 'live-1')],
-    ['managed Live proof', (registry: RegistryClient) => registry.submitLiveProof('live.example', {
-      requestId: 'live-1', challenge: 'challenge-1', publicKeyJwk: JWKS_SHAPED_JWK, signature: 'signature',
-    })],
-    ['managed Live proof reissue', (registry: RegistryClient) => registry.reissueLiveProof('live.example', 'live-1', JWKS_SHAPED_JWK)],
     ['key rotation preparation', (registry: RegistryClient) => registry.prepareKeyRotation('agent.example', {
       previousKeyId: 'old-key', publicKey: JWKS_SHAPED_JWK,
     }, 'rotation-1')],
