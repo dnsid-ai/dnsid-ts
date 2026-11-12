@@ -6,17 +6,19 @@ import { JWKS, normalizeFQDN, type DnsIdJWK } from '@dnsid-ai/sdk';
 import { canonicalBytes, canonicalJson, parseJsonNoDuplicateMembers } from '@dnsid-ai/log-c2sp-tlog';
 import { Deadline, FoundryError } from './errors.ts';
 
-export type FoundryPhase = 'creation-pending' | 'identity-known' | 'proof-pending' | 'issuance-accepted' | 'complete';
+export type FoundryPhase = 'creation-pending' | 'identity-known' | 'issuance-accepted' | 'complete';
 export interface FoundryOperationKey {
   registryUrl: string;
   organizationId: string;
   name: string;
 }
 
-/** Version 1 recovery document. Unknown members survive import, update, and export. */
+/** Version 2 recovery document. Unknown members survive import, update, and export. */
 export interface FoundryOperation extends FoundryOperationKey {
   [member: string]: unknown;
-  schemaVersion: 1;
+  schemaVersion: 2;
+  registrationKey: string;
+  issuanceKey: string;
   phase: FoundryPhase;
   governanceId: string;
   keySource: Record<string, unknown>;
@@ -33,10 +35,8 @@ export interface FoundryOperation extends FoundryOperationKey {
   };
   identityId?: string;
   domain?: string;
-  requestId?: string;
   registryStatus?: string;
   signingPaused?: boolean;
-  proof?: Record<string, unknown>;
   publicationConfig?: Record<string, unknown>;
   entityPublicKey?: DnsIdJWK;
   issuance?: Record<string, unknown>;
@@ -102,11 +102,11 @@ function object(value: unknown, label: string): Record<string, unknown> {
 export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
   const raw = object(parseJsonNoDuplicateMembers(bytes), 'Foundry recovery document');
   canonicalBytes(raw); // Includes Unicode validation for unknown members.
-  if (raw.schemaVersion !== 1) throw new TypeError('unsupported Foundry recovery schemaVersion');
-  if (!['creation-pending', 'identity-known', 'proof-pending', 'issuance-accepted', 'complete'].includes(String(raw.phase))) {
+  if (raw.schemaVersion !== 2) throw new TypeError('unsupported Foundry recovery schemaVersion');
+  if (!['creation-pending', 'identity-known', 'issuance-accepted', 'complete'].includes(String(raw.phase))) {
     throw new TypeError('unsupported Foundry recovery phase');
   }
-  for (const member of ['registryUrl', 'organizationId', 'governanceId']) {
+  for (const member of ['registryUrl', 'organizationId', 'governanceId', 'registrationKey', 'issuanceKey']) {
     if (typeof raw[member] !== 'string' || !raw[member]) throw new TypeError(`recovery document requires ${member}`);
   }
   validateName(raw.name as string);
@@ -127,25 +127,11 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
   if (input.name !== raw.name || input.tier !== 'live' || input.managed !== true
     || input.environment !== undefined && input.environment !== 'production'
     || ['domain', 'zone_id', 'governance_domain', 'root_domain'].some(field => field in input)) throw new TypeError('conflicting frozen creationInput');
-  for (const member of ['identityId', 'domain', 'requestId', 'registryStatus', 'oidcIssuerUrl']) {
+  for (const member of ['identityId', 'domain', 'registryStatus', 'oidcIssuerUrl']) {
     if (raw[member] !== undefined && (typeof raw[member] !== 'string' || !raw[member])) throw new TypeError(`invalid recovery ${member}`);
   }
   if (raw.domain !== undefined) normalizeFQDN(raw.domain as string, true);
-  if (raw.phase !== 'creation-pending' && (!raw.identityId || !raw.domain || !raw.requestId)) throw new TypeError('known identity requires ID, domain, and requestId');
-  if (raw.phase === 'proof-pending' && !raw.proof) throw new TypeError('proof-pending requires proof');
-  if (raw.proof !== undefined) {
-    const proof = object(raw.proof, 'proof');
-    if (typeof proof.challenge !== 'string' || !proof.challenge || typeof proof.challengeMessage !== 'string'
-      || typeof proof.expiresAt !== 'string' || !Number.isFinite(Date.parse(proof.expiresAt))) throw new TypeError('invalid saved proof');
-    decodeBytes(proof.challengeMessage);
-    if (proof.submissionState !== undefined && !['prepared', 'submitting'].includes(String(proof.submissionState))) throw new TypeError('unknown proof submission state');
-    if (proof.request !== undefined) {
-      const request = object(proof.request, 'proof.request');
-      if (request.requestId !== raw.requestId || request.challenge !== proof.challenge
-        || canonicalJson(publicKey(request.publicKeyJwk)) !== canonicalJson(creationKey)) throw new TypeError('conflicting proof signature request');
-      if (decodeBytes(request.signature).length !== 64) throw new TypeError('invalid proof signature');
-    }
-  }
+  if (raw.phase !== 'creation-pending' && (!raw.identityId || !raw.domain)) throw new TypeError('known identity requires ID and domain');
   if (raw.publicationConfig !== undefined) {
     const publication = object(raw.publicationConfig, 'publicationConfig');
     for (const member of ['publishProfile', 'governanceId', 'kuUrl', 'ekUrl', 'logRef', 'statusUrl']) {
@@ -164,6 +150,9 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
   // Both keys are Ed25519; x is their only variable RFC 7638 thumbprint member.
   if (creationKey.x !== initial.x && (raw.currentPublicKey === undefined
     || (issuance?.acceptance as { source?: unknown } | undefined)?.source !== 'verified-history')) throw new TypeError('conflicting frozen creationInput');
+  const registrationKey = deriveRegistrationKey(raw.organizationId as string, raw.name as string,
+    digest({ crv: creationKey.crv, kty: creationKey.kty, x: creationKey.x }));
+  if (raw.registrationKey !== registrationKey || raw.issuanceKey !== deriveIssuanceKey(registrationKey)) throw new TypeError('saved idempotency keys do not match the creation binding');
   if (raw.phase === 'complete' || raw.phase === 'issuance-accepted') {
     if (!raw.publicationConfig || !raw.entityPublicKey || !raw.issuance) throw new TypeError('accepted issuance requires publication, entity key, and acceptance facts');
     const issuance = raw.issuance as Record<string, unknown>;

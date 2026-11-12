@@ -1,6 +1,6 @@
 import { withVerificationBudget, waitForVerification, DomainLog, jwkThumbprint, normalizeFQDN, VerificationCode, VerificationError, type C2spIssuanceEvent, type DnsIdJWK, type DnsIdTxtRecord, type KeyProvider, type Log, type LoggedStateEvidence, type LogEvent, type LogReader, type LogRegistry, type LogRef, type LogSignerRole } from '@dnsid-ai/protocol';
 import { parseC2spTlogLr, type ParsedC2spTlogLr } from './lr.ts';
-import { parseC2spEventEntry, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
+import { parseC2spEventEntry, parseC2spSignatures, signedC2spEventBytes, signedC2spEntryBytes, c2spEventId, type C2spEventContext } from './event-codec.ts';
 import { enforceCheckpointPolicy, type C2spTlogPolicy } from './policy.ts';
 import { createDefaultC2spBoundedResourceFetcher, DEFAULT_C2SP_REQUEST_TIMEOUT_MS, ScanStreamSource, validateC2spResourceFetcher, type C2spBoundedResourceFetcher, type IndexedEntry, type StreamEvidence, type StreamSource } from './stream-source.ts';
 import { leafHash, merkleRootFromEntries } from './merkle.ts';
@@ -13,6 +13,8 @@ import type { SignedNoteKey } from './signed-note.ts';
 import { parseCheckpoint, type Checkpoint } from './checkpoint.ts';
 import {
   c2spTlogEntryBytes,
+  ownerIssuanceBytes,
+  parsePreparedC2spTlogIssuance,
   parsePreparedC2spTlogEvent,
   prepareC2spTlogEventForSigning,
   signPreparedC2spTlogEvent,
@@ -234,16 +236,39 @@ export class C2spTlogReader implements LogReader {
   }
 
   async readEvent(ref: LogRef): Promise<LogEvent> {
-    return withVerificationBudget(signal => this.readEventWithinBudget(ref, signal), { signal: this.options.signal });
+    return withVerificationBudget(async signal => (await this.readEventWithinBudget(ref, signal)).event, { signal: this.options.signal });
   }
 
-  private async readEventWithinBudget(ref: LogRef, signal: AbortSignal): Promise<LogEvent> {
+  /** Verifies custody acceptance against the saved owner envelope and authenticated completed bytes. */
+  async verifyOwnerIssuance(
+    ownerBytes: Uint8Array,
+    receipt: { state: string; entryHash: string; index?: number; logRef?: string },
+    context: PreparedC2spVerificationContext,
+  ): Promise<void> {
+    const saved = ownerBytes.slice();
+    const accepted = { ...receipt };
+    return withVerificationBudget(async signal => {
+      const owner = await parsePreparedC2spTlogIssuance(saved, context);
+      await ownerIssuanceBytes(owner, context);
+      if (owner.reference.lr !== this.parsed.lr || accepted.state !== 'accepted'
+        || !Number.isSafeInteger(accepted.index) || accepted.index! < 0
+        || accepted.logRef !== `${owner.reference.lr}@${accepted.index}`) throw new C2spTlogVerificationError('invalid owner ISSUANCE receipt binding');
+      const completed = await this.readEventWithinBudget(accepted.logRef!, signal, context.entityKey);
+      const entry = await parsePreparedC2spTlogIssuance(completed.bytes, context);
+      await c2spTlogEntryBytes(entry, context);
+      const hash = Buffer.from(await crypto.subtle.digest('SHA-256', new Uint8Array(completed.bytes))).toString('hex');
+      if (hash !== accepted.entryHash || !Buffer.from(entry.signedBytes).equals(Buffer.from(owner.signedBytes))
+        || JSON.stringify(parseC2spSignatures(entry.envelope.sigs, 'ISSUANCE', true).ae) !== JSON.stringify(parseC2spSignatures(owner.envelope.sigs, 'ISSUANCE', false).ae)) throw new C2spTlogVerificationError('completed ISSUANCE differs from the owner envelope or receipt');
+    }, { signal: this.options.signal });
+  }
+
+  private async readEventWithinBudget(ref: LogRef, signal: AbortSignal, trustedEntityKey?: DnsIdJWK): Promise<{ event: LogEvent; bytes: Uint8Array }> {
     const parsed = parseC2spTlogLr(ref);
     if (parsed.scope !== this.parsed.scope || parsed.logPrefix !== this.parsed.logPrefix || parsed.streamId !== this.parsed.streamId) {
       throw new VerificationError('C2SP event ref does not belong to this reader', { code: VerificationCode.LogError });
     }
     if (parsed.entryIndex === undefined) throw new VerificationError('C2SP event ref missing @index', { code: VerificationCode.LogError });
-    const entityKey = this.options.entityKey ?? this.trustedEntityKey;
+    const entityKey = trustedEntityKey ?? this.options.entityKey ?? this.trustedEntityKey;
     if (!entityKey) throw new VerificationError('C2SP readEvent requires a trusted entity key', { code: VerificationCode.LogError });
     const proof = this.proofs[String(parsed.entryIndex)];
     // The raw entry only names its domain; that domain's bundle or complete scan authenticates it.
@@ -268,7 +293,7 @@ export class C2spTlogReader implements LogReader {
         throw new VerificationError('C2SP event timestamp is later than its proof checkpoint integration time', { code: VerificationCode.LogError, errorCategory: 'INVALID_EVIDENCE' });
       }
     }
-    return this.verifyOccurrence(entry, event, history.indexedEvents, entityKey, history.checkpointWitnessTime, signal, history.migration);
+    return { event: await this.verifyOccurrence(entry, event, history.indexedEvents, entityKey, history.checkpointWitnessTime, signal, history.migration), bytes: entry.bytes.slice() };
   }
 
   private async discoverEntry(logPrefix: string, index: number, signal: AbortSignal): Promise<IndexedEntry> {
@@ -280,7 +305,9 @@ export class C2spTlogReader implements LogReader {
         throw c2spLogError('C2SP stream evidence is unavailable', cause, true);
       }
     } else {
-      entry = (await this.loadEvidence(logPrefix, signal)).entries.find(e => e.index === index);
+      const evidence = await this.loadEvidence(logPrefix, signal);
+      entry = evidence.entries.find(e => e.index === index);
+      if (!entry && index >= evidence.checkpoint.treeSize) throw new VerificationError('C2SP entry is beyond the available checkpoint', { code: VerificationCode.LogError, transient: true });
     }
     if (!entry || entry.index !== index) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
     return entry;

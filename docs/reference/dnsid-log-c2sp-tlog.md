@@ -515,6 +515,7 @@ Documented on [Transparency log: functions](https://docs.dnsid.ai/reference/ts/d
 - [merkleRootFromEntries()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#merklerootfromentries)
 - [nodeHash()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#nodehash)
 - [normalizedOriginPolicy()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#normalizedoriginpolicy)
+- [ownerIssuanceBytes()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#ownerissuancebytes)
 - [parseC2spEventEntry()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#parsec2spevententry)
 - [parseC2spPolicyFile()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#parsec2sppolicyfile)
 - [parseC2spSignatures()](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#parsec2spsignatures)

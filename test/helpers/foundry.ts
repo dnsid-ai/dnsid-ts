@@ -10,7 +10,7 @@ import {
   C2spTlogVerificationError, canonicalBytes, parseC2spEventEntry,
   prepareC2spTlogEventForSigning, signPreparedC2spTlogEvent, signedC2spEntryBytes,
 } from '@dnsid-ai/log-c2sp-tlog';
-import { PreparedEventSubmissionError, RegistryRequestError, type AgentRegistration, type LiveProvisioningResponse, type PublicationConfig } from '@dnsid-ai/registry';
+import { PreparedEventSubmissionError, RegistryRequestError, RegistrationError, type AgentRegistration, type PublicationConfig } from '@dnsid-ai/registry';
 import { FileFoundryStore, type CreateOptions, type FoundryRegistry } from '@dnsid-ai/foundry';
 
 export const ORG = '11111111-1111-4111-8111-111111111111';
@@ -29,12 +29,11 @@ export async function foundryFixture(directory: string) {
   const entityKey = await entity.signingKey();
   let accepted: C2spIssuanceEvent | undefined;
   let preparedBytes: Uint8Array | undefined;
-  let registrationKey = '';
   const fixture = {
     provider, entity, operationalKey, entityKey,
     organizationId: ORG, governanceId: GI, ready: true,
-    registryStatus: 'VERIFIED', publicState: 'ACTIVE' as AgentStatusState,
-    proofRequired: false, replayWithoutDomain: false, expiredProof: false,
+    registryStatus: 'PROVISIONING', publicState: 'ACTIVE' as AgentStatusState,
+    replayWithoutDomain: false, dnsPublished: true,
     dnsMissing: false, publicKey: operationalKey, publicGovernance: GI, publicLog: LR,
     submitMode: 'accepted' as 'accepted' | 'lost' | 'reject-winner' | 'rejected',
     acceptedBytes: undefined as Uint8Array | undefined,
@@ -43,32 +42,18 @@ export async function foundryFixture(directory: string) {
     reader: {} as LogReader,
     options: {} as CreateOptions,
   };
-  const proof = async (): Promise<LiveProvisioningResponse> => {
-    const challengeMessage = Buffer.from(JSON.stringify({ protocol: 'dnsid-live-provisioning-pop/v1',
-      org_id: fixture.organizationId, agent_id: 'agent-1', fqdn: DOMAIN,
-      key_id: await jwkThumbprint(operationalKey), nonce: 'bm9uY2U',
-      expires_at: new Date(Date.now() + (fixture.expiredProof ? -1000 : 60_000)).toISOString(),
-    })).toString('base64url');
-    return { requestId: registrationKey, agentId: 'agent-1', status: 'challenge_pending',
-      challenge: 'bm9uY2U', challengeMessage, domain: DOMAIN };
-  };
   const registry: FoundryRegistry = {
     getOrganizationOnboarding: vi.fn(async () => ({ organizationId: fixture.organizationId, governanceId: fixture.governanceId, ready: fixture.ready,
       gi: { domain: fixture.governanceId, state: fixture.ready ? 'verified' : 'pending', gateAuthorized: fixture.ready }, entityKeyStatus: 'verified' })),
     registerLiveAgent: vi.fn(async (input, idempotencyKey) => {
       if (await jwkThumbprint(input.publicKeyJwk) !== await jwkThumbprint(fixture.publicKey)) throw new RegistryRequestError(409, 'KEY_MISMATCH', 'name is bound to a different initial key');
-      registrationKey = idempotencyKey;
-      if (fixture.proofRequired) return proof();
-      return { requestId: idempotencyKey, agentId: 'agent-1', status: fixture.registryStatus, challenge: '', challengeMessage: '',
-        ...(fixture.replayWithoutDomain ? {} : { domain: DOMAIN }) };
+      if (fixture.replayWithoutDomain) throw new RegistrationError(idempotencyKey, undefined, new Error('missing domain'), input,
+        { id: 'agent-1', status: fixture.registryStatus }, 201);
+      return { id: 'agent-1', domain: DOMAIN, registryStatus: fixture.registryStatus, publicationAuthority: 'registry' as const,
+        publicationConfig: publication, registryUrl: 'https://registry.example', oidcIssuerUrl: 'https://issuer.example/exact' };
     }),
     getRegistration: vi.fn(async (): Promise<AgentRegistration> => ({ id: 'agent-1', domain: DOMAIN, publicationAuthority: 'registry',
-      registryStatus: fixture.registryStatus, publicationConfig: publication, registryUrl: 'https://registry.example', oidcIssuerUrl: 'https://issuer.example/exact' })),
-    submitLiveProof: vi.fn(async (_domain, request) => {
-      fixture.registryStatus = 'VERIFIED';
-      return { requestId: request.requestId, agentId: 'agent-1', status: 'proof_accepted' };
-    }),
-    reissueLiveProof: vi.fn(async () => { fixture.expiredProof = false; return { ...await proof(), domain: DOMAIN, challengeTranscript: {} as never }; }),
+      registryStatus: fixture.registryStatus, dnsPublished: fixture.dnsPublished, publicationConfig: publication, registryUrl: 'https://registry.example', oidcIssuerUrl: 'https://issuer.example/exact' })),
     prepareIssuance: vi.fn(async () => {
       if (accepted) throw new RegistryRequestError(409, 'TLOG_PREPARATION_MISMATCH', 'issuance already exists');
       const event: C2spIssuanceEvent = {

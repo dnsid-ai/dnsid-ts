@@ -233,6 +233,22 @@ export async function c2spTlogEntryBytes(
   return bytes;
 }
 
+/** Identity Digital custody handoff, not a complete entry or a safe-append input. */
+export async function ownerIssuanceBytes(
+  prepared: PreparedC2spTlogEvent,
+  context: PreparedC2spVerificationContext,
+): Promise<Uint8Array> {
+  assertPreparedIntegrity(prepared);
+  if (prepared.envelope.type !== 'ISSUANCE' || prepared.envelope.seq !== 0) throw new C2spTlogVerificationError('owner handoff requires ISSUANCE genesis');
+  await assertIssuanceExpectations(prepared, context, true);
+  const signatures = parseC2spSignatures(prepared.envelope.sigs, 'ISSUANCE', false);
+  if (!signatures.ae || signatures.op) throw new C2spTlogVerificationError('owner handoff requires only the entity signature');
+  await verifyExistingSignatures(prepared, context);
+  const bytes = canonicalBytes(prepared.envelope);
+  assertEntrySize(bytes);
+  return bytes;
+}
+
 /**
  * Appends a finalized prepared event to the log via `options.submit`, running
  * the required chain validation for non-genesis events.

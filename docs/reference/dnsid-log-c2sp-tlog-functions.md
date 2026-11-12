@@ -835,6 +835,34 @@ C2spTlogVerificationError when the origin has no policy or the policy is invalid
 
 ***
 
+<a id="ownerissuancebytes"></a>
+
+### ownerIssuanceBytes()
+
+```ts
+function ownerIssuanceBytes(prepared, context): Promise<Uint8Array<ArrayBufferLike>>;
+```
+
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L237)
+
+Identity Digital custody handoff, not a complete entry or a safe-append input.
+
+#### Parameters
+
+##### prepared
+
+[`PreparedC2spTlogEvent`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#preparedc2sptlogevent)
+
+##### context
+
+[`PreparedC2spVerificationContext`](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#preparedc2spverificationcontext)
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+***
+
 <a id="parsec2spevententry"></a>
 
 ### parseC2spEventEntry()
@@ -2138,7 +2166,7 @@ C2spTlogVerificationError when the resulting lifecycle is invalid
 function writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L244)
+Defined in: [packages/log-c2sp-tlog/src/writer.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L260)
 
 Appends a finalized prepared event to the log via `options.submit`, running
 the required chain validation for non-genesis events.

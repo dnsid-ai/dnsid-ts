@@ -5,9 +5,10 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { jwkThumbprint } from '@dnsid-ai/sdk';
 import { LocalKeyProvider } from '@dnsid-ai/sdk/node';
 import { canonicalBytes } from '@dnsid-ai/log-c2sp-tlog';
-import { Deadline, FileFoundryStore, create, parseFoundryOperation, type FoundryOperation, type FoundryTransaction } from '@dnsid-ai/foundry';
+import { Deadline, FileFoundryStore, create, deriveRegistrationKey, deriveIssuanceKey, parseFoundryOperation, type FoundryOperation, type FoundryTransaction } from '@dnsid-ai/foundry';
 import { ORG, foundryFixture } from './helpers/foundry.ts';
 import { withTemp } from './helpers/cli-directory.ts';
 
@@ -51,8 +52,11 @@ describe('FileFoundryStore', () => {
       const { store } = await initial(root);
       const document = JSON.parse(Buffer.from(await store.export(key)).toString());
       for (const modify of [
-        (value: any) => { value.schemaVersion = 2; },
+        (value: any) => { value.schemaVersion = 1; },
         (value: any) => { value.phase = 'later'; },
+        (value: any) => { value.phase = 'proof-pending'; },
+        (value: any) => { value.registrationKey = 'wrong'; },
+        (value: any) => { value.issuanceKey = 'wrong'; },
         (value: any) => { value.signingPaused = 'false'; },
         (value: any) => { value.extension = '\ud800'; },
         (value: any) => { value.initialPublicKey.d = 'private'; },
@@ -61,7 +65,10 @@ describe('FileFoundryStore', () => {
         (value: any) => { value.phase = 'complete'; },
       ]) {
         const altered = structuredClone(document); modify(altered);
-        expect(() => parseFoundryOperation(new TextEncoder().encode(JSON.stringify(altered)))).toThrow();
+        const bytes = new TextEncoder().encode(JSON.stringify(altered));
+        expect(() => parseFoundryOperation(bytes)).toThrow();
+        await expect(store.import(bytes)).rejects.toThrow();
+        expect(JSON.parse(Buffer.from(await store.export(key)).toString())).toEqual(document);
       }
       expect(() => parseFoundryOperation(new TextEncoder().encode('{"schemaVersion":1,"schemaVersion":1}'))).toThrow();
       expect(() => parseFoundryOperation(new Uint8Array([0xff]))).toThrow();
@@ -80,6 +87,8 @@ describe('FileFoundryStore', () => {
       document.issuance = { acceptance: { source: 'registry' } };
       expect(() => parseFoundryOperation(canonicalBytes(document))).toThrow(new TypeError('conflicting frozen creationInput'));
       document.issuance.acceptance = { source: 'verified-history' };
+      document.registrationKey = deriveRegistrationKey(ORG, key.name, await jwkThumbprint(document.creationInput.public_key));
+      document.issuanceKey = deriveIssuanceKey(document.registrationKey);
       expect(parseFoundryOperation(canonicalBytes(document))).toEqual(document);
       delete document.currentPublicKey;
       expect(() => parseFoundryOperation(canonicalBytes(document))).toThrow(new TypeError('conflicting frozen creationInput'));

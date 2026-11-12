@@ -38,7 +38,7 @@ it.each(['lost POST response', 'invalid POST body', 'GET network error', 'GET 50
       if (failure === 'GET 404') return new Response(null, { status: 404 });
       if (failure === 'invalid GET body') return new Response('{}');
     }
-    return new Response(JSON.stringify({ id: 'agent-1', domain, status: 'PENDING', managed: 'dnsid' }));
+    return new Response(JSON.stringify({ id: 'agent-1', domain, status: 'PENDING', managed: 'dnsid', dns_published: false }));
   });
   const registry = new RegistryClient({ fetch: fetchMock });
   const input = { name: 'My agent', zoneId: 'zone-1', publicKeyJwk, idempotencyKey };

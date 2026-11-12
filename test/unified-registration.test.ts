@@ -22,7 +22,7 @@ it.each([
       return Response.json(snapshot, { status: 201 });
     }
     // Hosting and later defaults must not override the creation snapshot.
-    return Response.json({ id: snapshot.id, domain, managed: 'dnsid', status: 'PENDING', publication_config: { ...snapshot.publication_config, max_key_age: '90d' } });
+    return Response.json({ id: snapshot.id, domain, managed: 'dnsid', status: 'PENDING', dns_published: false, publication_config: { ...snapshot.publication_config, max_key_age: '90d' } });
   });
   const result = await new RegistryClient({ token: 'owner', fetch: fetchMock }).registerAgent(input);
   expect(result.publicationAuthority).toBe('registry');
@@ -120,7 +120,7 @@ it('retains the original key and complete request on replay after governance cha
       if (replay) return Response.json({ error: 'MANAGED_GOVERNANCE_UNAVAILABLE' }, { status: 409 });
       return Response.json(creation(domain), { status: 201 });
     }
-    return Response.json({ id: 'agent-1', domain, managed: 'dnsid', status: 'PENDING' });
+    return Response.json({ id: 'agent-1', domain, managed: 'dnsid', status: 'PENDING', dns_published: false });
   });
   const client = new RegistryClient({ fetch: fetchMock });
   const input = { publicKeyJwk, rootDomain: 'example.com', governanceDomain: 'example.com', environment: 'production' as const, managed: true, idempotencyKey: 'saved-key' };
