@@ -305,9 +305,11 @@ export class C2spTlogReader implements LogReader {
         throw c2spLogError('C2SP stream evidence is unavailable', cause, true);
       }
     } else {
-      entry = (await this.loadEvidence(logPrefix, signal)).entries.find(e => e.index === index);
+      const evidence = await this.loadEvidence(logPrefix, signal);
+      entry = evidence.entries.find(e => e.index === index);
+      if (!entry && index >= evidence.checkpoint.treeSize) throw new VerificationError('C2SP entry is beyond the available checkpoint', { code: VerificationCode.LogError, transient: true });
     }
-    if (!entry || entry.index !== index) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError, transient: true });
+    if (!entry || entry.index !== index) throw new VerificationError('C2SP entry not found in source', { code: VerificationCode.LogError });
     return entry;
   }
 

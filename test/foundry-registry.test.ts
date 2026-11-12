@@ -34,13 +34,48 @@ describe('Foundry registry adapters', () => {
     });
   });
 
-  it.each([undefined, null, 'true', 1])('rejects unsupported managed publication progress with known facts: %s', async dnsPublished => {
+  it.each(['missing header', 'mismatched header', '202'])('never adopts a Live response with %s on resume', async fault => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
-      const id = await create('agent', f.options);
-      const read = vi.mocked(f.registry.getRegistration).getMockImplementation()!;
-      vi.mocked(f.registry.getRegistration).mockImplementation(async (...args) => ({ ...(await read(...args))!, dnsPublished: dnsPublished as never }));
-      await expect(id.active()).rejects.toMatchObject({ category: 'UnsupportedRegistry', identityId: 'agent-1', domain: DOMAIN });
+      let invalid = true;
+      const raw = { id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING',
+        publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' };
+      const send = vi.fn<typeof fetch>(async (_input, init) => Response.json(raw, {
+        status: invalid && fault === '202' ? 202 : 201,
+        headers: invalid && fault === 'missing header' ? {} : {
+          'Idempotency-Key': invalid && fault === 'mismatched header' ? 'wrong' : new Headers(init?.headers).get('Idempotency-Key')!,
+        },
+      }));
+      const registry = new RegistryClient({ fetch: send });
+      const options = { ...f.options, registryClient: { ...f.registry, registerLiveAgent: registry.registerLiveAgent.bind(registry) } };
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await expect(create('agent', options)).rejects.toMatchObject({ category: 'binding', resumable: false, cause: { cause: { creation: raw } } });
+        const saved = JSON.parse(Buffer.from(await options.store!.export({ registryUrl: 'https://registry.example', organizationId: ORG, name: 'agent' })).toString());
+        expect(saved).toMatchObject({ phase: 'creation-pending' });
+        expect(saved.identityId).toBeUndefined();
+        expect(saved.domain).toBeUndefined();
+      }
+      invalid = false;
+      await expect(create('agent', options)).resolves.toMatchObject({ domain: DOMAIN });
+      expect(send).toHaveBeenCalledTimes(3);
+      expect(new Set(send.mock.calls.map(([, init]) => new Headers(init?.headers).get('Idempotency-Key'))).size).toBe(1);
+      expect(f.registry.getRegistration).not.toHaveBeenCalled();
+      expect(f.registry.prepareIssuance).not.toHaveBeenCalled();
+    });
+  });
+
+  it.each([undefined, null, 'true', 1])('rejects unsupported managed publication progress in active and resumed create: %s', async dnsPublished => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const send = vi.fn(async () => Response.json({ id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING', managed: 'dnsid',
+        dns_published: dnsPublished, publication_config: wirePublication }));
+      const registry = new RegistryClient({ fetch: send });
+      const options = { ...f.options, registryClient: { ...f.registry, getRegistration: registry.getRegistration.bind(registry) } };
+      const id = await create('agent', options);
+      const expected = { category: 'UnsupportedRegistry', resumable: false, identityId: 'agent-1', domain: DOMAIN, registryStatus: 'PROVISIONING' };
+      await expect(id.active()).rejects.toMatchObject(expected);
+      await expect(create('agent', options)).rejects.toMatchObject(expected);
+      expect(send).toHaveBeenCalledTimes(2);
       expect(f.registry.prepareIssuance).not.toHaveBeenCalled();
       expect(f.registry.registerLiveAgent).toHaveBeenCalledOnce();
       await expect(id.sign(new Uint8Array())).rejects.toBeInstanceOf(SigningPaused);

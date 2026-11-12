@@ -1242,7 +1242,9 @@ describe('C2SP stream bundles', () => {
     await expect(source.discoverEntry(prefix, 260)).resolves.toEqual({ index: 260, bytes: entries[4] });
     expect(authenticateCheckpoint).toHaveBeenCalledOnce();
     expect(fetchBounded).toHaveBeenCalledTimes(2);
-    await expect(source.discoverEntry(prefix, 300)).rejects.toThrow('outside checkpoint size');
+    await expect(source.discoverEntry(prefix, 300)).rejects.toMatchObject({ transient: true, message: expect.stringContaining('outside checkpoint size') });
+    await expect(source.discoverEntry(prefix, -1)).rejects.toMatchObject({ transient: false });
+    await expect(source.discoverEntry(prefix, 1.5)).rejects.toMatchObject({ transient: false });
   });
 
   it('fails closed instead of falling back for status 600', async () => {

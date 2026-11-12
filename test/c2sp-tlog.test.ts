@@ -13,6 +13,7 @@ import {
   canonicalLogPrefix,
   C2spTlogVerificationError,
   C2spTlogReader,
+  type C2spTlogReaderOptions,
   createFetchBackedC2spResourceFetcher,
   entryBundlePath,
   generateC2spTlogStreamId,
@@ -1249,10 +1250,11 @@ quorum W1
     const streamSource = { load: vi.fn().mockResolvedValue(evidence), discoverEntry: vi.fn<NonNullable<StreamSource['discoverEntry']>>(async () => ({ index: 0, bytes: entryBytes })) };
     const logKey = { name: origin, kind: 'ed25519' as const, keyBytes: new Uint8Array(logPublicBytes), keyId: new Uint8Array(logKeyId), signatureType: new Uint8Array([0x01]) };
     const witnessKey = { name: witnessName, kind: 'ed25519' as const, keyBytes: new Uint8Array(witnessPublicBytes), keyId: new Uint8Array(witnessKeyId), signatureType: new Uint8Array([0x04]) };
-    const reader = new C2spTlogReader(lr, {
+    const readerOptions: C2spTlogReaderOptions = {
       policy: { scope: 'testnet', origins: { [origin]: { logKeys: [logKey], witnessKeys: [witnessKey], quorum: 1 } } },
       streamSource, entityKey: entity.publicJwk, checkpointMaxAge: 60_000, allowedClockSkew: 1000,
-    });
+    };
+    const reader = new C2spTlogReader(lr, readerOptions);
     const record = new DnsIdTxtRecord();
     record.agentFQDN = issuanceEvent.domain;
     record.gi = issuanceEvent.governanceId;
@@ -1308,6 +1310,20 @@ quorum W1
     await expect(reader.verifyOwnerIssuance(canonicalBytes(differentPayload), receipt, expected)).rejects.toThrow('differs');
     streamSource.discoverEntry.mockRejectedValueOnce(new Error('accepted entry not available yet'));
     await expect(reader.verifyOwnerIssuance(ownerBytes, receipt, expected)).rejects.toMatchObject({ transient: true });
+    streamSource.discoverEntry.mockResolvedValueOnce({ index: 1, bytes: entryBytes });
+    await expect(reader.readEvent(`${lr}@0`)).rejects.toMatchObject({ transient: false });
+
+    const scanReader = new C2spTlogReader(lr, { ...readerOptions, streamSource: { load: streamSource.load } });
+    streamSource.load.mockResolvedValueOnce({ ...evidence, entries: [] });
+    await expect(scanReader.readEvent(`${lr}@0`)).rejects.toMatchObject({ transient: false });
+    const pendingReceipt = { ...receipt, index: 1, logRef: `${lr}@1` };
+    await expect(scanReader.verifyOwnerIssuance(ownerBytes, pendingReceipt, expected)).rejects.toMatchObject({ transient: true });
+
+    const checkpointBytes = new TextEncoder().encode(signedText + '\n' + checkpoint.signatures.map(signature =>
+      `— ${signature.name} ${Buffer.concat([signature.keyHash, signature.signature]).toString('base64')}\n`).join(''));
+    const standardReader = new C2spTlogReader(lr, { ...readerOptions, streamSource: undefined,
+      resourceFetcher: { securityGuarantees: requiredC2spResourceFetchGuarantees, fetchBounded: vi.fn(async () => checkpointBytes) } });
+    await expect(standardReader.verifyOwnerIssuance(ownerBytes, pendingReceipt, expected)).rejects.toMatchObject({ transient: true });
     const complete = await parsePreparedC2spTlogIssuance(entryBytes, expected);
     await expect(ownerIssuanceBytes(complete, expected)).rejects.toThrow('only the entity signature');
   });

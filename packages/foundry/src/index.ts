@@ -107,6 +107,7 @@ export async function create(name: string, options: CreateOptions = {}): Promise
         try {
           response = await retry(context, () => context.registry.registerLiveAgent(input, registrationKey, { signal: deadline.signal }));
         } catch (cause) {
+          if (cause instanceof RegistrationError && cause.cause instanceof ValidationError) throw failure('binding', operation, cause.cause.message, false, cause);
           if (cause instanceof RegistrationError && cause.creation) {
             const raw = cause.creation;
             if (typeof raw.id === 'string' && raw.id) {
@@ -131,9 +132,7 @@ export async function create(name: string, options: CreateOptions = {}): Promise
         savePublication(operation, response);
         await transaction.save(operation);
       } else if (operation.domain) {
-        const observation = await retry(context, () => context.registry.getRegistration(operation!.domain!, { signal: deadline.signal }));
-        observeRegistration(operation, observation);
-        await transaction.save(operation);
+        await readRegistration(context, operation, transaction);
       }
       registryOutcome(operation);
       if (!operation.domain) throw failure('resumable', operation, 'registry accepted creation but has not returned a domain; saved ID and status can be resumed', true);
@@ -259,27 +258,14 @@ export class FoundryIdentity {
   private async waitForRegistry(context: Context, transaction: FoundryTransaction, ready = false): Promise<AgentRegistration> {
     const operation = this.operation;
     for (let delay = 1000; ; delay = Math.min(delay * 2, 15_000)) {
-      let registration;
-      try {
-        registration = await retry(context, () => context.registry.getRegistration(this.domain, { signal: context.deadline.signal }));
-      } catch (cause) {
-        if (cause instanceof UnsupportedRegistryResponse) {
-          observeRegistration(operation, cause.registration);
-          await transaction.save(operation);
-          registryOutcome(operation);
-          throw new UnsupportedRegistry({ phase: operation.phase, identityId: operation.identityId, domain: operation.domain, registryStatus: operation.registryStatus, cause });
-        }
-        throw cause;
-      }
-      observeRegistration(operation, registration);
+      const registration = await readRegistration(context, operation, transaction);
       this.registryStatus = operation.registryStatus;
-      await transaction.save(operation);
       registryOutcome(operation);
-      if (typeof registration!.dnsPublished !== 'boolean') throw new UnsupportedRegistry({ phase: operation.phase, identityId: operation.identityId, domain: operation.domain, registryStatus: operation.registryStatus });
-      savePublication(operation, registration!);
+      if (typeof registration.dnsPublished !== 'boolean') throw new UnsupportedRegistry({ phase: operation.phase, identityId: operation.identityId, domain: operation.domain, registryStatus: operation.registryStatus });
+      savePublication(operation, registration);
       await transaction.save(operation);
       const status = operation.registryStatus!.toUpperCase();
-      if (registration!.dnsPublished && (ready ? status === 'READY' : ['PROVISIONING', 'READY'].includes(status))) return registration!;
+      if (registration.dnsPublished && (ready ? status === 'READY' : ['PROVISIONING', 'READY'].includes(status))) return registration;
       await context.deadline.wait(delay);
     }
   }
@@ -562,6 +548,23 @@ function savePublication(operation: FoundryOperation, registration: AgentRegistr
   if (operation.publicationConfig && canonicalJson(operation.publicationConfig) !== canonicalJson(portable(publication))) throw failure('binding', operation, 'registry publication configuration changed');
   operation.publicationConfig ??= portable(publication!) as Record<string, unknown>;
   if (registration.oidcIssuerUrl) operation.oidcIssuerUrl ??= registration.oidcIssuerUrl;
+}
+async function readRegistration(context: Context, operation: FoundryOperation, transaction: FoundryTransaction): Promise<AgentRegistration> {
+  let registration;
+  try {
+    registration = await retry(context, () => context.registry.getRegistration(operation.domain!, { signal: context.deadline.signal }));
+  } catch (cause) {
+    if (cause instanceof UnsupportedRegistryResponse) {
+      observeRegistration(operation, cause.registration);
+      await transaction.save(operation);
+      registryOutcome(operation);
+      throw new UnsupportedRegistry({ phase: operation.phase, identityId: operation.identityId, domain: operation.domain, registryStatus: operation.registryStatus, cause });
+    }
+    throw cause;
+  }
+  observeRegistration(operation, registration);
+  await transaction.save(operation);
+  return registration!;
 }
 function observeRegistration(operation: FoundryOperation, registration: AgentRegistration | undefined): void {
   if (!registration) throw failure('resumable', operation, 'authenticated registry read did not find the known identity', true);

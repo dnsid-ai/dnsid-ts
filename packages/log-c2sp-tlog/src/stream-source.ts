@@ -177,8 +177,9 @@ export class ScanStreamSource implements StreamSource {
     return withVerificationBudget(async child => {
       const checkpoint = parseCheckpoint(new TextDecoder().decode(await this.bytes(checkpointPath(prefix), this.maxCheckpointBytes, child, revalidate)));
       await this.options.authenticateCheckpoint(checkpoint);
-      if (!Number.isSafeInteger(index) || index < 0 || index >= checkpoint.treeSize) {
-        throw new C2spTlogVerificationError(`C2SP entry index ${index} is outside checkpoint size ${checkpoint.treeSize}`);
+      if (!Number.isSafeInteger(index) || index < 0) throw new C2spTlogVerificationError('C2SP entry index must be a non-negative safe integer');
+      if (index >= checkpoint.treeSize) {
+        throw new C2spTlogError(`C2SP entry index ${index} is outside checkpoint size ${checkpoint.treeSize}`, { transient: true });
       }
       const bundleIndex = Math.floor(index / C2SP_ENTRIES_PER_BUNDLE);
       const want = Math.min(C2SP_ENTRIES_PER_BUNDLE, checkpoint.treeSize - bundleIndex * C2SP_ENTRIES_PER_BUNDLE);

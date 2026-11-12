@@ -374,8 +374,8 @@ export class RegistryClient {
       }, idempotencyKey, options);
       httpStatus = resp.status;
       creation = await readJsonObject(resp, 'registry live registration response');
-      if (resp.status !== 201) throw new Error('Live registration requires HTTP 201');
-      if (resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new Error('Live response Idempotency-Key does not match the request');
+      if (resp.status !== 201) throw new ValidationError('Live registration requires HTTP 201');
+      if (resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new ValidationError('Live response Idempotency-Key does not match the request');
       const domain = requiredString(creation, 'domain', 'registry live registration response');
       if (normalizeFQDN(domain, true) !== domain) throw new Error('Live response domain must be canonical');
       const publicationConfig = publicationConfigFromResponse(creation.publication_config);
