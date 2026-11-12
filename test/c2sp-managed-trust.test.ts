@@ -73,6 +73,27 @@ quorum dnsid-witness-1
 const STAGING_BUNDLE_KEY = 'dnsid-stream-bundle+65c31b14+AXCMTPR4I/fqOgSHge4AEMp+1pWcflDqC1YEDaHDe3Ps';
 // Signs staging bundles over the 4096-byte KMS limit (Identity-Digital/dnsid#3286).
 const STAGING_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+cdd64875+ATu1SYXvRiZPBUzrUJAfKHeMH3eHr3T22jKez/C3Yl1m';
+const KNOWN_DEVELOPMENT_POLICY = `log log.dev.knownsystems.ai+78742e4f+AWJIIC/ZPaSwAprXLHT+JZ7lbTipE3MciQOdUGqG1T3j
+witness dnsid-witness-1 witness.dev.knownsystems.ai/w1+21be2f43+BLsio+pQhADB8grceyZnOVERcoq+V6oJuUNy/IEfhsgt
+quorum dnsid-witness-1
+`;
+const KNOWN_DEVELOPMENT_BUNDLE_KEY = 'dnsid-stream-bundle+138e0d41+AXy9jwvH7hY3LgjqoZn3GmNllKTj2TyNApRLKbt/2WSU';
+// Signs Known dev bundles over the 4096-byte KMS limit.
+const KNOWN_DEVELOPMENT_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+ad87852b+AWWyHhKGf9oKqaRCQfrk9kixjuz4fmhI5P08W5bsYxzj';
+const KNOWN_STAGING_POLICY = `log log.stg.knownsystems.ai+d3504618+AaUJP26XksZKcjmWHs7Cyq244q2efKUH1geUNb6bK5G7
+witness dnsid-witness-1 witness.stg.knownsystems.ai/w1+e3954927+BA8QcWZ+kIuuakqhAbltJ1lFAYeuEqE98AYWyG9eKTil
+quorum dnsid-witness-1
+`;
+const KNOWN_STAGING_BUNDLE_KEY = 'dnsid-stream-bundle+85bbbf6c+AQEr6kb1rP1ZUJxEUl5ai5KxD86uHDRhHoF9rGewVgvC';
+// Signs Known staging bundles over the 4096-byte KMS limit.
+const KNOWN_STAGING_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+64bf74b3+Aa0M4XaiO7BzP4fn7gLnWOw570/ml9x8xnEiv5fUqIW1';
+const KNOWN_PRODUCTION_POLICY = `log log.knownsystems.ai+ffa9d1c9+Ad/NRlpkBsb9RjFstpUI2V38LF0G9DaJgHWtx5UtS6a7
+witness dnsid-witness-1 witness.knownsystems.ai/w1+f726713e+BPq3DkSLKz0bMwDnwhwb9yhsGKT/0g0iPKZYekuumLfV
+quorum dnsid-witness-1
+`;
+const KNOWN_PRODUCTION_BUNDLE_KEY = 'dnsid-stream-bundle+4c5de6cf+AeoiHt6HX3fniAPFeNMerJ52HKAlfLxbwFnxvyVM8GPj';
+// Signs Known production bundles over the 4096-byte KMS limit.
+const KNOWN_PRODUCTION_OVERFLOW_BUNDLE_KEY = 'dnsid-stream-bundle+4296adc5+AX8gHt0vQT0mICUKU2svFWcdcIhcQmGHYuR2kk/EsXex';
 const PARTNERS_POLICY = `log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1
 witness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4
 quorum dnsid-witness-1
@@ -316,6 +337,75 @@ describe('DNSid-managed C2SP trust', () => {
     });
     expect(result.bundle.signature.kid).toBe(kid);
     expect(result.bundle.state.loggedState).toBe(state);
+    expect(result.events).toHaveLength(events);
+  });
+
+  it.each([
+    ['https://log.dev.knownsystems.ai', KNOWN_DEVELOPMENT_POLICY, KNOWN_DEVELOPMENT_BUNDLE_KEY, KNOWN_DEVELOPMENT_OVERFLOW_BUNDLE_KEY],
+    ['https://log.stg.knownsystems.ai', KNOWN_STAGING_POLICY, KNOWN_STAGING_BUNDLE_KEY, KNOWN_STAGING_OVERFLOW_BUNDLE_KEY],
+    ['https://log.knownsystems.ai', KNOWN_PRODUCTION_POLICY, KNOWN_PRODUCTION_BUNDLE_KEY, KNOWN_PRODUCTION_OVERFLOW_BUNDLE_KEY],
+  ] as const)('selects the exact Known profile for %s with the managed defaults', async (logPrefix, policy, bundleKey, overflowBundleKey) => {
+    const fetcher: C2spBoundedResourceFetcher = {
+      fetchBounded: vi.fn(async () => { throw new Error('not called during catalog construction'); }),
+      securityGuarantees: requiredC2spResourceFetchGuarantees,
+    };
+    const store = new InMemoryTrustedC2spCheckpointStore();
+    const registry = await createDnsidManagedVerificationRegistry({
+      resourceFetcher: fetcher,
+      trustedCheckpointStore: store,
+    });
+    const known = internals(registry.newReader(
+      `c2sp-tlog:public:${logPrefix}#EREREREREREREREREREREQ`,
+    ) as C2spTlogReader);
+
+    expect(known.checkpointStore).toBe(store);
+    expect(known.source.resourceFetcher).toBe(fetcher);
+    expect(known.options).toMatchObject({ checkpointMaxAge: 600_000, allowedClockSkew: 0 });
+    expect(known.options.streamBundle).toMatchObject({
+      policyDocument: new TextEncoder().encode(policy),
+      bundleKeys: [
+        parseSignedNoteVerifierKey(bundleKey),
+        parseSignedNoteVerifierKey(overflowBundleKey),
+      ],
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      required: undefined,
+    });
+  });
+
+  // Reviewed service fixtures captured from the Known logs on 2026-11-11 and 2026-11-12:
+  // three-event streams (issuance, key rotation, revocation) over the 4096-byte KMS limit,
+  // signed by each log's secret-held key, and a two-event staging stream small enough for
+  // the KMS bundle key.
+  it.each([
+    ['https://log.dev.knownsystems.ai', 'c2sp-known-dev-stream-bundle-overflow-key.json', 'dnsid-stream-bundle+ad87852b', 3],
+    ['https://log.stg.knownsystems.ai', 'c2sp-known-staging-stream-bundle-kms-key.json', 'dnsid-stream-bundle+85bbbf6c', 2],
+    ['https://log.stg.knownsystems.ai', 'c2sp-known-staging-stream-bundle-overflow-key.json', 'dnsid-stream-bundle+64bf74b3', 3],
+    ['https://log.knownsystems.ai', 'c2sp-known-production-stream-bundle-overflow-key.json', 'dnsid-stream-bundle+4296adc5', 3],
+  ] as const)('verifies the Known bundle from %s (%s) under its managed profile', async (logPrefix, fixture, kid, events) => {
+    const registry = await createDnsidManagedVerificationRegistry();
+    const known = internals(registry.newReader(
+      `c2sp-tlog:public:${logPrefix}#EREREREREREREREREREREQ`,
+    ) as C2spTlogReader);
+    const trust = known.options.streamBundle!;
+    const bytes = readFileSync(new URL(`./vectors/${fixture}`, import.meta.url));
+    const bundle = JSON.parse(bytes.toString('utf8'));
+    const issuance = JSON.parse(Buffer.from(bundle.events[0].entry, 'base64url').toString('utf8'));
+    const result = await verifyC2spStreamBundle(bytes, {
+      expectedFqdn: bundle.fqdn,
+      expectedLogReference: bundle.lr,
+      policyBytes: trust.policyDocument,
+      bundleKeys: trust.bundleKeys,
+      entityKey: issuance.ek,
+      maxBundleBytes: 128 * 1024,
+      maxEvents: 16,
+      maxBundleLifetimeMs: 600_000,
+      checkpointFreshnessMs: 600_000,
+      nowMs: (bundle.expires - 60) * 1000,
+      trustedCheckpointStore: new InMemoryTrustedC2spCheckpointStore(),
+    });
+    expect(result.bundle.signature.kid).toBe(kid);
+    expect(result.bundle.state.loggedState).toBe('REVOKED');
     expect(result.events).toHaveLength(events);
   });
 

@@ -446,7 +446,9 @@ trust decision; the generic factory never selects these roots implicitly.
 Trust snapshots are bundled with the SDK and selected only after parsing an
 exact canonical `(scope, logPrefix)` pair. The catalog covers the
 development, production, partner (`https://log.partners.dnsid.ai`), and staging
-(`https://log.stg.dnsid.ai`) logs.
+(`https://log.stg.dnsid.ai`) logs, and the Known development
+(`https://log.dev.knownsystems.ai`), staging (`https://log.stg.knownsystems.ai`),
+and production (`https://log.knownsystems.ai`) logs.
 Managed verification prefers signed stream bundles with safe raw-scan fallback.
 
 #### Parameters
