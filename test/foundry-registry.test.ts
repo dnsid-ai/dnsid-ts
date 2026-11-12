@@ -21,7 +21,17 @@ describe('Foundry registry adapters', () => {
     });
   });
 
-  it.each(['domain', 'id', 'status', 'publication_config', 'oidc_issuer_url', 'header', '202'])('retains creation facts for invalid Live response: %s', async missing => {
+  it('accepts Live create without oidc_issuer_url from a single-issuer deployment', async () => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const send = vi.fn(async () => Response.json({ id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING', publication_config: wirePublication },
+        { status: 201, headers: { 'Idempotency-Key': 'key' } }));
+      const response = await new RegistryClient({ fetch: send }).registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
+      expect(response.oidcIssuerUrl).toBeUndefined();
+    });
+  });
+
+  it.each(['domain', 'id', 'status', 'publication_config', 'header', '202'])('retains creation facts for invalid Live response: %s', async missing => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       const raw: Record<string, unknown> = { id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING',
@@ -54,6 +64,7 @@ describe('Foundry registry adapters', () => {
         expect(saved).toMatchObject({ phase: 'creation-pending' });
         expect(saved.identityId).toBeUndefined();
         expect(saved.domain).toBeUndefined();
+        expect(saved.rejectedCreation).toEqual(raw);
       }
       invalid = false;
       await expect(create('agent', options)).resolves.toMatchObject({ domain: DOMAIN });

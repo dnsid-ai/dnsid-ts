@@ -77,45 +77,25 @@ describe('Known Foundry create', () => {
     });
   });
 
-  it('saves known facts and returns a resumable error when replay omits the domain', async () => {
+  it('keeps a domain-less replay as diagnostics and replays the frozen request', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root); f.replayWithoutDomain = true;
-      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable', identityId: 'agent-1', registryStatus: 'PROVISIONING', resumable: true });
+      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable', resumable: true });
       const state = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
-      expect(state.identityId).toBe('agent-1'); expect(state.domain).toBeUndefined();
+      expect(state.identityId).toBeUndefined(); expect(state.domain).toBeUndefined();
+      expect(state.rejectedCreation).toMatchObject({ id: 'agent-1' });
       await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable' });
-      expect(f.registry.registerLiveAgent).toHaveBeenCalledTimes(2);
-      const calls = vi.mocked(f.registry.registerLiveAgent).mock.calls;
-      expect(calls[1]!.slice(0, 2)).toEqual(calls[0]!.slice(0, 2));
-      expect(f.registry.getRegistration).not.toHaveBeenCalled();
-    });
-  });
-
-  it('resolves a saved ID when the next identical creation replay returns a domain', async () => {
-    await withTemp(async root => {
-      const f = await foundryFixture(root); f.replayWithoutDomain = true;
-      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable', identityId: 'agent-1' });
       f.replayWithoutDomain = false;
       const id = await create('agent', f.options);
       expect(id.domain).toBe(DOMAIN);
       const calls = vi.mocked(f.registry.registerLiveAgent).mock.calls;
-      expect(calls).toHaveLength(2);
+      expect(calls).toHaveLength(3);
       expect(calls[1]!.slice(0, 2)).toEqual(calls[0]!.slice(0, 2));
+      expect(calls[2]!.slice(0, 2)).toEqual(calls[0]!.slice(0, 2));
       await id.active();
       await expect(id.sign(new Uint8Array())).resolves.toHaveLength(64);
       await create('agent', f.options);
-      expect(f.registry.registerLiveAgent).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  it('rejects a creation replay that changes the saved ID', async () => {
-    await withTemp(async root => {
-      const f = await foundryFixture(root); f.replayWithoutDomain = true;
-      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'resumable' });
-      f.replayWithoutDomain = false;
-      const replay = vi.mocked(f.registry.registerLiveAgent).getMockImplementation()!;
-      vi.mocked(f.registry.registerLiveAgent).mockImplementationOnce(async (...args) => ({ ...await replay(...args), id: 'other-agent' }));
-      await expect(create('agent', f.options)).rejects.toMatchObject({ category: 'binding', identityId: 'agent-1' });
+      expect(f.registry.registerLiveAgent).toHaveBeenCalledTimes(3);
     });
   });
 

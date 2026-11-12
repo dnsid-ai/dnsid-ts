@@ -1,4 +1,4 @@
-/** Known Foundry named Live creation. Requires the server gates documented at compliance da4d1b1. */
+/** Known Foundry named Live creation. Requires the server gates documented at compliance 9f7a71f. */
 import {
   ArgumentError, IdentityManager, JWKS, VerificationCode, VerificationError,
   issueManagedIdentity, jwkThumbprint, normalizeFQDN, validateDnsidConfig, ValidationError,
@@ -107,19 +107,12 @@ export async function create(name: string, options: CreateOptions = {}): Promise
         try {
           response = await retry(context, () => context.registry.registerLiveAgent(input, registrationKey, { signal: deadline.signal }));
         } catch (cause) {
-          if (cause instanceof RegistrationError && cause.cause instanceof ValidationError) throw failure('binding', operation, cause.cause.message, false, cause);
+          // A response that failed validation is diagnostic only; replay the frozen request and key.
           if (cause instanceof RegistrationError && cause.creation) {
-            const raw = cause.creation;
-            if (typeof raw.id === 'string' && raw.id) {
-              if (operation.identityId && operation.identityId !== raw.id) throw failure('binding', operation, 'Live creation response changed the saved ID');
-              operation.identityId = raw.id;
-            }
-            if (cause.domain) {
-              try { operation.domain = normalizeFQDN(cause.domain, true); } catch { /* Retain ID and frozen request when the domain is invalid. */ }
-            }
-            if (typeof raw.status === 'string' && raw.status) operation.registryStatus = raw.status;
+            operation.rejectedCreation = portable(cause.creation) as Record<string, unknown>;
             await transaction.save(operation);
           }
+          if (cause instanceof RegistrationError && cause.cause instanceof ValidationError) throw failure('binding', operation, cause.cause.message, false, cause);
           throw cause;
         }
         if (!response.id || !response.domain || operation.identityId && operation.identityId !== response.id) throw failure('binding', operation, 'Live creation response does not match the frozen request');

@@ -385,7 +385,8 @@ export class RegistryClient {
         id: requiredString(creation, 'id', 'registry live registration response'), domain,
         registryStatus: requiredString(creation, 'status', 'registry live registration response'),
         publicationAuthority: 'registry', publicationConfig,
-        oidcIssuerUrl: requiredString(creation, 'oidc_issuer_url', 'registry live registration response'),
+        // Single-issuer deployments omit the issuer.
+        oidcIssuerUrl: optionalString(creation, 'oidc_issuer_url'),
         registryUrl: this.baseUrl, raw: creation,
       };
     } catch (cause) {
@@ -404,6 +405,11 @@ export class RegistryClient {
     return this.registerAgent({ ...input, environment: input.environment ?? 'production', managed: true });
   }
 
+  /**
+   * Explicitly advances or retries self-managed registration, including ERROR. Ordinary
+   * self-managed registration needs one call after the record, JWKS, and TLS are served;
+   * otherwise it stays PROVISIONING until it times out. Live returns 409 INVALID_TRANSITION.
+   */
   async verifyAgent(domain: string): Promise<LifecycleResult> {
     const response = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/verify`);
     return lifecycleResultFromResponse(await readJsonObject(response, 'registry verification response'));
@@ -597,7 +603,10 @@ export class RegistryClient {
     return this.submitEvent(domain, entryBytes, idempotencyKey, options, true);
   }
 
-  /** Receipt hashes the server-completed entry; verify its inclusion and owner envelope before completion. */
+  /**
+   * Receipt hashes the server-completed entry; verify its inclusion and owner envelope before completion.
+   * Not supported yet: the registry exposes no custodied operational public key before READY-only claim.
+   */
   async submitOwnerIssuance(domain: string, ownerEntryBytes: Uint8Array, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<SubmissionResult> {
     return this.submitEvent(domain, ownerEntryBytes, idempotencyKey, options, false);
   }
