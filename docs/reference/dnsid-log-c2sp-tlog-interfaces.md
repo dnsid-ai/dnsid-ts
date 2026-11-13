@@ -1886,7 +1886,7 @@ Earliest accepted witness timestamp; undefined when the quorum rule required no 
 
 ### DnsidManagedVerificationOptions
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L70)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L112)
 
 Shared infrastructure for [createDnsidManagedVerificationRegistry](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-functions/#creatednsidmanagedverificationregistry).
 
@@ -1900,7 +1900,7 @@ Shared infrastructure for [createDnsidManagedVerificationRegistry](https://docs.
 optional migrationLimits?: C2spMigrationVerificationLimits;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L72)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L114)
 
 Cumulative predecessor limits; defaults to depth 8, 10,000 events, and 8 MiB.
 
@@ -1912,7 +1912,7 @@ Cumulative predecessor limits; defaults to depth 8, 10,000 events, and 8 MiB.
 optional resourceFetcher?: C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L74)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L116)
 
 Bounded transport shared by every managed log reader.
 
@@ -1924,7 +1924,7 @@ Bounded transport shared by every managed log reader.
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L78)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L120)
 
 Cancels reads made by readers from this registry.
 
@@ -1936,7 +1936,7 @@ Cancels reads made by readers from this registry.
 optional trustedCheckpointStore?: TrustedC2spCheckpointStore;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L76)
+Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L118)
 
 Persistence shared by every managed log reader. The default is restart-ephemeral.
 
