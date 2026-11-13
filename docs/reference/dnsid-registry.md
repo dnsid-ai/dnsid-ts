@@ -3603,7 +3603,7 @@ Defined in: [packages/registry/src/index.ts:274](https://github.com/dnsid-ai/dns
 optional logRef?: string;
 ```
 
-Defined in: [packages/registry/src/index.ts:272](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L272)
+Defined in: [packages/registry/src/index.ts:271](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L271)
 
 <a id="raw-7"></a>
 
@@ -3707,7 +3707,7 @@ Use PublishClientControlledRecordOptions.
 type RegistryRevocationReason = "owner_request" | "key_compromise" | "policy_violation";
 ```
 
-Defined in: [packages/registry/src/index.ts:272](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L272)
+Defined in: [packages/registry/src/index.ts:271](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L271)
 
 Owner-authorized reason codes accepted by the registry revoke API. The registry
 publishes them as the protocol reasons cessationOfOperation, keyCompromise and
