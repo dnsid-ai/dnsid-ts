@@ -184,11 +184,36 @@ describe('GCP existing-version Ed25519 runtime (#56; Mode: fake-only)', () => {
     });
   }
 
-  it('Given KMS permission denial, When signing, Then the failure propagates without a local signer', async () => {
-    const client = cloud();
-    const provider = await open(client);
-    client.asymmetricSign.mockRejectedValue(Object.assign(new Error('permission denied'), { code: 7 }));
-    await expect(provider.sign(new Uint8Array([42]))).rejects.toThrow(/permission denied/i);
-    expectNoMutation(client);
-  });
+  for (const [fault, code] of [['denied', 7], ['disabled', 9], ['missing-version', 5], ['service-failure', 14]] as const) {
+    for (const boundary of ['open', 'sign']) {
+      it(`Given ${fault}, When existing Google ${boundary} fails, Then no result or replacement`, async () => {
+        const client = cloud();
+        const error = Object.assign(new Error(`${fault} selected ${VERSION}`), { code });
+        // vi.fn records before throwing, so swallowed trap failures remain visible.
+        for (const method of ['createCryptoKey', 'createCryptoKeyVersion', 'importCryptoKeyVersion',
+          'updateCryptoKeyPrimaryVersion', 'destroyCryptoKeyVersion'] as const) {
+          client[method].mockImplementation(() => { throw new Error(`forbidden ${method}`); });
+        }
+        if (boundary === 'open') {
+          client.getPublicKey.mockRejectedValue(error);
+          await expect(GcpCloudKmsKeyProvider.load(client, { activeKeyVersion: VERSION, algorithm: ALGORITHM })).rejects.toThrow();
+          expect(client.asymmetricSign).not.toHaveBeenCalled();
+        } else {
+          const provider = await open(client);
+          const key = await provider.signingKey();
+          const ids = await provider.listKeyIds();
+          expect(ids).toEqual([key.kid]);
+          client.asymmetricSign.mockRejectedValue(error);
+          await expect(provider.sign(new Uint8Array([42]))).rejects.toThrow();
+          expect(await provider.signingKey()).toEqual(key);
+          expect(await provider.listKeyIds()).toEqual(ids);
+          expect(client.asymmetricSign).toHaveBeenCalledTimes(1);
+          expect(client.asymmetricSign.mock.calls[0][0].name).toBe(VERSION);
+        }
+        expect(client.getPublicKey).toHaveBeenCalledTimes(1);
+        expect(client.getPublicKey.mock.calls[0][0]).toEqual({ name: VERSION });
+        expectNoMutation(client);
+      });
+    }
+  }
 });
