@@ -1,4 +1,15 @@
 
+## [0.38.0] - 2026-11-13
+
+### Features
+
+- feat: add the Known logs to the managed verification catalog ([#160](https://github.com/dnsid-ai/dnsid-ts/pull/160))
+
+### Other
+
+- Support policyViolation revocation reason ([#161](https://github.com/dnsid-ai/dnsid-ts/pull/161))
+
+
 ## [0.37.0] - 2026-11-11
 
 ### Features
