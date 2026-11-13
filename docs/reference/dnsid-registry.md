@@ -3712,7 +3712,7 @@ Defined in: [packages/registry/src/index.ts:271](https://github.com/dnsid-ai/dns
 Owner-authorized reason codes accepted by the registry revoke API. The registry
 publishes them as the protocol reasons cessationOfOperation, keyCompromise and
 policyViolation. `policy_violation` permanently blocks re-registration of the
-domain and needs an org admin (Identity-Digital/known-foundry#72).
+domain and needs an org admin.
 
 ## Variables
 
