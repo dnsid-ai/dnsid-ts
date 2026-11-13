@@ -262,8 +262,18 @@ export interface KeyRotationPreparationRequest {
   publicKey: DnsIdJWK;
 }
 
-/** Owner-authorized reason codes accepted by the registry revoke API. */
-export type RegistryRevocationReason = 'owner_request' | 'key_compromise';
+/**
+ * Owner-authorized reason codes accepted by the registry revoke API. The registry
+ * publishes them as the protocol reasons cessationOfOperation, keyCompromise and
+ * policyViolation. `policy_violation` permanently blocks re-registration of the
+ * domain and needs an org admin.
+ */
+export type RegistryRevocationReason = 'owner_request' | 'key_compromise' | 'policy_violation';
+const registryRevocationReasons: ReadonlySet<string> = new Set<RegistryRevocationReason>([
+  'owner_request',
+  'key_compromise',
+  'policy_violation',
+]);
 
 export interface SubmissionResult {
   state: 'pending' | 'accepted' | 'rejected';
@@ -738,7 +748,7 @@ export class RegistryClient {
     reason: RegistryRevocationReason,
   ): Promise<LifecycleResult> {
     if (!agentId || agentId.trim() !== agentId) throw new Error('agentId must be a non-empty string without surrounding whitespace');
-    if (reason !== 'owner_request' && reason !== 'key_compromise') throw new Error('revocation reason is invalid');
+    if (!registryRevocationReasons.has(reason)) throw new Error('revocation reason is invalid');
     const resp = await this.post(`/api/v1/agent/${encodeURIComponent(domain)}/revoke`, {
       agent_id: agentId,
       reason,
