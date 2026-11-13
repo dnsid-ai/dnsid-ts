@@ -266,7 +266,7 @@ export interface KeyRotationPreparationRequest {
  * Owner-authorized reason codes accepted by the registry revoke API. The registry
  * publishes them as the protocol reasons cessationOfOperation, keyCompromise and
  * policyViolation. `policy_violation` permanently blocks re-registration of the
- * domain and needs an org admin (Identity-Digital/known-foundry#72).
+ * domain and needs an org admin.
  */
 export type RegistryRevocationReason = 'owner_request' | 'key_compromise' | 'policy_violation';
 const registryRevocationReasons: ReadonlySet<string> = new Set<RegistryRevocationReason>([
