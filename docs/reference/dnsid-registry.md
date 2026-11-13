@@ -3704,12 +3704,15 @@ Use PublishClientControlledRecordOptions.
 ### RegistryRevocationReason
 
 ```ts
-type RegistryRevocationReason = "owner_request" | "key_compromise";
+type RegistryRevocationReason = "owner_request" | "key_compromise" | "policy_violation";
 ```
 
-Defined in: [packages/registry/src/index.ts:266](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L266)
+Defined in: [packages/registry/src/index.ts:272](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/registry/src/index.ts#L272)
 
-Owner-authorized reason codes accepted by the registry revoke API.
+Owner-authorized reason codes accepted by the registry revoke API. The registry
+publishes them as the protocol reasons cessationOfOperation, keyCompromise and
+policyViolation. `policy_violation` permanently blocks re-registration of the
+domain and needs an org admin (Identity-Digital/known-foundry#72).
 
 ## Variables
 

@@ -660,6 +660,22 @@ describe('RegistryClient', () => {
     )).resolves.toMatchObject({ id: 'agent-immutable-1', registryStatus: 'REVOKED' });
   });
 
+  it('revokes with policy_violation', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({
+        agent_id: 'agent-immutable-1',
+        reason: 'policy_violation',
+      });
+      return new Response(JSON.stringify({ id: 'agent-immutable-1', status: 'REVOKED' }));
+    }) as unknown as typeof fetch;
+
+    await expect(client(fetchMock).revokeAgent(
+      'agent.example.com',
+      'agent-immutable-1',
+      'policy_violation',
+    )).resolves.toMatchObject({ registryStatus: 'REVOKED' });
+  });
+
   it.each([
     ['', 'owner_request'],
     [' agent-immutable-1 ', 'owner_request'],
