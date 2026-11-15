@@ -127,6 +127,51 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
   } finally { rpc.mockRestore(); }
 });
 
+// Mode: fake-only (native AWS responses and fixed verified-publication evidence).
+// Real identity-bound configuration path: do not inject an operational provider.
+it('Given region A publication, When configuration selects region B with the same public material, Then reject the different regional kid', async () => {
+  const { vi } = await import('vitest');
+  const { KMSClient, GetPublicKeyCommand } = await import('@aws-sdk/client-kms');
+  const { IdentityManager, JWKS } = await import('@dnsid-ai/sdk');
+  const { constructIdentityManager, loadEnvironment, mergeLoadedConfig } = await import('@dnsid-ai/sdk/node');
+  const seen: string[] = [];
+  const rpc = vi.spyOn(KMSClient.prototype, 'send').mockImplementation(async function (this: InstanceType<typeof KMSClient>, command) {
+    const region = await this.config.region();
+    const ref = arns.find(value => value.includes(`:${region}:`))!;
+    if (!(command instanceof GetPublicKeyCommand)) throw new Error('no generation, signing fallback or other RPC permitted');
+    expect(command.input.KeyId).toBe(ref);
+    seen.push(ref);
+    return { KeyId: ref, PublicKey: publicKey.export({ format: 'der', type: 'spki' }),
+      KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: ['ED25519_SHA_512'] };
+  });
+  // Independently fixed publication: never derive this evidence from the manager
+  // under construction (which would hide a region-B/region-A mismatch).
+  const published = { kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA', kid: arns[0], x };
+  const publication = vi.spyOn(IdentityManager.prototype, 'verifyPublicationEvidence')
+    .mockResolvedValue({ jwks: new JWKS([published]) } as never);
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const base = await loadEnvironment({ DNSID_DOMAIN: 'alice.example.com', DNSID_GOVERNANCE_ID: 'example.com',
+      DNSID_LOG_REF: 'noop:0', DNSID_STATUS_URL: 'https://status.example.com/alice' });
+    const configured = (ref: string) => mergeLoadedConfig(base, {
+      keySource: { provider: 'aws-kms', keyRef: ref, settings: { region: ref.split(':')[3], algorithm: 'EdDSA' } },
+    });
+    // Given region A's fixed publication, its matching constructor succeeds.
+    const manager = await constructIdentityManager(configured(arns[0]));
+    const selectedA = await manager.getKeyProvider().signingKey();
+    expect(selectedA).toMatchObject(published);
+    expect(thumbprint(selectedA.x!)).toBe(thumb);
+    // When only the selected regional ARN/region changes, public material and
+    // algorithm still match, but the published kid does not: binding must fail.
+    await expect(constructIdentityManager(configured(arns[1]))).rejects.toThrow(/authorized key rotation/);
+    expect(publication).toHaveBeenCalledTimes(2);
+    expect(publication).toHaveBeenNthCalledWith(1, 'alice.example.com', { refresh: true });
+    expect(publication).toHaveBeenNthCalledWith(2, 'alice.example.com', { refresh: true });
+    expect(seen).toEqual(arns);
+    expect(warn).not.toHaveBeenCalled();
+  } finally { rpc.mockRestore(); publication.mockRestore(); warn.mockRestore(); }
+});
+
 // Mode: fake-only (AWS call accounting), inclusive RAW bound.
 for (const size of [4096, 4097]) it(`AWS RAW size boundary: Given ${size} bytes, When signing, Then enforce the bound before native Sign`, async () => {
   const fixture = aws(arns[0]);
