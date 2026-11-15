@@ -105,7 +105,7 @@ it.each(['existing A', 'selected B', 'read denied'] as const)('AWS config-open: 
     const published = { kty: 'OKP', crv: 'Ed25519', x: raw.x!, alg: 'EdDSA', use: 'sig', kid: a };
     const fixture = await publicationFixture('agent.example.com', published);
     const selected = mode === 'selected B' ? b : a;
-    const denied = new Error('fixture AWS public read denied');
+    const denied = Object.assign(new Error('fixture AWS public read denied'), { name: 'AccessDeniedException' });
     const calls: string[] = [];
     let creates = 0;
     // The generated AWS client's send boundary only; no own factory/provider mocks.

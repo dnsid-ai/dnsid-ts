@@ -152,6 +152,10 @@ export class AwsSdkKmsFacade implements AwsKmsFacade {
   }> {
     const output = await this.client.send(new GetPublicKeyCommand({ KeyId: input.keyId }));
     if (!output.PublicKey) throw new ArgumentError(`AWS KMS GetPublicKey response did not include PublicKey for ${input.keyId}`);
+    if (/^arn:[a-z0-9-]+:kms:[a-z0-9-]+:[0-9]{12}:key\/[A-Za-z0-9-]+$/.test(input.keyId)
+      && output.KeyId !== undefined && output.KeyId !== input.keyId) {
+      throw new ArgumentError('AWS KMS public key reference mismatch');
+    }
     return {
       keyId: output.KeyId,
       publicKey: output.PublicKey,

@@ -69,6 +69,109 @@ checks the resolved key against verified publication before returning a signing 
 Changing an alias to another key requires authorized rotation and updated publication.
 The standalone factory only opens the key; its caller owns identity binding checks.
 
+### AWS Ed25519 multi-Region keys
+
+[AWS documents asymmetric multi-Region keys](https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html)
+and [Ed25519 signing](https://docs.aws.amazon.com/kms/latest/developerguide/asymmetric-key-specs.html).
+This is a vendor-documented setup pattern, not live-service verification or a
+promise that every account/region supports the combination. Check current service
+availability, CLI support and organization policies before provisioning; stop on
+an unsupported combination rather than substituting another algorithm.
+
+Provision outside application startup, using a separately authorized operator.
+For example, in one account and AWS partition (shell variables below are operator
+inputs/output, not SDK environment settings):
+
+```sh
+set -eu
+primary_region=us-east-1
+replica_region=us-west-2
+primary_arn=$(aws kms create-key --region "$primary_region" \
+  --multi-region --key-spec ECC_NIST_EDWARDS25519 --key-usage SIGN_VERIFY \
+  --query KeyMetadata.Arn --output text)
+replica_arn=$(aws kms replicate-key --region "$primary_region" \
+  --key-id "$primary_arn" --replica-region "$replica_region" \
+  --query ReplicaKeyMetadata.Arn --output text)
+aws kms describe-key --region "$primary_region" --key-id "$primary_arn"
+aws kms describe-key --region "$replica_region" --key-id "$replica_arn"
+```
+
+Save the exact returned ARNs. Confirm `MultiRegionConfiguration` links the two
+keys, `KeySpec` is `ECC_NIST_EDWARDS25519`, `KeyUsage` is `SIGN_VERIFY`, and both
+keys are enabled before use. Set a finite readiness deadline and RPC timeouts;
+if a key is still creating, recheck within that budget, not in an endless loop.
+Do not blindly repeat creation after a lost response. Runtime principals need
+`kms:GetPublicKey` and `kms:Sign` on each regional key; replication/provisioning
+permissions belong to the operator, not ordinary startup.
+
+For standalone cryptographic use, open two independent providers with
+**different immutable regional key ARNs and matching regions**, explicitly
+selecting `EdDSA`. The JSON below shows each regional key source, not a complete
+shared-identity deployment. Replace the illustrative account/key IDs with the
+returned ARNs:
+
+```json
+{"keySource":{"provider":"aws-kms","keyRef":"arn:aws:kms:us-east-1:123456789012:key/mrk-0123456789abcdef0123456789abcdef","settings":{"region":"us-east-1","algorithm":"EdDSA"}}}
+```
+
+```json
+{"keySource":{"provider":"aws-kms","keyRef":"arn:aws:kms:us-west-2:123456789012:key/mrk-0123456789abcdef0123456789abcdef","settings":{"region":"us-west-2","algorithm":"EdDSA"}}}
+```
+
+Use ambient AWS credentials. Do not send the primary ARN to the replica region
+and rely on redirection. Related MRKs share key material and a key ID, not one
+global ARN: policies, grants, aliases and enabled state are regional. An `mrk-`
+prefix alone proves neither relationship nor public-key equality.
+
+Opening configuration never generates or replicates keys and has no automatic
+regional failover or local-signer fallback. Explicit provider creation/rotation
+is not automatic MRK replication or fleet coordination. Preserve existing
+publication/signing-key binding checks; changing configuration does not authorize
+replacing an established signer.
+
+`EdDSA` uses `ED25519_SHA_512` with **RAW data, at most 4096 bytes**. Oversized
+payloads fail. Do not hash them and substitute Ed25519ph/DIGEST: that is not the
+same signature scheme. See [AWS Sign limits](https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html).
+
+Go and TypeScript AWS providers retain canonical native KMS identifiers as
+JWK `kid` values. The two regional ARNs above therefore produce **different
+kids even when their public key material and RFC 7638 thumbprints are identical**.
+Python AWS instead uses public-key thumbprint kids while retaining native
+references separately; do not assume the same identity-binding behavior across SDKs.
+
+**Identity-bound configuration limitation:** `constructIdentityManager` checks the
+configuration-selected signing key against the verified publication by **kid,
+algorithm and thumbprint**, not public material alone. A publication made with
+region A's ARN cannot be reused by configuration selecting region B's ARN:
+construction rejects the different kid. Each identity-bound setup needs a
+verified publication matching its selected regional kid; these fragments do not
+provide two regional signers for one unchanged published identity. Any change to
+an established signer must follow authorized publication/key-rotation procedures,
+not just a regional configuration switch.
+
+Standalone provider opens and raw signature cross-verification remain supported
+for the two regional references, independently of identity-manager construction.
+They demonstrate cryptographic key equality, not shared published-identity
+compatibility or automatic failover. Injecting a provider is not a documented
+workaround: the owning workflow still has identity-binding responsibilities, and
+signature `kid` values must match the published identity's expectations. This
+setup does not normalize regional kids or solve that shared-identity limitation.
+
+For cryptographic equality, require public JWK `kty=OKP`, `crv=Ed25519`,
+`alg=EdDSA`, equal `x`, and no private `d`. Independently compute RFC 7638 SHA-256
+thumbprints over canonical JSON containing only `crv`, `kty`, `x`; compare those,
+not entire serialized JWKs or native references. Sign the same bounded raw payload through
+each client and independently verify both signatures with the common public key
+(and the other client's public key). Reopen the exact saved references and repeat;
+signature-byte equality is not the acceptance criterion. Unrelated keys cannot
+satisfy this check; the SDK does not discover cross-region misconfiguration.
+
+Plan cleanup before allocation. For owned disposable fixtures,
+[schedule replica deletion before deleting the primary](https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys.html#deleting-mrks)
+and verify each key's disposition. Scheduled deletion is delayed, not completed
+removal; retain an owner/follow-up for outstanding resources. Never delete shared
+keys as test cleanup.
+
 ## Supported KMS keys
 
 | DNSid/JWS alg | AWS signing algorithm | AWS key spec |
