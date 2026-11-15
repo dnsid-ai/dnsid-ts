@@ -109,9 +109,11 @@ Do not blindly repeat creation after a lost response. Runtime principals need
 `kms:GetPublicKey` and `kms:Sign` on each regional key; replication/provisioning
 permissions belong to the operator, not ordinary startup.
 
-Configure two independent clients with **different immutable regional key ARNs
-and matching regions**, explicitly selecting `EdDSA`. These are deployment JSON
-fragments; replace the illustrative account/key IDs with the returned ARNs:
+For standalone cryptographic use, open two independent providers with
+**different immutable regional key ARNs and matching regions**, explicitly
+selecting `EdDSA`. The JSON below shows each regional key source, not a complete
+shared-identity deployment. Replace the illustrative account/key IDs with the
+returned ARNs:
 
 ```json
 {"keySource":{"provider":"aws-kms","keyRef":"arn:aws:kms:us-east-1:123456789012:key/mrk-0123456789abcdef0123456789abcdef","settings":{"region":"us-east-1","algorithm":"EdDSA"}}}
@@ -137,8 +139,28 @@ payloads fail. Do not hash them and substitute Ed25519ph/DIGEST: that is not the
 same signature scheme. See [AWS Sign limits](https://docs.aws.amazon.com/kms/latest/APIReference/API_Sign.html).
 
 Go and TypeScript AWS providers retain canonical native KMS identifiers as
-JWK `kid` values, so related regional keys can have different kids. Python AWS
-uses public-key thumbprint kids while retaining native references separately.
+JWK `kid` values. The two regional ARNs above therefore produce **different
+kids even when their public key material and RFC 7638 thumbprints are identical**.
+Python AWS instead uses public-key thumbprint kids while retaining native
+references separately; do not assume the same identity-binding behavior across SDKs.
+
+**Identity-bound configuration limitation:** `constructIdentityManager` checks the
+configuration-selected signing key against the verified publication by **kid,
+algorithm and thumbprint**, not public material alone. A publication made with
+region A's ARN cannot be reused by configuration selecting region B's ARN:
+construction rejects the different kid. Each identity-bound setup needs a
+verified publication matching its selected regional kid; these fragments do not
+provide two regional signers for one unchanged published identity. Any change to
+an established signer must follow authorized publication/key-rotation procedures,
+not just a regional configuration switch.
+
+Standalone provider opens and raw signature cross-verification remain supported
+for the two regional references, independently of identity-manager construction.
+They demonstrate cryptographic key equality, not shared published-identity
+compatibility or automatic failover. Injecting a provider is not a documented
+workaround: the owning workflow still has identity-binding responsibilities, and
+signature `kid` values must match the published identity's expectations. This
+setup does not normalize regional kids or solve that shared-identity limitation.
 
 For cryptographic equality, require public JWK `kty=OKP`, `crv=Ed25519`,
 `alg=EdDSA`, equal `x`, and no private `d`. Independently compute RFC 7638 SHA-256
