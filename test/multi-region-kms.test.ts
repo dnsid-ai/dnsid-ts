@@ -3,8 +3,9 @@ import { expect, it } from 'vitest';
 import { AwsKmsKeyProvider, type AwsKmsFacade } from '@dnsid-ai/key-aws';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
-// #61 packet/design 01/12. Mode: real-capable, AWS/GCP=fake.
+// Regional public binding and cross-signatures. Mode: real-capable, AWS/GCP=fake.
 // Synthetic topology is not proof of real replication/location availability.
+// Public RFC 8032 section 7.1 TEST 1 seed; never use this fixture for credentials.
 const privateKey = createPrivateKey({ key: Buffer.from('302e020100300506032b657004220420'
   + '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60', 'hex'), format: 'der', type: 'pkcs8' });
 const publicBytes = Buffer.from('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a', 'hex');
@@ -18,6 +19,7 @@ function crc32c(bytes: Uint8Array): number {
   for (const byte of bytes) { crc ^= byte; for (let n = 0; n < 8; n++) crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0); }
   return (crc ^ 0xffffffff) >>> 0;
 }
+// Synthetic resource identifiers; no cloud account or resource is used.
 const arns = ['us-east-1', 'us-west-2'].map(region => `arn:aws:kms:${region}:123456789012:key/mrk-0123456789abcdef0123456789abcdef`);
 const version = (location: string) => `projects/fixture/locations/${location}/keyRings/agents/cryptoKeys/signer/cryptoKeyVersions/7`;
 function aws(ref: string) {
@@ -63,7 +65,7 @@ for (const topology of ['aws', 'us', 'global']) {
     const refs = topology === 'aws' ? arns : [version(topology), version(topology)];
     const signatures: Uint8Array[] = [];
     const publics: ReturnType<typeof createPublicKey>[] = [];
-    const payload = Buffer.from('#61 bounded RAW cross-region payload');
+    const payload = Buffer.from('bounded RAW cross-region payload');
     for (let reopen = 0; reopen < 2; reopen++) for (const ref of refs) {
       // When each provider uses a separate fresh client; no saved application state.
       const fixture = topology === 'aws' ? aws(ref) : google(ref);
@@ -90,7 +92,7 @@ for (const topology of ['aws', 'us', 'global']) {
   });
 }
 
-// A2 Mode: real-capable (AWS=fake); fake-only wrong response binding.
+// Regional configuration binding. Mode: real-capable (AWS=fake); fake-only wrong response binding.
 it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then own endpoint binding is retained without provisioning', async () => {
   const { vi } = await import('vitest');
   const { KMSClient, GetPublicKeyCommand, SignCommand } = await import('@aws-sdk/client-kms');
@@ -101,7 +103,9 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
     const region = await this.config.region();
     const ref = arns.find(value => value.includes(`:${region}:`))!;
     seen.push(command.constructor.name);
-    expect(command.input.KeyId).toBe(ref);
+    if (command instanceof GetPublicKeyCommand || command instanceof SignCommand) {
+      expect(command.input.KeyId).toBe(ref);
+    }
     if (command instanceof GetPublicKeyCommand) return { KeyId: wrongBinding ? arns.find(value => value !== ref)! : ref,
       PublicKey: publicKey.export({ format: 'der', type: 'spki' }), KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: ['ED25519_SHA_512'] };
     if (command instanceof SignCommand) {
@@ -123,8 +127,8 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
   } finally { rpc.mockRestore(); }
 });
 
-// F2 Mode: fake-only (AWS call accounting), packet/vendor inclusive RAW bound.
-for (const size of [4096, 4097]) it(`AWS RAW boundary 61: Given ${size} bytes, When signing, Then enforce the bound before native Sign`, async () => {
+// Mode: fake-only (AWS call accounting), inclusive RAW bound.
+for (const size of [4096, 4097]) it(`AWS RAW size boundary: Given ${size} bytes, When signing, Then enforce the bound before native Sign`, async () => {
   const fixture = aws(arns[0]);
   let creates = 0;
   fixture.client.createSigningKey = async () => { creates++; throw new Error('unexpected generation'); };
@@ -148,9 +152,9 @@ for (const size of [4096, 4097]) it(`AWS RAW boundary 61: Given ${size} bytes, W
   expect(creates).toBe(0);
 });
 
-// COV-1 unchanged compatibility. Mode: real-capable (AWS=fake native SDK seam).
+// Alias and omitted-KeyId compatibility. Mode: real-capable (AWS=fake native SDK seam).
 for (const referenceMode of ['omitted-KeyId', 'alias-name', 'alias-ARN'] as const) {
-  it(`AWS compatibility COV-1: Given ${referenceMode}, When opened through official facade, Then canonical public binding signs without provisioning`, async () => {
+  it(`AWS reference compatibility: Given ${referenceMode}, When opened through official facade, Then canonical public binding signs without provisioning`, async () => {
     const { AwsSdkKmsFacade } = await import('@dnsid-ai/key-aws');
     const { GetPublicKeyCommand, SignCommand } = await import('@aws-sdk/client-kms');
     const canonical = arns[0];

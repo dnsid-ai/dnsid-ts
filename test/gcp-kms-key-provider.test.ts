@@ -196,7 +196,7 @@ describe('GCP existing-version Ed25519 runtime (#56; Mode: fake-only)', () => {
         }
         if (boundary === 'open') {
           client.getPublicKey.mockRejectedValue(error);
-          await expect(GcpCloudKmsKeyProvider.load(client, { activeKeyVersion: VERSION, algorithm: ALGORITHM })).rejects.toThrow();
+          await expect(GcpCloudKmsKeyProvider.load(client, { activeKeyVersion: VERSION, algorithm: ALGORITHM })).rejects.toBe(error);
           expect(client.asymmetricSign).not.toHaveBeenCalled();
         } else {
           const provider = await open(client);
@@ -204,7 +204,7 @@ describe('GCP existing-version Ed25519 runtime (#56; Mode: fake-only)', () => {
           const ids = await provider.listKeyIds();
           expect(ids).toEqual([key.kid]);
           client.asymmetricSign.mockRejectedValue(error);
-          await expect(provider.sign(new Uint8Array([42]))).rejects.toThrow();
+          await expect(provider.sign(new Uint8Array([42]))).rejects.toBe(error);
           expect(await provider.signingKey()).toEqual(key);
           expect(await provider.listKeyIds()).toEqual(ids);
           expect(client.asymmetricSign).toHaveBeenCalledTimes(1);

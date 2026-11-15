@@ -490,14 +490,14 @@ for (const fault of ['AccessDeniedException', 'DisabledException', 'NotFoundExce
       const deletion = vi.spyOn(client, 'scheduleKeyDeletion').mockImplementation(async () => { throw new Error('forbidden delete'); });
       const load = () => AwsKmsKeyProvider.load(client, { activeKeyId: ref, algorithm: 'ED25519_SHA_512' });
       const expected = [`read:${ref}`];
-      if (boundary === 'open') await expect(load()).rejects.toThrow();
+      if (boundary === 'open') await expect(load()).rejects.toBe(error);
       else {
         const provider = await load();
         const key = await provider.signingKey();
         const ids = await provider.listKeyIds();
         expect(key).toMatchObject({ kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA' });
         expect(ids).toEqual([key.kid]);
-        await expect(provider.sign(new Uint8Array([42]))).rejects.toThrow();
+        await expect(provider.sign(new Uint8Array([42]))).rejects.toBe(error);
         expect(await provider.signingKey()).toEqual(key);
         expect(await provider.listKeyIds()).toEqual(ids);
         expected.push(`sign:${ref}`);
