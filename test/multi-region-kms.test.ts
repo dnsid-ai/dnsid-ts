@@ -1,5 +1,6 @@
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { expect, it } from 'vitest';
+import { ArgumentError } from '@dnsid-ai/protocol';
 import { AwsKmsKeyProvider, type AwsKmsFacade } from '@dnsid-ai/key-aws';
 import { GcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
 
@@ -97,19 +98,15 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
   const { vi } = await import('vitest');
   const { KMSClient, GetPublicKeyCommand, SignCommand } = await import('@aws-sdk/client-kms');
   const { createAwsKmsKeyProvider } = await import('@dnsid-ai/key-aws');
-  const seen: string[] = [];
+  const seen: { operation: string; region: string; input: unknown }[] = [];
   let wrongBinding = false;
   const rpc = vi.spyOn(KMSClient.prototype, 'send').mockImplementation(async function (this: InstanceType<typeof KMSClient>, command) {
     const region = await this.config.region();
     const ref = arns.find(value => value.includes(`:${region}:`))!;
-    seen.push(command.constructor.name);
-    if (command instanceof GetPublicKeyCommand || command instanceof SignCommand) {
-      expect(command.input.KeyId).toBe(ref);
-    }
+    seen.push({ operation: command.constructor.name, region, input: command.input });
     if (command instanceof GetPublicKeyCommand) return { KeyId: wrongBinding ? arns.find(value => value !== ref)! : ref,
       PublicKey: publicKey.export({ format: 'der', type: 'spki' }), KeySpec: 'ECC_NIST_EDWARDS25519', KeyUsage: 'SIGN_VERIFY', SigningAlgorithms: ['ED25519_SHA_512'] };
     if (command instanceof SignCommand) {
-      expect(command.input.MessageType).toBe('RAW'); expect(command.input.SigningAlgorithm).toBe('ED25519_SHA_512');
       return { KeyId: ref, SigningAlgorithm: 'ED25519_SHA_512', Signature: sign(null, command.input.Message!, privateKey) };
     }
     throw new Error('unexpected provisioning/fallback RPC');
@@ -120,10 +117,30 @@ it('Given explicit regional ARN/region/EdDSA config, When freshly opened, Then o
       expect(await provider.signingKey()).toMatchObject({ kid: ref, x });
       expect(verify(null, Buffer.from('config'), publicKey, await provider.sign(Buffer.from('config')))).toBe(true);
     }
-    expect(seen).toEqual(Array.from({ length: 4 }, () => ['GetPublicKeyCommand', 'SignCommand']).flat());
+    expect(seen).toEqual(Array.from({ length: 2 }, () => arns.flatMap(ref => [
+      { operation: 'GetPublicKeyCommand', region: ref.split(':')[3], input: { KeyId: ref } },
+      { operation: 'SignCommand', region: ref.split(':')[3], input: {
+        KeyId: ref, Message: expect.any(Uint8Array), MessageType: 'RAW', SigningAlgorithm: 'ED25519_SHA_512',
+      } },
+    ])).flat());
+    for (const request of seen.filter(request => request.operation === 'SignCommand')) {
+      expect(Buffer.from((request.input as { Message: Uint8Array }).Message)).toEqual(Buffer.from('config'));
+    }
+    seen.length = 0;
     wrongBinding = true;
-    await expect(createAwsKmsKeyProvider(arns[0], { region: 'us-east-1', algorithm: 'EdDSA' })).rejects.toThrow();
-    expect(seen.at(-1)).toBe('GetPublicKeyCommand');
+    // A and B are distinct immutable test-owned ARNs. Valid fixed public
+    // material isolates resource binding from decoding/algorithm failures.
+    expect(arns[0]).not.toBe(arns[1]);
+    const result = await createAwsKmsKeyProvider(arns[0], { region: 'us-east-1', algorithm: 'EdDSA' })
+      .then(provider => ({ provider, error: undefined }), (error: unknown) => ({ provider: undefined, error }));
+    expect(result.provider).toBeUndefined();
+    expect(result.error).toBeInstanceOf(ArgumentError);
+    expect(result.error).toMatchObject({ message: expect.stringMatching(/public key reference mismatch/i) });
+    // No mock assertion can satisfy the failure oracle above. Exact request
+    // accounting also excludes signing, creation and every fallback operation.
+    expect(seen).toEqual([
+      { operation: 'GetPublicKeyCommand', region: 'us-east-1', input: { KeyId: arns[0] } },
+    ]);
   } finally { rpc.mockRestore(); }
 });
 
