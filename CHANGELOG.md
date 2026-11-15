@@ -1,4 +1,27 @@
 
+## [0.38.0] - 2026-11-15
+
+### Bug Fixes
+
+- fix: bind AWS public reads to selected regional ARN ([#61](https://github.com/dnsid-ai/dnsid-ts/pull/61))
+
+### Features
+
+- feat: add the Known logs to the managed verification catalog ([#160](https://github.com/dnsid-ai/dnsid-ts/pull/160))
+
+### Other
+
+- Support policyViolation revocation reason ([#161](https://github.com/dnsid-ai/dnsid-ts/pull/161))
+- Single-cloud multi-region operational keys (Known Foundry #61) ([#163](https://github.com/dnsid-ai/dnsid-ts/pull/163))
+
+### Testing
+
+- test: characterize single-cloud multi-region keys ([#61](https://github.com/dnsid-ai/dnsid-ts/pull/61))
+- test: prove AWS Ed25519 RAW size boundary ([#61](https://github.com/dnsid-ai/dnsid-ts/pull/61))
+- test: preserve existing AWS native open compatibility ([#61](https://github.com/dnsid-ai/dnsid-ts/pull/61))
+- test: prove F1 KMS fault boundaries ([#61](https://github.com/dnsid-ai/dnsid-ts/pull/61))
+
+
 ## [0.37.0] - 2026-11-11
 
 ### Features
