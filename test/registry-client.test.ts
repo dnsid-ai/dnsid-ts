@@ -661,7 +661,7 @@ describe('RegistryClient', () => {
   it('rejects invalid Live inputs before making a request', async () => {
     const fetchMock = vi.fn() as unknown as typeof fetch;
     const registry = client(fetchMock);
-    await expect(registry.registerLiveAgent({ publicKeyJwk: TEST_JWK }, undefined as never))
+    await expect(registry.registerLiveAgent({ publicKeyJwk: TEST_JWK }, ''))
       .rejects.toThrow('idempotencyKey is required');
     await expect(registry.registerLiveAgent({ publicKeyJwk: {
       kty: 'EC', crv: 'P-256', alg: 'ES256', use: 'sig', kid: 'ec-1', x: 'AQ', y: 'Ag',
@@ -862,7 +862,7 @@ describe('RegistryClient', () => {
     const preparedBytes = new TextEncoder().encode('{"v":1, "signed_extension":"preserve whitespace"}\n');
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe('https://registry.example/api/v1/agent/agent.example.com/tlog/issuance/prepare');
-      expect(init?.method).toBe('POST');
+      expect(init?.method).toBe('GET');
       expect(init?.body).toBeUndefined();
       expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('issuance-1');
       expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer agent-token');

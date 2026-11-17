@@ -354,10 +354,10 @@ export class RegistryClient {
   }
 
   /**
-   * Creates or replays a Live agent from HTTP 201 or 202 with agent fields and a matching
-   * Idempotency-Key response header. Deprecated challenge metadata is ignored; no proof is sent.
+   * Creates a Live agent from HTTP 201 or 202 with agent fields. The retry key is optional;
+   * supplied keys require a matching Idempotency-Key response header. Deprecated challenge metadata is ignored; no proof is sent.
    */
-  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<AgentRegistration> {
+  async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey?: string, options: { signal?: AbortSignal } = {}): Promise<AgentRegistration> {
     input = structuredClone(input);
     for (const field of ['domain', 'zoneId', 'governanceDomain', 'rootDomain', 'tier', 'managed']) {
       if (field in input) throw new ArgumentError(`Live registration forbids ${field}`);
@@ -365,7 +365,7 @@ export class RegistryClient {
     if (input.capabilitiesUrl !== undefined) validateRegistrationUrl(input.capabilitiesUrl);
     if (!input.publicKeyJwk) throw new ArgumentError('live registration requires publicKeyJwk');
     if (input.environment !== undefined && input.environment !== 'production') throw new ArgumentError('live registration environment must be "production" or omitted');
-    validateIdempotencyKey(idempotencyKey);
+    if (idempotencyKey !== undefined) validateIdempotencyKey(idempotencyKey);
     assertManagedLivePublicJwk(input.publicKeyJwk);
     const publicKeyJwk = { ...input.publicKeyJwk };
     let creation: Record<string, unknown> | undefined;
@@ -379,7 +379,7 @@ export class RegistryClient {
       httpStatus = resp.status;
       creation = await readJsonObject(resp, 'registry live registration response');
       if (resp.status !== 201 && resp.status !== 202) throw new ValidationError('Live registration requires HTTP 201 or 202');
-      if (resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new ValidationError('Live response Idempotency-Key does not match the request');
+      if (idempotencyKey !== undefined && resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new ValidationError('Live response Idempotency-Key does not match the request');
       const domain = requiredString(creation, 'domain', 'registry live registration response');
       if (normalizeFQDN(domain, true) !== domain) throw new Error('Live response domain must be canonical');
       const publicationConfig = publicationConfigFromResponse(creation.publication_config);
@@ -578,12 +578,13 @@ export class RegistryClient {
   async prepareIssuance(domain: string, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<PreparedRegistryEvent> {
     if (!domain || domain.trim() !== domain) throw new Error('domain is required');
     validateIdempotencyKey(idempotencyKey);
-    const resp = await this.postRaw(
-      `/api/v1/agent/${encodeURIComponent(domain)}/tlog/issuance/prepare`,
-      undefined,
-      idempotencyKey,
-      options,
-    );
+    const resp = await this.request(`/api/v1/agent/${encodeURIComponent(domain)}/tlog/issuance/prepare`, {
+      method: 'GET', headers: { 'Idempotency-Key': idempotencyKey }, signal: options.signal,
+    });
+    if (!resp.ok) {
+      const error = await readErrorResponse(resp);
+      throw new RegistryRequestError(resp.status, error.code, error.message ?? resp.statusText);
+    }
     return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
 

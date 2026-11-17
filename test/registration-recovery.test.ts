@@ -8,6 +8,18 @@ const domain = 'assigned.example.com';
 const idempotencyKey = 'persisted-registration-1';
 const methods = ['registerAgent', 'registerSelfManagedAgent', 'registerInZone'] as const;
 
+it('registers modern Live agents without a retry key or compatibility transcript', async () => {
+  const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init.headers).has('Idempotency-Key')).toBe(false);
+    return Response.json({ ...creation(domain), status: 'VERIFIED', issuance_entry: 'dGVzdA==' }, { status: 201 });
+  });
+  const registry = new RegistryClient({ fetch: fetchMock });
+  const registration = await registry.registerLiveAgent({ publicKeyJwk });
+  expect(registration.domain).toBe(domain);
+  expect(registration.raw).toMatchObject({ issuance_entry: 'dGVzdA==' });
+});
+
 it.each(methods)('%s rejects invalid replay keys before fetch', async method => {
   const fetchMock = vi.fn();
   const registry = new RegistryClient({ fetch: fetchMock });
