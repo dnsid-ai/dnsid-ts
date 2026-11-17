@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   typescript:
-    uses: dnsid-ai/github-actions/.github/workflows/security-typescript.yml@b4d14ab990cee173375c13f9b0ba24105ac0b778 # v1.4.0
+    uses: dnsid-ai/github-actions/.github/workflows/security-typescript.yml@0a1862bcf580a5ee06b32e464926f91db878b29f # v1.5.0
     permissions:
       contents: read # check out the code
       security-events: write # required by the called workflow's jobs
