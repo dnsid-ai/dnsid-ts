@@ -353,6 +353,10 @@ export class RegistryClient {
     }
   }
 
+  /**
+   * Creates or replays a Live agent from HTTP 201 or 202 with agent fields and a matching
+   * Idempotency-Key response header. Deprecated challenge metadata is ignored; no proof is sent.
+   */
   async registerLiveAgent(input: LiveAgentRegistrationInput, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<AgentRegistration> {
     input = structuredClone(input);
     for (const field of ['domain', 'zoneId', 'governanceDomain', 'rootDomain', 'tier', 'managed']) {
@@ -374,7 +378,7 @@ export class RegistryClient {
       }, idempotencyKey, options);
       httpStatus = resp.status;
       creation = await readJsonObject(resp, 'registry live registration response');
-      if (resp.status !== 201) throw new ValidationError('Live registration requires HTTP 201');
+      if (resp.status !== 201 && resp.status !== 202) throw new ValidationError('Live registration requires HTTP 201 or 202');
       if (resp.headers.get('Idempotency-Key') !== idempotencyKey) throw new ValidationError('Live response Idempotency-Key does not match the request');
       const domain = requiredString(creation, 'domain', 'registry live registration response');
       if (normalizeFQDN(domain, true) !== domain) throw new Error('Live response domain must be canonical');

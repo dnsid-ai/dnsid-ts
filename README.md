@@ -212,7 +212,7 @@ export DNSID_REGISTRY_URL=https://api.dnsid.ai
 export DNSID_API_KEY=...   # console-issued owner key
 ```
 
-`registerAgent({ publicKeyJwk }, idempotencyKey?)` requests an assigned sandbox name without legacy defaults. Add `domain`, `rootDomain`, or `governanceDomain` for explicit selection; hosting is resolved by the registry. Persist the returned `id`, `publicationConfig`, and any `oidcIssuerUrl`. Legacy helpers retain production defaults: `registerSelfManagedAgent({ domain })`, `registerInZone({ zoneId, publicKeyJwk })`, and `registerLiveAgent()` for Live. Supply and retain an idempotency key and the complete input for retry safety; never automatically retry an unknown creation outcome without a key.
+`registerAgent({ publicKeyJwk }, idempotencyKey?)` requests an assigned sandbox name without legacy defaults. Add `domain`, `rootDomain`, or `governanceDomain` for explicit selection; hosting is resolved by the registry. Persist the returned `id`, `publicationConfig`, and any `oidcIssuerUrl`. Legacy helpers retain production defaults: `registerSelfManagedAgent({ domain })`, `registerInZone({ zoneId, publicKeyJwk })`, and `registerLiveAgent()` for Live. Live creation accepts HTTP 201 or 202 with agent fields and a matching `Idempotency-Key` response header; deprecated challenge metadata is ignored and no proof request is sent. Supply and retain an idempotency key and the complete input for retry safety; never automatically retry an unknown creation outcome without a key.
 
 ### Environment variables
 

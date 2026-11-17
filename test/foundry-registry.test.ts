@@ -9,12 +9,15 @@ const wirePublication = Object.fromEntries(Object.entries(publication).map(([nam
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('Foundry registry adapters', () => {
-  it.each(['PROVISIONING', 'READY'])('decodes HTTP 201 Live create/replay without a detail read: %s', async status => {
+  it.each([
+    [201, 'PROVISIONING'], [201, 'READY'], [202, 'challenge_pending'],
+  ] as const)('decodes HTTP %s Live create/replay without a detail or proof request: %s', async (httpStatus, status) => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       const send = vi.fn(async () => Response.json({ id: 'agent-1', domain: DOMAIN, status,
-        publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' },
-        { status: 201, headers: { 'Idempotency-Key': 'key' } }));
+        publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact',
+        ...(httpStatus === 202 ? { challenge: 'deprecated-nonce', challenge_message: 'ignored-transcript' } : {}) },
+        { status: httpStatus, headers: { 'Idempotency-Key': 'key' } }));
       const response = await new RegistryClient({ fetch: send }).registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key');
       expect(response).toMatchObject({ id: 'agent-1', domain: DOMAIN, registryStatus: status, publicationConfig: publication });
       expect(send).toHaveBeenCalledOnce();
@@ -31,27 +34,40 @@ describe('Foundry registry adapters', () => {
     });
   });
 
-  it.each(['domain', 'id', 'status', 'publication_config', 'header', '202'])('retains creation facts for invalid Live response: %s', async missing => {
+  it.each(['domain', 'id', 'status', 'publication_config', 'header', '200'])('retains creation facts for invalid Live response: %s', async missing => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       const raw: Record<string, unknown> = { id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING',
         publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' };
       delete raw[missing];
       const registry = new RegistryClient({ fetch: async () => Response.json(raw, {
-        status: missing === '202' ? 202 : 201, headers: missing === 'header' ? {} : { 'Idempotency-Key': 'key' },
+        status: missing === '200' ? 200 : 201, headers: missing === 'header' ? {} : { 'Idempotency-Key': 'key' },
       }) });
       await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toMatchObject({ idempotencyKey: 'key', creation: raw });
     });
   });
 
-  it.each(['missing header', 'mismatched header', '202'])('never adopts a Live response with %s on resume', async fault => {
+  it.each(['domain', 'id', 'status', 'publication_config', 'header', 'mismatched header'])('validates compatibility 202 responses: %s', async missing => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      const raw: Record<string, unknown> = { id: 'agent-1', domain: DOMAIN, status: 'challenge_pending',
+        publication_config: wirePublication, challenge: 'nonce', challenge_message: 'deprecated-transcript' };
+      delete raw[missing];
+      const registry = new RegistryClient({ fetch: async () => Response.json(raw, {
+        status: 202, headers: missing === 'header' ? {} : { 'Idempotency-Key': missing === 'mismatched header' ? 'wrong' : 'key' },
+      }) });
+      await expect(registry.registerLiveAgent({ publicKeyJwk: f.operationalKey }, 'key')).rejects.toMatchObject({ idempotencyKey: 'key', creation: raw });
+    });
+  });
+
+  it.each(['missing header', 'mismatched header', '200'])('never adopts a Live response with %s on resume', async fault => {
     await withTemp(async root => {
       const f = await foundryFixture(root);
       let invalid = true;
       const raw = { id: 'agent-1', domain: DOMAIN, status: 'PROVISIONING',
         publication_config: wirePublication, oidc_issuer_url: 'https://issuer.example/exact' };
       const send = vi.fn<typeof fetch>(async (_input, init) => Response.json(raw, {
-        status: invalid && fault === '202' ? 202 : 201,
+        status: invalid && fault === '200' ? 200 : 201,
         headers: invalid && fault === 'missing header' ? {} : {
           'Idempotency-Key': invalid && fault === 'mismatched header' ? 'wrong' : new Headers(init?.headers).get('Idempotency-Key')!,
         },
