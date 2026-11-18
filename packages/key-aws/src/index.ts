@@ -11,6 +11,7 @@
  * @packageDocumentation
  */
 import {
+  CreateAliasCommand,
   CreateKeyCommand,
   KMSClient,
   GetPublicKeyCommand,
@@ -121,8 +122,16 @@ export interface AwsKmsFacade {
 export type AwsSdkKmsClient = Pick<KMSClient, 'send'>;
 
 /** Adapter from AWS SDK v3's KMSClient to the narrow facade used by AwsKmsKeyProvider. */
-export class AwsSdkKmsFacade implements AwsKmsFacade {
+export class AwsSdkKmsFacade implements AwsKmsBootstrapFacade {
   constructor(private readonly client: AwsSdkKmsClient) {}
+
+  /** Acquires an unused alias; never updates or retargets an existing alias. */
+  async createAlias(input: AwsKmsCreateAliasInput): Promise<void> {
+    await this.client.send(new CreateAliasCommand({
+      AliasName: input.aliasName,
+      TargetKeyId: input.targetKeyId,
+    }));
+  }
 
   async createSigningKey(input: AwsKmsCreateSigningKeyInput): Promise<{ keyId: string }> {
     const output = await this.client.send(new CreateKeyCommand({
@@ -491,4 +500,114 @@ function integerToFixedUnsigned(bytes: Uint8Array, length: number): Uint8Array {
   const out = new Uint8Array(length);
   out.set(value, length - value.length);
   return out;
+}
+
+/** Exact caller-selected alias and candidate key to acquire it for. */
+export interface AwsKmsCreateAliasInput {
+  aliasName: string;
+  targetKeyId: string;
+}
+
+/** Explicit bootstrap capability, separate from ordinary existing-only opening. */
+export interface AwsKmsBootstrapFacade extends AwsKmsFacade {
+  createAlias(input: AwsKmsCreateAliasInput): Promise<void>;
+}
+
+/** Alias in the injected client's account/region and required signing algorithm. */
+export interface AwsKmsBootstrapConfig {
+  aliasName: string;
+  algorithm: AwsKmsSigningAlgorithm;
+}
+
+/** Canonical winner reference and standalone signer; no identity is published. */
+export interface AwsKmsBootstrapResult {
+  readonly keyRef: string;
+  readonly keyProvider: AwsKmsKeyProvider;
+}
+
+/**
+ * Explicitly reuses an alias winner, or creates a signing key only after the initial
+ * GetPublicKey rejects with NotFoundException. AlreadyExistsException on CreateAlias
+ * permits exactly one winner lookup; all other native errors propagate unchanged.
+ * Validates public material and returns a canonical, locally active standalone signer.
+ * Does not register an agent, publish identity, authorize rotation, retarget aliases,
+ * or delete/disable keys. Losing-candidate lifecycle disposition remains deferred;
+ * this non-destructive operation does not establish permanent retention policy.
+ */
+export async function createOrReuseAwsKmsKeyProvider(
+  client: AwsKmsBootstrapFacade,
+  config: AwsKmsBootstrapConfig,
+): Promise<AwsKmsBootstrapResult> {
+  const { aliasName, algorithm } = config;
+  if (typeof aliasName !== 'string' || !aliasName.startsWith('alias/')
+    || aliasName.length === 6 || aliasName.trim() !== aliasName
+    || aliasName.startsWith('alias/aws/') || aliasName.includes('#')) {
+    throw new ArgumentError('AWS KMS bootstrap requires an exact non-reserved alias/ name');
+  }
+  if (algorithm !== 'ECDSA_SHA_256' && algorithm !== 'ED25519_SHA_512') {
+    throw new ArgumentError('AWS KMS bootstrap requires a supported signing algorithm');
+  }
+
+  // Keep the missing-key catch restricted to the initial dependency lookup.
+  let existing: Awaited<ReturnType<AwsKmsFacade['getPublicKey']>>;
+  try {
+    existing = await client.getPublicKey({ keyId: aliasName });
+  } catch (error) {
+    if (!hasAwsErrorName(error, 'NotFoundException')) throw error;
+    const candidate = await client.createSigningKey({ keySpec: defaultKeySpecForAlgorithm(algorithm) });
+    validateCanonicalBootstrapKeyId(candidate.keyId);
+    const candidatePublic = await client.getPublicKey({ keyId: candidate.keyId });
+    if (candidatePublic.keyId !== candidate.keyId) {
+      throw new ArgumentError('AWS KMS candidate public key identity does not match the created key');
+    }
+    const prepared = await bootstrapSigner(client, candidatePublic, algorithm);
+    try {
+      await client.createAlias({ aliasName, targetKeyId: candidate.keyId });
+    } catch (acquisitionError) {
+      if (!hasAwsErrorName(acquisitionError, 'AlreadyExistsException')) throw acquisitionError;
+      const winner = await client.getPublicKey({ keyId: aliasName });
+      return bootstrapSigner(client, winner, algorithm);
+    }
+    return prepared;
+  }
+  return bootstrapSigner(client, existing, algorithm);
+}
+
+function hasAwsErrorName(error: unknown, name: string): boolean {
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === name;
+}
+
+function validateCanonicalBootstrapKeyId(keyId: unknown): asserts keyId is string {
+  const id = '(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|mrk-[0-9a-fA-F]{32})';
+  if (typeof keyId !== 'string'
+    || !new RegExp(`^(?:${id}|arn:[a-z0-9-]+:kms:[a-z0-9-]+:[0-9]{12}:key/${id})$`).test(keyId)) {
+    throw new ArgumentError('AWS KMS bootstrap requires a canonical key ID or key ARN');
+  }
+}
+
+async function bootstrapSigner(
+  client: AwsKmsFacade,
+  publicKey: Awaited<ReturnType<AwsKmsFacade['getPublicKey']>>,
+  algorithm: AwsKmsSigningAlgorithm,
+): Promise<AwsKmsBootstrapResult> {
+  validateCanonicalBootstrapKeyId(publicKey.keyId);
+  const keyRef = publicKey.keyId;
+  // Feed the resolved snapshot through ordinary metadata/SPKI validation without
+  // another alias read. Later operations retain the original client capabilities.
+  let resolved = true;
+  const keyProvider = await AwsKmsKeyProvider.load({
+    getPublicKey: input => {
+      if (resolved && input.keyId === keyRef) {
+        resolved = false;
+        return Promise.resolve(publicKey);
+      }
+      return client.getPublicKey(input);
+    },
+    createSigningKey: input => client.createSigningKey(input),
+    sign: input => client.sign(input),
+    ...(client.scheduleKeyDeletion
+      ? { scheduleKeyDeletion: (input: AwsKmsScheduleKeyDeletionInput) => client.scheduleKeyDeletion!(input) }
+      : {}),
+  }, { activeKeyId: keyRef, algorithm });
+  return { keyRef, keyProvider };
 }

@@ -4,6 +4,126 @@
 import { createPublicKey } from 'node:crypto';
 import type { DnsIdJWK, KeyProvider } from '@dnsid-ai/protocol';
 import { ArgumentError, jwkThumbprint } from '@dnsid-ai/protocol';
+import type { protos } from '@google-cloud/kms';
+
+export interface GcpCloudKmsBootstrapClient {
+  getCryptoKey(
+    request: protos.google.cloud.kms.v1.IGetCryptoKeyRequest,
+  ): Promise<readonly [
+    protos.google.cloud.kms.v1.ICryptoKey,
+    protos.google.cloud.kms.v1.IGetCryptoKeyRequest | undefined,
+    {} | undefined,
+  ]>;
+
+  createCryptoKey(
+    request: protos.google.cloud.kms.v1.ICreateCryptoKeyRequest,
+  ): Promise<readonly [
+    protos.google.cloud.kms.v1.ICryptoKey,
+    protos.google.cloud.kms.v1.ICreateCryptoKeyRequest | undefined,
+    {} | undefined,
+  ]>;
+
+  getCryptoKeyVersion(
+    request: protos.google.cloud.kms.v1.IGetCryptoKeyVersionRequest,
+  ): Promise<readonly [
+    protos.google.cloud.kms.v1.ICryptoKeyVersion,
+    protos.google.cloud.kms.v1.IGetCryptoKeyVersionRequest | undefined,
+    {} | undefined,
+  ]>;
+
+  getPublicKey(
+    request: protos.google.cloud.kms.v1.IGetPublicKeyRequest,
+  ): Promise<readonly [
+    protos.google.cloud.kms.v1.IPublicKey,
+    protos.google.cloud.kms.v1.IGetPublicKeyRequest | undefined,
+    {} | undefined,
+  ]>;
+
+  asymmetricSign(
+    request: protos.google.cloud.kms.v1.IAsymmetricSignRequest,
+  ): Promise<readonly [
+    protos.google.cloud.kms.v1.IAsymmetricSignResponse,
+    protos.google.cloud.kms.v1.IAsymmetricSignRequest | undefined,
+    {} | undefined,
+  ]>;
+}
+
+export interface GcpCloudKmsBootstrapConfig {
+  parent: string;
+  cryptoKeyId: string;
+}
+
+export interface GcpCloudKmsBootstrapResult {
+  readonly keyRef: string;
+  readonly keyProvider: GcpCloudKmsKeyProvider;
+}
+
+/** Explicitly creates or reuses a named software Ed25519 key's initial version 1.
+ * Requires an existing keyRing; never selects a successor or creates an agent ID.
+ */
+export async function createOrReuseGcpCloudKmsKeyProvider(
+  client: GcpCloudKmsBootstrapClient | undefined,
+  config: GcpCloudKmsBootstrapConfig,
+): Promise<GcpCloudKmsBootstrapResult> {
+  const { parent, cryptoKeyId } = config;
+  if (typeof parent !== 'string'
+    || !/^projects\/[A-Za-z0-9._:-]+\/locations\/[A-Za-z0-9_-]+\/keyRings\/[A-Za-z0-9_-]{1,63}$/.test(parent)) {
+    throw new ArgumentError('Google Cloud KMS bootstrap requires an existing keyRing resource name');
+  }
+  if (typeof cryptoKeyId !== 'string' || !/^[A-Za-z0-9_-]{1,63}$/.test(cryptoKeyId)) {
+    throw new ArgumentError('Google Cloud KMS bootstrap requires a valid allocated CryptoKey ID');
+  }
+  if (!client) {
+    const { KeyManagementServiceClient } = await import('@google-cloud/kms');
+    client = new KeyManagementServiceClient();
+  }
+  const name = `${parent}/cryptoKeys/${cryptoKeyId}`;
+  let key: protos.google.cloud.kms.v1.ICryptoKey;
+  try {
+    [key] = await client.getCryptoKey({ name });
+  } catch (error) {
+    // Only exact numeric service absence authorizes named creation.
+    if (!hasServiceCode(error, 5)) throw error;
+    try {
+      [key] = await client.createCryptoKey({
+        parent,
+        cryptoKeyId,
+        cryptoKey: {
+          purpose: 'ASYMMETRIC_SIGN',
+          versionTemplate: { algorithm: 'EC_SIGN_ED25519', protectionLevel: 'SOFTWARE' },
+        },
+        skipInitialVersionCreation: false,
+      });
+    } catch (createError) {
+      if (!hasServiceCode(createError, 6)) throw createError;
+      // One authoritative winner read, never another create or an absence loop.
+      [key] = await client.getCryptoKey({ name });
+    }
+  }
+  if (key?.name !== name
+    || (key.purpose !== 'ASYMMETRIC_SIGN' && key.purpose !== 5)
+    || (key.versionTemplate?.algorithm !== 'EC_SIGN_ED25519' && key.versionTemplate?.algorithm !== 40)
+    || (key.versionTemplate?.protectionLevel !== 'SOFTWARE' && key.versionTemplate?.protectionLevel !== 1)) {
+    throw new ArgumentError('Google Cloud KMS bootstrap returned an incompatible named key');
+  }
+  // Bootstrap is initial-only: primary/latest must never select a rotated signer.
+  const keyRef = `${name}/cryptoKeyVersions/1`;
+  const [version] = await client.getCryptoKeyVersion({ name: keyRef });
+  if (version?.name !== keyRef
+    || (version.state !== 'ENABLED' && version.state !== 1)
+    || (version.algorithm !== 'EC_SIGN_ED25519' && version.algorithm !== 40)
+    || (version.protectionLevel !== 'SOFTWARE' && version.protectionLevel !== 1)) {
+    throw new ArgumentError('Google Cloud KMS bootstrap requires an enabled software Ed25519 initial version');
+  }
+  const keyProvider = await GcpCloudKmsKeyProvider.load(client, {
+    activeKeyVersion: keyRef, algorithm: 'EC_SIGN_ED25519',
+  });
+  return Object.freeze({ keyRef, keyProvider });
+}
+
+function hasServiceCode(error: unknown, code: number): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
+}
 
 export interface GcpCloudKmsConfig {
   /** Fully qualified immutable CryptoKeyVersion resource name. */
