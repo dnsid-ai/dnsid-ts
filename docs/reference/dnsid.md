@@ -234,7 +234,7 @@ config loading, and Node identity manager factories — live behind the
 
 ### DNSSECMode
 
-Defined in: packages/protocol/src/types.ts:8
+Defined in: [packages/protocol/src/types.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L8)
 
 #### Enumeration Members
 
@@ -246,7 +246,7 @@ Defined in: packages/protocol/src/types.ts:8
 auto: "auto";
 ```
 
-Defined in: packages/protocol/src/types.ts:9
+Defined in: [packages/protocol/src/types.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L9)
 
 <a id="required"></a>
 
@@ -256,7 +256,7 @@ Defined in: packages/protocol/src/types.ts:9
 required: "required";
 ```
 
-Defined in: packages/protocol/src/types.ts:11
+Defined in: [packages/protocol/src/types.ts:11](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L11)
 
 <a id="validated"></a>
 
@@ -266,7 +266,7 @@ Defined in: packages/protocol/src/types.ts:11
 validated: "validated";
 ```
 
-Defined in: packages/protocol/src/types.ts:10
+Defined in: [packages/protocol/src/types.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L10)
 
 ***
 
@@ -274,7 +274,7 @@ Defined in: packages/protocol/src/types.ts:10
 
 ### DNSSECState
 
-Defined in: packages/protocol/src/types.ts:1
+Defined in: [packages/protocol/src/types.ts:1](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L1)
 
 #### Enumeration Members
 
@@ -286,7 +286,7 @@ Defined in: packages/protocol/src/types.ts:1
 FAILED: "FAILED";
 ```
 
-Defined in: packages/protocol/src/types.ts:4
+Defined in: [packages/protocol/src/types.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L4)
 
 <a id="unknown"></a>
 
@@ -296,7 +296,7 @@ Defined in: packages/protocol/src/types.ts:4
 UNKNOWN: "UNKNOWN";
 ```
 
-Defined in: packages/protocol/src/types.ts:5
+Defined in: [packages/protocol/src/types.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L5)
 
 <a id="unsigned"></a>
 
@@ -306,7 +306,7 @@ Defined in: packages/protocol/src/types.ts:5
 UNSIGNED: "UNSIGNED";
 ```
 
-Defined in: packages/protocol/src/types.ts:2
+Defined in: [packages/protocol/src/types.ts:2](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L2)
 
 <a id="valid"></a>
 
@@ -316,7 +316,7 @@ Defined in: packages/protocol/src/types.ts:2
 VALID: "VALID";
 ```
 
-Defined in: packages/protocol/src/types.ts:3
+Defined in: [packages/protocol/src/types.ts:3](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L3)
 
 ***
 
@@ -324,7 +324,7 @@ Defined in: packages/protocol/src/types.ts:3
 
 ### VerificationCode
 
-Defined in: packages/protocol/src/errors.ts:2
+Defined in: [packages/protocol/src/errors.ts:2](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L2)
 
 Machine-readable classification of a DNSid verification failure, carried on [VerificationError](https://docs.dnsid.ai/reference/ts/dnsid-classes/#verificationerror).
 
@@ -338,7 +338,7 @@ Machine-readable classification of a DNSid verification failure, carried on [Ver
 CounterpartyNotAccepted: "CounterpartyNotAccepted";
 ```
 
-Defined in: packages/protocol/src/errors.ts:28
+Defined in: [packages/protocol/src/errors.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L28)
 
 Configured `trustedEntities` policy denied a protocol-valid counterparty. Always permanent.
 
@@ -350,7 +350,7 @@ Configured `trustedEntities` policy denied a protocol-valid counterparty. Always
 DNSResolution: "DNSResolution";
 ```
 
-Defined in: packages/protocol/src/errors.ts:4
+Defined in: [packages/protocol/src/errors.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L4)
 
 DNS lookup failed due to a timeout, network error, or ordinary SERVFAIL. Transient.
 
@@ -362,7 +362,7 @@ DNS lookup failed due to a timeout, network error, or ordinary SERVFAIL. Transie
 DNSSECFailed: "DNSSECFailed";
 ```
 
-Defined in: packages/protocol/src/errors.ts:6
+Defined in: [packages/protocol/src/errors.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L6)
 
 DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mode requires signing.
 
@@ -374,7 +374,7 @@ DNSSEC validation failed, or the zone is unsigned when the configured DNSSEC mod
 HTTPError: "HTTPError";
 ```
 
-Defined in: packages/protocol/src/errors.ts:18
+Defined in: [packages/protocol/src/errors.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L18)
 
 An HTTPS endpoint returned an unexpected HTTP status. Server errors are transient.
 
@@ -386,7 +386,7 @@ An HTTPS endpoint returned an unexpected HTTP status. Server errors are transien
 KeyAgeExceeded: "KeyAgeExceeded";
 ```
 
-Defined in: packages/protocol/src/errors.ts:20
+Defined in: [packages/protocol/src/errors.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L20)
 
 The operational key is older than the identity record's `ka` maximum key age.
 
@@ -398,7 +398,7 @@ The operational key is older than the identity record's `ka` maximum key age.
 KeyNotFound: "KeyNotFound";
 ```
 
-Defined in: packages/protocol/src/errors.ts:14
+Defined in: [packages/protocol/src/errors.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L14)
 
 An application signature's key ID is absent from the signer's verified operational JWKS. Permanent.
 
@@ -410,7 +410,7 @@ An application signature's key ID is absent from the signer's verified operation
 LogError: "LogError";
 ```
 
-Defined in: packages/protocol/src/errors.ts:26
+Defined in: [packages/protocol/src/errors.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L26)
 
 A transparency log read, entry check, or consistency verification failed.
 
@@ -422,7 +422,7 @@ A transparency log read, entry check, or consistency verification failed.
 RecordInvalid: "RecordInvalid";
 ```
 
-Defined in: packages/protocol/src/errors.ts:10
+Defined in: [packages/protocol/src/errors.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L10)
 
 The identity record or a fetched JWKS is malformed or fails protocol validation.
 
@@ -434,7 +434,7 @@ The identity record or a fetched JWKS is malformed or fails protocol validation.
 RecordNotFound: "RecordNotFound";
 ```
 
-Defined in: packages/protocol/src/errors.ts:8
+Defined in: [packages/protocol/src/errors.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L8)
 
 No `_dnsid` TXT record exists (NXDOMAIN or NOERROR/NODATA). Non-transient; later verification may succeed after publication.
 
@@ -446,7 +446,7 @@ No `_dnsid` TXT record exists (NXDOMAIN or NOERROR/NODATA). Non-transient; later
 SignatureInvalid: "SignatureInvalid";
 ```
 
-Defined in: packages/protocol/src/errors.ts:12
+Defined in: [packages/protocol/src/errors.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L12)
 
 The identity record signature (or a bilateral binding signature) does not verify against the entity key.
 
@@ -458,7 +458,7 @@ The identity record signature (or a bilateral binding signature) does not verify
 StatusNotActive: "StatusNotActive";
 ```
 
-Defined in: packages/protocol/src/errors.ts:24
+Defined in: [packages/protocol/src/errors.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L24)
 
 The agent status document reports a state other than active (e.g. revoked or retired).
 
@@ -470,7 +470,7 @@ The agent status document reports a state other than active (e.g. revoked or ret
 StatusUnavailable: "StatusUnavailable";
 ```
 
-Defined in: packages/protocol/src/errors.ts:22
+Defined in: [packages/protocol/src/errors.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L22)
 
 The agent status endpoint is unreachable or returned an unusable response.
 
@@ -482,7 +482,7 @@ The agent status endpoint is unreachable or returned an unusable response.
 TLSError: "TLSError";
 ```
 
-Defined in: packages/protocol/src/errors.ts:16
+Defined in: [packages/protocol/src/errors.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L16)
 
 An HTTPS fetch of the JWKS or status endpoint failed at the transport/TLS layer.
 
@@ -502,7 +502,7 @@ type AgentStatusState =
   | "REVOKED";
 ```
 
-Defined in: packages/protocol/src/types.ts:14
+Defined in: [packages/protocol/src/types.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L14)
 
 ***
 
@@ -514,7 +514,7 @@ Defined in: packages/protocol/src/types.ts:14
 type CreateIdentityManagerDependencies = IdentityManagerDependencies & Required<Pick<IdentityManagerDependencies, "dnsResolver" | "fetchJson">>;
 ```
 
-Defined in: packages/sdk/src/index.ts:103
+Defined in: [packages/sdk/src/index.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L103)
 
 Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 
@@ -528,7 +528,7 @@ Runtime-neutral dependencies: DNS and JSON fetching must be injected.
 type JsonFetcher = (url, opts?) => Promise<FetchResult>;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:83
+Defined in: [packages/protocol/src/identity-manager.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L83)
 
 #### Parameters
 
@@ -572,7 +572,7 @@ type LifecycleErrorCategory =
   | "CHECKPOINT_STORE_ERROR";
 ```
 
-Defined in: packages/protocol/src/errors.ts:32
+Defined in: [packages/protocol/src/errors.ts:32](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/errors.ts#L32)
 
 Stable, language-neutral categories used by lifecycle conformance vectors.
 
@@ -592,7 +592,7 @@ type LogEvent =
   | DelegationEvent;
 ```
 
-Defined in: packages/protocol/src/log-events.ts:122
+Defined in: [packages/protocol/src/log-events.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L122)
 
 ***
 
@@ -604,7 +604,7 @@ Defined in: packages/protocol/src/log-events.ts:122
 type LogEventType = LogEvent["type"];
 ```
 
-Defined in: packages/protocol/src/log-events.ts:130
+Defined in: [packages/protocol/src/log-events.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log-events.ts#L130)
 
 ***
 
@@ -616,7 +616,7 @@ Defined in: packages/protocol/src/log-events.ts:130
 type LogRef = string;
 ```
 
-Defined in: packages/protocol/src/types.ts:55
+Defined in: [packages/protocol/src/types.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L55)
 
 ***
 
@@ -633,7 +633,7 @@ type LogSignerRole =
   | "NewOperational";
 ```
 
-Defined in: packages/protocol/src/log.ts:4
+Defined in: [packages/protocol/src/log.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/log.ts#L4)
 
 ***
 
@@ -651,7 +651,7 @@ type ManagedIssuanceSubmission =
 };
 ```
 
-Defined in: packages/sdk/src/managed-issuance.ts:45
+Defined in: [packages/sdk/src/managed-issuance.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L45)
 
 ***
 
@@ -663,7 +663,7 @@ Defined in: packages/sdk/src/managed-issuance.ts:45
 type MaxKeyAge = "24h" | "7d" | "30d" | "90d";
 ```
 
-Defined in: packages/protocol/src/types.ts:28
+Defined in: [packages/protocol/src/types.ts:28](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L28)
 
 ***
 
@@ -679,7 +679,7 @@ type RevocationReason =
   | "cessationOfOperation";
 ```
 
-Defined in: packages/protocol/src/types.ts:22
+Defined in: [packages/protocol/src/types.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/types.ts#L22)
 
 ## Variables
 
@@ -691,7 +691,7 @@ Defined in: packages/protocol/src/types.ts:22
 const DEFAULT_PUBLISH_PROFILE: "dnsid-draft-01" = DNSID_DRAFT01_VERSION;
 ```
 
-Defined in: packages/protocol/src/txt-record.ts:8
+Defined in: [packages/protocol/src/txt-record.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L8)
 
 ***
 
@@ -703,7 +703,7 @@ Defined in: packages/protocol/src/txt-record.ts:8
 const DNSID_DRAFT01_VERSION: "dnsid-draft-01" = 'dnsid-draft-01';
 ```
 
-Defined in: packages/protocol/src/txt-record.ts:7
+Defined in: [packages/protocol/src/txt-record.ts:7](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L7)
 
 Immutable selector for submitted draft-ihsanullah-dnsid-01.
 
@@ -717,7 +717,7 @@ Immutable selector for submitted draft-ihsanullah-dnsid-01.
 const DNSID_VERSION: "DNSid1" = 'DNSid1';
 ```
 
-Defined in: packages/protocol/src/txt-record.ts:5
+Defined in: [packages/protocol/src/txt-record.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L5)
 
 Pre-RFC moving verification selector. Never published while version 1 is a draft.
 
@@ -731,7 +731,7 @@ Pre-RFC moving verification selector. Never published while version 1 is a draft
 const JWKS_MAX_RESPONSE_BYTES: number;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:71
+Defined in: [packages/protocol/src/identity-manager.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L71)
 
 ***
 
@@ -743,7 +743,7 @@ Defined in: packages/protocol/src/identity-manager.ts:71
 const SDK_CONFORMANCE: SDKConformance;
 ```
 
-Defined in: packages/sdk/src/conformance.ts:24
+Defined in: [packages/sdk/src/conformance.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/conformance.ts#L24)
 
 Exact DNSid profile and log-binding behavior implemented by this SDK release.
 
@@ -799,7 +799,7 @@ sha256(new Uint8Array([97, 98, 99]));
 const SIGNING_ALGS: Set<string>;
 ```
 
-Defined in: packages/protocol/src/jwks.ts:6
+Defined in: [packages/protocol/src/jwks.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L6)
 
 ***
 
@@ -811,7 +811,7 @@ Defined in: packages/protocol/src/jwks.ts:6
 const STATUS_MAX_RESPONSE_BYTES: number;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:72
+Defined in: [packages/protocol/src/identity-manager.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L72)
 
 ***
 
@@ -823,7 +823,7 @@ Defined in: packages/protocol/src/identity-manager.ts:72
 const SUPPORTED_PUBLISH_PROFILES: readonly ["dnsid-draft-01"];
 ```
 
-Defined in: packages/protocol/src/txt-record.ts:9
+Defined in: [packages/protocol/src/txt-record.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L9)
 
 ***
 
@@ -835,7 +835,7 @@ Defined in: packages/protocol/src/txt-record.ts:9
 const SUPPORTED_VALIDATION_PROFILES: readonly ["dnsid-draft-01", "DNSid1"];
 ```
 
-Defined in: packages/protocol/src/txt-record.ts:10
+Defined in: [packages/protocol/src/txt-record.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/txt-record.ts#L10)
 
 ## Functions
 
@@ -847,7 +847,7 @@ Defined in: packages/protocol/src/txt-record.ts:10
 function activeStatusDocument(lastTransitionAt?): AgentStatus;
 ```
 
-Defined in: packages/protocol/src/agent-status.ts:16
+Defined in: [packages/protocol/src/agent-status.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/agent-status.ts#L16)
 
 Builds a simple ACTIVE status document for demos/tests that do not model
 lifecycle state.
@@ -872,7 +872,7 @@ lifecycle state.
 function canonicalIssuanceBinding(event): Uint8Array;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:1126
+Defined in: [packages/protocol/src/identity-manager.ts:1126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1126)
 
 Canonical bytes covered by BOTH the entity signature and the operational
 countersignature of a draft-01 bilateral ISSUANCE event. Both signatures
@@ -901,7 +901,7 @@ Replace with the spec's canonicalization/test vectors once they land.
 function createIdentityManager(config, deps): IdentityManager;
 ```
 
-Defined in: packages/sdk/src/index.ts:127
+Defined in: [packages/sdk/src/index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L127)
 
 Creates a DNSid IdentityManager from explicitly injected runtime dependencies.
 
@@ -948,7 +948,7 @@ const verified = await idm.verifyDomain('agent.example');
 function createIdentityVerifier(config, deps): IdentityManager;
 ```
 
-Defined in: packages/sdk/src/index.ts:137
+Defined in: [packages/sdk/src/index.ts:137](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/index.ts#L137)
 
 Creates a verification-only IdentityManager: same constructor, `config.identity` omitted.
 
@@ -979,7 +979,7 @@ eviction. Local signing, publication, and lifecycle mutation methods throw Argum
 function fromBase64Url(b64): Uint8Array;
 ```
 
-Defined in: packages/protocol/src/utils.ts:156
+Defined in: [packages/protocol/src/utils.ts:156](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L156)
 
 Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Array.
 
@@ -1003,7 +1003,7 @@ Decodes a base64url string (accepts both padded and unpadded forms) to Uint8Arra
 function isDomainName(value): boolean;
 ```
 
-Defined in: packages/protocol/src/utils.ts:96
+Defined in: [packages/protocol/src/utils.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L96)
 
 Checks whether a string is a valid domain name (for gi consistency checks).
 Returns true if the value looks like a domain name (as opposed to a URI or other identifier).
@@ -1028,7 +1028,7 @@ Returns true if the value looks like a domain name (as opposed to a URI or other
 function issueManagedIdentity(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: packages/sdk/src/managed-issuance.ts:110
+Defined in: [packages/sdk/src/managed-issuance.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L110)
 
 Starts one durable managed setup operation, or resumes the already persisted one.
 
@@ -1052,7 +1052,7 @@ Starts one durable managed setup operation, or resumes the already persisted one
 function isTransientVerificationError(error): boolean;
 ```
 
-Defined in: packages/protocol/src/retry.ts:26
+Defined in: [packages/protocol/src/retry.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/retry.ts#L26)
 
 Returns true when the error is a transient DNSid verification failure.
 
@@ -1076,7 +1076,7 @@ Returns true when the error is a transient DNSid verification failure.
 function jwkSignatureAlg(key): string;
 ```
 
-Defined in: packages/protocol/src/jwks.ts:39
+Defined in: [packages/protocol/src/jwks.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L39)
 
 #### Parameters
 
@@ -1098,7 +1098,7 @@ Defined in: packages/protocol/src/jwks.ts:39
 function jwkThumbprint(key): Promise<string>;
 ```
 
-Defined in: packages/protocol/src/jwks.ts:220
+Defined in: [packages/protocol/src/jwks.ts:220](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L220)
 
 Computes the RFC 7638 JWK thumbprint of a key.
 Returns unpadded base64url (RFC 7515 §2).
@@ -1125,7 +1125,7 @@ Lifecycle log bindings MUST use thumbprints, not kid values, as the durable key 
 function keySetsShareKeyMaterial(a, b): Promise<boolean>;
 ```
 
-Defined in: packages/protocol/src/jwks.ts:249
+Defined in: [packages/protocol/src/jwks.ts:249](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/jwks.ts#L249)
 
 Returns true if any key in `a` shares an RFC 7638 JWK thumbprint with any key in `b`.
 
@@ -1159,7 +1159,7 @@ Throws a normalized ValidationError if any key in either set is too malformed to
 function matchesDnsName(san, fqdn): boolean;
 ```
 
-Defined in: packages/protocol/src/utils.ts:214
+Defined in: [packages/protocol/src/utils.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L214)
 
 RFC 9525 §4 dNSName SAN matching.
 Returns true when at least one SAN entry matches the given FQDN.
@@ -1190,7 +1190,7 @@ wildcard labels (only leftmost `*.` matching one or more labels at depth > 0).
 function normalizeFQDN(name, agentFQDN?): string;
 ```
 
-Defined in: packages/protocol/src/utils.ts:18
+Defined in: [packages/protocol/src/utils.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L18)
 
 Converts IDNA U-labels to A-label punycode, lowercases ASCII, strips one trailing root dot,
 and validates DNS label constraints.
@@ -1224,7 +1224,7 @@ ValidationError if the name is empty, contains empty labels, has any label over 
 function normalizePrivateAddressHost(entry): string;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:177
+Defined in: [packages/protocol/src/identity-manager.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L177)
 
 Validates one `TransportConfig.privateAddressHosts` entry and returns it normalized: lowercase,
 no trailing dot, leading dot preserved for suffix entries such as `.test`. IP literals, ports,
@@ -1250,7 +1250,7 @@ schemes, paths, credentials, and empty strings are rejected with [ArgumentError]
 function parseCompactJose(token): object;
 ```
 
-Defined in: packages/protocol/src/strict-json.ts:31
+Defined in: [packages/protocol/src/strict-json.ts:31](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/strict-json.ts#L31)
 
 Standalone JOSE limits: 1 MiB compact token, 16 KiB encoded header.
 
@@ -1298,7 +1298,7 @@ signature: Uint8Array;
 function parseJoseObject(bytes): Record<string, unknown>;
 ```
 
-Defined in: packages/protocol/src/strict-json.ts:52
+Defined in: [packages/protocol/src/strict-json.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/strict-json.ts#L52)
 
 #### Parameters
 
@@ -1320,7 +1320,7 @@ Defined in: packages/protocol/src/strict-json.ts:52
 function parseJsonNoDuplicateMembers(bytes): unknown;
 ```
 
-Defined in: packages/protocol/src/strict-json.ts:5
+Defined in: [packages/protocol/src/strict-json.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/strict-json.ts#L5)
 
 UTF-8 JSON with duplicate member rejection, including escaped member names.
 
@@ -1344,7 +1344,7 @@ UTF-8 JSON with duplicate member rejection, including escaped member names.
 function parseKaDuration(ka): number;
 ```
 
-Defined in: packages/protocol/src/utils.ts:172
+Defined in: [packages/protocol/src/utils.ts:172](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L172)
 
 Parses a duration string (as used in the `ka` tag) to milliseconds.
 Valid values: "24h", "7d", "30d", "90d".
@@ -1369,7 +1369,7 @@ Valid values: "24h", "7d", "30d", "90d".
 function parseKeyId(keyId): object;
 ```
 
-Defined in: packages/protocol/src/utils.ts:116
+Defined in: [packages/protocol/src/utils.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L116)
 
 Parses the DNSid SDK's cross-profile compound key ID convention: "{domain}#{kid}".
 
@@ -1417,7 +1417,7 @@ ArgumentError if the key ID is malformed.
 function requireLocalDomain(manager): string;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:111
+Defined in: [packages/protocol/src/identity-manager.ts:111](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L111)
 
 Returns `config.identity.domain` or throws `ArgumentError` for verification-only managers.
 
@@ -1441,7 +1441,7 @@ Returns `config.identity.domain` or throws `ArgumentError` for verification-only
 function resumeManagedIssuance(options): Promise<ManagedIssuanceState>;
 ```
 
-Defined in: packages/sdk/src/managed-issuance.ts:144
+Defined in: [packages/sdk/src/managed-issuance.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-issuance.ts#L144)
 
 Resumes only the durable operation, reusing its preparation key or exact completed bytes.
 
@@ -1465,7 +1465,7 @@ Resumes only the durable operation, reusing its preparation key or exact complet
 function resumeManagedOperationalKeyRotation(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: packages/sdk/src/managed-key-rotation.ts:217
+Defined in: [packages/sdk/src/managed-key-rotation.ts:217](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L217)
 
 Continues a persisted rotation from its saved state:
 - not accepted: pause signing and resubmit the exact saved bytes with the same idempotency key;
@@ -1494,7 +1494,7 @@ Continues a persisted rotation from its saved state:
 function retryTransientVerification<T>(operation, options?): Promise<T>;
 ```
 
-Defined in: packages/protocol/src/retry.ts:35
+Defined in: [packages/protocol/src/retry.ts:35](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/retry.ts#L35)
 
 Retries an operation using exponential backoff, but only for transient
 VerificationError failures by default. Integrity and policy failures are never
@@ -1530,7 +1530,7 @@ retried unless callers explicitly override shouldRetry.
 function rotateManagedOperationalKey(options): Promise<ManagedKeyRotationResult>;
 ```
 
-Defined in: packages/sdk/src/managed-key-rotation.ts:125
+Defined in: [packages/sdk/src/managed-key-rotation.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/sdk/src/managed-key-rotation.ts#L125)
 
 Runs C2SP registry-managed rotation. The registry owns managed ku publication
 and append reconciliation; local activation happens only after an accepted
@@ -1556,7 +1556,7 @@ result for the exact, durably persisted bytes while application signing is pause
 function toArrayBuffer(bytes): Uint8Array<ArrayBuffer>;
 ```
 
-Defined in: packages/protocol/src/utils.ts:187
+Defined in: [packages/protocol/src/utils.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L187)
 
 Returns a Uint8Array<ArrayBuffer> view over the same memory — no copy.
 Required because WebCrypto's BufferSource only accepts ArrayBuffer-backed views,
@@ -1582,7 +1582,7 @@ not the default Uint8Array<ArrayBufferLike> that TypeScript infers.
 function toBase64Url(bytes): string;
 ```
 
-Defined in: packages/protocol/src/utils.ts:144
+Defined in: [packages/protocol/src/utils.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L144)
 
 Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 
@@ -1606,7 +1606,7 @@ Encodes a Uint8Array to unpadded base64url (RFC 7515 §2).
 function validateAgentStatus(data): AgentStatus;
 ```
 
-Defined in: packages/protocol/src/agent-status.ts:23
+Defined in: [packages/protocol/src/agent-status.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/agent-status.ts#L23)
 
 Validates the DNSid JSON status profile returned by the `su` endpoint.
 
@@ -1630,7 +1630,7 @@ Validates the DNSid JSON status profile returned by the `su` endpoint.
 function validateDnsidConfig(config?): DnsidConfig;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:302
+Defined in: [packages/protocol/src/identity-manager.ts:302](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L302)
 
 Validates and snapshots a [DnsidConfig](https://docs.dnsid.ai/reference/ts/dnsid-interfaces/#dnsidconfig). Shared by every constructor and loader so all
 initialization paths apply identical defaults and rejections.
@@ -1661,7 +1661,7 @@ function verifyBilateralBinding(
 }>;
 ```
 
-Defined in: packages/protocol/src/identity-manager.ts:1163
+Defined in: [packages/protocol/src/identity-manager.ts:1163](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/identity-manager.ts#L1163)
 
 draft-01 step-5 bilateral binding check. ISSUANCE is bilateral: it is only
 valid when BOTH the accountable-entity record-signing key (ek) and the initial
@@ -1717,7 +1717,7 @@ function verifyWithKey(
 ): Promise<boolean>;
 ```
 
-Defined in: packages/protocol/src/utils.ts:268
+Defined in: [packages/protocol/src/utils.ts:268](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/utils.ts#L268)
 
 Verifies a signing input against a raw signature using a public JWK.
 Returns true if the signature is valid, false otherwise. Ed25519 is RFC 8032 cofactorless
@@ -1755,7 +1755,7 @@ verification; ES256 accepts only 64-byte r||s and accepts both low-S and high-S.
 function waitForVerification<T>(operation, signal): Promise<T>;
 ```
 
-Defined in: packages/protocol/src/verification-budget.ts:43
+Defined in: [packages/protocol/src/verification-budget.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L43)
 
 Races cooperative work against cancellation, including already-aborted invocations.
 
@@ -1789,7 +1789,7 @@ Races cooperative work against cancellation, including already-aborted invocatio
 function withVerificationBudget<T>(operation, options?): Promise<T>;
 ```
 
-Defined in: packages/protocol/src/verification-budget.ts:10
+Defined in: [packages/protocol/src/verification-budget.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L10)
 
 Runs an invocation with a shared cancellation signal; child operations must not restart its budget.
 
