@@ -5,7 +5,8 @@ import {
   type AwsKmsBootstrapFacade,
 } from '@dnsid-ai/key-aws';
 
-// Authority: clean-test-handoff.md frozen canonical-ID contract and public README.
+// Bootstrap validates canonical winner IDs without replacing an established key.
+// Contract: packages/key-aws/README.md — Explicit create or reuse.
 // Mode: fake-only (scripted KMS responses); real local Node cryptography.
 // No network, AWS client, private package imports, lifecycle or publication calls.
 const ALIAS = 'alias/canonical-regression';

@@ -12,8 +12,9 @@ import {
   type AwsKmsSigningAlgorithm,
 } from '@dnsid-ai/key-aws';
 
-// Authority: clean-test-handoff.md (frozen finite contract), key-aws README,
-// and AWS SDK v3 public KMS declarations. Mode: fake-only (KMS send boundary).
+// Explicit alias bootstrap preserves native AWS errors and winner identity.
+// Contract: packages/key-aws/README.md; AWS SDK v3 public KMS declarations.
+// Mode: fake-only (KMS send boundary).
 // Crypto and AWS command objects are real; no cloud client or credentials are used.
 const aliasName = 'alias/dnsid-bootstrap-adapter';
 const candidateId = '1234abcd-12ab-34cd-56ef-1234567890ab';

@@ -155,6 +155,51 @@ describe('known62 additional case6: fail closed', () => {
   });
 });
 
+// Mode: fake-only. Readiness changes only between separately initiated calls.
+for (const state of ['PENDING_GENERATION', 5] as const) {
+  for (const route of ['reuse', 'create', 'winner'] as const) {
+    it(`pending initial version ${state} on ${route} rejects; separate same-scope call recovers version 1`, async () => {
+      const f = fixture();
+      f.version.state = state;
+      let exists = route === 'reuse';
+      let reads = 0; let creates = 0; let versions = 0;
+      f.client.getCryptoKey = async (request: GetK): Promise<Reply<K, GetK>> => {
+        f.trace.push({ method: 'getCryptoKey', request });
+        if (++reads > 3) throw new Error('test guard: excess named-key reads');
+        if (!exists) throw grpc(5);
+        return [f.key, undefined, undefined];
+      };
+      f.client.createCryptoKey = async (request: CreateK): Promise<Reply<K, CreateK>> => {
+        f.trace.push({ method: 'createCryptoKey', request });
+        if (++creates > 1) throw new Error('test guard: replacement creation');
+        exists = true;
+        if (route === 'winner') throw grpc(6);
+        return [f.key, undefined, undefined];
+      };
+      f.client.getCryptoKeyVersion = async (request: GetV): Promise<Reply<V, GetV>> => {
+        f.trace.push({ method: 'getCryptoKeyVersion', request });
+        if (++versions > 2) throw new Error('test guard: version polling');
+        expect(request.name).toBe(f.ref);
+        return [f.version, undefined, undefined];
+      };
+      // WHEN version 1 is pending, this invocation returns no provider/signer.
+      await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, { ...config })).rejects.toBeDefined();
+      expect(versions).toBe(1);
+      expect(reads).toBe(route === 'winner' ? 2 : 1);
+      expect(creates).toBe(route === 'reuse' ? 0 : 1);
+      expect(f.trace.some(t => t.method === 'getPublicKey' || t.method === 'asymmetricSign')).toBe(false);
+      // External state transition, not a sleep, poll, retry policy or timing promise.
+      f.version.state = 'ENABLED';
+      const recovered = await createOrReuseGcpCloudKmsKeyProvider(f.client, { ...config });
+      await actorIdentity(recovered, f); // Independent public-material/signature checks.
+      expect(versions).toBe(2);
+      expect(reads).toBe(route === 'winner' ? 3 : 2);
+      expect(creates).toBe(route === 'reuse' ? 0 : 1);
+      expect(f.ref).toBe(`${resource(config)}/cryptoKeyVersions/1`);
+    });
+  }
+}
+
 // Case 7. Mode: real-capable; all dependencies fake in this authored suite.
 describe('known62 additional case7: input and scope boundaries', () => {
   it.each([

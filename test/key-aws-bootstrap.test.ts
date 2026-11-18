@@ -7,8 +7,8 @@ import {
   type AwsKmsCreateAliasInput, type AwsKmsSignInput,
 } from '@dnsid-ai/key-aws';
 
-// Independent TEST author: clean-test-handoff.md SHA256
-// 7af0440b56be5f7578f54060b3f6faa0272e9f3fe9e91200e135578ec335650c.
+// Explicit alias bootstrap reuses the validated winner and preserves native errors.
+// Contract: packages/key-aws/README.md — Explicit create or reuse.
 // Every case: Mode: fake-only (KMS faults and deterministic schedules).
 // No AWS calls. Crypto is real Node crypto, not a mocked verification result.
 // ES256 output: compliance 07, profile signature semantics: 64-byte JWA R || S.

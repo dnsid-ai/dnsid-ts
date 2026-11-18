@@ -113,9 +113,10 @@ describe('local initial create/reuse — public API, real filesystem and Node cr
               status: 'rejected', reason: inspect(outcome.reason, { depth: 4 }) });
           }
         }
-        // THEN no failures disappear, and zero successes cannot establish convergence.
+        // THEN all six same-process opt-in calls fulfill on this healthy filesystem.
+        // Initial overlap only: no shared-writer rotation or cross-process guarantee.
         expect(outcomes).toHaveLength(6);
-        expect(successes.length, 'at least one initial create must succeed').toBeGreaterThan(0);
+        expect(successes.length, 'all six initial opt-in calls must fulfill').toBe(6);
         const common = await successes[0]!.provider.signingKey();
         const expected = identity(common, selection.algorithm);
         for (const { index, provider } of successes) {

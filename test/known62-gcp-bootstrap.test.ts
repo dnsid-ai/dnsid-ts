@@ -255,10 +255,9 @@ describe('explicit GCP initial-key bootstrap — independent cases 1–5', () =>
             }
           },
         });
-        // Numeric service status distinguishes injected failure from scaffold or
-        // setup errors. Native propagation is documented; no wrapper is invented.
+        // Native errors retain the exact object, not merely its numeric status.
         await expect(createOrReuseGcpCloudKmsKeyProvider(kms.client('faulted'), config))
-          .rejects.toMatchObject({ code });
+          .rejects.toBe(fault);
         // Separate resource invariants, not the acceptance oracle.
         expect(kms.creates()).toBe(stage === 'lookup' ? 0 : 1);
         expect(kms.commits).toBe(0);
@@ -276,7 +275,7 @@ describe('explicit GCP initial-key bootstrap — independent cases 1–5', () =>
     const timeout = serviceError(DEADLINE_EXCEEDED);
     const kms = new NamedKms(key, { committed: async () => { throw timeout; } });
     await expect(createOrReuseGcpCloudKmsKeyProvider(kms.client('lost-response'), config))
-      .rejects.toMatchObject({ code: DEADLINE_EXCEEDED });
+      .rejects.toBe(timeout);
     const recovered = await createOrReuseGcpCloudKmsKeyProvider(kms.client('retry'), { ...config });
     await assertResult(recovered, key, 'committed-create recovery');
     const later = await createOrReuseGcpCloudKmsKeyProvider(kms.client('later'), config);
