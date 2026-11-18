@@ -119,7 +119,7 @@ Security notes:
 
 ### OAuthError
 
-Defined in: [packages/oidc/src/index.ts:236](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L236)
+Defined in: packages/oidc/src/index.ts:236
 
 OAuth 2.0 error returned by a token endpoint (e.g. invalid_grant), carrying
 the raw `error` and `error_description` members from the response body.
@@ -138,7 +138,7 @@ the raw `error` and `error_description` members from the response body.
 new OAuthError(error?, errorDescription?): OAuthError;
 ```
 
-Defined in: [packages/oidc/src/index.ts:242](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L242)
+Defined in: packages/oidc/src/index.ts:242
 
 ###### Parameters
 
@@ -186,7 +186,7 @@ Error.cause
 readonly optional error?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:238](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L238)
+Defined in: packages/oidc/src/index.ts:238
 
 The RFC 6749 error code, when the endpoint provided one.
 
@@ -198,7 +198,7 @@ The RFC 6749 error code, when the endpoint provided one.
 readonly optional errorDescription?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:240](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L240)
+Defined in: packages/oidc/src/index.ts:240
 
 Human-readable error description, when the endpoint provided one.
 
@@ -392,7 +392,7 @@ Error.prepareStackTrace
 
 ### OIDCProfile
 
-Defined in: [packages/oidc/src/index.ts:443](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L443)
+Defined in: packages/oidc/src/index.ts:443
 
 DNSid OIDC federation profile for a single agent: mints client assertions,
 exchanges them for access tokens, and verifies inbound OIDC tokens back to
@@ -411,7 +411,7 @@ server-side; never construct a profile in browser/client code.
 new OIDCProfile(opts): OIDCProfile;
 ```
 
-Defined in: [packages/oidc/src/index.ts:461](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L461)
+Defined in: packages/oidc/src/index.ts:461
 
 ###### Parameters
 
@@ -437,7 +437,7 @@ ArgumentError if domain is not a valid agent FQDN.
 createOIDCAssertion(opts): Promise<string>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:485](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L485)
+Defined in: packages/oidc/src/index.ts:485
 
 Mints a signed JWT bearer client assertion for the given issuer
 (iss/sub/fqdn = agent domain, aud = issuer, fresh jti).
@@ -475,7 +475,7 @@ VerificationError (SignatureInvalid) if the produced signature does
 discoverOIDCIssuer(issuer, options?): Promise<OIDCDiscoveryDocument>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:502](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L502)
+Defined in: packages/oidc/src/index.ts:502
 
 Fetches and validates the issuer's discovery document. The document's
 issuer must match exactly, and token_endpoint/jwks_uri must share the
@@ -511,7 +511,7 @@ VerificationError if the fetch fails, redirects, or the document is invalid.
 exchangeOIDCToken(opts): Promise<OIDCTokenResponse>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:521](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L521)
+Defined in: packages/oidc/src/index.ts:521
 
 Discovers the issuer and performs the RFC 7523 JWT bearer exchange. When
 `assertion` is supplied it is presented as-is (its aud must exactly match
@@ -550,7 +550,7 @@ OAuthError if the token endpoint returns an OAuth error response.
 getOIDCToken(opts): Promise<OIDCTokenResponse>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:552](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L552)
+Defined in: packages/oidc/src/index.ts:552
 
 Like [OIDCProfile.exchangeOIDCToken](#exchangeoidctoken) but always mints a fresh assertion, ignoring any supplied one.
 
@@ -572,7 +572,7 @@ Like [OIDCProfile.exchangeOIDCToken](#exchangeoidctoken) but always mints a fres
 verifyOIDCToken(token, opts): Promise<VerifiedOIDCSubject>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:573](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L573)
+Defined in: packages/oidc/src/index.ts:573
 
 Verifies an OIDC token end-to-end: issuer allow-list, exact audience
 match, header and claim hygiene, signature against the issuer's published
@@ -617,7 +617,7 @@ VerificationError with a VerificationCode (RecordInvalid,
 static fromIdentityManager(identityManager, oidc?): OIDCProfile;
 ```
 
-Defined in: [packages/oidc/src/index.ts:445](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L445)
+Defined in: packages/oidc/src/index.ts:445
 
 Builds a profile sharing an identity manager's domain, operational key provider, and identity resolver.
 
@@ -641,7 +641,7 @@ Builds a profile sharing an identity manager's domain, operational key provider,
 
 ### OIDCTokenMinter
 
-Defined in: [packages/oidc/src/index.ts:293](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L293)
+Defined in: packages/oidc/src/index.ts:293
 
 Mints OIDC access tokens for a DNSid agent via the RFC 7523 JWT bearer
 grant: signs a client assertion with the agent's operational key, then
@@ -661,7 +661,7 @@ more than once against the same issuer.
 new OIDCTokenMinter(opts): OIDCTokenMinter;
 ```
 
-Defined in: [packages/oidc/src/index.ts:309](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L309)
+Defined in: packages/oidc/src/index.ts:309
 
 ###### Parameters
 
@@ -689,7 +689,7 @@ ArgumentError if domain is not a valid agent FQDN, the endpoint
 createAssertion(opts): Promise<string>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:342](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L342)
+Defined in: packages/oidc/src/index.ts:342
 
 Mints a signed JWT bearer client assertion for the given issuer
 (iss/sub/fqdn = agent domain, aud = issuer, fresh jti).
@@ -727,7 +727,7 @@ VerificationError (SignatureInvalid) if the produced signature does
 mintToken(opts): Promise<OIDCTokenResponse>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:360](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L360)
+Defined in: packages/oidc/src/index.ts:360
 
 Resolves the token endpoint (per the configured or per-call endpoint mode),
 mints a fresh assertion, and performs the JWT bearer token exchange.
@@ -763,7 +763,7 @@ OAuthError if the token endpoint returns an OAuth error response.
 
 ### CreateOIDCTokenMinterOptions
 
-Defined in: [packages/oidc/src/index.ts:185](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L185)
+Defined in: packages/oidc/src/index.ts:185
 
 Options for [createOIDCTokenMinter](#createoidctokenminter): provide exactly one of keyProvider or privateJwk.
 
@@ -781,7 +781,7 @@ Options for [createOIDCTokenMinter](#createoidctokenminter): provide exactly one
 optional allowHttpLoopbackIssuer?: boolean;
 ```
 
-Defined in: [packages/oidc/src/index.ts:181](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L181)
+Defined in: packages/oidc/src/index.ts:181
 
 Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. Defaults to false.
 
@@ -797,7 +797,7 @@ Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. De
 optional assertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L175)
+Defined in: packages/oidc/src/index.ts:175
 
 Lifetime of minted client assertions, in seconds. Defaults to 300.
 
@@ -813,7 +813,7 @@ Lifetime of minted client assertions, in seconds. Defaults to 300.
 optional defaultScope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L173)
+Defined in: packages/oidc/src/index.ts:173
 
 Scope used when a mint call does not specify one. Defaults to 'openid'.
 
@@ -829,7 +829,7 @@ Scope used when a mint call does not specify one. Defaults to 'openid'.
 optional discoveryUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L159)
+Defined in: packages/oidc/src/index.ts:159
 
 Explicit discovery document URL; only valid alongside issuer or serverUrl.
 
@@ -845,7 +845,7 @@ Explicit discovery document URL; only valid alongside issuer or serverUrl.
 domain: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L167)
+Defined in: packages/oidc/src/index.ts:167
 
 Agent FQDN; becomes the iss/sub/fqdn claims of minted assertions.
 
@@ -864,7 +864,7 @@ optional fetch?: {
 };
 ```
 
-Defined in: [packages/oidc/src/index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L171)
+Defined in: packages/oidc/src/index.ts:171
 
 Custom fetch replaces the SSRF-safe Node default; inject only trusted/test transports with equivalent DNS safety.
 
@@ -924,7 +924,7 @@ Custom fetch replaces the SSRF-safe Node default; inject only trusted/test trans
 optional issuer?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L155)
+Defined in: packages/oidc/src/index.ts:155
 
 Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mutually exclusive with serverUrl.
 
@@ -940,7 +940,7 @@ Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mut
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/oidc/src/index.ts:187](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L187)
+Defined in: packages/oidc/src/index.ts:187
 
 Provider of the agent's operational key. Mutually exclusive with privateJwk.
 
@@ -952,7 +952,7 @@ Provider of the agent's operational key. Mutually exclusive with privateJwk.
 optional maxAssertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L177)
+Defined in: packages/oidc/src/index.ts:177
 
 Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 
@@ -968,7 +968,7 @@ Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 optional privateJwk?: OIDCPrivateJWK;
 ```
 
-Defined in: [packages/oidc/src/index.ts:189](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L189)
+Defined in: packages/oidc/src/index.ts:189
 
 Raw private JWK to sign with, wrapped in an in-memory provider. Mutually exclusive with keyProvider.
 
@@ -980,7 +980,7 @@ Raw private JWK to sign with, wrapped in an in-memory provider. Mutually exclusi
 optional serverUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L157)
+Defined in: packages/oidc/src/index.ts:157
 
 Base server URL used to derive the discovery document and token endpoint. Mutually exclusive with issuer.
 
@@ -996,7 +996,7 @@ Base server URL used to derive the discovery document and token endpoint. Mutual
 optional timeoutMs?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L179)
+Defined in: packages/oidc/src/index.ts:179
 
 Timeout for discovery and token-endpoint requests, in milliseconds. Defaults to 10000.
 
@@ -1012,7 +1012,7 @@ Timeout for discovery and token-endpoint requests, in milliseconds. Defaults to 
 optional tokenEndpoint?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L161)
+Defined in: packages/oidc/src/index.ts:161
 
 Explicit token endpoint URL; requires issuer, must share its origin, and bypasses discovery.
 
@@ -1026,7 +1026,7 @@ Explicit token endpoint URL; requires issuer, must share its origin, and bypasse
 
 ### OIDCAssertionOptions
 
-Defined in: [packages/oidc/src/index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L83)
+Defined in: packages/oidc/src/index.ts:83
 
 Options for minting a JWT bearer client assertion.
 
@@ -1040,7 +1040,7 @@ Options for minting a JWT bearer client assertion.
 optional additionalClaims?: Record<string, unknown>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L89)
+Defined in: packages/oidc/src/index.ts:89
 
 Extra claims to embed. Must not override reserved claims (iss, sub, aud, iat, exp, jti, fqdn).
 
@@ -1052,7 +1052,7 @@ Extra claims to embed. Must not override reserved claims (iss, sub, aud, iat, ex
 optional expiry?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:87](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L87)
+Defined in: packages/oidc/src/index.ts:87
 
 Assertion lifetime in seconds; overrides the configured default, capped by maxAssertionLifetime.
 
@@ -1064,7 +1064,7 @@ Assertion lifetime in seconds; overrides the configured default, capped by maxAs
 issuer: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L85)
+Defined in: packages/oidc/src/index.ts:85
 
 OIDC issuer the assertion is addressed to; becomes the aud claim.
 
@@ -1074,7 +1074,7 @@ OIDC issuer the assertion is addressed to; becomes the aud claim.
 
 ### OIDCDiscoveryDocument
 
-Defined in: [packages/oidc/src/index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L96)
+Defined in: packages/oidc/src/index.ts:96
 
 The subset of an OIDC discovery document (`.well-known/openid-configuration`)
 this package relies on. Additional members are preserved as-is.
@@ -1095,7 +1095,7 @@ this package relies on. Additional members are preserved as-is.
 issuer: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L97)
+Defined in: packages/oidc/src/index.ts:97
 
 <a id="jwks_uri"></a>
 
@@ -1105,7 +1105,7 @@ Defined in: [packages/oidc/src/index.ts:97](https://github.com/dnsid-ai/dnsid-ts
 jwks_uri: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L99)
+Defined in: packages/oidc/src/index.ts:99
 
 <a id="token_endpoint"></a>
 
@@ -1115,7 +1115,7 @@ Defined in: [packages/oidc/src/index.ts:99](https://github.com/dnsid-ai/dnsid-ts
 token_endpoint: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:98](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L98)
+Defined in: packages/oidc/src/index.ts:98
 
 ***
 
@@ -1123,7 +1123,7 @@ Defined in: [packages/oidc/src/index.ts:98](https://github.com/dnsid-ai/dnsid-ts
 
 ### OIDCPrivateJWK
 
-Defined in: [packages/oidc/src/index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L139)
+Defined in: packages/oidc/src/index.ts:139
 
 A private JWK used to sign client assertions without a full key provider.
 Must carry the private `d` member; keep it server-side only.
@@ -1152,7 +1152,7 @@ Must carry the private `d` member; keep it server-side only.
 d: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L142)
+Defined in: packages/oidc/src/index.ts:142
 
 Private key material (base64url).
 
@@ -1164,7 +1164,7 @@ Private key material (base64url).
 optional kid?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L144)
+Defined in: packages/oidc/src/index.ts:144
 
 Key id published on the derived public key; defaults to the RFC 7638 thumbprint.
 
@@ -1176,7 +1176,7 @@ Key id published on the derived public key; defaults to the RFC 7638 thumbprint.
 kty: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L140)
+Defined in: packages/oidc/src/index.ts:140
 
 ***
 
@@ -1184,7 +1184,7 @@ Defined in: [packages/oidc/src/index.ts:140](https://github.com/dnsid-ai/dnsid-t
 
 ### OIDCProfileConfig
 
-Defined in: [packages/oidc/src/index.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L49)
+Defined in: packages/oidc/src/index.ts:49
 
 Tunable OIDC policy for an [OIDCProfile](#oidcprofile). All members are optional; defaults noted per member.
 
@@ -1198,7 +1198,7 @@ Tunable OIDC policy for an [OIDCProfile](#oidcprofile). All members are optional
 optional allowedIssuers?: string[];
 ```
 
-Defined in: [packages/oidc/src/index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L61)
+Defined in: packages/oidc/src/index.ts:61
 
 Exact issuer URLs `verifyOIDCToken()` accepts. When absent or empty, verification always fails.
 
@@ -1210,7 +1210,7 @@ Exact issuer URLs `verifyOIDCToken()` accepts. When absent or empty, verificatio
 optional allowedTokenAlgorithms?: string[];
 ```
 
-Defined in: [packages/oidc/src/index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L63)
+Defined in: packages/oidc/src/index.ts:63
 
 JWS algorithms accepted on inbound OIDC tokens. Defaults to ['RS256'].
 
@@ -1222,7 +1222,7 @@ JWS algorithms accepted on inbound OIDC tokens. Defaults to ['RS256'].
 optional allowHttpLoopbackIssuer?: boolean;
 ```
 
-Defined in: [packages/oidc/src/index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L65)
+Defined in: packages/oidc/src/index.ts:65
 
 Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. Defaults to false.
 
@@ -1234,7 +1234,7 @@ Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. De
 optional assertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L53)
+Defined in: packages/oidc/src/index.ts:53
 
 Lifetime of minted client assertions, in seconds. Defaults to 300.
 
@@ -1246,7 +1246,7 @@ Lifetime of minted client assertions, in seconds. Defaults to 300.
 optional clockSkew?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L57)
+Defined in: packages/oidc/src/index.ts:57
 
 Clock skew tolerated when validating token timestamps, in seconds. Defaults to 30.
 
@@ -1258,7 +1258,7 @@ Clock skew tolerated when validating token timestamps, in seconds. Defaults to 3
 optional defaultScope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L51)
+Defined in: packages/oidc/src/index.ts:51
 
 Scope requested when a token exchange does not specify one. Defaults to 'openid'.
 
@@ -1270,7 +1270,7 @@ Scope requested when a token exchange does not specify one. Defaults to 'openid'
 optional fetchTimeoutMs?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:59](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L59)
+Defined in: packages/oidc/src/index.ts:59
 
 Timeout for discovery, JWKS, and token-endpoint requests, in milliseconds. Defaults to 10000.
 
@@ -1282,7 +1282,7 @@ Timeout for discovery, JWKS, and token-endpoint requests, in milliseconds. Defau
 optional maxAssertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L55)
+Defined in: packages/oidc/src/index.ts:55
 
 Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 
@@ -1292,7 +1292,7 @@ Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 
 ### OIDCProfileOptions
 
-Defined in: [packages/oidc/src/index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L69)
+Defined in: packages/oidc/src/index.ts:69
 
 Constructor options for [OIDCProfile](#oidcprofile).
 
@@ -1306,7 +1306,7 @@ Constructor options for [OIDCProfile](#oidcprofile).
 domain: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L71)
+Defined in: packages/oidc/src/index.ts:71
 
 Agent FQDN; becomes the iss/sub/fqdn claims of minted assertions.
 
@@ -1321,7 +1321,7 @@ optional fetch?: {
 };
 ```
 
-Defined in: [packages/oidc/src/index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L77)
+Defined in: packages/oidc/src/index.ts:77
 
 Custom fetch replaces the SSRF-safe Node default; inject only trusted/test transports with equivalent DNS safety.
 
@@ -1377,7 +1377,7 @@ Custom fetch replaces the SSRF-safe Node default; inject only trusted/test trans
 optional identityResolver?: IdentityResolver;
 ```
 
-Defined in: [packages/oidc/src/index.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L75)
+Defined in: packages/oidc/src/index.ts:75
 
 Resolver used by `verifyOIDCToken()` to verify token subjects as DNSid identity records.
 
@@ -1389,7 +1389,7 @@ Resolver used by `verifyOIDCToken()` to verify token subjects as DNSid identity 
 optional keyProvider?: KeyProvider;
 ```
 
-Defined in: [packages/oidc/src/index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L73)
+Defined in: packages/oidc/src/index.ts:73
 
 Provider used to sign client assertions. Omit for a verification-only profile.
 
@@ -1401,7 +1401,7 @@ Provider used to sign client assertions. Omit for a verification-only profile.
 optional oidc?: OIDCProfileConfig;
 ```
 
-Defined in: [packages/oidc/src/index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L79)
+Defined in: packages/oidc/src/index.ts:79
 
 OIDC policy overrides; see [OIDCProfileConfig](#oidcprofileconfig).
 
@@ -1411,7 +1411,7 @@ OIDC policy overrides; see [OIDCProfileConfig](#oidcprofileconfig).
 
 ### OIDCTokenEndpointOptions
 
-Defined in: [packages/oidc/src/index.ts:153](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L153)
+Defined in: packages/oidc/src/index.ts:153
 
 Selects how the token endpoint is located. Exactly one mode applies:
 `issuer` (discovery at the issuer root), `serverUrl` (discovery relative to a
@@ -1433,7 +1433,7 @@ base URL, token endpoint at `serverUrl` + '/token'), or `tokenEndpoint`
 optional discoveryUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L159)
+Defined in: packages/oidc/src/index.ts:159
 
 Explicit discovery document URL; only valid alongside issuer or serverUrl.
 
@@ -1445,7 +1445,7 @@ Explicit discovery document URL; only valid alongside issuer or serverUrl.
 optional issuer?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L155)
+Defined in: packages/oidc/src/index.ts:155
 
 Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mutually exclusive with serverUrl.
 
@@ -1457,7 +1457,7 @@ Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mut
 optional serverUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L157)
+Defined in: packages/oidc/src/index.ts:157
 
 Base server URL used to derive the discovery document and token endpoint. Mutually exclusive with issuer.
 
@@ -1469,7 +1469,7 @@ Base server URL used to derive the discovery document and token endpoint. Mutual
 optional tokenEndpoint?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L161)
+Defined in: packages/oidc/src/index.ts:161
 
 Explicit token endpoint URL; requires issuer, must share its origin, and bypasses discovery.
 
@@ -1479,7 +1479,7 @@ Explicit token endpoint URL; requires issuer, must share its origin, and bypasse
 
 ### OIDCTokenExchangeOptions
 
-Defined in: [packages/oidc/src/index.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L104)
+Defined in: packages/oidc/src/index.ts:104
 
 Options for `OIDCProfile.exchangeOIDCToken()` and `getOIDCToken()`.
 
@@ -1493,7 +1493,7 @@ Options for `OIDCProfile.exchangeOIDCToken()` and `getOIDCToken()`.
 optional assertion?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:112](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L112)
+Defined in: packages/oidc/src/index.ts:112
 
 Pre-minted client assertion to present; its aud must exactly match the issuer. Minted fresh when absent.
 
@@ -1505,7 +1505,7 @@ Pre-minted client assertion to present; its aud must exactly match the issuer. M
 audience: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:108](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L108)
+Defined in: packages/oidc/src/index.ts:108
 
 Audience (aud) requested for the access token.
 
@@ -1517,7 +1517,7 @@ Audience (aud) requested for the access token.
 issuer: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L106)
+Defined in: packages/oidc/src/index.ts:106
 
 Exact OIDC issuer URL to exchange against.
 
@@ -1529,7 +1529,7 @@ Exact OIDC issuer URL to exchange against.
 optional scope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:110](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L110)
+Defined in: packages/oidc/src/index.ts:110
 
 Space-delimited scope; defaults to the configured defaultScope, then 'openid'.
 
@@ -1539,7 +1539,7 @@ Space-delimited scope; defaults to the configured defaultScope, then 'openid'.
 
 ### OIDCTokenMinterOptions
 
-Defined in: [packages/oidc/src/index.ts:165](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L165)
+Defined in: packages/oidc/src/index.ts:165
 
 Constructor options for [OIDCTokenMinter](#oidctokenminter).
 
@@ -1557,7 +1557,7 @@ Constructor options for [OIDCTokenMinter](#oidctokenminter).
 optional allowHttpLoopbackIssuer?: boolean;
 ```
 
-Defined in: [packages/oidc/src/index.ts:181](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L181)
+Defined in: packages/oidc/src/index.ts:181
 
 Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. Defaults to false.
 
@@ -1569,7 +1569,7 @@ Permit plain-HTTP loopback issuers (localhost, 127.x, ::1) for local testing. De
 optional assertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:175](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L175)
+Defined in: packages/oidc/src/index.ts:175
 
 Lifetime of minted client assertions, in seconds. Defaults to 300.
 
@@ -1581,7 +1581,7 @@ Lifetime of minted client assertions, in seconds. Defaults to 300.
 optional defaultScope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:173](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L173)
+Defined in: packages/oidc/src/index.ts:173
 
 Scope used when a mint call does not specify one. Defaults to 'openid'.
 
@@ -1593,7 +1593,7 @@ Scope used when a mint call does not specify one. Defaults to 'openid'.
 optional discoveryUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L159)
+Defined in: packages/oidc/src/index.ts:159
 
 Explicit discovery document URL; only valid alongside issuer or serverUrl.
 
@@ -1609,7 +1609,7 @@ Explicit discovery document URL; only valid alongside issuer or serverUrl.
 domain: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:167](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L167)
+Defined in: packages/oidc/src/index.ts:167
 
 Agent FQDN; becomes the iss/sub/fqdn claims of minted assertions.
 
@@ -1624,7 +1624,7 @@ optional fetch?: {
 };
 ```
 
-Defined in: [packages/oidc/src/index.ts:171](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L171)
+Defined in: packages/oidc/src/index.ts:171
 
 Custom fetch replaces the SSRF-safe Node default; inject only trusted/test transports with equivalent DNS safety.
 
@@ -1680,7 +1680,7 @@ Custom fetch replaces the SSRF-safe Node default; inject only trusted/test trans
 optional issuer?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L155)
+Defined in: packages/oidc/src/index.ts:155
 
 Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mutually exclusive with serverUrl.
 
@@ -1696,7 +1696,7 @@ Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mut
 keyProvider: KeyProvider;
 ```
 
-Defined in: [packages/oidc/src/index.ts:169](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L169)
+Defined in: packages/oidc/src/index.ts:169
 
 Provider of the agent's operational key, used to sign client assertions.
 
@@ -1708,7 +1708,7 @@ Provider of the agent's operational key, used to sign client assertions.
 optional maxAssertionLifetime?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L177)
+Defined in: packages/oidc/src/index.ts:177
 
 Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 
@@ -1720,7 +1720,7 @@ Upper bound on any requested assertion lifetime, in seconds. Defaults to 900.
 optional serverUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L157)
+Defined in: packages/oidc/src/index.ts:157
 
 Base server URL used to derive the discovery document and token endpoint. Mutually exclusive with issuer.
 
@@ -1736,7 +1736,7 @@ Base server URL used to derive the discovery document and token endpoint. Mutual
 optional timeoutMs?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:179](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L179)
+Defined in: packages/oidc/src/index.ts:179
 
 Timeout for discovery and token-endpoint requests, in milliseconds. Defaults to 10000.
 
@@ -1748,7 +1748,7 @@ Timeout for discovery and token-endpoint requests, in milliseconds. Defaults to 
 optional tokenEndpoint?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L161)
+Defined in: packages/oidc/src/index.ts:161
 
 Explicit token endpoint URL; requires issuer, must share its origin, and bypasses discovery.
 
@@ -1762,7 +1762,7 @@ Explicit token endpoint URL; requires issuer, must share its origin, and bypasse
 
 ### OIDCTokenMintOptions
 
-Defined in: [packages/oidc/src/index.ts:193](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L193)
+Defined in: packages/oidc/src/index.ts:193
 
 Per-call options for `OIDCTokenMinter.mintToken()`. Endpoint members override the minter's defaults.
 
@@ -1780,7 +1780,7 @@ Per-call options for `OIDCTokenMinter.mintToken()`. Endpoint members override th
 optional additionalAssertionClaims?: Record<string, unknown>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:201](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L201)
+Defined in: packages/oidc/src/index.ts:201
 
 Extra claims for the client assertion. Must not override reserved claims (iss, sub, aud, iat, exp, jti, fqdn).
 
@@ -1792,7 +1792,7 @@ Extra claims for the client assertion. Must not override reserved claims (iss, s
 audience: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:195](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L195)
+Defined in: packages/oidc/src/index.ts:195
 
 Audience (aud) requested for the access token.
 
@@ -1804,7 +1804,7 @@ Audience (aud) requested for the access token.
 optional discoveryUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:159](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L159)
+Defined in: packages/oidc/src/index.ts:159
 
 Explicit discovery document URL; only valid alongside issuer or serverUrl.
 
@@ -1820,7 +1820,7 @@ Explicit discovery document URL; only valid alongside issuer or serverUrl.
 optional issuer?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L155)
+Defined in: packages/oidc/src/index.ts:155
 
 Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mutually exclusive with serverUrl.
 
@@ -1836,7 +1836,7 @@ Exact HTTPS issuer root URL — no path, query, fragment, or trailing slash. Mut
 optional scope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L197)
+Defined in: packages/oidc/src/index.ts:197
 
 Space-delimited scope string. Mutually exclusive with scopes.
 
@@ -1848,7 +1848,7 @@ Space-delimited scope string. Mutually exclusive with scopes.
 optional scopes?: readonly string[];
 ```
 
-Defined in: [packages/oidc/src/index.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L199)
+Defined in: packages/oidc/src/index.ts:199
 
 Individual scope values, joined with spaces. Mutually exclusive with scope.
 
@@ -1860,7 +1860,7 @@ Individual scope values, joined with spaces. Mutually exclusive with scope.
 optional serverUrl?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L157)
+Defined in: packages/oidc/src/index.ts:157
 
 Base server URL used to derive the discovery document and token endpoint. Mutually exclusive with issuer.
 
@@ -1876,7 +1876,7 @@ Base server URL used to derive the discovery document and token endpoint. Mutual
 optional tokenEndpoint?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L161)
+Defined in: packages/oidc/src/index.ts:161
 
 Explicit token endpoint URL; requires issuer, must share its origin, and bypasses discovery.
 
@@ -1890,7 +1890,7 @@ Explicit token endpoint URL; requires issuer, must share its origin, and bypasse
 
 ### OIDCTokenResponse
 
-Defined in: [packages/oidc/src/index.ts:116](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L116)
+Defined in: packages/oidc/src/index.ts:116
 
 A successful token-endpoint response, normalized to camelCase members.
 
@@ -1904,7 +1904,7 @@ A successful token-endpoint response, normalized to camelCase members.
 accessToken: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L118)
+Defined in: packages/oidc/src/index.ts:118
 
 The issued access token.
 
@@ -1916,7 +1916,7 @@ The issued access token.
 optional expiresIn?: number;
 ```
 
-Defined in: [packages/oidc/src/index.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L124)
+Defined in: packages/oidc/src/index.ts:124
 
 Token lifetime in seconds, when the issuer provided one.
 
@@ -1928,7 +1928,7 @@ Token lifetime in seconds, when the issuer provided one.
 optional idToken?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:120](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L120)
+Defined in: packages/oidc/src/index.ts:120
 
 ID token, when the issuer returned one.
 
@@ -1940,7 +1940,7 @@ ID token, when the issuer returned one.
 optional issuer?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L128)
+Defined in: packages/oidc/src/index.ts:128
 
 Issuer the token was obtained from.
 
@@ -1952,7 +1952,7 @@ Issuer the token was obtained from.
 raw: unknown;
 ```
 
-Defined in: [packages/oidc/src/index.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L132)
+Defined in: packages/oidc/src/index.ts:132
 
 Raw JSON body of the token response.
 
@@ -1964,7 +1964,7 @@ Raw JSON body of the token response.
 optional scope?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L126)
+Defined in: packages/oidc/src/index.ts:126
 
 Scope actually granted, when the issuer reported it.
 
@@ -1976,7 +1976,7 @@ Scope actually granted, when the issuer reported it.
 optional tokenEndpoint?: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L130)
+Defined in: packages/oidc/src/index.ts:130
 
 Token endpoint the exchange was performed against.
 
@@ -1988,7 +1988,7 @@ Token endpoint the exchange was performed against.
 tokenType: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L122)
+Defined in: packages/oidc/src/index.ts:122
 
 Token type as reported by the issuer; always Bearer (case preserved).
 
@@ -1998,7 +1998,7 @@ Token type as reported by the issuer; always Bearer (case preserved).
 
 ### VerifiedOIDCSubject
 
-Defined in: [packages/oidc/src/index.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L219)
+Defined in: packages/oidc/src/index.ts:219
 
 Result of a successful `OIDCProfile.verifyOIDCToken()` call.
 
@@ -2012,7 +2012,7 @@ Result of a successful `OIDCProfile.verifyOIDCToken()` call.
 audience: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L225)
+Defined in: packages/oidc/src/index.ts:225
 
 Audience the token was verified against.
 
@@ -2024,7 +2024,7 @@ Audience the token was verified against.
 claims: JWTPayload;
 ```
 
-Defined in: [packages/oidc/src/index.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L229)
+Defined in: packages/oidc/src/index.ts:229
 
 The signature-verified JWT claims.
 
@@ -2036,7 +2036,7 @@ The signature-verified JWT claims.
 issuer: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:221](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L221)
+Defined in: packages/oidc/src/index.ts:221
 
 Issuer that signed the token.
 
@@ -2048,7 +2048,7 @@ Issuer that signed the token.
 subject: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:223](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L223)
+Defined in: packages/oidc/src/index.ts:223
 
 Token subject — the agent FQDN for DNSid-federated tokens.
 
@@ -2060,7 +2060,7 @@ Token subject — the agent FQDN for DNSid-federated tokens.
 optional verifiedDomain?: VerifiedDomain;
 ```
 
-Defined in: [packages/oidc/src/index.ts:227](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L227)
+Defined in: packages/oidc/src/index.ts:227
 
 DNSid verification result for the subject; absent when verifyDnsidSubject is false.
 
@@ -2070,7 +2070,7 @@ DNSid verification result for the subject; absent when verifyDnsidSubject is fal
 
 ### VerifyOIDCTokenOptions
 
-Defined in: [packages/oidc/src/index.ts:208](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L208)
+Defined in: packages/oidc/src/index.ts:208
 
 Options for `OIDCProfile.verifyOIDCToken()`.
 
@@ -2088,7 +2088,7 @@ Options for `OIDCProfile.verifyOIDCToken()`.
 audience: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:212](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L212)
+Defined in: packages/oidc/src/index.ts:212
 
 Audience the token must be addressed to (exact match).
 
@@ -2100,7 +2100,7 @@ Audience the token must be addressed to (exact match).
 issuer: string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L210)
+Defined in: packages/oidc/src/index.ts:210
 
 Exact issuer URL the token must have been issued by; must appear in the profile's allowedIssuers.
 
@@ -2112,7 +2112,7 @@ Exact issuer URL the token must have been issued by; must appear in the profile'
 optional peerCert?: TLSCertificate;
 ```
 
-Defined in: [packages/oidc/src/index.ts:215](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L215)
+Defined in: packages/oidc/src/index.ts:215
 
 <a id="signal"></a>
 
@@ -2122,7 +2122,7 @@ Defined in: [packages/oidc/src/index.ts:215](https://github.com/dnsid-ai/dnsid-t
 optional signal?: AbortSignal;
 ```
 
-Defined in: [packages/protocol/src/verification-budget.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L6)
+Defined in: packages/protocol/src/verification-budget.ts:6
 
 ###### Inherited from
 
@@ -2136,7 +2136,7 @@ Defined in: [packages/protocol/src/verification-budget.ts:6](https://github.com/
 optional timeoutMs?: number;
 ```
 
-Defined in: [packages/protocol/src/verification-budget.ts:5](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/protocol/src/verification-budget.ts#L5)
+Defined in: packages/protocol/src/verification-budget.ts:5
 
 Overall invocation budget, including all discovery and evidence. Default: 30 seconds.
 
@@ -2152,7 +2152,7 @@ Overall invocation budget, including all discovery and evidence. Default: 30 sec
 optional verifyDnsidSubject?: boolean;
 ```
 
-Defined in: [packages/oidc/src/index.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L214)
+Defined in: packages/oidc/src/index.ts:214
 
 Set false to skip verifying the token subject as a DNSid identity record. Defaults to true.
 
@@ -2166,7 +2166,7 @@ Set false to skip verifying the token subject as a DNSid identity record. Defaul
 type MintOIDCTokenOptions = CreateOIDCTokenMinterOptions & OIDCTokenMintOptions;
 ```
 
-Defined in: [packages/oidc/src/index.ts:205](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L205)
+Defined in: packages/oidc/src/index.ts:205
 
 Combined options for the one-shot [mintOIDCToken](#mintoidctoken).
 
@@ -2180,7 +2180,7 @@ Combined options for the one-shot [mintOIDCToken](#mintoidctoken).
 function createOIDCKeyProviderFromJWK(privateJwk): Promise<KeyProvider>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:431](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L431)
+Defined in: packages/oidc/src/index.ts:431
 
 Wraps a raw private JWK in an in-memory KeyProvider suitable for signing
 OIDC assertions. Derives the public key, kid (RFC 7638 thumbprint), and alg
@@ -2215,7 +2215,7 @@ ValidationError if the key type/curve is unsupported for signing.
 function createOIDCProfile(opts): OIDCProfile;
 ```
 
-Defined in: [packages/oidc/src/index.ts:669](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L669)
+Defined in: packages/oidc/src/index.ts:669
 
 Creates an [OIDCProfile](#oidcprofile).
 
@@ -2260,7 +2260,7 @@ const token = await profile.getOIDCToken({
 function createOIDCTokenMinter(opts): Promise<OIDCTokenMinter>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:389](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L389)
+Defined in: packages/oidc/src/index.ts:389
 
 Creates an [OIDCTokenMinter](#oidctokenminter), resolving the signing key from either a
 KeyProvider or a raw private JWK.
@@ -2290,7 +2290,7 @@ ArgumentError if neither or both of keyProvider/privateJwk are
 function decodeOIDCClaims(token): Record<string, unknown>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:1331](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L1331)
+Defined in: packages/oidc/src/index.ts:1331
 
 Decodes a JWT's claims WITHOUT verifying its signature. Use only for
 inspection or logging — never for authorization decisions; use
@@ -2323,7 +2323,7 @@ VerificationError (RecordInvalid) if the token is not a decodable
 function mintOIDCToken(opts): Promise<OIDCTokenResponse>;
 ```
 
-Defined in: [packages/oidc/src/index.ts:417](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L417)
+Defined in: packages/oidc/src/index.ts:417
 
 One-shot convenience: creates a minter and mints a single OIDC access token
 via the JWT bearer grant. Server-side only — never mint tokens in
@@ -2366,7 +2366,7 @@ console.log(token.accessToken);
 function validateExactOIDCIssuer(issuer, allowHttpLoopbackIssuer?): string;
 ```
 
-Defined in: [packages/oidc/src/index.ts:1023](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/oidc/src/index.ts#L1023)
+Defined in: packages/oidc/src/index.ts:1023
 
 Validates that an issuer is an exact absolute URL — no query, fragment, or
 trailing slash — using HTTPS (or plain-HTTP loopback when explicitly allowed).

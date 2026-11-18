@@ -11,7 +11,7 @@ entrypoint is also safe to bundle for browsers.
 
 | Area | Supported/tested baseline | Notes |
 | --- | --- | --- |
-| Node.js | Node.js 22.23.4 in CI; Node-bound package metadata requires `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
+| Node.js | Node.js 22.23.4 in CI; Node-bound package metadata requires `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1`. | `@dnsid-ai/transport`, `@dnsid-ai/oidc`, `@dnsid-ai/foundry`, `@dnsid-ai/key-aws`, `@dnsid-ai/key-gcp`, the `@dnsid-ai/sdk/node` subpath, examples, and development tooling are Node-oriented. |
 | Browser and non-Node runtimes | Root `@dnsid-ai/sdk` entrypoint and runtime-neutral packages can be bundled when callers inject DNS, JSON fetch, cache, log, and key-provider implementations. | The SDK does not ship browser DNS/DNSSEC, browser key custody, or browser transport defaults. Do not put private signing keys in browser/client code. |
 | TypeScript | `typescript` 6.0.3 from `package-lock.json`; `tsconfig.json` targets ES2022 with `module: ESNext`, `moduleResolution: bundler`, `strict: true`, and `lib: ["ES2022", "dom"]`. | Published packages include declaration files from `tsup --dts`. |
 | Module formats | ESM and CommonJS package exports. | Packages use `type: "module"` and expose both `import` (`dist/*.js`) and `require` (`dist/*.cjs`) entries. |
@@ -87,10 +87,11 @@ A runnable version lives in [`examples/validate-domain`](examples/validate-domai
 | `@dnsid-ai/http-signatures` | DNSid RFC 9421 HTTP Message Signatures profile helpers. |
 | `@dnsid-ai/web-bot-auth` | DNSid Web Bot Auth request signing/verification and signed key directories. |
 | `@dnsid-ai/registry` | Registry client and TXT publishing helpers. |
+| `@dnsid-ai/foundry` | Private, unreleased Node.js Known Foundry creation and durable recovery. Server acceptance gates remain open; see the [package README](packages/foundry/README.md). |
 | `@dnsid-ai/log-c2sp-tlog` | Node.js C2SP lifecycle reader/verifier, plus portable `/writer` and `/version` subpaths used by the browser-safe root SDK. |
 | `@dnsid-ai/key-aws` | AWS KMS-backed key provider. |
 
-`@dnsid-ai/key-gcp` is an optional Node.js provider for existing software Ed25519 Google Cloud KMS versions. See its package README for the runtime API and current configuration/lifecycle limits.
+`@dnsid-ai/key-gcp` is an optional Node.js provider for software Ed25519 Google Cloud KMS versions, with explicit first-version creation through `create()`. Ordinary configuration opens existing versions only. See its package README for the runtime API and current configuration/lifecycle limits.
 
 ## Package layout
 
@@ -302,6 +303,7 @@ Browser support should use injected browser-safe transport and key-provider impl
 
 - Guides and protocol documentation: [docs.dnsid.ai](https://docs.dnsid.ai/)
 - Generated API reference (this repo, one page per package): [`docs/reference/index.md`](docs/reference/index.md)
+- KMS-first operational key setup: [`docs/kms-first-setup.md`](docs/kms-first-setup.md)
 - Security and production operations: [`docs/security.md`](docs/security.md)
 - Examples: [`examples/`](https://github.com/dnsid-ai/dnsid-ts/tree/main/examples)
 - Operational key rotation and restart recovery: [`examples/key-rotation`](examples/key-rotation/README.md)
@@ -332,7 +334,7 @@ chose:
 
 - DNS TXT lookup of `_dnsid.<domain>` through your system resolver (no hardcoded resolver)
 - HTTPS GET to the JWKS and status URLs published in that TXT record
-- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` / `https://log.partners.dnsid.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
+- Opt-in only, never contacted unless you configure them: `https://api.dnsid.ai` (registry client), `https://log.dnsid.ai` / `https://log.dev.dnsid.ai` / `https://log.partners.dnsid.ai` / `https://log.stg.dnsid.ai` / `https://log.dev.knownsystems.ai` / `https://log.stg.knownsystems.ai` / `https://log.knownsystems.ai` (C2SP transparency log; bundled public trust roots require the separately selected managed factory), cloud KMS endpoints
 - No telemetry, usage reporting, update checks, or crash reporting
 
 **Logging.** None. Errors are thrown to the caller; the packages never write to `console` or a logger.

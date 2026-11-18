@@ -465,3 +465,46 @@ class FakeAwsSdkClient {
     return this.outputs.shift();
   }
 }
+
+// Mode: fake-only. Existing-key faults, one immutable reference, no regional Cartesian product.
+for (const fault of ['AccessDeniedException', 'DisabledException', 'NotFoundException', 'KMSInternalException']) {
+  for (const boundary of ['open', 'sign']) {
+    if (fault === 'AccessDeniedException' && boundary === 'open') continue; // existing functional read denial
+    it(`Given ${fault}, When existing AWS ${boundary} fails, Then no result or replacement`, async () => {
+      const ref = 'arn:aws:kms:us-east-1:111122223333:key/11111111-1111-4111-8111-111111111111';
+      const client = new FakeAwsKms();
+      await client.addEd25519Key(ref);
+      const calls: string[] = [];
+      const error = Object.assign(new Error(`${fault} selected ${ref}`), { name: fault });
+      const read = client.getPublicKey.bind(client);
+      vi.spyOn(client, 'getPublicKey').mockImplementation(async input => {
+        calls.push(`read:${input.keyId}`);
+        if (boundary === 'open') throw error;
+        return read(input);
+      });
+      vi.spyOn(client, 'sign').mockImplementation(async input => {
+        calls.push(`sign:${input.keyId}`);
+        throw error;
+      });
+      const create = vi.spyOn(client, 'createSigningKey').mockImplementation(async () => { throw new Error('forbidden create'); });
+      const deletion = vi.spyOn(client, 'scheduleKeyDeletion').mockImplementation(async () => { throw new Error('forbidden delete'); });
+      const load = () => AwsKmsKeyProvider.load(client, { activeKeyId: ref, algorithm: 'ED25519_SHA_512' });
+      const expected = [`read:${ref}`];
+      if (boundary === 'open') await expect(load()).rejects.toBe(error);
+      else {
+        const provider = await load();
+        const key = await provider.signingKey();
+        const ids = await provider.listKeyIds();
+        expect(key).toMatchObject({ kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA' });
+        expect(ids).toEqual([key.kid]);
+        await expect(provider.sign(new Uint8Array([42]))).rejects.toBe(error);
+        expect(await provider.signingKey()).toEqual(key);
+        expect(await provider.listKeyIds()).toEqual(ids);
+        expected.push(`sign:${ref}`);
+      }
+      expect(calls).toEqual(expected);
+      expect(create).not.toHaveBeenCalled();
+      expect(deletion).not.toHaveBeenCalled();
+    });
+  }
+}

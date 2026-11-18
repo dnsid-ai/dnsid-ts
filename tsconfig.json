@@ -6,6 +6,7 @@
     "baseUrl": ".",
     "paths": {
       "@dnsid-ai/protocol": ["packages/protocol/src/index.ts"],
+      "@dnsid-ai/foundry": ["packages/foundry/src/index.ts"],
       "@dnsid-ai/http-signatures": ["packages/http-signatures/src/index.ts"],
       "@dnsid-ai/jose": ["packages/jose/src/index.ts"],
       "@dnsid-ai/oidc": ["packages/oidc/src/index.ts"],

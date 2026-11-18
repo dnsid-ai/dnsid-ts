@@ -196,7 +196,7 @@ function partition(body, extract) {
 
 /** Rewrites markdown link targets; `fromDir` is the source file's directory. */
 function rewriteLinks(markdown, fromDir, ownSlug, ownPkgSlug) {
-  return markdown.replace(/\]\(([^()\s]+)\)/g, (match, target) => {
+  return markdown.replace(/(\S) $/gm, '$1').replace(/\]\(([^()\s]+)\)/g, (match, target) => {
     if (/^(https?:|mailto:)/.test(target)) return match;
     if (target.startsWith('#')) {
       // Same-package fragment link; the anchor may have moved to a kind page.

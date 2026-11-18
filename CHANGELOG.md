@@ -1,4 +1,46 @@
 
+## [0.37.0] - 2026-11-11
+
+### Features
+
+- feat: trust new stream-bundle keys and add the staging log to the managed catalog ([#157](https://github.com/dnsid-ai/dnsid-ts/pull/157))
+
+
+## [0.36.0] - 2026-11-11
+
+### Bug Fixes
+
+- fix(foundry): finish missing-key and private helper review fixes ([#156](https://github.com/dnsid-ai/dnsid-ts/pull/156))
+
+### Features
+
+- Feat/known foundry create ([#151](https://github.com/dnsid-ai/dnsid-ts/pull/151))
+- feat: explicit AWS/GCP KMS-first operational key setup (#58) ([#152](https://github.com/dnsid-ai/dnsid-ts/pull/152))
+- feat: trust dnsid-dev's secret-held stream-bundle key ([#154](https://github.com/dnsid-ai/dnsid-ts/pull/154))
+
+
+## [0.35.0] - 2026-11-06
+
+### Bug Fixes
+
+- fix: omit blank deployment key-source strings ([#139](https://github.com/dnsid-ai/dnsid-ts/pull/139))
+- fix(security): address PR 139 scan findings ([#141](https://github.com/dnsid-ai/dnsid-ts/pull/141))
+- fix: mock unavailable GCP provider in config loading test ([#149](https://github.com/dnsid-ai/dnsid-ts/pull/149))
+
+### Features
+
+- feat(key-gcp): optional Google Cloud KMS Ed25519 provider ([#142](https://github.com/dnsid-ai/dnsid-ts/pull/142))
+
+### Other
+
+- log-c2sp-tlog: load the Node transport on first use ([#143](https://github.com/dnsid-ai/dnsid-ts/pull/143))
+- http-signatures: bound the body when signing requests ([#144](https://github.com/dnsid-ai/dnsid-ts/pull/144))
+
+### Testing
+
+- test: guard local operational key startup warnings (#57) ([#148](https://github.com/dnsid-ai/dnsid-ts/pull/148))
+
+
 ## [0.34.0] - 2026-10-29
 
 ### Bug Fixes

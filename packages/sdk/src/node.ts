@@ -29,4 +29,4 @@ export {
   createNodeIdentityManagerFromFile,
   createRegistryClientFromEnvironment,
 } from './config-loading.ts';
-export type { EnvironmentSource, KeySource, LoadedConfig, LoadedDnsidConfig, LoadedRegistryConfig, LogTrust, ManagedRegistrationConfig } from './config-loading.ts';
+export type { EnvironmentSource, FoundryConfig, KeySource, LoadedConfig, LoadedDnsidConfig, LoadedRegistryConfig, LogTrust, ManagedRegistrationConfig } from './config-loading.ts';

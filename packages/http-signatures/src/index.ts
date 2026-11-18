@@ -516,9 +516,7 @@ export class HttpSignaturesProfile {
     const components: ComponentIdentifier[] = ['@method', '@authority', '@target-uri'];
     let bodyBuffer: ArrayBuffer | null = null;
     if (req.body) {
-      bodyBuffer = opts?.responseSignature === undefined
-        ? await req.clone().arrayBuffer()
-        : await readBoundedBody(req, req.signal, MAX_HTTP_CONTENT_BYTES);
+      bodyBuffer = await readBoundedBody(req, req.signal, MAX_HTTP_CONTENT_BYTES);
     }
 
     const newHeaders = new Headers(req.headers);

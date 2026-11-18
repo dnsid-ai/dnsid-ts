@@ -6,3 +6,22 @@ test/aws-kms-key-provider.test.ts:generic-api-key:198
 aa242018504721ac80d8dff2c747d4b3ab9ce3aa:test/managed-registration.test.ts:generic-api-key:170
 4b664659ee6ef014bcd8667ba5fc68d58aacef5c:test/managed-registration.test.ts:generic-api-key:172
 7db139d09f91704dc395172a2d488121ba85621f:test/managed-registration.test.ts:generic-api-key:170
+# Public Foundry registration-key test vectors, not credentials.
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:8
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:12
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:16
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:20
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:24
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:28
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:32
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:36
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:40
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:44
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:48
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:52
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:56
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:60
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:64
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:68
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:73
+2636c64d49873e2119aa7053c714467d434c039a:test/vectors/foundry-registration.json:generic-api-key:74

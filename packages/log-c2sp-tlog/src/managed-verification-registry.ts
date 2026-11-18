@@ -17,7 +17,8 @@ const DEVELOPMENT_TRUST_PROFILE = new TextEncoder().encode(`{
   "log_prefix": "https://log.dev.dnsid.ai",
   "tlog_policy": "log log.dev.dnsid.ai+cad12acd+Afnd3sdzfp8nCXzDQchrnWn9QOox5AglR147bURESRqu\\nwitness dnsid-witness-1 witness.dev.dnsid.ai/w1+50822ded+BAH9KuulelD3yZBDTneG46gKZY+OWwdUPBmLmq/YjOkO\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0"
+    "dnsid-stream-bundle+0c241174+AeuT9PKyiewb9hkzygvki7UuOs5ly2kfY/C4Tfh7/ix0",
+    "dnsid-stream-bundle+62f7f9fa+ATdOWF5P759HgvDod9mIC0r1nXhTtJ7x1Ws0fjTvqwDV"
   ]
 }`);
 const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
@@ -26,7 +27,8 @@ const PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
   "log_prefix": "https://log.dnsid.ai",
   "tlog_policy": "log log.dnsid.ai+f10a26bc+Aeo6u4o1XvQlcRczgY462ZdIGpm/ejBC2G3vSbyYYqqY\\nwitness dnsid-witness-1 witness.dnsid.ai/w1+706fd4fb+BLqX21Sx9xG5+5vK7kSK5omcu9+2il20PLdfpOp8lQOJ\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+2e77a3f1+AbKj/zrAfK04/NM07Zj7kxP2YXbM5neT8ym6juXC2PXG"
+    "dnsid-stream-bundle+2e77a3f1+AbKj/zrAfK04/NM07Zj7kxP2YXbM5neT8ym6juXC2PXG",
+    "dnsid-stream-bundle+0f5a76a0+AXavEa0+EGj/qZFH4QuAOeomigSukspWQHC7PrVJa7pj"
   ]
 }`);
 
@@ -38,7 +40,61 @@ const PARTNERS_TRUST_PROFILE = new TextEncoder().encode(`{
   "log_prefix": "https://log.partners.dnsid.ai",
   "tlog_policy": "log log.partners.dnsid.ai+f0143e09+Ae5vrTVQUr0h2GKbeHq70ml37N+uVBsU4NpZD4qMqAu1\\nwitness dnsid-witness-1 witness.partners.dnsid.ai/w1+a115eb67+BB0avWVeSelUBk2w8FtTbT+orf2i826q9VemA0jaXxg4\\nquorum dnsid-witness-1\\n",
   "bundle_verifier_keys": [
-    "dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ"
+    "dnsid-stream-bundle+b1e0b597+AQt9ol4cfwPHxdH4NHNRidsAvU2bYE7KVItOlBG/bsaZ",
+    "dnsid-stream-bundle+bc0d8136+AVfizbWWQD+s2N7OfpOeP7IaWF8nAeTqT4JpD03vKqc6"
+  ]
+}`);
+
+// Matches the reviewed service profile internal/c2sptrust/profiles/staging.json in
+// Identity-Digital/dnsid (its second bundle key from Identity-Digital/dnsid#3526);
+// the log's discovery endpoints are not trust anchors.
+const STAGING_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.stg.dnsid.ai",
+  "tlog_policy": "log log.stg.dnsid.ai+f6ad3bd8+ARl6baGOUzNIH2QvsnlqA8C71WM4SYecXE7eAwmytAsL\\nwitness dnsid-witness-1 witness.stg.dnsid.ai/w1+11a84cde+BEKB6hwsWXOm+PMnS7/JvO4i6bazjzJ8ojECphOTB3gt\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+65c31b14+AXCMTPR4I/fqOgSHge4AEMp+1pWcflDqC1YEDaHDe3Ps",
+    "dnsid-stream-bundle+cdd64875+ATu1SYXvRiZPBUzrUJAfKHeMH3eHr3T22jKez/C3Yl1m"
+  ]
+}`);
+
+// Matches the reviewed service profile internal/c2sptrust/profiles/known-dev.json in
+// Identity-Digital/dnsid (the Known development log); the log's discovery endpoints are not trust anchors.
+const KNOWN_DEVELOPMENT_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.dev.knownsystems.ai",
+  "tlog_policy": "log log.dev.knownsystems.ai+78742e4f+AWJIIC/ZPaSwAprXLHT+JZ7lbTipE3MciQOdUGqG1T3j\\nwitness dnsid-witness-1 witness.dev.knownsystems.ai/w1+21be2f43+BLsio+pQhADB8grceyZnOVERcoq+V6oJuUNy/IEfhsgt\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+138e0d41+AXy9jwvH7hY3LgjqoZn3GmNllKTj2TyNApRLKbt/2WSU",
+    "dnsid-stream-bundle+ad87852b+AWWyHhKGf9oKqaRCQfrk9kixjuz4fmhI5P08W5bsYxzj"
+  ]
+}`);
+
+// Matches the reviewed service profile internal/c2sptrust/profiles/known-staging.json in
+// Identity-Digital/dnsid (the Known staging log); the log's discovery endpoints are not trust anchors.
+const KNOWN_STAGING_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.stg.knownsystems.ai",
+  "tlog_policy": "log log.stg.knownsystems.ai+d3504618+AaUJP26XksZKcjmWHs7Cyq244q2efKUH1geUNb6bK5G7\\nwitness dnsid-witness-1 witness.stg.knownsystems.ai/w1+e3954927+BA8QcWZ+kIuuakqhAbltJ1lFAYeuEqE98AYWyG9eKTil\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+85bbbf6c+AQEr6kb1rP1ZUJxEUl5ai5KxD86uHDRhHoF9rGewVgvC",
+    "dnsid-stream-bundle+64bf74b3+Aa0M4XaiO7BzP4fn7gLnWOw570/ml9x8xnEiv5fUqIW1"
+  ]
+}`);
+
+// Matches the reviewed service profile internal/c2sptrust/profiles/known-production.json in
+// Identity-Digital/dnsid (the Known production log); the log's discovery endpoints are not trust anchors.
+const KNOWN_PRODUCTION_TRUST_PROFILE = new TextEncoder().encode(`{
+  "version": 1,
+  "scope": "public",
+  "log_prefix": "https://log.knownsystems.ai",
+  "tlog_policy": "log log.knownsystems.ai+ffa9d1c9+Ad/NRlpkBsb9RjFstpUI2V38LF0G9DaJgHWtx5UtS6a7\\nwitness dnsid-witness-1 witness.knownsystems.ai/w1+f726713e+BPq3DkSLKz0bMwDnwhwb9yhsGKT/0g0iPKZYekuumLfV\\nquorum dnsid-witness-1\\n",
+  "bundle_verifier_keys": [
+    "dnsid-stream-bundle+4c5de6cf+AeoiHt6HX3fniAPFeNMerJ52HKAlfLxbwFnxvyVM8GPj",
+    "dnsid-stream-bundle+4296adc5+AX8gHt0vQT0mICUKU2svFWcdcIhcQmGHYuR2kk/EsXex"
   ]
 }`);
 
@@ -46,6 +102,10 @@ const MANAGED_CATALOG = [
   { scope: 'public', logPrefix: 'https://log.dev.dnsid.ai', trustProfileDocument: DEVELOPMENT_TRUST_PROFILE },
   { scope: 'public', logPrefix: 'https://log.dnsid.ai', trustProfileDocument: PRODUCTION_TRUST_PROFILE },
   { scope: 'public', logPrefix: 'https://log.partners.dnsid.ai', trustProfileDocument: PARTNERS_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.stg.dnsid.ai', trustProfileDocument: STAGING_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.dev.knownsystems.ai', trustProfileDocument: KNOWN_DEVELOPMENT_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.stg.knownsystems.ai', trustProfileDocument: KNOWN_STAGING_TRUST_PROFILE },
+  { scope: 'public', logPrefix: 'https://log.knownsystems.ai', trustProfileDocument: KNOWN_PRODUCTION_TRUST_PROFILE },
 ] as const;
 
 /** Shared infrastructure for {@link createDnsidManagedVerificationRegistry}. */
@@ -67,7 +127,10 @@ export interface DnsidManagedVerificationOptions {
  *
  * Trust snapshots are bundled with the SDK and selected only after parsing an
  * exact canonical `(scope, logPrefix)` pair. The catalog covers the
- * development, production, and partner (`https://log.partners.dnsid.ai`) logs.
+ * development, production, partner (`https://log.partners.dnsid.ai`), and staging
+ * (`https://log.stg.dnsid.ai`) logs, and the Known development
+ * (`https://log.dev.knownsystems.ai`), staging (`https://log.stg.knownsystems.ai`),
+ * and production (`https://log.knownsystems.ai`) logs.
  * Managed verification prefers signed stream bundles with safe raw-scan fallback.
  */
 export async function createDnsidManagedVerificationRegistry(

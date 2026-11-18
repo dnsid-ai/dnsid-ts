@@ -1,0 +1,83 @@
+{
+  "source": "https://github.com/dnsid-ai/dnsid-sdk-compliance/blob/e01bcf3/docs/sdk-design/13-known-foundry.md#organization-and-creation-replay",
+  "organizationId": "11111111-1111-4111-8111-111111111111",
+  "initialKeyId": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+  "registration": [
+    {
+      "name": "billing-agent",
+      "registrationKey": "2sWNUpI4tnAzJ3quPrT78uJNVdo96m4En3cZsggktcA"
+    },
+    {
+      "name": "agent",
+      "registrationKey": "ksFWEjxU0Yf_F7-_UEwFWQ3J97VRmQPVLjVM5l-3YlY"
+    },
+    {
+      "name": "Agent",
+      "registrationKey": "43mRUDBHeMLHZ6AZKy6RTQXox_LZxBDLa3IXLQ0qCGI"
+    },
+    {
+      "name": "agent ",
+      "registrationKey": "eVX-4H-42OOxnU2EbgtKoEzYad0bIaaRoCkf5T2BIEM"
+    },
+    {
+      "name": "café",
+      "registrationKey": "kBdivhIHZhZ_20_Ku_KnIVYE7x0iSw4K1ceQb2s6fxs"
+    },
+    {
+      "name": "café",
+      "registrationKey": "WxS5QzyfB3D0utVhJDzJQTY6eXDMagDV3tqOImr_u6A"
+    },
+    {
+      "name": " café　",
+      "registrationKey": "x6ARjxrBFYbZ1jCSznnOWBUX9DpFr4edVmYy1zLnyTc"
+    },
+    {
+      "name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "registrationKey": "AEttzAMd8C-GpyQqR_y5G-IfIawJpRWIMi4ZpfbkqWU"
+    },
+    {
+      "name": "a\"b",
+      "registrationKey": "2bWVuTgcCN056vagU5cF40TRXcroeKQCLhd5hTVjhcM"
+    },
+    {
+      "name": "a\\b",
+      "registrationKey": "g8sOgOWQxkQncp1g_H2nI81dTe-60Y8p6ryb87s3Vrk"
+    },
+    {
+      "name": "a\u0001b",
+      "registrationKey": "oNMzk-Vz7VqZ75bxvj4srioM6Dtxd0lNFT3W_-uOF0A"
+    },
+    {
+      "name": "a\nb",
+      "registrationKey": "yM6te8_oTYfg8b2Co21WukeVw4SfYQgCG9brN_W9Bio"
+    },
+    {
+      "name": "<a>&",
+      "registrationKey": "D-ZrRgfx1r9BUVg-wF9Pbey_cfLsZjWeOUCRCsYhTnk"
+    },
+    {
+      "name": "a b",
+      "registrationKey": "-0mnonROfh4y6N--aNbASSi_x7pWEcBu8-Ldwmop4mU"
+    },
+    {
+      "name": "ab",
+      "registrationKey": "V9Xm6mXYXgQCT7DLYtBfT-etOMFRmX9mgKK60ocWtTA"
+    },
+    {
+      "name": "a/b",
+      "registrationKey": "vQvjQxYsTU1TyU3oai2SQY07iNjuCrSBPH5fCjHqhiE"
+    }
+  ],
+  "issuance": [
+    {
+      "registrationKey": "2sWNUpI4tnAzJ3quPrT78uJNVdo96m4En3cZsggktcA",
+      "issuanceKey": "pxQMSC0k-V9nn9qLqMRDczyUxyNyQE87LbGuK5SEWGw"
+    }
+  ],
+  "rejectedNames": [
+    "",
+    "\ud800",
+    "\udfff",
+    "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+  ]
+}

@@ -15,15 +15,15 @@ Part of [Transparency log](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlo
 
 ```ts
 function advanceTrustedC2spCheckpoint(
-   store, 
-   reference, 
-   checkpoint, 
-   witnessTime, 
+   store,
+   reference,
+   checkpoint,
+   witnessTime,
    options?
 ): Promise<TrustedC2spCheckpoint>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L114)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:114
 
 Advances the stored trusted checkpoint for a log origin to `checkpoint`,
 guarding against split-view and rollback attacks: a same-size checkpoint
@@ -84,7 +84,7 @@ C2spTlogVerificationError for missing/invalid candidate evidence.
 function assertCanonicalJsonBytes(bytes, value?): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L114)
+Defined in: packages/log-c2sp-tlog/src/canonical.ts:114
 
 Asserts that `bytes` are exactly the canonical JSON serialization of `value`
 (which defaults to the parsed content of `bytes`).
@@ -117,7 +117,7 @@ C2spTlogParseError when the bytes are not canonical.
 function c2spEnvelopeToEvent(obj): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L93)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:93
 
 Converts a parsed c2sp-tlog JSON envelope back into a protocol
 [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent), requiring a complete `sigs` object and consistent embedded
@@ -147,7 +147,7 @@ C2spTlogParseError when the envelope is malformed or inconsistent.
 function c2spEventId(signedBytes): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L8)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:8
 
 Logical ID of canonical signed bytes; signatures and Merkle indexes are excluded.
 
@@ -171,7 +171,7 @@ Logical ID of canonical signed bytes; signatures and Merkle indexes are excluded
 function c2spTlogEntryBytes(prepared, context?): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:214](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L214)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:214
 
 Finalizes a fully signed prepared event into its canonical log entry bytes,
 re-verifying all required signatures and the entry's parseability.
@@ -208,7 +208,7 @@ C2spTlogParseError when the entry is malformed or oversized.
 function canonicalBytes(value): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L86)
+Defined in: packages/log-c2sp-tlog/src/canonical.ts:86
 
 UTF-8 encoding of [canonicalJson](#canonicaljson).
 
@@ -232,7 +232,7 @@ UTF-8 encoding of [canonicalJson](#canonicaljson).
 function canonicalizeC2spEvent(event, context?): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:210](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L210)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:210
 
 Serializes a fully signed event to its canonical c2sp-tlog entry bytes,
 requiring every signature the event type demands.
@@ -265,7 +265,7 @@ C2spTlogParseError when signatures are incomplete or the entry is oversized.
 function canonicalJson(value): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/canonical.ts:39
 
 Serializes a JSON value to its RFC 8785 (JCS-style) canonical form:
 lexicographically sorted object members, no whitespace, valid Unicode.
@@ -299,7 +299,7 @@ C2spTlogResourceLimitError for value depth above 64 (root depth 0).
 function canonicalLogPrefix(raw): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/lr.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L82)
+Defined in: packages/log-c2sp-tlog/src/lr.ts:82
 
 Canonicalizes a log-prefix URL: lowercase scheme and host, default ports and
 trailing slash removed, percent-encoding normalized.
@@ -329,7 +329,7 @@ C2spTlogParseError for userinfo, query/fragment, dot segments,
 function checkpointOrigin(logPrefix): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/lr.ts:103](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L103)
+Defined in: packages/log-c2sp-tlog/src/lr.ts:103
 
 Derives the C2SP checkpoint origin (host plus path, no scheme) from a canonical log prefix.
 
@@ -353,7 +353,7 @@ Derives the C2SP checkpoint origin (host plus path, no scheme) from a canonical 
 function checkpointPath(prefix): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/tiles.ts:4](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L4)
+Defined in: packages/log-c2sp-tlog/src/tiles.ts:4
 
 URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 
@@ -377,7 +377,7 @@ URL of a log's current checkpoint under the C2SP tlog-tiles layout.
 function createC2spTlogVerificationRegistry(options): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/verification-registry.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/verification-registry.ts#L97)
+Defined in: packages/log-c2sp-tlog/src/verification-registry.ts:97
 
 Creates a [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry) ready to verify `c2sp-tlog` lifecycle
 references. Trust policy is explicit and never inferred from an identity
@@ -409,7 +409,7 @@ protection must survive process restarts.
 function createDefaultC2spBoundedResourceFetcher(transport?): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L96)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:96
 
 Creates the default public-resource fetcher. It uses connection-time SSRF
 checks, rejects redirects, requires HTTP 200, and bounds the decoded body
@@ -437,7 +437,7 @@ such as `dnsid local` is reachable for policy and log reads.
 function createDnsidManagedVerificationRegistry(options?): Promise<LogRegistry>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/managed-verification-registry.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/managed-verification-registry.ts#L73)
+Defined in: packages/log-c2sp-tlog/src/managed-verification-registry.ts:136
 
 Creates a registry for the reviewed trust roots of DNSid-managed
 DNSid logs. Calling this separately named factory is an explicit application
@@ -445,7 +445,10 @@ trust decision; the generic factory never selects these roots implicitly.
 
 Trust snapshots are bundled with the SDK and selected only after parsing an
 exact canonical `(scope, logPrefix)` pair. The catalog covers the
-development, production, and partner (`https://log.partners.dnsid.ai`) logs.
+development, production, partner (`https://log.partners.dnsid.ai`), and staging
+(`https://log.stg.dnsid.ai`) logs, and the Known development
+(`https://log.dev.knownsystems.ai`), staging (`https://log.stg.knownsystems.ai`),
+and production (`https://log.knownsystems.ai`) logs.
 Managed verification prefers signed stream bundles with safe raw-scan fallback.
 
 #### Parameters
@@ -468,7 +471,7 @@ Managed verification prefers signed stream bundles with safe raw-scan fallback.
 function createFetchBackedC2spResourceFetcher(fetchImpl, guarantees): C2spBoundedResourceFetcher;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L107)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:114
 
 Adapts trusted deployment fetch infrastructure to the bounded C2SP contract.
 The caller is responsible for truthfully declaring DNS/connection security;
@@ -499,7 +502,7 @@ and response-size behavior.
 function encodeEntryBundle(entries): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/tiles.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L43)
+Defined in: packages/log-c2sp-tlog/src/tiles.ts:43
 
 Encodes entries as a C2SP tlog-tiles entry bundle with 16-bit big-endian
 length prefixes.
@@ -526,16 +529,16 @@ C2spTlogParseError when an entry exceeds 65535 bytes.
 
 ```ts
 function enforceCheckpointPolicy(
-   checkpoint, 
-   origin, 
-   policy, 
-   scope, 
-   nowMs?, 
+   checkpoint,
+   origin,
+   policy,
+   scope,
+   nowMs?,
    maxClockSkewMs?
 ): CheckpointPolicyResult;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:115](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L115)
+Defined in: packages/log-c2sp-tlog/src/policy.ts:115
 
 Enforces the local trust policy on a parsed checkpoint: origin and scope
 match, a valid signature from an accepted log key, and a satisfied witness
@@ -586,13 +589,13 @@ C2spTlogVerificationError when any requirement is not met.
 
 ```ts
 function entryBundlePath(
-   prefix, 
-   n, 
+   prefix,
+   n,
    width?
 ): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/tiles.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L8)
+Defined in: packages/log-c2sp-tlog/src/tiles.ts:8
 
 URL of entry bundle `n` under the C2SP tlog-tiles layout; `width` selects a partial bundle.
 
@@ -622,13 +625,13 @@ URL of entry bundle `n` under the C2SP tlog-tiles layout; `width` selects a part
 
 ```ts
 function eventToC2spEnvelope(
-   event, 
-   context?, 
+   event,
+   context?,
    includeSigs?
 ): C2spJsonEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L34)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:34
 
 Converts a protocol [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent) into its c2sp-tlog JSON envelope
 (`v: 1`, `kind: 'dnsid.lifecycle'`) with per-type payload fields, the log
@@ -667,7 +670,7 @@ C2spTlogParseError for unsupported event types, malformed lifecycle
 function generateC2spTlogStreamId(): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/lr.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L27)
+Defined in: packages/log-c2sp-tlog/src/lr.ts:27
 
 Generates an opaque identity-instance stream ID using 128 bits of
 cryptographically secure randomness, encoded as unpadded base64url.
@@ -684,14 +687,14 @@ cryptographically secure randomness, encoded as unpadded base64url.
 
 ```ts
 function inclusionRoot(
-   leaf, 
-   index, 
-   treeSize, 
+   leaf,
+   index,
+   treeSize,
    proof
 ): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/merkle.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L26)
+Defined in: packages/log-c2sp-tlog/src/merkle.ts:26
 
 Recomputes the Merkle tree root implied by a leaf hash, its index, the tree
 size, and an RFC 6962 inclusion proof path.
@@ -732,7 +735,7 @@ Error when the index or tree size is out of range.
 function leafHash(entryBytes): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/merkle.ts:11](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L11)
+Defined in: packages/log-c2sp-tlog/src/merkle.ts:11
 
 RFC 6962 leaf hash: SHA-256(0x00 || entry bytes).
 
@@ -756,7 +759,7 @@ RFC 6962 leaf hash: SHA-256(0x00 || entry bytes).
 function merkleRootFromEntries(entries): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/merkle.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L49)
+Defined in: packages/log-c2sp-tlog/src/merkle.ts:49
 
 Computes the RFC 6962 Merkle root of an ordered list of entries (empty-tree root for no entries).
 
@@ -780,7 +783,7 @@ Computes the RFC 6962 Merkle root of an ordered list of entries (empty-tree root
 function nodeHash(left, right): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/merkle.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L16)
+Defined in: packages/log-c2sp-tlog/src/merkle.ts:16
 
 RFC 6962 interior node hash: SHA-256(0x01 || left || right).
 
@@ -808,7 +811,7 @@ RFC 6962 interior node hash: SHA-256(0x01 || left || right).
 function normalizedOriginPolicy(policy, origin): NormalizedOriginPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L64)
+Defined in: packages/log-c2sp-tlog/src/policy.ts:64
 
 Resolves and validates the policy for `origin`: parses key strings, checks
 signature types (0x01 for log keys, 0x04 for witness cosignature keys),
@@ -842,7 +845,7 @@ C2spTlogVerificationError when the origin has no policy or the policy is invalid
 function parseC2spEventEntry(bytes, context?): Promise<LogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:155](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L155)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:155
 
 Parses a raw c2sp-tlog log entry (canonical JSON bytes, 1..65535 bytes) into
 a [LogEvent](https://docs.dnsid.ai/reference/ts/dnsid/#logevent), verifying the bytes are canonical and, for public scope,
@@ -876,7 +879,7 @@ C2spTlogParseError when the entry is oversized, non-canonical, or malformed.
 function parseC2spPolicyFile(text): C2spTlogPolicy;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/policy.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/policy.ts#L140)
+Defined in: packages/log-c2sp-tlog/src/policy.ts:140
 
 Parses a C2SP tlog-policy file (`log`, `witness`, `group`, and exactly one
 `quorum` directive) into a [C2spTlogPolicy](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-interfaces/#c2sptlogpolicy) keyed by log-key origin.
@@ -905,13 +908,13 @@ C2spTlogVerificationError when a line is malformed, names collide,
 
 ```ts
 function parseC2spSignatures(
-   value, 
-   type, 
+   value,
+   type,
    requireComplete?
 ): C2spSignatures;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L297)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:297
 
 Parses and validates an envelope `sigs` object for an event type, rejecting
 roles the type does not allow.
@@ -950,7 +953,7 @@ C2spTlogParseError when the object, a role, or a signature value is invalid.
 function parseC2spStreamBundle(bytes, options): C2spStreamBundle;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L124)
+Defined in: packages/log-c2sp-tlog/src/stream-bundle.ts:124
 
 Parses and structurally validates a canonical-JSON stream bundle without
 verifying any signatures, proofs, or freshness: exact member sets, canonical
@@ -984,7 +987,7 @@ C2spTlogParseError when the bundle is oversized or malformed.
 function parseC2spTlogLr(lr): ParsedC2spTlogLr;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/lr.ts:39](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/lr.ts#L39)
+Defined in: packages/log-c2sp-tlog/src/lr.ts:39
 
 Parses and validates a `c2sp-tlog:` log reference as published in an
 identity record's `lr` tag, requiring an already-canonical log prefix.
@@ -1013,7 +1016,7 @@ C2spTlogParseError when any component is missing or non-canonical.
 function parseC2spTlogTrustProfile(bytes): C2spTlogTrustProfile;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/trust-profile.ts:21](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/trust-profile.ts#L21)
+Defined in: packages/log-c2sp-tlog/src/trust-profile.ts:21
 
 Parses and validates a `dnsid-c2sp-tlog-trust-profile@v1` JSON document.
 
@@ -1037,7 +1040,7 @@ Parses and validates a `dnsid-c2sp-tlog-trust-profile@v1` JSON document.
 function parseCheckpoint(text): Checkpoint;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L16)
+Defined in: packages/log-c2sp-tlog/src/checkpoint.ts:16
 
 Parses a C2SP checkpoint (c2sp.org/tlog-checkpoint) carried in a signed note:
 an origin line, decimal tree size, base64 root hash, then a blank line and
@@ -1067,7 +1070,7 @@ C2spTlogParseError when the note body or a signature line is malformed.
 function parseEntryBundle(bytes): Uint8Array<ArrayBufferLike>[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/tiles.ts:23](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L23)
+Defined in: packages/log-c2sp-tlog/src/tiles.ts:23
 
 Splits a C2SP tlog-tiles entry bundle (16-bit big-endian length prefix per
 entry) into individual entry byte strings.
@@ -1096,7 +1099,7 @@ C2spTlogParseError when a length prefix or entry is truncated.
 function parseJsonNoDuplicateMembers(bytes): unknown;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/canonical.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/canonical.ts#L97)
+Defined in: packages/log-c2sp-tlog/src/canonical.ts:97
 
 Parses UTF-8 JSON bytes, rejecting duplicate object member names anywhere in
 the document.
@@ -1129,7 +1132,7 @@ C2spTlogResourceLimitError for value depth above 64 (root depth 0).
 function parseNoteSignature(line): NoteSignature;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint.ts:40](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint.ts#L40)
+Defined in: packages/log-c2sp-tlog/src/checkpoint.ts:40
 
 Parses a single C2SP signed-note signature line (`— name base64`), splitting
 the leading 4-byte key hash from the signature when present.
@@ -1156,13 +1159,13 @@ C2spTlogParseError when the line does not match the signed-note format.
 
 ```ts
 function parsePreparedC2spTlogEvent(
-   bytes, 
-   lr, 
+   bytes,
+   lr,
    context?
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L119)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:119
 
 Reconstructs a prepared event from canonical envelope bytes (for example
 received from another signer), verifying canonical form, the log binding,
@@ -1204,7 +1207,7 @@ C2spTlogVerificationError when expectations or existing signatures fail.
 function parsePreparedC2spTlogIssuance(bytes, context): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L148)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:148
 
 Validates prepared ISSUANCE bytes against their signed `lr`, returning the
 prepared event and its bound `reference` without changing the input bytes.
@@ -1248,7 +1251,7 @@ C2spTlogVerificationError for missing or mismatched expectations or invalid sign
 function parseSignedNoteVerifierKey(text): SignedNoteKey;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L17)
+Defined in: packages/log-c2sp-tlog/src/signed-note.ts:17
 
 Parses a C2SP signed-note (c2sp.org/signed-note) verifier key in either the
 `name+keyid+base64` vkey form or the whitespace-separated `name [ed25519] base64`
@@ -1279,7 +1282,7 @@ C2spTlogParseError when the key text is malformed.
 function parseTlogProofV1(text): TlogProofV1;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/proof.ts:17](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/proof.ts#L17)
+Defined in: packages/log-c2sp-tlog/src/proof.ts:17
 
 Parses a `c2sp.org/tlog-proof@v1` document: magic line, optional `extra`
 line, `index` line, inclusion proof hashes, then a blank line and the
@@ -1309,7 +1312,7 @@ C2spTlogParseError when any line or the embedded checkpoint is malformed.
 function prepareC2spTlogEvent(event, context): C2spJsonEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:229](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L229)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:229
 
 Builds the unsigned envelope for an event about to be signed, validating the
 public-scope binding fields against `context`.
@@ -1340,13 +1343,13 @@ C2spTlogParseError when the event or its public binding is invalid.
 
 ```ts
 function prepareC2spTlogEventForSigning(
-   event, 
-   lr, 
+   event,
+   lr,
    chain?
 ): PreparedC2spTlogEvent;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L96)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:96
 
 Stages a lifecycle event for signing against a bound (index-free) log
 reference, deriving genesis chain metadata for public ISSUANCE and inbound
@@ -1384,7 +1387,7 @@ C2spTlogParseError when the reference, event, or chain metadata is invalid.
 function registerC2spTlog(registry, options): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/index.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/index.ts#L27)
+Defined in: packages/log-c2sp-tlog/src/index.ts:27
 
 Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.ai/reference/ts/dnsid-classes/#logregistry), constructing a [C2spTlogReader](https://docs.dnsid.ai/reference/ts/dnsid-log-c2sp-tlog-classes/#c2sptlogreader) per lr. Reader options are shared; invocation refresh and cancellation apply to each reader.
 
@@ -1412,7 +1415,7 @@ Registers the `c2sp-tlog` method on a protocol [LogRegistry](https://docs.dnsid.
 function requiredC2spResourceFetchGuarantees(): C2spResourceFetchGuarantees;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L85)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:85
 
 Returns a copy of the capabilities required by the safe standard-resource factory.
 
@@ -1430,7 +1433,7 @@ Returns a copy of the capabilities required by the safe standard-resource factor
 function requiredC2spSignatureNames(type): keyof C2spSignatures[];
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:283](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L283)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:283
 
 Signature roles a lifecycle event type must carry: `ae`+`op` for ISSUANCE,
 `prev_op`+`new_op` for KEY_ROTATION, `ae` for every other supported type.
@@ -1459,7 +1462,7 @@ C2spTlogParseError for unsupported event types.
 function signedC2spEntryBytes(bytes): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:197](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L197)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:197
 
 Extracts the signed byte string of a stored entry: the canonical envelope
 with the `sigs` member removed. These are the bytes each lifecycle signature
@@ -1489,7 +1492,7 @@ C2spTlogParseError when the entry is oversized or non-canonical.
 function signedC2spEventBytes(event, context?): Uint8Array;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/event-codec.ts:219](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/event-codec.ts#L219)
+Defined in: packages/log-c2sp-tlog/src/event-codec.ts:219
 
 Canonical to-be-signed bytes for `event`: its envelope without signatures.
 
@@ -1515,14 +1518,14 @@ Canonical to-be-signed bytes for `event`: its envelope without signatures.
 
 ```ts
 function signPreparedC2spTlogEvent(
-   prepared, 
-   role, 
-   keyProvider, 
+   prepared,
+   role,
+   keyProvider,
    options?
 ): Promise<PreparedC2spTlogEvent>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:178](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L178)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:178
 
 Adds one role's signature to a prepared event using the key provider,
 verifying the provider key matches the key the envelope requires for that
@@ -1567,7 +1570,7 @@ C2spTlogVerificationError when the role is not required, already
 function stateHash(state): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:387](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L387)
+Defined in: packages/log-c2sp-tlog/src/stream-verifier.ts:387
 
 Base64url hash of a lifecycle state object (domain-separated SHA-256 over canonical JSON), as used in `prev_state_hash`.
 
@@ -1589,13 +1592,13 @@ Base64url hash of a lifecycle state object (domain-separated SHA-256 over canoni
 
 ```ts
 function stitchVerifiedMigrationHistory(
-   domain, 
-   currentEvents, 
+   domain,
+   currentEvents,
    migration
 ): Promise<LogEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L47)
+Defined in: packages/log-c2sp-tlog/src/stream-verifier.ts:47
 
 Stitches a verified prior-log history onto the current log's events for an
 inbound MIGRATION: the current events must begin with the MIGRATION, the
@@ -1637,14 +1640,14 @@ C2spTlogVerificationError (`INVALID_MIGRATION`) when the prior
 
 ```ts
 function tilePath(
-   prefix, 
-   level, 
-   n, 
+   prefix,
+   level,
+   n,
    width?
 ): string;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/tiles.ts:6](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/tiles.ts#L6)
+Defined in: packages/log-c2sp-tlog/src/tiles.ts:6
 
 URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` selects a partial tile.
 
@@ -1680,7 +1683,7 @@ URL of hash tile `n` at `level` under the C2SP tlog-tiles layout; `width` select
 function validateC2spResourceFetcher(fetcher): void;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-source.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-source.ts#L119)
+Defined in: packages/log-c2sp-tlog/src/stream-source.ts:126
 
 Throws a deterministic error when a fetcher cannot safely read public standard resources.
 
@@ -1704,7 +1707,7 @@ Throws a deterministic error when a fetcher cannot safely read public standard r
 function verifiedCosignatureTimestamp(checkpoint, key): number | undefined;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:45](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L45)
+Defined in: packages/log-c2sp-tlog/src/signed-note.ts:45
 
 Finds a valid C2SP tlog-cosignature (type 0x04) by `key` on the checkpoint
 and returns its witnessed timestamp in epoch seconds.
@@ -1734,15 +1737,15 @@ The cosignature timestamp, or undefined when the key is not a
 
 ```ts
 function verifyC2spConsistencyProof(
-   fromSize, 
-   toSize, 
-   fromRoot, 
-   toRoot, 
+   fromSize,
+   toSize,
+   fromRoot,
+   toRoot,
    proof
 ): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/checkpoint-trust.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/checkpoint-trust.ts#L162)
+Defined in: packages/log-c2sp-tlog/src/checkpoint-trust.ts:162
 
 Verifies an RFC 6962 consistency proof that the tree of size `fromSize` with
 root `fromRoot` is a prefix of the tree of size `toSize` with root `toRoot`.
@@ -1784,7 +1787,7 @@ Returns false rather than throwing on invalid input.
 function verifyC2spStreamBundle(bytes, options): Promise<VerifiedC2spStreamBundle>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-bundle.ts:203](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-bundle.ts#L203)
+Defined in: packages/log-c2sp-tlog/src/stream-bundle.ts:203
 
 Verifies offline lifecycle evidence for an expected identity and log reference:
 checks the expected agent FQDN and log reference, the producer signature,
@@ -1826,17 +1829,17 @@ C2spTlogVerificationError when any verification step fails.
 
 ```ts
 function verifyC2spTlogProof(
-   entryBytes, 
-   proof, 
-   policy, 
-   origin?, 
-   scope?, 
-   nowMs?, 
+   entryBytes,
+   proof,
+   policy,
+   origin?,
+   scope?,
+   nowMs?,
    maxClockSkewMs?
 ): TlogProofV1;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/proof.ts:55](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/proof.ts#L55)
+Defined in: packages/log-c2sp-tlog/src/proof.ts:55
 
 Verifies an entry's inclusion proof: enforces the local checkpoint policy
 (log signature and witness quorum) and checks the RFC 6962 inclusion path
@@ -1898,7 +1901,7 @@ C2spTlogVerificationError when policy enforcement or the inclusion proof fails.
 function verifyCheckpointSignature(checkpoint, key): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L34)
+Defined in: packages/log-c2sp-tlog/src/signed-note.ts:34
 
 Returns true when any checkpoint signature matches `key` by name/key ID and verifies over the signed note text.
 
@@ -1924,15 +1927,15 @@ Returns true when any checkpoint signature matches `key` by name/key ID and veri
 
 ```ts
 function verifyInclusion(
-   entryBytes, 
-   index, 
-   treeSize, 
-   rootHash, 
+   entryBytes,
+   index,
+   treeSize,
+   rootHash,
    proof
 ): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/merkle.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/merkle.ts#L44)
+Defined in: packages/log-c2sp-tlog/src/merkle.ts:44
 
 Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expected tree root.
 
@@ -1972,7 +1975,7 @@ Checks an RFC 6962 inclusion proof for `entryBytes` at `index` against the expec
 function verifyLifecycle(events, options?): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:285](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L285)
+Defined in: packages/log-c2sp-tlog/src/stream-verifier.ts:285
 
 Verifies an ordered lifecycle: it must begin with ISSUANCE (or a verified
 inbound MIGRATION), every event signature must verify against the entity or
@@ -2013,7 +2016,7 @@ VerificationError (SignatureInvalid) when a signature fails to verify.
 function verifyLoggedEventSignature(item, signerKey): Promise<void>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:380](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L380)
+Defined in: packages/log-c2sp-tlog/src/stream-verifier.ts:380
 
 Verifies a single logged event's primary signature against `signerKey` over
 the entry's signed bytes.
@@ -2048,13 +2051,13 @@ VerificationError (SignatureInvalid) when verification fails.
 
 ```ts
 function verifyNoteSignature(
-   message, 
-   sig, 
+   message,
+   sig,
    key
 ): boolean;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/signed-note.ts:60](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/signed-note.ts#L60)
+Defined in: packages/log-c2sp-tlog/src/signed-note.ts:60
 
 Verifies one signed-note signature over `message` with an Ed25519 key.
 Supports plain log signatures (type 0x01) and timestamped C2SP cosignatures
@@ -2086,13 +2089,13 @@ Supports plain log signatures (type 0x01) and timestamped C2SP cosignatures
 
 ```ts
 function verifyStreamLifecycle(
-   entries, 
-   domain, 
+   entries,
+   domain,
    options?
 ): Promise<VerifiedLifecycleEvent[]>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/stream-verifier.ts:162](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/stream-verifier.ts#L162)
+Defined in: packages/log-c2sp-tlog/src/stream-verifier.ts:162
 
 Extracts and verifies the lifecycle history for one agent domain from
 entries already authenticated by the accepted completeness mechanism:
@@ -2137,7 +2140,7 @@ C2spTlogVerificationError when the resulting lifecycle is invalid
 function writePreparedEvent(prepared, options): Promise<string>;
 ```
 
-Defined in: [packages/log-c2sp-tlog/src/writer.ts:244](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/log-c2sp-tlog/src/writer.ts#L244)
+Defined in: packages/log-c2sp-tlog/src/writer.ts:244
 
 Appends a finalized prepared event to the log via `options.submit`, running
 the required chain validation for non-genesis events.
