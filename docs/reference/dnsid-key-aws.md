@@ -848,7 +848,7 @@ Defined in: [index.ts:177](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsKmsBootstrapConfig
 
-Defined in: [index.ts:559](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L559)
+Defined in: [index.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L561)
 
 Alias in the injected client's account/region and required signing algorithm.
 
@@ -862,7 +862,7 @@ Alias in the injected client's account/region and required signing algorithm.
 algorithm: AwsKmsSigningAlgorithm;
 ```
 
-Defined in: [index.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L561)
+Defined in: [index.ts:563](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L563)
 
 <a id="aliasname"></a>
 
@@ -872,7 +872,7 @@ Defined in: [index.ts:561](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 aliasName: string;
 ```
 
-Defined in: [index.ts:560](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L560)
+Defined in: [index.ts:562](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L562)
 
 ***
 
@@ -880,7 +880,7 @@ Defined in: [index.ts:560](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsKmsBootstrapFacade
 
-Defined in: [index.ts:554](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L554)
+Defined in: [index.ts:556](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L556)
 
 Explicit bootstrap capability, separate from ordinary existing-only opening.
 
@@ -898,7 +898,7 @@ Explicit bootstrap capability, separate from ordinary existing-only opening.
 createAlias(input): Promise<void>;
 ```
 
-Defined in: [index.ts:555](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L555)
+Defined in: [index.ts:557](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L557)
 
 ###### Parameters
 
@@ -1042,7 +1042,7 @@ Defined in: [index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsKmsBootstrapResult
 
-Defined in: [index.ts:565](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L565)
+Defined in: [index.ts:567](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L567)
 
 Canonical winner reference and standalone signer; no identity is published.
 
@@ -1056,7 +1056,7 @@ Canonical winner reference and standalone signer; no identity is published.
 readonly keyProvider: AwsKmsKeyProvider;
 ```
 
-Defined in: [index.ts:567](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L567)
+Defined in: [index.ts:569](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L569)
 
 <a id="keyref"></a>
 
@@ -1066,7 +1066,7 @@ Defined in: [index.ts:567](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 readonly keyRef: string;
 ```
 
-Defined in: [index.ts:566](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L566)
+Defined in: [index.ts:568](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L568)
 
 ***
 
@@ -1257,7 +1257,7 @@ Optional tags passed to generated KMS keys.
 
 ### AwsKmsCreateAliasInput
 
-Defined in: [index.ts:548](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L548)
+Defined in: [index.ts:550](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L550)
 
 Exact caller-selected alias and candidate key to acquire it for.
 
@@ -1271,7 +1271,7 @@ Exact caller-selected alias and candidate key to acquire it for.
 aliasName: string;
 ```
 
-Defined in: [index.ts:549](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L549)
+Defined in: [index.ts:551](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L551)
 
 <a id="targetkeyid"></a>
 
@@ -1281,7 +1281,7 @@ Defined in: [index.ts:549](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 targetKeyId: string;
 ```
 
-Defined in: [index.ts:550](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L550)
+Defined in: [index.ts:552](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L552)
 
 ***
 
@@ -1667,7 +1667,7 @@ Opens an existing KMS key, without generation or private-key import.
 function createOrReuseAwsKmsKeyProvider(client, config): Promise<AwsKmsBootstrapResult>;
 ```
 
-Defined in: [index.ts:582](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L582)
+Defined in: [index.ts:584](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L584)
 
 Explicitly reuses an alias winner, or creates a signing key only after the initial
 GetPublicKey rejects with NotFoundException. AlreadyExistsException on CreateAlias
