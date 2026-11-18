@@ -1,0 +1,233 @@
+import { describe, expect, it, vi } from 'vitest';
+import { generateKeyPairSync, sign, verify, createPublicKey } from 'node:crypto';
+import type { protos } from '@google-cloud/kms';
+import {
+  createOrReuseGcpCloudKmsKeyProvider,
+  type GcpCloudKmsBootstrapClient,
+  type GcpCloudKmsBootstrapResult,
+} from '@dnsid-ai/key-gcp';
+
+type K = protos.google.cloud.kms.v1.ICryptoKey;
+type V = protos.google.cloud.kms.v1.ICryptoKeyVersion;
+type P = protos.google.cloud.kms.v1.IPublicKey;
+type S = protos.google.cloud.kms.v1.IAsymmetricSignResponse;
+type GetK = protos.google.cloud.kms.v1.IGetCryptoKeyRequest;
+type CreateK = protos.google.cloud.kms.v1.ICreateCryptoKeyRequest;
+type GetV = protos.google.cloud.kms.v1.IGetCryptoKeyVersionRequest;
+type GetP = protos.google.cloud.kms.v1.IGetPublicKeyRequest;
+type Sign = protos.google.cloud.kms.v1.IAsymmetricSignRequest;
+type Reply<T, R> = readonly [T, R | undefined, {} | undefined];
+type Trace = { method: string; request: unknown };
+const parent = 'projects/project-a/locations/us-central1/keyRings/ring-a';
+const config = { parent, cryptoKeyId: 'dnsid-acme-research' };
+const resource = (c: typeof config) => `${c.parent}/cryptoKeys/${c.cryptoKeyId}`;
+const grpc = (code: number) => Object.assign(new Error(`service status ${code}`), { code });
+
+// Independent CRC32C (Castagnoli), not CRC32; fixtures never import SDK helpers.
+function crc32c(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function fixture(c = config) {
+  const { publicKey, privateKey } = generateKeyPairSync('ed25519');
+  const pem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
+  const name = resource(c);
+  const ref = `${name}/cryptoKeyVersions/1`;
+  const trace: Trace[] = [];
+  const key: K = { name, purpose: 5, versionTemplate: { algorithm: 40, protectionLevel: 1 } };
+  const version: V = { name: ref, state: 1, algorithm: 40, protectionLevel: 1 };
+  const pub: P = { name: ref, algorithm: 40, protectionLevel: 1, pem,
+    pemCrc32c: { value: crc32c(Buffer.from(pem)) } };
+  const client: GcpCloudKmsBootstrapClient = {
+    async getCryptoKey(request: GetK): Promise<Reply<K, GetK>> {
+      trace.push({ method: 'getCryptoKey', request }); return [key, undefined, undefined];
+    },
+    async createCryptoKey(request: CreateK): Promise<Reply<K, CreateK>> {
+      trace.push({ method: 'createCryptoKey', request }); return [key, undefined, undefined];
+    },
+    async getCryptoKeyVersion(request: GetV): Promise<Reply<V, GetV>> {
+      trace.push({ method: 'getCryptoKeyVersion', request }); return [version, undefined, undefined];
+    },
+    async getPublicKey(request: GetP): Promise<Reply<P, GetP>> {
+      trace.push({ method: 'getPublicKey', request }); return [pub, undefined, undefined];
+    },
+    async asymmetricSign(request: Sign): Promise<Reply<S, Sign>> {
+      trace.push({ method: 'asymmetricSign', request });
+      expect(request.name).toBe(ref); // Separate service-request invariant.
+      expect(request.digest).toBeUndefined();
+      expect(request.data).toBeInstanceOf(Uint8Array);
+      const data = request.data as Uint8Array;
+      expect(Number(request.dataCrc32c?.value)).toBe(crc32c(data));
+      const signature = sign(null, data, privateKey);
+      return [{ name: ref, signature, signatureCrc32c: { value: crc32c(signature) },
+        verifiedDataCrc32c: true, protectionLevel: 1 }, undefined, undefined];
+    },
+  };
+  return { client, trace, key, version, pub, ref, publicKey };
+}
+type Fixture = ReturnType<typeof fixture>;
+function noMutation(f: Fixture) {
+  expect(f.trace.filter(t => t.method === 'createCryptoKey')).toEqual([]);
+  // Five-method seam intentionally contains no version/ancestor creation operation.
+}
+async function actorIdentity(result: GcpCloudKmsBootstrapResult, f: Fixture) {
+  expect(result.keyRef).toBe(f.ref);
+  const jwk = await result.keyProvider.signingKey();
+  expect(jwk.kty).toBe('OKP');
+  expect(jwk.crv).toBe('Ed25519');
+  expect(jwk.x).toBe(f.publicKey.export({ format: 'jwk' }).x);
+  const payload = Buffer.from('independent caller signature oracle');
+  const signature = await result.keyProvider.sign(payload);
+  expect(verify(null, payload, f.publicKey, signature)).toBe(true);
+  const consumerKey = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: jwk.x }, format: 'jwk' });
+  expect(verify(null, payload, consumerKey, signature)).toBe(true);
+  return { jwk, payload, signature };
+}
+
+// Case 6. Mode: fake-only (invalid remote responses).
+const invalid: Array<[string, (f: Fixture) => void]> = [
+  ['named key missing name', f => { delete f.key.name; }],
+  ['named key wrong binding', f => { f.key.name = resource(config) + '-other'; }],
+  ['named key wrong purpose', f => { f.key.purpose = 1; }],
+  ['named key missing purpose', f => { delete f.key.purpose; }],
+  ['version missing name', f => { delete f.version.name; }],
+  ['version wrong key binding', f => { f.version.name = `${resource(config)}-other/cryptoKeyVersions/1`; }],
+  ['version wrong numeric version', f => { f.version.name = `${resource(config)}/cryptoKeyVersions/2`; }],
+  ['version disabled', f => { f.version.state = 2; }],
+  ['version missing state', f => { delete f.version.state; }],
+  ['version wrong algorithm', f => { f.version.algorithm = 12; }],
+  ['version missing algorithm', f => { delete f.version.algorithm; }],
+  ['version nonsoftware', f => { f.version.protectionLevel = 2; }],
+  ['version missing protection', f => { delete f.version.protectionLevel; }],
+  ['public response missing name', f => { delete f.pub.name; }],
+  ['public response wrong binding', f => { f.pub.name = `${resource(config)}/cryptoKeyVersions/2`; }],
+  ['public response wrong algorithm', f => { f.pub.algorithm = 12; }],
+  ['public response nonsoftware', f => { f.pub.protectionLevel = 2; }],
+  ['public response missing PEM', f => { delete f.pub.pem; }],
+  ['public response malformed PEM with correct checksum', f => {
+    f.pub.pem = 'not a public key'; f.pub.pemCrc32c = { value: crc32c(Buffer.from(f.pub.pem)) };
+  }],
+  ['public response mismatched integrity', f => {
+    f.pub.pemCrc32c = { value: (crc32c(Buffer.from(f.pub.pem!)) ^ 1) >>> 0 };
+  }],
+  ['public response missing integrity', f => { delete f.pub.pemCrc32c; }],
+];
+describe('known62 additional case6: fail closed', () => {
+  it.each(invalid)('%s', async (_label, invalidate) => {
+    const f = fixture(); invalidate(f);
+    // Actor oracle: no successful result/provider, not merely a call count.
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    noMutation(f); // Independent invariant, not the acceptance oracle.
+  });
+  it('missing initial version is failure without replacement', async () => {
+    const f = fixture();
+    f.client.getCryptoKeyVersion = async (request: GetV): Promise<Reply<V, GetV>> => {
+      f.trace.push({ method: 'getCryptoKeyVersion', request }); throw grpc(5);
+    };
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    noMutation(f);
+  });
+  it('ALREADY_EXISTS then NOT_FOUND terminates without another create', async () => {
+    const f = fixture(); let reads = 0; let creates = 0;
+    f.client.getCryptoKey = async (request: GetK): Promise<Reply<K, GetK>> => {
+      f.trace.push({ method: 'getCryptoKey', request }); reads++;
+      // Bound a defective loop with a sentinel, then fail the exact invariant below.
+      if (reads > 2) throw new Error('test guard: excess winner reads');
+      throw grpc(5);
+    };
+    f.client.createCryptoKey = async (request: CreateK): Promise<Reply<K, CreateK>> => {
+      f.trace.push({ method: 'createCryptoKey', request }); creates++;
+      if (creates > 1) throw new Error('test guard: excess creation');
+      throw grpc(6);
+    };
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    expect(reads).toBe(2); expect(creates).toBe(1);
+    expect(f.trace.map(t => t.method)).toEqual(['getCryptoKey', 'createCryptoKey', 'getCryptoKey']);
+  });
+});
+
+// Case 7. Mode: real-capable; all dependencies fake in this authored suite.
+describe('known62 additional case7: input and scope boundaries', () => {
+  it.each([
+    ['empty parent', { ...config, parent: '' }],
+    ['non-resource parent', { ...config, parent: 'not-a-key-ring-resource' }],
+    ['empty ID', { ...config, cryptoKeyId: '' }],
+    ['ID containing path separator', { ...config, cryptoKeyId: 'acme/research' }],
+  ])('%s fails without mutation', async (_label, bad) => {
+    const f = fixture();
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, bad)).rejects.toBeDefined();
+    noMutation(f);
+  });
+  it('missing ancestor remains failure, with no ancestor-creation capability', async () => {
+    const f = fixture();
+    f.client.getCryptoKey = async (request: GetK): Promise<Reply<K, GetK>> => {
+      f.trace.push({ method: 'getCryptoKey', request }); throw grpc(5);
+    };
+    f.client.createCryptoKey = async (request: CreateK): Promise<Reply<K, CreateK>> => {
+      f.trace.push({ method: 'createCryptoKey', request }); throw grpc(5);
+    };
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    expect(f.trace.filter(t => t.method === 'createCryptoKey').length).toBeLessThanOrEqual(1);
+    expect(f.trace.every(t => t.method === 'getCryptoKey' || t.method === 'createCryptoKey')).toBe(true);
+  });
+  it.each([
+    ['project', { ...config, parent: parent.replace('project-a', 'project-b') }],
+    ['location', { ...config, parent: parent.replace('us-central1', 'us-east1') }],
+    ['keyRing', { ...config, parent: parent.replace('ring-a', 'ring-b') }],
+    ['allocated ID', { ...config, cryptoKeyId: 'dnsid-acme-finance' }],
+  ])('distinct %s scopes have independent verifiable signers', async (_dimension, other) => {
+    const a = fixture(); const b = fixture(other);
+    const ra = await createOrReuseGcpCloudKmsKeyProvider(a.client, config);
+    const rb = await createOrReuseGcpCloudKmsKeyProvider(b.client, other);
+    const ia = await actorIdentity(ra, a); const ib = await actorIdentity(rb, b);
+    expect(ra.keyRef).not.toBe(rb.keyRef);
+    expect(ia.jwk.x).not.toBe(ib.jwk.x);
+    expect(verify(null, ia.payload, b.publicKey, ia.signature)).toBe(false);
+    expect(verify(null, ib.payload, a.publicKey, ib.signature)).toBe(false);
+    noMutation(a); noMutation(b);
+  });
+});
+
+// Case 8. Mode: fake-only. CALLER COMPOSITION, not actual Foundry/server proof.
+describe('known62 additional case8: caller composition only', () => {
+  it('explicit key bootstrap alone does not invoke the application agent-ID spy', async () => {
+    const f = fixture(); const agentCreateOrReuse = vi.fn();
+    const result = await createOrReuseGcpCloudKmsKeyProvider(f.client, config);
+    await actorIdentity(result, f);
+    expect(agentCreateOrReuse).not.toHaveBeenCalled();
+  });
+  it('caller first awaits key, then separately passes returned identity to its explicit ID operation', async () => {
+    const f = fixture(); const events: string[] = [];
+    const agentCreateOrReuse = vi.fn(async (identity: { keyRef: string; jwk: unknown }) => {
+      events.push('explicit-ID'); return { identity };
+    });
+    // Application example, not a proposed registry API or product entry point.
+    const result = await createOrReuseGcpCloudKmsKeyProvider(f.client, config);
+    events.push('key-returned');
+    expect(agentCreateOrReuse).not.toHaveBeenCalled();
+    const jwk = await result.keyProvider.signingKey();
+    const identity = { keyRef: result.keyRef, jwk };
+    const id = await agentCreateOrReuse(identity);
+    expect(id.identity).toBe(identity);
+    expect(agentCreateOrReuse).toHaveBeenCalledExactlyOnceWith(identity);
+    expect(identity.keyRef).toBe(f.ref);
+    expect(jwk.x).toBe(f.publicKey.export({ format: 'jwk' }).x);
+    expect(events).toEqual(['key-returned', 'explicit-ID']);
+  });
+  it('caller composition stops on key failure before explicit ID operation', async () => {
+    const f = fixture(); const failure = grpc(7);
+    const agentCreateOrReuse = vi.fn(async (_identity: unknown) => ({ id: 'caller-spy-id' }));
+    f.client.getCryptoKey = async (_request: GetK): Promise<Reply<K, GetK>> => { throw failure; };
+    async function applicationComposition() {
+      const result = await createOrReuseGcpCloudKmsKeyProvider(f.client, config);
+      return agentCreateOrReuse({ keyRef: result.keyRef, jwk: await result.keyProvider.signingKey() });
+    }
+    await expect(applicationComposition()).rejects.toBeDefined();
+    expect(agentCreateOrReuse).not.toHaveBeenCalled();
+    noMutation(f);
+  });
+});
