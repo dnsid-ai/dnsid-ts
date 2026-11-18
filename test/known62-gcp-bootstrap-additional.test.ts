@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { generateKeyPairSync, sign, verify, createPublicKey } from 'node:crypto';
 import type { protos } from '@google-cloud/kms';
+import { ArgumentError } from '@dnsid-ai/sdk';
 import {
   createOrReuseGcpCloudKmsKeyProvider,
   type GcpCloudKmsBootstrapClient,
@@ -118,33 +119,37 @@ const invalid: Array<[string, (f: Fixture) => void]> = [
 ];
 describe('known62 additional case6: fail closed', () => {
   it.each(invalid)('%s', async (_label, invalidate) => {
+    const baseline = fixture();
+    await actorIdentity(await createOrReuseGcpCloudKmsKeyProvider(baseline.client, config), baseline);
+    noMutation(baseline);
     const f = fixture(); invalidate(f);
     // Actor oracle: no successful result/provider, not merely a call count.
     await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
     noMutation(f); // Independent invariant, not the acceptance oracle.
   });
   it('missing initial version is failure without replacement', async () => {
-    const f = fixture();
+    const f = fixture(); const missingVersion = grpc(5);
     f.client.getCryptoKeyVersion = async (request: GetV): Promise<Reply<V, GetV>> => {
-      f.trace.push({ method: 'getCryptoKeyVersion', request }); throw grpc(5);
+      f.trace.push({ method: 'getCryptoKeyVersion', request }); throw missingVersion;
     };
-    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBe(missingVersion);
     noMutation(f);
   });
   it('ALREADY_EXISTS then NOT_FOUND terminates without another create', async () => {
     const f = fixture(); let reads = 0; let creates = 0;
+    const missingKey = grpc(5); const unreadableWinner = grpc(5); const contention = grpc(6);
     f.client.getCryptoKey = async (request: GetK): Promise<Reply<K, GetK>> => {
       f.trace.push({ method: 'getCryptoKey', request }); reads++;
       // Bound a defective loop with a sentinel, then fail the exact invariant below.
       if (reads > 2) throw new Error('test guard: excess winner reads');
-      throw grpc(5);
+      throw reads === 1 ? missingKey : unreadableWinner;
     };
     f.client.createCryptoKey = async (request: CreateK): Promise<Reply<K, CreateK>> => {
       f.trace.push({ method: 'createCryptoKey', request }); creates++;
       if (creates > 1) throw new Error('test guard: excess creation');
-      throw grpc(6);
+      throw contention;
     };
-    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBe(unreadableWinner);
     expect(reads).toBe(2); expect(creates).toBe(1);
     expect(f.trace.map(t => t.method)).toEqual(['getCryptoKey', 'createCryptoKey', 'getCryptoKey']);
   });
@@ -159,18 +164,18 @@ describe('known62 additional case7: input and scope boundaries', () => {
     ['ID containing path separator', { ...config, cryptoKeyId: 'acme/research' }],
   ])('%s fails without mutation', async (_label, bad) => {
     const f = fixture();
-    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, bad)).rejects.toBeDefined();
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, bad)).rejects.toBeInstanceOf(ArgumentError);
     noMutation(f);
   });
   it('missing ancestor remains failure, with no ancestor-creation capability', async () => {
-    const f = fixture();
+    const f = fixture(); const missingKey = grpc(5); const missingAncestor = grpc(5);
     f.client.getCryptoKey = async (request: GetK): Promise<Reply<K, GetK>> => {
-      f.trace.push({ method: 'getCryptoKey', request }); throw grpc(5);
+      f.trace.push({ method: 'getCryptoKey', request }); throw missingKey;
     };
     f.client.createCryptoKey = async (request: CreateK): Promise<Reply<K, CreateK>> => {
-      f.trace.push({ method: 'createCryptoKey', request }); throw grpc(5);
+      f.trace.push({ method: 'createCryptoKey', request }); throw missingAncestor;
     };
-    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBe(missingAncestor);
     expect(f.trace.filter(t => t.method === 'createCryptoKey').length).toBeLessThanOrEqual(1);
     expect(f.trace.every(t => t.method === 'getCryptoKey' || t.method === 'createCryptoKey')).toBe(true);
   });
@@ -226,7 +231,7 @@ describe('known62 additional case8: caller composition only', () => {
       const result = await createOrReuseGcpCloudKmsKeyProvider(f.client, config);
       return agentCreateOrReuse({ keyRef: result.keyRef, jwk: await result.keyProvider.signingKey() });
     }
-    await expect(applicationComposition()).rejects.toBeDefined();
+    await expect(applicationComposition()).rejects.toBe(failure);
     expect(agentCreateOrReuse).not.toHaveBeenCalled();
     noMutation(f);
   });
