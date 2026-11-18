@@ -6,7 +6,7 @@
  * `/.well-known/http-message-signatures-directory` document that advertises the
  * agent's public keys. Verification authenticates signed directories and requests
  * against current DNSid operational keys and configured entity acceptance.
- * Targets `draft-ietf-webbotauth-httpsig-protocol-00`, not the editor's copy.
+ * Targets `draft-ietf-webbotauth-httpsig-protocol-01`.
  *
  * Web Bot Auth requires an Ed25519 operational key; signing with any other key
  * type raises {@link ArgumentError}.
@@ -14,7 +14,7 @@
  * @packageDocumentation
  */
 import type { KeyProvider, SigningIdentityManager, DnsIdJWK, RefreshingIdentityResolver, VerifiedDomain } from '@dnsid-ai/protocol';
-import { verifyWebBotAuthRequest, normalizedWbaIdentifier } from './verify.ts';
+import { verifyWebBotAuthRequest, normalizedWbaIdentifier, isDirectHttpsUri } from './verify.ts';
 import type { WebBotAuthVerificationOptions, WebBotAuthDiscoveryFetch } from './verify.ts';
 export type { WebBotAuthVerificationOptions, WebBotAuthDiscoveryFetch } from './verify.ts';
 import { requireLocalDomain } from '@dnsid-ai/protocol';
@@ -37,25 +37,17 @@ export const DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS = 60;
 /** Default directory-signature lifetime (seconds), including backdating. */
 export const DEFAULT_DIRECTORY_SIGNATURE_TTL_SECONDS = 300;
 
-/** Web Bot Auth key-discovery interpretation for the `Signature-Agent` member. */
-export type SignatureAgentType = 'directory' | 'jwks_uri';
-
 /** `Signature-Agent` discovery configuration. */
 export interface SignatureAgentConfig {
-  /** HTTPS origin for `directory`, or the direct HTTPS endpoint for `jwks_uri`. */
+  /** Direct HTTPS key directory endpoint. */
   uri?: string;
-  /** Discovery interpretation. Default: `directory`. */
-  type?: SignatureAgentType;
 }
 
 /** Profile-level Web Bot Auth configuration. All members are optional; defaults are noted per member. */
 export interface WebBotAuthConfig {
-  /**
-   * Signature-Agent URI and discovery type. Defaults to the domain's HTTPS origin
-   * with `type=directory`.
-   */
+  /** Signature-Agent URI. Defaults to the well-known directory URL at the local domain. */
   signatureAgent?: SignatureAgentConfig;
-  /** @deprecated Use `signatureAgent.uri`. Retained as a direct `jwks_uri` endpoint. */
+  /** @deprecated Use `signatureAgent.uri`. Also a direct HTTPS directory endpoint. */
   directoryURL?: string;
   /** Request-signature lifetime in seconds. Defaults to {@link DEFAULT_WEB_BOT_AUTH_SIGNATURE_TTL_SECONDS}. */
   signatureTTL?: number;
@@ -117,7 +109,7 @@ export class WebBotAuthProfile {
   static fromIdentityManager(identityManager: SigningIdentityManager & RefreshingIdentityResolver, webBotAuth?: WebBotAuthConfig): WebBotAuthProfile {
     const domain = requireLocalDomain(identityManager);
     const agent = signatureAgentConfig(domain, webBotAuth ?? {});
-    if (agent.type === 'jwks_uri' && identityManager.config.identity?.kuUrl && normalizedWbaIdentifier(agent.uri) === normalizedWbaIdentifier(identityManager.config.identity.kuUrl)) {
+    if (identityManager.config.identity?.kuUrl && normalizedWbaIdentifier(agent) === normalizedWbaIdentifier(identityManager.config.identity.kuUrl)) {
       throw new ArgumentError('WBA discovery must be separate from the local ku endpoint');
     }
     return new WebBotAuthProfile({
@@ -185,8 +177,8 @@ export class WebBotAuthProfile {
       components.push('content-digest');
     }
 
-    const { uri, type } = signatureAgentConfig(this.domain!, this.config);
-    setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, `${serializeStructuredFieldValue(uri)};type=${type}`);
+    const uri = signatureAgentConfig(this.domain!, this.config);
+    setDictionaryMember(headers, 'Signature-Agent', WEB_BOT_AUTH_SIGNATURE_LABEL, serializeStructuredFieldValue(uri));
     components.push({ name: 'signature-agent', params: { key: WEB_BOT_AUTH_SIGNATURE_LABEL } });
 
     for (const component of opts.additionalComponents ?? []) {
@@ -294,7 +286,7 @@ export function createWebBotAuthProfile(opts: WebBotAuthProfileOptions): WebBotA
 
 /**
  * Converts an operational key JWK into its public directory form: private
- * members stripped, `kid` set to the JWK thumbprint, with `alg` and `use: 'sig'`.
+ * members stripped, `kid` set to the JWK thumbprint, with `use: 'sig'`.
  *
  * @param key Ed25519 JWK (public or private) to publish.
  * @returns The public JWK as listed in the key directory's `keys` array.
@@ -306,7 +298,6 @@ export async function wbaDirectoryJwkFromPublicKey(key: DnsIdJWK): Promise<DnsId
   return {
     ...pub,
     kid: await jwkThumbprint(pub),
-    alg: joseAlgToHttpSigAlg('EdDSA'),
     use: 'sig',
   };
 }
@@ -332,14 +323,9 @@ function validateWebBotAuthConfig(domain: string, config: WebBotAuthConfig): voi
   if (config.signatureAgent || config.directoryURL) signatureAgentConfig(domain, config);
 }
 
-function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: string; type: SignatureAgentType } {
-  const legacyDirectUri = config.directoryURL;
-  const type = config.signatureAgent?.type ?? (legacyDirectUri ? 'jwks_uri' : 'directory');
-  if (type !== 'directory' && type !== 'jwks_uri') {
-    throw new ArgumentError('Web Bot Auth Signature-Agent type must be directory or jwks_uri');
-  }
-  const rawUri = config.signatureAgent?.uri ?? legacyDirectUri ?? `https://${domain}`;
-  if (typeof rawUri !== 'string') throw new ArgumentError('Web Bot Auth Signature-Agent URI must be a string');
+function signatureAgentConfig(domain: string, config: WebBotAuthConfig): string {
+  const rawUri = config.signatureAgent?.uri ?? config.directoryURL ?? `https://${domain}${HTTP_MESSAGE_SIGNATURES_DIRECTORY_PATH}`;
+  if (typeof rawUri !== 'string' || !isDirectHttpsUri(rawUri)) throw new ArgumentError('Web Bot Auth Signature-Agent requires an absolute HTTPS URI without credentials or fragments');
   let url: URL;
   try {
     url = new URL(rawUri);
@@ -349,12 +335,5 @@ function signatureAgentConfig(domain: string, config: WebBotAuthConfig): { uri: 
   if (url.protocol !== 'https:' || url.username || url.password) {
     throw new ArgumentError('Web Bot Auth Signature-Agent must be https');
   }
-  if (type === 'directory') {
-    if (rawUri !== url.origin) {
-      throw new ArgumentError('Web Bot Auth directory Signature-Agent must be an origin URI');
-    }
-    return { uri: url.origin, type };
-  }
-  if (url.hash) throw new ArgumentError('Web Bot Auth jwks_uri Signature-Agent must not contain a fragment');
-  return { uri: url.href, type };
+  return url.href;
 }
