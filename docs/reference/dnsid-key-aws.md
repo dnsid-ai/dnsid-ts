@@ -198,11 +198,12 @@ an unused alias; only `AlreadyExistsException` permits one winner reread. Other 
 errors propagate unchanged, including an unreadable winner or ambiguous acquisition.
 There is no polling: a later explicit invocation may resolve an alias after response loss.
 
-Bootstrap never retargets an alias, disables a key or schedules deletion. Losing-candidate
-lifecycle disposition is deferred; this non-destructive partial operation does not establish
-permanent retention policy. Candidates can remain after conflicts or ambiguous failures;
-plan for their cost and a separately authorized lifecycle resolution. Do not use ordinary
-rotation deletion settings as bootstrap cleanup policy.
+Bootstrap never retargets aliases, deletes or disables keys, or schedules deletion. Losing
+or ambiguous candidates can remain and incur cost. Bootstrap does not report their
+references separately; resource reconciliation and any lifecycle actions require a
+separately authorized policy. This operation defines no permanent-retention or
+automatic-cleanup policy. An ambiguous candidate may be the winner; do not assume it is
+safe to delete. Do not use ordinary rotation deletion settings as bootstrap cleanup policy.
 
 The returned winner is active only within the standalone provider. This action does not
 register an agent, publish registry/DNS/log state, verify published identity binding, or
@@ -1666,15 +1667,18 @@ Opens an existing KMS key, without generation or private-key import.
 function createOrReuseAwsKmsKeyProvider(client, config): Promise<AwsKmsBootstrapResult>;
 ```
 
-Defined in: [index.ts:579](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L579)
+Defined in: [index.ts:582](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L582)
 
 Explicitly reuses an alias winner, or creates a signing key only after the initial
 GetPublicKey rejects with NotFoundException. AlreadyExistsException on CreateAlias
 permits exactly one winner lookup; all other native errors propagate unchanged.
 Validates public material and returns a canonical, locally active standalone signer.
-Does not register an agent, publish identity, authorize rotation, retarget aliases,
-or delete/disable keys. Losing-candidate lifecycle disposition remains deferred;
-this non-destructive operation does not establish permanent retention policy.
+Does not register an agent, publish identity or authorize rotation. Bootstrap never
+retargets aliases, deletes/disables keys or schedules deletion. Losing or ambiguous
+candidates can remain and incur cost. Bootstrap does not report their references
+separately; resource reconciliation and any lifecycle actions require a separately
+authorized policy. This operation defines no permanent-retention or automatic-cleanup
+policy.
 
 #### Parameters
 
