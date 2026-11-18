@@ -195,8 +195,9 @@ neither normalizes names nor invents an organization-to-name mapping. The full
 
 Only numeric Google service `NOT_FOUND` (5) from the named-key lookup permits
 creation. Creation includes the initial version. Numeric `ALREADY_EXISTS` (6)
-from creation causes exactly one winner read, so concurrent replicas converge on
-the authoritative key. Other native service errors propagate, including a timeout
+from creation causes exactly one winner read. Successful calls converge on the
+authoritative key's enabled initial version; immediate readiness is not guaranteed.
+Other native service errors propagate, including a timeout
 after a possibly committed create. There is no automatic retry: a later explicit
 call with the same scope can recover a committed key. Failed winner reads remain
 failures. No replacement key, extra version, fallback signer or rotation is
@@ -206,8 +207,14 @@ resource fields, disabled versions and invalid public-key integrity fail closed.
 The returned `keyRef` always names immutable initial numeric version **1**;
 bootstrap validates that version as enabled software `EC_SIGN_ED25519`, then
 uses the existing provider's public-key and signing integrity checks. It never
-selects `primary` or `latest`. Missing, disabled or incompatible initial versions
-are errors, not permission to generate another version. For an established or
+selects `primary` or `latest`. If version 1 is `PENDING_GENERATION`, bootstrap
+returns an error and no usable signer: that version cannot yet be used. Bootstrap
+does not internally retry, poll or wait for generation. A later, separate explicit
+invocation with the same project, location, keyRing and CryptoKey ID may succeed
+once the **same version 1** is enabled and passes metadata and public-material
+validation. No readiness time or eventual success is guaranteed. Missing, disabled
+or incompatible initial versions are errors, not permission to replace the key,
+generate a replacement version or delete resources. For an established or
 rotated identity, persist and authorize the chosen immutable reference and use
 ordinary `load`, rather than bootstrap to choose a successor. Ordinary `load`
 and SDK key-source configuration remain open-only: neither creates cloud keys.
