@@ -89,7 +89,7 @@ async function actorIdentity(result: GcpCloudKmsBootstrapResult, f: Fixture) {
   return { jwk, payload, signature };
 }
 
-// Case 6. Mode: fake-only (invalid remote responses).
+// Mode: fake-only (invalid remote responses).
 const invalid: Array<[string, (f: Fixture) => void]> = [
   ['named key missing name', f => { delete f.key.name; }],
   ['named key wrong binding', f => { f.key.name = resource(config) + '-other'; }],
@@ -117,7 +117,7 @@ const invalid: Array<[string, (f: Fixture) => void]> = [
   }],
   ['public response missing integrity', f => { delete f.pub.pemCrc32c; }],
 ];
-describe('known62 additional case6: fail closed', () => {
+describe('GCP bootstrap response validation', () => {
   it.each(invalid)('%s', async (_label, invalidate) => {
     const baseline = fixture();
     await actorIdentity(await createOrReuseGcpCloudKmsKeyProvider(baseline.client, config), baseline);
@@ -200,8 +200,8 @@ for (const state of ['PENDING_GENERATION', 5] as const) {
   }
 }
 
-// Case 7. Mode: real-capable; all dependencies fake in this authored suite.
-describe('known62 additional case7: input and scope boundaries', () => {
+// Mode: real-capable; this suite supplies fake dependencies.
+describe('GCP bootstrap input and scope boundaries', () => {
   it.each([
     ['empty parent', { ...config, parent: '' }],
     ['non-resource parent', { ...config, parent: 'not-a-key-ring-resource' }],
@@ -242,8 +242,8 @@ describe('known62 additional case7: input and scope boundaries', () => {
   });
 });
 
-// Case 8. Mode: fake-only. CALLER COMPOSITION, not actual Foundry/server proof.
-describe('known62 additional case8: caller composition only', () => {
+// Mode: fake-only. Caller composition only, not Foundry/server proof.
+describe('GCP bootstrap caller composition', () => {
   it('explicit key bootstrap alone does not invoke the application agent-ID spy', async () => {
     const f = fixture(); const agentCreateOrReuse = vi.fn();
     const result = await createOrReuseGcpCloudKmsKeyProvider(f.client, config);

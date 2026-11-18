@@ -162,7 +162,7 @@ async function bounded<T>(promise: Promise<T>, label: string): Promise<T> {
   } finally { if (timer !== undefined) clearTimeout(timer); }
 }
 
-describe('explicit GCP initial-key bootstrap — independent cases 1–5', () => {
+describe('explicit GCP initial-key bootstrap', () => {
   it('case 1: absent key, repeat bootstrap and ordinary load return the committed signer', async () => {
     // Public known-answer check for the independent integrity fixture algorithm.
     expect(crc32c(Buffer.from('123456789'))).toBe(0xe3069283);

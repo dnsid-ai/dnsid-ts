@@ -12,7 +12,7 @@ import {
 // Every case: Mode: fake-only (KMS faults and deterministic schedules).
 // No AWS calls. Crypto is real Node crypto, not a mocked verification result.
 // ES256 output: compliance 07, profile signature semantics: 64-byte JWA R || S.
-// Non-destructive partial scope only: losing-candidate lifecycle is DEFERRED.
+// Non-destructive bootstrap does not manage losing or ambiguous candidate disposition.
 const variants = [
   { algorithm: 'ECDSA_SHA_256', spec: 'ECC_NIST_P256', alg: 'ES256' },
   { algorithm: 'ED25519_SHA_512', spec: 'ECC_NIST_EDWARDS25519', alg: 'EdDSA' },
@@ -137,7 +137,7 @@ async function provesWinner(provider: AwsKmsKeyProvider, id: string, kms: Kms) {
 function open(kms: Kms) { return createOrReuseAwsKmsKeyProvider(kms, { aliasName: alias, algorithm: kms.v.algorithm }); }
 
 for (const v of variants) {
-  describe(`PRE unchanged ${v.alg} [fake-only]`, () => {
+  describe(`ordinary load and rotation ${v.alg} [fake-only]`, () => {
     it('Given an existing alias, when ordinary load opens it, then no creation occurs and it signs with that key', async () => {
       const kms = new Kms(v); const id = kms.seed(); kms.aliases.set(alias, id);
       const provider = await AwsKmsKeyProvider.load(kms, { activeKeyId: alias, algorithm: v.algorithm });

@@ -112,7 +112,7 @@ const INVALID_CASES = IDENTITIES.flatMap((identity) =>
   })),
 );
 
-describe('bootstrap canonical key identity boundaries (code-blind regression)', () => {
+describe('bootstrap canonical key identity boundaries', () => {
   it.each(INVALID_CASES)('E: existing alias rejects $name without creating', async ({ invalid, other }) => {
     // Given valid SPKI/signing metadata and a noncanonical existing identity.
     const h = harness({ route: 'existing', candidateId: other, winnerId: invalid });
