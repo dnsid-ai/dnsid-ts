@@ -410,12 +410,8 @@ export class AwsKmsKeyProvider implements KeyProvider {
     }
 
     const canonicalKid = result.keyId ?? kid;
-    if (exact) {
-      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const arnKeyId = result.keyId?.match(/^arn:[a-z0-9-]+:kms:[a-z0-9-]+:[0-9]{12}:key\/([0-9a-f-]+)$/)?.[1];
-      if (!result.keyId || (result.keyId !== kid && !(uuid.test(kid) && arnKeyId === kid))) {
-        throw new ArgumentError('AWS KMS public key reference mismatch');
-      }
+    if (exact && !matchesCreatedKeyReference(kid, result.keyId)) {
+      throw new ArgumentError('AWS KMS public key reference mismatch');
     }
     validateKid(canonicalKid);
     const jwk = await spkiToJwk(result.publicKey, this.config.algorithm, canonicalKid);
@@ -423,6 +419,12 @@ export class AwsKmsKeyProvider implements KeyProvider {
     this.jwkCache.set(canonicalKid, jwk);
     return jwk;
   }
+}
+
+function matchesCreatedKeyReference(createdKeyId: string, responseKeyId?: string): boolean {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const arnKeyId = responseKeyId?.match(/^arn:[a-z0-9-]+:kms:[a-z0-9-]+:[0-9]{12}:key\/([0-9a-f-]+)$/)?.[1];
+  return !!responseKeyId && (responseKeyId === createdKeyId || (uuid.test(createdKeyId) && arnKeyId === createdKeyId));
 }
 
 function stateFromConfig(config: AwsKmsConfig): Required<AwsKmsKeyState> {
@@ -602,7 +604,7 @@ export async function createOrReuseAwsKmsKeyProvider(
     const candidate = await client.createSigningKey({ keySpec: defaultKeySpecForAlgorithm(algorithm) });
     validateCanonicalBootstrapKeyId(candidate.keyId);
     const candidatePublic = await client.getPublicKey({ keyId: candidate.keyId });
-    if (candidatePublic.keyId !== candidate.keyId) {
+    if (!matchesCreatedKeyReference(candidate.keyId, candidatePublic.keyId)) {
       throw new ArgumentError('AWS KMS candidate public key identity does not match the created key');
     }
     const prepared = await bootstrapSigner(client, candidatePublic, algorithm);
