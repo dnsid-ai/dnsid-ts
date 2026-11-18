@@ -518,7 +518,9 @@ async function resolveAddresses(
 /**
  * True if an IP address must not be contacted by SSRF-safe transports:
  * private, loopback, link-local, CGN, documentation, multicast, reserved,
- * 6to4/Teredo, and IPv4-mapped/compatible IPv6 forms of any of these.
+ * 6to4/Teredo, and IPv4-mapped/compatible or well-known NAT64 (64:ff9b::/96)
+ * IPv6 forms of any of these. The rest of 64:ff9b::/32, including the RFC 8215
+ * local-use prefix 64:ff9b:1::/48, is always unsafe.
  * Malformed IP-shaped input is treated as unsafe; non-IP strings return false.
  */
 export function isUnsafeIp(address: string): boolean {
@@ -581,6 +583,15 @@ function isUnsafeIpv6(address: string): boolean {
   if (mapped) return isUnsafeIpv4(mapped);
   const compatible = ipv4FromCompatibleIpv6(bytes);
   if (compatible) return isUnsafeIpv4(compatible);
+  // RFC 6052 well-known NAT64 prefix: a NAT64 gateway connects to the embedded
+  // IPv4 address, so that address gets the IPv4 policy. RFC 6052 section 3.1
+  // forbids the prefix for non-global IPv4, but an attacker can still publish
+  // such AAAA records. Other 64:ff9b::/32 space maps network-specific or
+  // unassigned addresses and is rejected.
+  if (bytes[0] === 0x00 && bytes[1] === 0x64 && bytes[2] === 0xff && bytes[3] === 0x9b) {
+    const nat64 = bytes.slice(4, 12).every(byte => byte === 0);
+    return nat64 ? isUnsafeIpv4(bytes.slice(12, 16).join('.')) : true;
+  }
 
   const first = bytes[0]!;
   const second = bytes[1]!;

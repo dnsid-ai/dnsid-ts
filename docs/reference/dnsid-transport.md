@@ -667,11 +667,13 @@ Formats a resolved address (bracketing IPv6) with an optional port for `Resolver
 function isUnsafeIp(address): boolean;
 ```
 
-Defined in: [transport/src/index.ts:524](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L524)
+Defined in: [transport/src/index.ts:526](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/transport/src/index.ts#L526)
 
 True if an IP address must not be contacted by SSRF-safe transports:
 private, loopback, link-local, CGN, documentation, multicast, reserved,
-6to4/Teredo, and IPv4-mapped/compatible IPv6 forms of any of these.
+6to4/Teredo, and IPv4-mapped/compatible or well-known NAT64 (64:ff9b::/96)
+IPv6 forms of any of these. The rest of 64:ff9b::/32, including the RFC 8215
+local-use prefix 64:ff9b:1::/48, is always unsafe.
 Malformed IP-shaped input is treated as unsafe; non-IP strings return false.
 
 #### Parameters
