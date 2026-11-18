@@ -193,11 +193,12 @@ an unused alias; only `AlreadyExistsException` permits one winner reread. Other 
 errors propagate unchanged, including an unreadable winner or ambiguous acquisition.
 There is no polling: a later explicit invocation may resolve an alias after response loss.
 
-Bootstrap never retargets an alias, disables a key or schedules deletion. Losing-candidate
-lifecycle disposition is deferred; this non-destructive partial operation does not establish
-permanent retention policy. Candidates can remain after conflicts or ambiguous failures;
-plan for their cost and a separately authorized lifecycle resolution. Do not use ordinary
-rotation deletion settings as bootstrap cleanup policy.
+Bootstrap never retargets aliases, deletes or disables keys, or schedules deletion. Losing
+or ambiguous candidates can remain and incur cost. Bootstrap does not report their
+references separately; resource reconciliation and any lifecycle actions require a
+separately authorized policy. This operation defines no permanent-retention or
+automatic-cleanup policy. An ambiguous candidate may be the winner; do not assume it is
+safe to delete. Do not use ordinary rotation deletion settings as bootstrap cleanup policy.
 
 The returned winner is active only within the standalone provider. This action does not
 register an agent, publish registry/DNS/log state, verify published identity binding, or

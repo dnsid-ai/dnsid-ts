@@ -572,9 +572,12 @@ export interface AwsKmsBootstrapResult {
  * GetPublicKey rejects with NotFoundException. AlreadyExistsException on CreateAlias
  * permits exactly one winner lookup; all other native errors propagate unchanged.
  * Validates public material and returns a canonical, locally active standalone signer.
- * Does not register an agent, publish identity, authorize rotation, retarget aliases,
- * or delete/disable keys. Losing-candidate lifecycle disposition remains deferred;
- * this non-destructive operation does not establish permanent retention policy.
+ * Does not register an agent, publish identity or authorize rotation. Bootstrap never
+ * retargets aliases, deletes/disables keys or schedules deletion. Losing or ambiguous
+ * candidates can remain and incur cost. Bootstrap does not report their references
+ * separately; resource reconciliation and any lifecycle actions require a separately
+ * authorized policy. This operation defines no permanent-retention or automatic-cleanup
+ * policy.
  */
 export async function createOrReuseAwsKmsKeyProvider(
   client: AwsKmsBootstrapFacade,
