@@ -247,7 +247,7 @@ for (const v of variants) {
       ['missing algorithms', (r) => ({ ...r, signingAlgorithms: undefined })],
       ['malformed SPKI', (r) => ({ ...r, publicKey: new Uint8Array([1, 2, 3]) })],
       ['empty SPKI', (r) => ({ ...r, publicKey: new Uint8Array() })],
-      ['wrong key family', (r) => ({ ...r, publicKey: generateKeyPairSync('rsa', { modulusLength: 1024 }).publicKey.export({ type: 'spki', format: 'der' }) })],
+      ['wrong key family', (r) => ({ ...r, publicKey: generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ type: 'spki', format: 'der' }) })],
     ];
     for (const [label, transform] of invalid) it(`Given ${label} on the existing winner, when opening, then ArgumentError prevents fallback or overwrite`, async () => {
       const kms = new Kms(v); const id = kms.seed(); kms.aliases.set(alias, id); kms.readTransform = transform;
