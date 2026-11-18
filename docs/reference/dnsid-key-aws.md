@@ -50,11 +50,43 @@ Use an existing `keyRef` and non-secret `settings` with optional `region` and
 raw secrets are rejected. `createAwsKmsKeyProvider(keyRef, settings)` provides the same factory
 for explicit composition.
 
-Configuration-driven cloud generation is not supported: use an existing stable reference
-because KMS creation lacks atomic named create-or-recover. The SDK configuration constructor
-checks the resolved key against verified publication before returning a signing manager.
+Configuration-driven cloud generation is not supported: use an existing stable reference.
+Explicit alias bootstrap is a separate key action, not a configuration side effect.
+The SDK configuration constructor checks the resolved key against verified publication before returning a signing manager.
 Changing an alias to another key requires authorized rotation and updated publication.
 The standalone factory only opens the key; its caller owns identity binding checks.
+
+## Explicit create or reuse
+
+```ts
+import { KMSClient } from '@aws-sdk/client-kms';
+import { AwsSdkKmsFacade, createOrReuseAwsKmsKeyProvider } from '@dnsid-ai/key-aws';
+
+const { keyRef, keyProvider } = await createOrReuseAwsKmsKeyProvider(
+  new AwsSdkKmsFacade(new KMSClient({ region: 'us-east-1' })),
+  { aliasName: 'alias/my-operational-key', algorithm: 'ECDSA_SHA_256' },
+);
+// Persist keyRef and keyProvider.stateSnapshot() in caller-owned storage.
+```
+
+The exact caller-selected alias is scoped to the injected client's account and region.
+There is no name allocation or cross-region sharing. Existing winners are validated for
+canonical ID, signing metadata and public material before returning a standalone signer.
+Only an initial `NotFoundException` permits creating a candidate. `CreateAlias` acquires
+an unused alias; only `AlreadyExistsException` permits one winner reread. Other native
+errors propagate unchanged, including an unreadable winner or ambiguous acquisition.
+There is no polling: a later explicit invocation may resolve an alias after response loss.
+
+Bootstrap never retargets an alias, disables a key or schedules deletion. Losing-candidate
+lifecycle disposition is deferred; this non-destructive partial operation does not establish
+permanent retention policy. Candidates can remain after conflicts or ambiguous failures;
+plan for their cost and a separately authorized lifecycle resolution. Do not use ordinary
+rotation deletion settings as bootstrap cleanup policy.
+
+The returned winner is active only within the standalone provider. This action does not
+register an agent, publish registry/DNS/log state, verify published identity binding, or
+authorize rotation. Agent-ID creation is a separate explicit action. Ordinary opening
+remains existing-only; rotation generation remains fresh and pending.
 
 ## Supported KMS keys
 
@@ -77,6 +109,14 @@ Minimum runtime permissions:
 
 - `kms:GetPublicKey`
 - `kms:Sign`
+
+Explicit bootstrap additionally needs:
+
+- `kms:CreateKey` for a missing alias candidate
+- `kms:CreateAlias` to acquire the caller-selected alias (authorize both the alias and target key as required by AWS IAM)
+
+Scope permissions to the intended account, region and resources. Bootstrap does not need
+alias update/delete, key disable or key deletion permissions.
 
 Rotation permissions, if used:
 
@@ -122,7 +162,7 @@ through KMS, and manages the active/pending/retained key lifecycle. Callers pers
 
 ### AwsKmsKeyProvider
 
-Defined in: [index.ts:190](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L190)
+Defined in: [index.ts:199](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L199)
 
 AWS KMS-backed DNSid KeyProvider.
 
@@ -143,7 +183,7 @@ active/pending/retained lifecycle state and exposes public keys as JWKs.
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:314](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L314)
+Defined in: [index.ts:323](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L323)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -170,7 +210,7 @@ The previously active key transitions to retained.
 generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [index.ts:297](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L297)
+Defined in: [index.ts:306](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L306)
 
 Generates a new key pair in the pending state.
 Returns the new key's kid.
@@ -197,7 +237,7 @@ Returns the new key's kid.
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L232)
+Defined in: [index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L241)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -224,7 +264,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [index.ts:239](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L239)
+Defined in: [index.ts:248](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L248)
 
 Returns the IDs of all active and retained keys (pending keys excluded).
 The active key ID MUST appear first; retained keys follow in any order.
@@ -245,7 +285,7 @@ The active key ID MUST appear first; retained keys follow in any order.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:350](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L350)
+Defined in: [index.ts:359](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L359)
 
 ###### Parameters
 
@@ -273,7 +313,7 @@ Use supersede().
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L251)
+Defined in: [index.ts:260](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L260)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -300,7 +340,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:228](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L228)
+Defined in: [index.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L237)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -321,7 +361,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:255](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L255)
+Defined in: [index.ts:264](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L264)
 
 Signs with a specified active or pending key.
 
@@ -351,7 +391,7 @@ Signs with a specified active or pending key.
 stateSnapshot(): AwsKmsKeyState;
 ```
 
-Defined in: [index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L243)
+Defined in: [index.ts:252](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L252)
 
 ###### Returns
 
@@ -365,7 +405,7 @@ Defined in: [index.ts:243](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:328](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L328)
+Defined in: [index.ts:337](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L337)
 
 Supersedes and removes a retained key from this provider's published key set.
 
@@ -391,7 +431,7 @@ Supersedes and removes a retained key from this provider's published key set.
 validateKeyGeneration(algorithm): Promise<void>;
 ```
 
-Defined in: [index.ts:290](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L290)
+Defined in: [index.ts:299](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L299)
 
 Validates generation settings and algorithm support without creating a key.
 
@@ -417,7 +457,7 @@ Validates generation settings and algorithm support without creating a key.
 static load(client, config): Promise<AwsKmsKeyProvider>;
 ```
 
-Defined in: [index.ts:216](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L216)
+Defined in: [index.ts:225](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L225)
 
 ###### Parameters
 
@@ -439,13 +479,13 @@ Defined in: [index.ts:216](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsSdkKmsFacade
 
-Defined in: [index.ts:124](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L124)
+Defined in: [index.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L125)
 
 Adapter from AWS SDK v3's KMSClient to the narrow facade used by AwsKmsKeyProvider.
 
 #### Implements
 
-- [`AwsKmsFacade`](#awskmsfacade)
+- [`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade)
 
 #### Constructors
 
@@ -457,7 +497,7 @@ Adapter from AWS SDK v3's KMSClient to the narrow facade used by AwsKmsKeyProvid
 new AwsSdkKmsFacade(client): AwsSdkKmsFacade;
 ```
 
-Defined in: [index.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L125)
+Defined in: [index.ts:126](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L126)
 
 ###### Parameters
 
@@ -471,6 +511,32 @@ Defined in: [index.ts:125](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 #### Methods
 
+<a id="createalias"></a>
+
+##### createAlias()
+
+```ts
+createAlias(input): Promise<void>;
+```
+
+Defined in: [index.ts:129](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L129)
+
+Acquires an unused alias; never updates or retargets an existing alias.
+
+###### Parameters
+
+###### input
+
+[`AwsKmsCreateAliasInput`](#awskmscreatealiasinput)
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade).[`createAlias`](#createalias-1)
+
 <a id="createsigningkey"></a>
 
 ##### createSigningKey()
@@ -481,7 +547,7 @@ createSigningKey(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L127)
+Defined in: [index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L136)
 
 ###### Parameters
 
@@ -497,7 +563,7 @@ Defined in: [index.ts:127](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ###### Implementation of
 
-[`AwsKmsFacade`](#awskmsfacade).[`createSigningKey`](#createsigningkey-1)
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade).[`createSigningKey`](#createsigningkey-1)
 
 <a id="getpublickey"></a>
 
@@ -513,7 +579,7 @@ getPublicKey(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L139)
+Defined in: [index.ts:148](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L148)
 
 ###### Parameters
 
@@ -533,7 +599,7 @@ Defined in: [index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ###### Implementation of
 
-[`AwsKmsFacade`](#awskmsfacade).[`getPublicKey`](#getpublickey-1)
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade).[`getPublicKey`](#getpublickey-1)
 
 <a id="schedulekeydeletion"></a>
 
@@ -543,7 +609,7 @@ Defined in: [index.ts:139](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 scheduleKeyDeletion(input): Promise<void>;
 ```
 
-Defined in: [index.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L176)
+Defined in: [index.ts:185](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L185)
 
 ###### Parameters
 
@@ -557,7 +623,7 @@ Defined in: [index.ts:176](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ###### Implementation of
 
-[`AwsKmsFacade`](#awskmsfacade).[`scheduleKeyDeletion`](#schedulekeydeletion-1)
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade).[`scheduleKeyDeletion`](#schedulekeydeletion-1)
 
 <a id="sign-1"></a>
 
@@ -571,7 +637,7 @@ sign(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L157)
+Defined in: [index.ts:166](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L166)
 
 ###### Parameters
 
@@ -589,49 +655,19 @@ Defined in: [index.ts:157](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ###### Implementation of
 
-[`AwsKmsFacade`](#awskmsfacade).[`sign`](#sign-2)
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade).[`sign`](#sign-2)
 
 ## Interfaces
 
-<a id="awskmsconfig"></a>
+<a id="awskmsbootstrapconfig"></a>
 
-### AwsKmsConfig
+### AwsKmsBootstrapConfig
 
-Defined in: [index.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L56)
+Defined in: [index.ts:517](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L517)
 
-#### Extends
-
-- `Partial`\<[`AwsKmsKeyState`](#awskmskeystate)\>
+Alias in the injected client's account/region and required signing algorithm.
 
 #### Properties
-
-<a id="activekeyarn"></a>
-
-##### activeKeyArn?
-
-```ts
-optional activeKeyArn?: string;
-```
-
-Defined in: [index.ts:63](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L63)
-
-Legacy alias for activeKeyId kept for existing callers.
-
-<a id="activekeyid"></a>
-
-##### activeKeyId?
-
-```ts
-optional activeKeyId?: string;
-```
-
-Defined in: [index.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L49)
-
-ARN, key ID, alias, or alias ARN of the currently active signing key. Aliases are resolved to canonical key IDs on load.
-
-###### Inherited from
-
-[`AwsKmsKeyState`](#awskmskeystate).[`activeKeyId`](#activekeyid-1)
 
 <a id="algorithm"></a>
 
@@ -641,188 +677,53 @@ ARN, key ID, alias, or alias ARN of the currently active signing key. Aliases ar
 algorithm: AwsKmsSigningAlgorithm;
 ```
 
-Defined in: [index.ts:69](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L69)
+Defined in: [index.ts:519](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L519)
 
-KMS signing algorithm to request. Must match the key spec.
+<a id="aliasname"></a>
 
-<a id="deletionwindowindays"></a>
-
-##### deletionWindowInDays?
+##### aliasName
 
 ```ts
-optional deletionWindowInDays?: number;
+aliasName: string;
 ```
 
-Defined in: [index.ts:79](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L79)
-
-Waiting period for ScheduleKeyDeletion. AWS allows 7-30 days. Default: 30.
-
-<a id="description"></a>
-
-##### description?
-
-```ts
-optional description?: string;
-```
-
-Defined in: [index.ts:73](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L73)
-
-Optional description passed to generated KMS keys.
-
-<a id="keyspec"></a>
-
-##### keySpec?
-
-```ts
-optional keySpec?: AwsKmsKeySpec;
-```
-
-Defined in: [index.ts:71](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L71)
-
-KMS key spec to use when generateKey creates a new key.
-
-<a id="pendingkeyarns"></a>
-
-##### pendingKeyArns?
-
-```ts
-optional pendingKeyArns?: string[];
-```
-
-Defined in: [index.ts:67](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L67)
-
-Legacy alias for pendingKeyIds kept for existing callers.
-
-<a id="pendingkeyids"></a>
-
-##### pendingKeyIds?
-
-```ts
-optional pendingKeyIds?: string[];
-```
-
-Defined in: [index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L53)
-
-KMS key IDs generated but not yet active.
-
-###### Inherited from
-
-[`AwsKmsKeyState`](#awskmskeystate).[`pendingKeyIds`](#pendingkeyids-1)
-
-<a id="retainedkeyarns"></a>
-
-##### retainedKeyArns?
-
-```ts
-optional retainedKeyArns?: string[];
-```
-
-Defined in: [index.ts:65](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L65)
-
-Legacy alias for retainedKeyIds kept for existing callers.
-
-<a id="retainedkeyids"></a>
-
-##### retainedKeyIds?
-
-```ts
-optional retainedKeyIds?: string[];
-```
-
-Defined in: [index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L51)
-
-KMS key IDs retained for verification of previous signatures.
-
-###### Inherited from
-
-[`AwsKmsKeyState`](#awskmskeystate).[`retainedKeyIds`](#retainedkeyids-1)
-
-<a id="schedulekeydeletiononpurge"></a>
-
-##### scheduleKeyDeletionOnPurge?
-
-```ts
-optional scheduleKeyDeletionOnPurge?: boolean;
-```
-
-Defined in: [index.ts:77](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L77)
-
-Schedule deletion of retained KMS keys on purge. Default: false.
-
-<a id="state"></a>
-
-##### state?
-
-```ts
-optional state?: AwsKmsKeyState;
-```
-
-Defined in: [index.ts:61](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L61)
-
-Mutable state object for provider lifecycle. Prefer this over the legacy
-top-level active/retained/pending fields when state must persist.
-
-<a id="tags"></a>
-
-##### tags?
-
-```ts
-optional tags?: Record<string, string>;
-```
-
-Defined in: [index.ts:75](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L75)
-
-Optional tags passed to generated KMS keys.
+Defined in: [index.ts:518](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L518)
 
 ***
 
-<a id="awskmscreatesigningkeyinput"></a>
+<a id="awskmsbootstrapfacade"></a>
 
-### AwsKmsCreateSigningKeyInput
+### AwsKmsBootstrapFacade
 
-Defined in: [index.ts:82](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L82)
+Defined in: [index.ts:512](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L512)
 
-#### Properties
+Explicit bootstrap capability, separate from ordinary existing-only opening.
 
-<a id="description-1"></a>
+#### Extends
 
-##### description?
-
-```ts
-optional description?: string;
-```
-
-Defined in: [index.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L84)
-
-<a id="keyspec-1"></a>
-
-##### keySpec
-
-```ts
-keySpec: AwsKmsKeySpec;
-```
-
-Defined in: [index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L83)
-
-<a id="tags-1"></a>
-
-##### tags?
-
-```ts
-optional tags?: Record<string, string>;
-```
-
-Defined in: [index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L85)
-
-***
-
-<a id="awskmsfacade"></a>
-
-### AwsKmsFacade
-
-Defined in: [index.ts:104](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L104)
+- [`AwsKmsFacade`](#awskmsfacade)
 
 #### Methods
+
+<a id="createalias-1"></a>
+
+##### createAlias()
+
+```ts
+createAlias(input): Promise<void>;
+```
+
+Defined in: [index.ts:513](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L513)
+
+###### Parameters
+
+###### input
+
+[`AwsKmsCreateAliasInput`](#awskmscreatealiasinput)
+
+###### Returns
+
+`Promise`\<`void`\>
 
 <a id="createsigningkey-1"></a>
 
@@ -834,7 +735,7 @@ createSigningKey(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L105)
+Defined in: [index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L106)
 
 ###### Parameters
 
@@ -847,6 +748,10 @@ Defined in: [index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 `Promise`\<\{
   `keyId`: `string`;
 \}\>
+
+###### Inherited from
+
+[`AwsKmsFacade`](#awskmsfacade).[`createSigningKey`](#createsigningkey-2)
 
 <a id="getpublickey-1"></a>
 
@@ -862,7 +767,7 @@ getPublicKey(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L106)
+Defined in: [index.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L107)
 
 ###### Parameters
 
@@ -880,6 +785,10 @@ Defined in: [index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
   `signingAlgorithms?`: `string`[];
 \}\>
 
+###### Inherited from
+
+[`AwsKmsFacade`](#awskmsfacade).[`getPublicKey`](#getpublickey-2)
+
 <a id="schedulekeydeletion-1"></a>
 
 ##### scheduleKeyDeletion()?
@@ -888,7 +797,7 @@ Defined in: [index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 optional scheduleKeyDeletion(input): Promise<void>;
 ```
 
-Defined in: [index.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L118)
+Defined in: [index.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L119)
 
 ###### Parameters
 
@@ -899,6 +808,10 @@ Defined in: [index.ts:118](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 ###### Returns
 
 `Promise`\<`void`\>
+
+###### Inherited from
+
+[`AwsKmsFacade`](#awskmsfacade).[`scheduleKeyDeletion`](#schedulekeydeletion-2)
 
 <a id="sign-2"></a>
 
@@ -912,7 +825,416 @@ sign(input): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L113)
+Defined in: [index.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L114)
+
+###### Parameters
+
+###### input
+
+[`AwsKmsSignInput`](#awskmssigninput)
+
+###### Returns
+
+`Promise`\<\{
+  `keyId?`: `string`;
+  `signature`: `Uint8Array`;
+  `signingAlgorithm?`: `string`;
+\}\>
+
+###### Inherited from
+
+[`AwsKmsFacade`](#awskmsfacade).[`sign`](#sign-3)
+
+***
+
+<a id="awskmsbootstrapresult"></a>
+
+### AwsKmsBootstrapResult
+
+Defined in: [index.ts:523](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L523)
+
+Canonical winner reference and standalone signer; no identity is published.
+
+#### Properties
+
+<a id="keyprovider"></a>
+
+##### keyProvider
+
+```ts
+readonly keyProvider: AwsKmsKeyProvider;
+```
+
+Defined in: [index.ts:525](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L525)
+
+<a id="keyref"></a>
+
+##### keyRef
+
+```ts
+readonly keyRef: string;
+```
+
+Defined in: [index.ts:524](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L524)
+
+***
+
+<a id="awskmsconfig"></a>
+
+### AwsKmsConfig
+
+Defined in: [index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L57)
+
+#### Extends
+
+- `Partial`\<[`AwsKmsKeyState`](#awskmskeystate)\>
+
+#### Properties
+
+<a id="activekeyarn"></a>
+
+##### activeKeyArn?
+
+```ts
+optional activeKeyArn?: string;
+```
+
+Defined in: [index.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L64)
+
+Legacy alias for activeKeyId kept for existing callers.
+
+<a id="activekeyid"></a>
+
+##### activeKeyId?
+
+```ts
+optional activeKeyId?: string;
+```
+
+Defined in: [index.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L50)
+
+ARN, key ID, alias, or alias ARN of the currently active signing key. Aliases are resolved to canonical key IDs on load.
+
+###### Inherited from
+
+[`AwsKmsKeyState`](#awskmskeystate).[`activeKeyId`](#activekeyid-1)
+
+<a id="algorithm-1"></a>
+
+##### algorithm
+
+```ts
+algorithm: AwsKmsSigningAlgorithm;
+```
+
+Defined in: [index.ts:70](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L70)
+
+KMS signing algorithm to request. Must match the key spec.
+
+<a id="deletionwindowindays"></a>
+
+##### deletionWindowInDays?
+
+```ts
+optional deletionWindowInDays?: number;
+```
+
+Defined in: [index.ts:80](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L80)
+
+Waiting period for ScheduleKeyDeletion. AWS allows 7-30 days. Default: 30.
+
+<a id="description"></a>
+
+##### description?
+
+```ts
+optional description?: string;
+```
+
+Defined in: [index.ts:74](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L74)
+
+Optional description passed to generated KMS keys.
+
+<a id="keyspec"></a>
+
+##### keySpec?
+
+```ts
+optional keySpec?: AwsKmsKeySpec;
+```
+
+Defined in: [index.ts:72](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L72)
+
+KMS key spec to use when generateKey creates a new key.
+
+<a id="pendingkeyarns"></a>
+
+##### pendingKeyArns?
+
+```ts
+optional pendingKeyArns?: string[];
+```
+
+Defined in: [index.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L68)
+
+Legacy alias for pendingKeyIds kept for existing callers.
+
+<a id="pendingkeyids"></a>
+
+##### pendingKeyIds?
+
+```ts
+optional pendingKeyIds?: string[];
+```
+
+Defined in: [index.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L54)
+
+KMS key IDs generated but not yet active.
+
+###### Inherited from
+
+[`AwsKmsKeyState`](#awskmskeystate).[`pendingKeyIds`](#pendingkeyids-1)
+
+<a id="retainedkeyarns"></a>
+
+##### retainedKeyArns?
+
+```ts
+optional retainedKeyArns?: string[];
+```
+
+Defined in: [index.ts:66](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L66)
+
+Legacy alias for retainedKeyIds kept for existing callers.
+
+<a id="retainedkeyids"></a>
+
+##### retainedKeyIds?
+
+```ts
+optional retainedKeyIds?: string[];
+```
+
+Defined in: [index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L52)
+
+KMS key IDs retained for verification of previous signatures.
+
+###### Inherited from
+
+[`AwsKmsKeyState`](#awskmskeystate).[`retainedKeyIds`](#retainedkeyids-1)
+
+<a id="schedulekeydeletiononpurge"></a>
+
+##### scheduleKeyDeletionOnPurge?
+
+```ts
+optional scheduleKeyDeletionOnPurge?: boolean;
+```
+
+Defined in: [index.ts:78](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L78)
+
+Schedule deletion of retained KMS keys on purge. Default: false.
+
+<a id="state"></a>
+
+##### state?
+
+```ts
+optional state?: AwsKmsKeyState;
+```
+
+Defined in: [index.ts:62](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L62)
+
+Mutable state object for provider lifecycle. Prefer this over the legacy
+top-level active/retained/pending fields when state must persist.
+
+<a id="tags"></a>
+
+##### tags?
+
+```ts
+optional tags?: Record<string, string>;
+```
+
+Defined in: [index.ts:76](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L76)
+
+Optional tags passed to generated KMS keys.
+
+***
+
+<a id="awskmscreatealiasinput"></a>
+
+### AwsKmsCreateAliasInput
+
+Defined in: [index.ts:506](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L506)
+
+Exact caller-selected alias and candidate key to acquire it for.
+
+#### Properties
+
+<a id="aliasname-1"></a>
+
+##### aliasName
+
+```ts
+aliasName: string;
+```
+
+Defined in: [index.ts:507](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L507)
+
+<a id="targetkeyid"></a>
+
+##### targetKeyId
+
+```ts
+targetKeyId: string;
+```
+
+Defined in: [index.ts:508](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L508)
+
+***
+
+<a id="awskmscreatesigningkeyinput"></a>
+
+### AwsKmsCreateSigningKeyInput
+
+Defined in: [index.ts:83](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L83)
+
+#### Properties
+
+<a id="description-1"></a>
+
+##### description?
+
+```ts
+optional description?: string;
+```
+
+Defined in: [index.ts:85](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L85)
+
+<a id="keyspec-1"></a>
+
+##### keySpec
+
+```ts
+keySpec: AwsKmsKeySpec;
+```
+
+Defined in: [index.ts:84](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L84)
+
+<a id="tags-1"></a>
+
+##### tags?
+
+```ts
+optional tags?: Record<string, string>;
+```
+
+Defined in: [index.ts:86](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L86)
+
+***
+
+<a id="awskmsfacade"></a>
+
+### AwsKmsFacade
+
+Defined in: [index.ts:105](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L105)
+
+#### Extended by
+
+- [`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade)
+
+#### Methods
+
+<a id="createsigningkey-2"></a>
+
+##### createSigningKey()
+
+```ts
+createSigningKey(input): Promise<{
+  keyId: string;
+}>;
+```
+
+Defined in: [index.ts:106](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L106)
+
+###### Parameters
+
+###### input
+
+[`AwsKmsCreateSigningKeyInput`](#awskmscreatesigningkeyinput)
+
+###### Returns
+
+`Promise`\<\{
+  `keyId`: `string`;
+\}\>
+
+<a id="getpublickey-2"></a>
+
+##### getPublicKey()
+
+```ts
+getPublicKey(input): Promise<{
+  keyId?: string;
+  keySpec?: string;
+  keyUsage?: string;
+  publicKey: Uint8Array;
+  signingAlgorithms?: string[];
+}>;
+```
+
+Defined in: [index.ts:107](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L107)
+
+###### Parameters
+
+###### input
+
+[`AwsKmsGetPublicKeyInput`](#awskmsgetpublickeyinput)
+
+###### Returns
+
+`Promise`\<\{
+  `keyId?`: `string`;
+  `keySpec?`: `string`;
+  `keyUsage?`: `string`;
+  `publicKey`: `Uint8Array`;
+  `signingAlgorithms?`: `string`[];
+\}\>
+
+<a id="schedulekeydeletion-2"></a>
+
+##### scheduleKeyDeletion()?
+
+```ts
+optional scheduleKeyDeletion(input): Promise<void>;
+```
+
+Defined in: [index.ts:119](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L119)
+
+###### Parameters
+
+###### input
+
+[`AwsKmsScheduleKeyDeletionInput`](#awskmsschedulekeydeletioninput)
+
+###### Returns
+
+`Promise`\<`void`\>
+
+<a id="sign-3"></a>
+
+##### sign()
+
+```ts
+sign(input): Promise<{
+  keyId?: string;
+  signature: Uint8Array;
+  signingAlgorithm?: string;
+}>;
+```
+
+Defined in: [index.ts:114](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L114)
 
 ###### Parameters
 
@@ -934,7 +1256,7 @@ Defined in: [index.ts:113](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsKmsGetPublicKeyInput
 
-Defined in: [index.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L88)
+Defined in: [index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L89)
 
 #### Properties
 
@@ -946,7 +1268,7 @@ Defined in: [index.ts:88](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 keyId: string;
 ```
 
-Defined in: [index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L89)
+Defined in: [index.ts:90](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L90)
 
 ***
 
@@ -954,7 +1276,7 @@ Defined in: [index.ts:89](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 
 ### AwsKmsKeyState
 
-Defined in: [index.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L47)
+Defined in: [index.ts:48](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L48)
 
 #### Properties
 
@@ -966,7 +1288,7 @@ Defined in: [index.ts:47](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 activeKeyId: string;
 ```
 
-Defined in: [index.ts:49](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L49)
+Defined in: [index.ts:50](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L50)
 
 ARN, key ID, alias, or alias ARN of the currently active signing key. Aliases are resolved to canonical key IDs on load.
 
@@ -978,7 +1300,7 @@ ARN, key ID, alias, or alias ARN of the currently active signing key. Aliases ar
 optional pendingKeyIds?: string[];
 ```
 
-Defined in: [index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L53)
+Defined in: [index.ts:54](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L54)
 
 KMS key IDs generated but not yet active.
 
@@ -990,7 +1312,7 @@ KMS key IDs generated but not yet active.
 optional retainedKeyIds?: string[];
 ```
 
-Defined in: [index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L51)
+Defined in: [index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L52)
 
 KMS key IDs retained for verification of previous signatures.
 
@@ -1000,7 +1322,7 @@ KMS key IDs retained for verification of previous signatures.
 
 ### AwsKmsScheduleKeyDeletionInput
 
-Defined in: [index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L99)
+Defined in: [index.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L100)
 
 #### Properties
 
@@ -1012,7 +1334,7 @@ Defined in: [index.ts:99](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 keyId: string;
 ```
 
-Defined in: [index.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L100)
+Defined in: [index.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L101)
 
 <a id="pendingwindowindays"></a>
 
@@ -1022,7 +1344,7 @@ Defined in: [index.ts:100](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 pendingWindowInDays: number;
 ```
 
-Defined in: [index.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L101)
+Defined in: [index.ts:102](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L102)
 
 ***
 
@@ -1030,7 +1352,7 @@ Defined in: [index.ts:101](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 
 ### AwsKmsSignInput
 
-Defined in: [index.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L92)
+Defined in: [index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L93)
 
 #### Properties
 
@@ -1042,7 +1364,7 @@ Defined in: [index.ts:92](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 keyId: string;
 ```
 
-Defined in: [index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L93)
+Defined in: [index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L94)
 
 <a id="message"></a>
 
@@ -1052,7 +1374,7 @@ Defined in: [index.ts:93](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 message: Uint8Array;
 ```
 
-Defined in: [index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L94)
+Defined in: [index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L95)
 
 <a id="messagetype"></a>
 
@@ -1062,7 +1384,7 @@ Defined in: [index.ts:94](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 messageType: "RAW" | "DIGEST";
 ```
 
-Defined in: [index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L96)
+Defined in: [index.ts:97](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L97)
 
 <a id="signingalgorithm"></a>
 
@@ -1072,7 +1394,7 @@ Defined in: [index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 signingAlgorithm: AwsKmsSigningAlgorithm;
 ```
 
-Defined in: [index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L95)
+Defined in: [index.ts:96](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L96)
 
 ## Type Aliases
 
@@ -1084,7 +1406,7 @@ Defined in: [index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 type AwsKmsKeySpec = "ECC_NIST_P256" | "ECC_NIST_EDWARDS25519";
 ```
 
-Defined in: [index.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L43)
+Defined in: [index.ts:44](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L44)
 
 ***
 
@@ -1096,7 +1418,7 @@ Defined in: [index.ts:43](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 type AwsKmsSigningAlgorithm = "ECDSA_SHA_256" | "ED25519_SHA_512";
 ```
 
-Defined in: [index.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L41)
+Defined in: [index.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L42)
 
 ***
 
@@ -1108,7 +1430,7 @@ Defined in: [index.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 type AwsSdkKmsClient = Pick<KMSClient, "send">;
 ```
 
-Defined in: [index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L121)
+Defined in: [index.ts:122](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L122)
 
 ## Functions
 
@@ -1120,7 +1442,7 @@ Defined in: [index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packag
 function createAwsKmsKeyProvider(keyRef, settings?): Promise<AwsKmsKeyProvider>;
 ```
 
-Defined in: [index.ts:33](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L33)
+Defined in: [index.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L34)
 
 Opens an existing KMS key, without generation or private-key import.
 
@@ -1140,6 +1462,40 @@ Opens an existing KMS key, without generation or private-key import.
 
 ***
 
+<a id="createorreuseawskmskeyprovider"></a>
+
+### createOrReuseAwsKmsKeyProvider()
+
+```ts
+function createOrReuseAwsKmsKeyProvider(client, config): Promise<AwsKmsBootstrapResult>;
+```
+
+Defined in: [index.ts:537](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L537)
+
+Explicitly reuses an alias winner, or creates a signing key only after the initial
+GetPublicKey rejects with NotFoundException. AlreadyExistsException on CreateAlias
+permits exactly one winner lookup; all other native errors propagate unchanged.
+Validates public material and returns a canonical, locally active standalone signer.
+Does not register an agent, publish identity, authorize rotation, retarget aliases,
+or delete/disable keys. Losing-candidate lifecycle disposition remains deferred;
+this non-destructive operation does not establish permanent retention policy.
+
+#### Parameters
+
+##### client
+
+[`AwsKmsBootstrapFacade`](#awskmsbootstrapfacade)
+
+##### config
+
+[`AwsKmsBootstrapConfig`](#awskmsbootstrapconfig)
+
+#### Returns
+
+`Promise`\<[`AwsKmsBootstrapResult`](#awskmsbootstrapresult)\>
+
+***
+
 <a id="validateawskmssettings"></a>
 
 ### validateAwsKmsSettings()
@@ -1148,7 +1504,7 @@ Opens an existing KMS key, without generation or private-key import.
 function validateAwsKmsSettings(settings?): void;
 ```
 
-Defined in: [index.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L25)
+Defined in: [index.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-aws/src/index.ts#L26)
 
 Deployment-file settings use ambient AWS credentials; raw credentials are not accepted.
 
