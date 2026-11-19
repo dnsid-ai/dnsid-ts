@@ -173,6 +173,70 @@ account for retained containers or an approved project lifecycle. Local provider
 supersession does not destroy cloud material. Prefer pre-existing approved
 fixtures when retained containers are unacceptable.
 
+## Opt-in initial key bootstrap
+
+`createOrReuseGcpCloudKmsKeyProvider(client, config)` explicitly creates or reuses
+one named software Ed25519 CryptoKey. Pass the official
+`KeyManagementServiceClient`, a compatible five-method `GcpCloudKmsBootstrapClient`,
+or `undefined` to use the official client with ambient Google credentials.
+Bootstrap needs named-key read/create, version read, public-key read and signing
+permissions. Credentials do not belong in configuration.
+
+```ts
+import { createOrReuseGcpCloudKmsKeyProvider } from '@dnsid-ai/key-gcp';
+
+const { keyRef, keyProvider } = await createOrReuseGcpCloudKmsKeyProvider(undefined, {
+  parent: 'projects/my-project/locations/us-central1/keyRings/operational',
+  cryptoKeyId: 'dnsid-acme-research',
+});
+const publicJwk = await keyProvider.signingKey();
+```
+
+The project, location and keyRing must already exist; bootstrap creates no
+ancestors. Allocate a stable, collision-free ID for each organization/name pair.
+CryptoKey IDs contain 1–63 ASCII letters, digits, underscores or hyphens. The SDK
+neither normalizes names nor invents an organization-to-name mapping. The full
+(project, location, keyRing, ID) scope identifies this cloud identity.
+
+Only numeric Google service `NOT_FOUND` (5) from the named-key lookup permits
+creation. Creation includes the initial version. Numeric `ALREADY_EXISTS` (6)
+from creation causes exactly one winner read. Successful calls converge on the
+authoritative key's enabled initial version; immediate readiness is not guaranteed.
+Other native service errors propagate, including a timeout
+after a possibly committed create. There is no automatic retry: a later explicit
+call with the same scope can recover a committed key. Failed winner reads remain
+failures. No replacement key, extra version, fallback signer or rotation is
+attempted. Invalid names fail before cloud mutation; incompatible or missing
+resource fields, disabled versions and invalid public-key integrity fail closed.
+
+The returned `keyRef` always names immutable initial numeric version **1**;
+bootstrap validates that version as enabled software `EC_SIGN_ED25519`, then
+uses the existing provider's public-key and signing integrity checks. It never
+selects `primary` or `latest`. If version 1 is `PENDING_GENERATION`, bootstrap
+returns an error and no usable signer: that version cannot yet be used. Bootstrap
+does not internally retry, poll or wait for generation. A later, separate explicit
+invocation with the same project, location, keyRing and CryptoKey ID may succeed
+once the **same version 1** is enabled and passes metadata and public-material
+validation. No readiness time or eventual success is guaranteed. Missing, disabled
+or incompatible initial versions are errors, not permission to replace the key,
+generate a replacement version or delete resources. For an established or
+rotated identity, persist and authorize the chosen immutable reference and use
+ordinary `load`, rather than bootstrap to choose a successor. Ordinary `load`
+and SDK key-source configuration remain open-only: neither creates cloud keys.
+Explicit `generateKey` retains its separate pending-rotation behavior above.
+
+Application sequencing is two explicit operations (conceptual, not a registry
+API example):
+
+1. Await this SDK key bootstrap and obtain `keyRef`, `keyProvider` and its public JWK.
+2. Only after success, separately invoke the application's existing explicit
+   agent-ID create/reuse operation with that identity.
+
+Bootstrap itself creates or registers no agent ID and calls no registry API.
+On key failure, do not attempt the second operation. The server never creates
+keys; applications own key provisioning and agent-ID orchestration. Use one
+identity per cloud, not a shared multi-cloud private key.
+
 Google Cloud KMS Ed25519 signing with explicit native version creation. Private keys never leave KMS.
 
 ## Classes
@@ -181,7 +245,7 @@ Google Cloud KMS Ed25519 signing with explicit native version creation. Private 
 
 ### GcpCloudKmsKeyProvider
 
-Defined in: [index.ts:41](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L41)
+Defined in: [index.ts:161](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L161)
 
 Opens existing software Ed25519 versions, or explicitly creates pending versions.
 
@@ -199,7 +263,7 @@ Opens existing software Ed25519 versions, or explicitly creates pending versions
 activate(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:205](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L205)
+Defined in: [index.ts:325](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L325)
 
 Blocks new signing and drains in-flight signatures before promoting a pending key.
 The previously active key transitions to retained.
@@ -226,7 +290,7 @@ The previously active key transitions to retained.
 generateKey(algorithm?): Promise<string>;
 ```
 
-Defined in: [index.ts:169](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L169)
+Defined in: [index.ts:289](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L289)
 
 Explicit operator generation only; defaults to EdDSA and rejects other algorithms before creation.
 Pending generation polls the exact created version at most 20 times, 250ms apart,
@@ -257,7 +321,7 @@ Service/integrity failures are not caller-argument errors. Never called by confi
 jwk(kid): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:121](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L121)
+Defined in: [index.ts:241](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L241)
 
 Returns the JWK representation of a key by ID (active, pending, or retained).
 Raises if not found.
@@ -284,7 +348,7 @@ Raises if not found.
 listKeyIds(): Promise<string[]>;
 ```
 
-Defined in: [index.ts:131](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L131)
+Defined in: [index.ts:251](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L251)
 
 Returns only the current active key ID, or an empty list when no key is active.
 Pending and superseded keys are excluded from this live key list, even when
@@ -306,7 +370,7 @@ their public JWKs remain available through `jwk` for historical verification.
 purge(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:232](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L232)
+Defined in: [index.ts:352](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L352)
 
 Alias for local supersession; never disables or destroys a cloud version.
 
@@ -332,7 +396,7 @@ Alias for local supersession; never disables or destroys a cloud version.
 sign(payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L132)
+Defined in: [index.ts:252](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L252)
 
 Signs the given payload with the current active signing key.
 Returns raw signature bytes.
@@ -359,7 +423,7 @@ Returns raw signature bytes.
 signingKey(): Promise<DnsIdJWK>;
 ```
 
-Defined in: [index.ts:117](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L117)
+Defined in: [index.ts:237](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L237)
 
 Returns the JWK representation of the current active public signing key.
 The returned kid MUST NOT contain '#'.
@@ -380,7 +444,7 @@ The returned kid MUST NOT contain '#'.
 signKey(kid, payload): Promise<Uint8Array<ArrayBufferLike>>;
 ```
 
-Defined in: [index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L136)
+Defined in: [index.ts:256](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L256)
 
 Signs with a specified active or pending key.
 
@@ -410,7 +474,7 @@ Signs with a specified active or pending key.
 supersede(kid): Promise<void>;
 ```
 
-Defined in: [index.ts:224](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L224)
+Defined in: [index.ts:344](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L344)
 
 Removes local signing eligibility from an active, pending, or already
 superseded key. Superseding the active key leaves no active signer and an
@@ -440,7 +504,7 @@ Never disables, destroys, or otherwise mutates the remote CryptoKeyVersion.
 validateKeyGeneration(algorithm): Promise<void>;
 ```
 
-Defined in: [index.ts:158](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L158)
+Defined in: [index.ts:278](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L278)
 
 Validates generation settings and algorithm support without creating a key.
 
@@ -470,7 +534,7 @@ static create(client, config): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:68](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L68)
+Defined in: [index.ts:188](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L188)
 
 Creates one version under an existing ASYMMETRIC_SIGN CryptoKey with a
 SOFTWARE EC_SIGN_ED25519 template, without opening any prior version.
@@ -514,7 +578,7 @@ do not blindly retry. Normal load/configuration remains open-only.
 static load(client, config): Promise<GcpCloudKmsKeyProvider>;
 ```
 
-Defined in: [index.ts:95](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L95)
+Defined in: [index.ts:215](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L215)
 
 Opens the selected active version and, optionally, an application-saved pending
 version for recovery. Both bindings are validated; the pending key supports
@@ -538,13 +602,11 @@ durable references and recovery checks; activate performs the local transition.
 
 ## Interfaces
 
-<a id="gcpcloudkmsclient"></a>
+<a id="gcpcloudkmsbootstrapclient"></a>
 
-### GcpCloudKmsClient
+### GcpCloudKmsBootstrapClient
 
-Defined in: [index.ts:20](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L20)
-
-Structural seam implemented by the official KeyManagementServiceClient.
+Defined in: [index.ts:9](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L9)
 
 #### Methods
 
@@ -553,10 +615,212 @@ Structural seam implemented by the official KeyManagementServiceClient.
 ##### asymmetricSign()
 
 ```ts
+asymmetricSign(request): Promise<readonly [IAsymmetricSignResponse, IAsymmetricSignRequest | undefined,
+  | {
+}
+| undefined]>;
+```
+
+Defined in: [index.ts:42](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L42)
+
+###### Parameters
+
+###### request
+
+`IAsymmetricSignRequest`
+
+###### Returns
+
+`Promise`\<readonly \[`IAsymmetricSignResponse`, `IAsymmetricSignRequest` \| `undefined`,
+  \| \{
+\}
+  \| `undefined`\]\>
+
+<a id="createcryptokey"></a>
+
+##### createCryptoKey()
+
+```ts
+createCryptoKey(request): Promise<readonly [ICryptoKey, ICreateCryptoKeyRequest | undefined,
+  | {
+}
+| undefined]>;
+```
+
+Defined in: [index.ts:18](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L18)
+
+###### Parameters
+
+###### request
+
+`ICreateCryptoKeyRequest`
+
+###### Returns
+
+`Promise`\<readonly \[`ICryptoKey`, `ICreateCryptoKeyRequest` \| `undefined`,
+  \| \{
+\}
+  \| `undefined`\]\>
+
+<a id="getcryptokey"></a>
+
+##### getCryptoKey()
+
+```ts
+getCryptoKey(request): Promise<readonly [ICryptoKey, IGetCryptoKeyRequest | undefined,
+  | {
+}
+| undefined]>;
+```
+
+Defined in: [index.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L10)
+
+###### Parameters
+
+###### request
+
+`IGetCryptoKeyRequest`
+
+###### Returns
+
+`Promise`\<readonly \[`ICryptoKey`, `IGetCryptoKeyRequest` \| `undefined`,
+  \| \{
+\}
+  \| `undefined`\]\>
+
+<a id="getcryptokeyversion"></a>
+
+##### getCryptoKeyVersion()
+
+```ts
+getCryptoKeyVersion(request): Promise<readonly [ICryptoKeyVersion, IGetCryptoKeyVersionRequest | undefined,
+  | {
+}
+| undefined]>;
+```
+
+Defined in: [index.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L26)
+
+###### Parameters
+
+###### request
+
+`IGetCryptoKeyVersionRequest`
+
+###### Returns
+
+`Promise`\<readonly \[`ICryptoKeyVersion`, `IGetCryptoKeyVersionRequest` \| `undefined`,
+  \| \{
+\}
+  \| `undefined`\]\>
+
+<a id="getpublickey"></a>
+
+##### getPublicKey()
+
+```ts
+getPublicKey(request): Promise<readonly [IPublicKey, IGetPublicKeyRequest | undefined,
+  | {
+}
+| undefined]>;
+```
+
+Defined in: [index.ts:34](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L34)
+
+###### Parameters
+
+###### request
+
+`IGetPublicKeyRequest`
+
+###### Returns
+
+`Promise`\<readonly \[`IPublicKey`, `IGetPublicKeyRequest` \| `undefined`,
+  \| \{
+\}
+  \| `undefined`\]\>
+
+***
+
+<a id="gcpcloudkmsbootstrapconfig"></a>
+
+### GcpCloudKmsBootstrapConfig
+
+Defined in: [index.ts:51](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L51)
+
+#### Properties
+
+<a id="cryptokeyid"></a>
+
+##### cryptoKeyId
+
+```ts
+cryptoKeyId: string;
+```
+
+Defined in: [index.ts:53](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L53)
+
+<a id="parent"></a>
+
+##### parent
+
+```ts
+parent: string;
+```
+
+Defined in: [index.ts:52](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L52)
+
+***
+
+<a id="gcpcloudkmsbootstrapresult"></a>
+
+### GcpCloudKmsBootstrapResult
+
+Defined in: [index.ts:56](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L56)
+
+#### Properties
+
+<a id="keyprovider"></a>
+
+##### keyProvider
+
+```ts
+readonly keyProvider: GcpCloudKmsKeyProvider;
+```
+
+Defined in: [index.ts:58](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L58)
+
+<a id="keyref"></a>
+
+##### keyRef
+
+```ts
+readonly keyRef: string;
+```
+
+Defined in: [index.ts:57](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L57)
+
+***
+
+<a id="gcpcloudkmsclient"></a>
+
+### GcpCloudKmsClient
+
+Defined in: [index.ts:140](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L140)
+
+Structural seam implemented by the official KeyManagementServiceClient.
+
+#### Methods
+
+<a id="asymmetricsign-1"></a>
+
+##### asymmetricSign()
+
+```ts
 asymmetricSign(request): Promise<readonly unknown[]>;
 ```
 
-Defined in: [index.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L27)
+Defined in: [index.ts:147](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L147)
 
 ###### Parameters
 
@@ -592,7 +856,7 @@ Defined in: [index.ts:27](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 optional createCryptoKeyVersion(request): Promise<readonly unknown[]>;
 ```
 
-Defined in: [index.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L25)
+Defined in: [index.ts:145](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L145)
 
 ###### Parameters
 
@@ -616,7 +880,7 @@ Defined in: [index.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 
 `Promise`\<readonly `unknown`[]\>
 
-<a id="getcryptokey"></a>
+<a id="getcryptokey-1"></a>
 
 ##### getCryptoKey()?
 
@@ -624,7 +888,7 @@ Defined in: [index.ts:25](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 optional getCryptoKey(request): Promise<readonly unknown[]>;
 ```
 
-Defined in: [index.ts:22](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L22)
+Defined in: [index.ts:142](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L142)
 
 Required only for initial creation; reads the existing signing parent/template.
 
@@ -640,7 +904,7 @@ Required only for initial creation; reads the existing signing parent/template.
 
 `Promise`\<readonly `unknown`[]\>
 
-<a id="getcryptokeyversion"></a>
+<a id="getcryptokeyversion-1"></a>
 
 ##### getCryptoKeyVersion()?
 
@@ -648,7 +912,7 @@ Required only for initial creation; reads the existing signing parent/template.
 optional getCryptoKeyVersion(request): Promise<readonly unknown[]>;
 ```
 
-Defined in: [index.ts:24](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L24)
+Defined in: [index.ts:144](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L144)
 
 Required when a newly created version is still PENDING_GENERATION.
 
@@ -664,7 +928,7 @@ Required when a newly created version is still PENDING_GENERATION.
 
 `Promise`\<readonly `unknown`[]\>
 
-<a id="getpublickey"></a>
+<a id="getpublickey-1"></a>
 
 ##### getPublicKey()
 
@@ -672,7 +936,7 @@ Required when a newly created version is still PENDING_GENERATION.
 getPublicKey(request): Promise<readonly unknown[]>;
 ```
 
-Defined in: [index.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L26)
+Defined in: [index.ts:146](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L146)
 
 ###### Parameters
 
@@ -692,7 +956,7 @@ Defined in: [index.ts:26](https://github.com/dnsid-ai/dnsid-ts/blob/main/package
 
 ### GcpCloudKmsConfig
 
-Defined in: [index.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L8)
+Defined in: [index.ts:128](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L128)
 
 #### Properties
 
@@ -704,7 +968,7 @@ Defined in: [index.ts:8](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages
 activeKeyVersion: string;
 ```
 
-Defined in: [index.ts:10](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L10)
+Defined in: [index.ts:130](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L130)
 
 Fully qualified immutable CryptoKeyVersion resource name.
 
@@ -716,7 +980,7 @@ Fully qualified immutable CryptoKeyVersion resource name.
 algorithm: string;
 ```
 
-Defined in: [index.ts:16](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L16)
+Defined in: [index.ts:136](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L136)
 
 Must be EC_SIGN_ED25519.
 
@@ -728,7 +992,7 @@ Must be EC_SIGN_ED25519.
 optional pendingKeyVersion?: string;
 ```
 
-Defined in: [index.ts:12](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L12)
+Defined in: [index.ts:132](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L132)
 
 Application-saved immutable pending version; never discovered or activated by load.
 
@@ -740,6 +1004,35 @@ Application-saved immutable pending version; never discovered or activated by lo
 optional retainedKeyVersions?: string[];
 ```
 
-Defined in: [index.ts:14](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L14)
+Defined in: [index.ts:134](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L134)
 
 Retained-key loading is not supported by this runtime slice.
+
+## Functions
+
+<a id="createorreusegcpcloudkmskeyprovider"></a>
+
+### createOrReuseGcpCloudKmsKeyProvider()
+
+```ts
+function createOrReuseGcpCloudKmsKeyProvider(client, config): Promise<GcpCloudKmsBootstrapResult>;
+```
+
+Defined in: [index.ts:64](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/key-gcp/src/index.ts#L64)
+
+Explicitly creates or reuses a named software Ed25519 key's initial version 1.
+Requires an existing keyRing; never selects a successor or creates an agent ID.
+
+#### Parameters
+
+##### client
+
+[`GcpCloudKmsBootstrapClient`](#gcpcloudkmsbootstrapclient) \| `undefined`
+
+##### config
+
+[`GcpCloudKmsBootstrapConfig`](#gcpcloudkmsbootstrapconfig)
+
+#### Returns
+
+`Promise`\<[`GcpCloudKmsBootstrapResult`](#gcpcloudkmsbootstrapresult)\>
