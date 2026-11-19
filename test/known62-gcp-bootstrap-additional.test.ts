@@ -90,42 +90,73 @@ async function actorIdentity(result: GcpCloudKmsBootstrapResult, f: Fixture) {
 }
 
 // Mode: fake-only (invalid remote responses).
-const invalid: Array<[string, (f: Fixture) => void]> = [
-  ['named key missing name', f => { delete f.key.name; }],
-  ['named key wrong binding', f => { f.key.name = resource(config) + '-other'; }],
-  ['named key wrong purpose', f => { f.key.purpose = 1; }],
-  ['named key missing purpose', f => { delete f.key.purpose; }],
-  ['version missing name', f => { delete f.version.name; }],
-  ['version wrong key binding', f => { f.version.name = `${resource(config)}-other/cryptoKeyVersions/1`; }],
-  ['version wrong numeric version', f => { f.version.name = `${resource(config)}/cryptoKeyVersions/2`; }],
-  ['version disabled', f => { f.version.state = 2; }],
-  ['version missing state', f => { delete f.version.state; }],
-  ['version wrong algorithm', f => { f.version.algorithm = 12; }],
-  ['version missing algorithm', f => { delete f.version.algorithm; }],
-  ['version nonsoftware', f => { f.version.protectionLevel = 2; }],
-  ['version missing protection', f => { delete f.version.protectionLevel; }],
-  ['public response missing name', f => { delete f.pub.name; }],
-  ['public response wrong binding', f => { f.pub.name = `${resource(config)}/cryptoKeyVersions/2`; }],
-  ['public response wrong algorithm', f => { f.pub.algorithm = 12; }],
-  ['public response nonsoftware', f => { f.pub.protectionLevel = 2; }],
-  ['public response missing PEM', f => { delete f.pub.pem; }],
+type ResponseMethod = 'getCryptoKey' | 'getCryptoKeyVersion' | 'getPublicKey';
+const invalid: Array<[string, (f: Fixture) => void, ResponseMethod, (f: Fixture) => void]> = [
+  ['named key missing name', f => { delete f.key.name; }, 'getCryptoKey', f => { expect(f.key.name).toBe(undefined); }],
+  ['named key wrong binding', f => { f.key.name = resource(config) + '-other'; }, 'getCryptoKey', f => { expect(f.key.name).toBe(resource(config) + '-other'); }],
+  ['named key wrong purpose', f => { f.key.purpose = 1; }, 'getCryptoKey', f => { expect(f.key.purpose).toBe(1); }],
+  ['named key missing purpose', f => { delete f.key.purpose; }, 'getCryptoKey', f => { expect(f.key.purpose).toBe(undefined); }],
+  ['version missing name', f => { delete f.version.name; }, 'getCryptoKeyVersion', f => { expect(f.version.name).toBe(undefined); }],
+  ['version wrong key binding', f => { f.version.name = `${resource(config)}-other/cryptoKeyVersions/1`; }, 'getCryptoKeyVersion', f => { expect(f.version.name).toBe(`${resource(config)}-other/cryptoKeyVersions/1`); }],
+  ['version wrong numeric version', f => { f.version.name = `${resource(config)}/cryptoKeyVersions/2`; }, 'getCryptoKeyVersion', f => { expect(f.version.name).toBe(`${resource(config)}/cryptoKeyVersions/2`); }],
+  ['version disabled', f => { f.version.state = 2; }, 'getCryptoKeyVersion', f => { expect(f.version.state).toBe(2); }],
+  ['version missing state', f => { delete f.version.state; }, 'getCryptoKeyVersion', f => { expect(f.version.state).toBe(undefined); }],
+  ['version wrong algorithm', f => { f.version.algorithm = 12; }, 'getCryptoKeyVersion', f => { expect(f.version.algorithm).toBe(12); }],
+  ['version missing algorithm', f => { delete f.version.algorithm; }, 'getCryptoKeyVersion', f => { expect(f.version.algorithm).toBe(undefined); }],
+  ['version nonsoftware', f => { f.version.protectionLevel = 2; }, 'getCryptoKeyVersion', f => { expect(f.version.protectionLevel).toBe(2); }],
+  ['version missing protection', f => { delete f.version.protectionLevel; }, 'getCryptoKeyVersion', f => { expect(f.version.protectionLevel).toBe(undefined); }],
+  ['public response missing name', f => { delete f.pub.name; }, 'getPublicKey', f => { expect(f.pub.name).toBe(undefined); }],
+  ['public response wrong binding', f => { f.pub.name = `${resource(config)}/cryptoKeyVersions/2`; }, 'getPublicKey', f => { expect(f.pub.name).toBe(`${resource(config)}/cryptoKeyVersions/2`); }],
+  ['public response wrong algorithm', f => { f.pub.algorithm = 12; }, 'getPublicKey', f => { expect(f.pub.algorithm).toBe(12); }],
+  ['public response nonsoftware', f => { f.pub.protectionLevel = 2; }, 'getPublicKey', f => { expect(f.pub.protectionLevel).toBe(2); }],
+  ['public response missing PEM', f => { delete f.pub.pem; }, 'getPublicKey', f => { expect(f.pub.pem).toBe(undefined); }],
   ['public response malformed PEM with correct checksum', f => {
     f.pub.pem = 'not a public key'; f.pub.pemCrc32c = { value: crc32c(Buffer.from(f.pub.pem)) };
-  }],
+  }, 'getPublicKey', f => { expect(f.pub.pem).toBe('not a public key'); expect(f.pub.pemCrc32c?.value).toBe(crc32c(Buffer.from(f.pub.pem!))); }],
   ['public response mismatched integrity', f => {
     f.pub.pemCrc32c = { value: (crc32c(Buffer.from(f.pub.pem!)) ^ 1) >>> 0 };
-  }],
-  ['public response missing integrity', f => { delete f.pub.pemCrc32c; }],
+  }, 'getPublicKey', f => { expect(f.pub.pemCrc32c?.value).toBe((crc32c(Buffer.from(f.pub.pem!)) ^ 1) >>> 0); }],
+  ['public response missing integrity', f => { delete f.pub.pemCrc32c; }, 'getPublicKey', f => { expect(f.pub.pemCrc32c).toBe(undefined); }],
 ];
 describe('GCP bootstrap response validation', () => {
-  it.each(invalid)('%s', async (_label, invalidate) => {
+  it.each(invalid)('%s', async (_label, invalidate, target, verifyDefect) => {
     const baseline = fixture();
     await actorIdentity(await createOrReuseGcpCloudKmsKeyProvider(baseline.client, config), baseline);
     noMutation(baseline);
-    const f = fixture(); invalidate(f);
-    // Actor oracle: no successful result/provider, not merely a call count.
-    await expect(createOrReuseGcpCloudKmsKeyProvider(f.client, config)).rejects.toBeDefined();
+    const f = fixture();
+    invalidate(f);
+    verifyDefect(f); // Preparation and crypto/checksum validation cannot satisfy rejection.
+    const delivered: unknown[] = [];
+    const fixtureErrors: unknown[] = [];
+    // Wrap every seam so neither a fixture assertion nor a finite guard is an oracle.
+    for (const method of ['getCryptoKey', 'createCryptoKey', 'getCryptoKeyVersion', 'getPublicKey', 'asymmetricSign'] as const) {
+      const original = f.client[method].bind(f.client);
+      const wrapped = async (request: never) => {
+        try {
+          if (f.trace.length >= 8) throw new Error('test guard: response-validation call budget');
+          const response = await original(request);
+          if (method === target) delivered.push(request);
+          return response;
+        } catch (error) {
+          fixtureErrors.push(error);
+          throw error;
+        }
+      };
+      f.client[method] = wrapped as typeof f.client[typeof method];
+    }
+    let rejected = false;
+    let caught: unknown;
+    try { await createOrReuseGcpCloudKmsKeyProvider(f.client, config); }
+    catch (error) { rejected = true; caught = error; }
+    expect(rejected).toBe(true); // Generic fail-closed contract, not a guard-specific class.
+    for (const error of fixtureErrors) expect(caught).not.toBe(error);
+    expect(fixtureErrors).toEqual([]);
+    expect(delivered).toEqual([{ name: target === 'getCryptoKey' ? resource(config) : f.ref }]);
+    expect(f.trace.length).toBeLessThanOrEqual(8);
+    expect(f.trace.some(t => t.method === 'asymmetricSign')).toBe(false);
     noMutation(f); // Independent invariant, not the acceptance oracle.
+    console.info(JSON.stringify({ proof: 'malformed-response-delivery', label: _label, target,
+      delivered: delivered.length, requests: delivered, fixtureErrors: fixtureErrors.length }));
   });
   it('missing initial version is failure without replacement', async () => {
     const f = fixture(); const missingVersion = grpc(5);

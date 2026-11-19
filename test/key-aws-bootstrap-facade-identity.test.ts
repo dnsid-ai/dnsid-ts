@@ -1,4 +1,4 @@
-import { generateKeyPairSync, sign, verify } from 'node:crypto';
+import { generateKeyPairSync, sign, verify, createPublicKey } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createOrReuseAwsKmsKeyProvider, type AwsKmsBootstrapFacade } from '@dnsid-ai/key-aws';
 
@@ -22,14 +22,23 @@ function fixture(created: string, responseId: string | undefined, options: {
   const winnerId = options.conflict ? OTHER : responseId;
   const ledger: { action: string; id?: string }[] = [];
   let aliasReads = 0;
+  const fixtureErrors: unknown[] = [];
+  const violations: string[] = [];
+  const candidateRequests: string[] = [];
+  let candidateDelivered = 0;
+  const guard = (message: string): never => {
+    const error = new Error(message); fixtureErrors.push(error); throw error;
+  };
   const record = (action: string, id?: string) => {
     ledger.push({ action, id });
-    if (ledger.length > 12) throw new Error('fixture finite-call budget exceeded');
+    if (ledger.length > 12) guard('fixture finite-call budget exceeded');
   };
   const response = (keyId: string | undefined, key: typeof candidate): PublicResponse => ({
     keyId, publicKey: key.publicKey.export({ type: 'spki', format: 'der' }),
     keySpec: 'ECC_NIST_EDWARDS25519', keyUsage: 'SIGN_VERIFY', signingAlgorithms: ['ED25519_SHA_512'],
   });
+  const candidateResponse = response(responseId, candidate);
+  const winnerResponse = response(winnerId, winner);
   const client: AwsKmsBootstrapFacade & {
     disableKey(): Promise<void>; updateAlias(): Promise<void>; deleteAlias(): Promise<void>;
   } = {
@@ -38,24 +47,27 @@ function fixture(created: string, responseId: string | undefined, options: {
       if (input.keyId === ALIAS) {
         if (++aliasReads === 1) throw fault('NotFoundException');
         if (options.failure?.stage === 'winner') throw options.failure.error;
-        return response(winnerId, winner);
+        return winnerResponse;
       }
       if (options.failure?.stage === 'candidate') throw options.failure.error;
-      if (![created, responseId, winnerId].includes(input.keyId)) throw new Error('unexpected reference');
-      return input.keyId === winnerId && options.conflict ? response(winnerId, winner) : response(responseId, candidate);
+      if (![created, responseId, winnerId].includes(input.keyId)) guard('unexpected reference');
+      if (input.keyId === winnerId && options.conflict) return winnerResponse;
+      candidateRequests.push(input.keyId);
+      candidateDelivered++;
+      return candidateResponse;
     },
     async createSigningKey() { record('create'); return { keyId: created }; },
     async createAlias(input) {
       record('acquire', input.targetKeyId);
-      expect(input.aliasName).toBe(ALIAS);
+      if (input.aliasName !== ALIAS) violations.push('unexpected alias name');
       if (options.failure?.stage === 'acquire') throw options.failure.error;
       if (options.conflict) throw fault('AlreadyExistsException');
     },
     async sign(input) {
       record('sign', input.keyId);
-      expect(input.keyId).toBe(winnerId);
-      expect(input.signingAlgorithm).toBe('ED25519_SHA_512');
-      expect(input.messageType).toBe('RAW');
+      if (input.keyId !== winnerId) violations.push('unexpected signing reference');
+      if (input.signingAlgorithm !== 'ED25519_SHA_512') violations.push('unexpected signing algorithm');
+      if (input.messageType !== 'RAW') violations.push('unexpected message type');
       return { keyId: winnerId, signingAlgorithm: 'ED25519_SHA_512', signature: sign(null, input.message, winner.privateKey) };
     },
     async scheduleKeyDeletion() { record('delete'); },
@@ -63,9 +75,12 @@ function fixture(created: string, responseId: string | undefined, options: {
     async updateAlias() { record('retarget'); },
     async deleteAlias() { record('deleteAlias'); },
   };
-  return { client, ledger, winner, candidate, winnerId };
+  return { client, ledger, winner, candidate, winnerId, candidateResponse, candidateRequests,
+    fixtureErrors, violations, get candidateDelivered() { return candidateDelivered; } };
 }
 function safe(h: ReturnType<typeof fixture>) {
+  expect(h.fixtureErrors).toEqual([]);
+  expect(h.violations).toEqual([]);
   expect(h.ledger.filter((x) => ['delete', 'disable', 'retarget', 'deleteAlias'].includes(x.action))).toEqual([]);
   expect(h.ledger.filter((x) => x.action === 'create')).toHaveLength(1);
   expect(h.ledger.length).toBeLessThanOrEqual(12);
@@ -114,9 +129,26 @@ describe('public bootstrap facade identity contract [fake-only]', () => {
     { label: 'empty ID', id: '' },
     { label: 'mutable alias', id: ALIAS },
     { label: 'mutable alias ARN', id: 'arn:aws:kms:us-east-1:123456789012:alias/public-facade-identity' },
-  ])('Given $label in candidate response, when bootstrapping, then reject before acquisition', async ({ id }) => {
+  ])('Given $label in candidate response, when bootstrapping, then reject before acquisition', async ({ label, id }) => {
     const h = fixture(UUID, id);
-    await expect(createOrReuseAwsKmsKeyProvider(h.client, CONFIG)).rejects.toSatisfy(() => true);
+    // GIVEN a prepared identity defect with otherwise valid independently parsed SPKI.
+    expect(h.candidateResponse.keyId).toBe(id);
+    const publicKey = createPublicKey({ key: Buffer.from(h.candidateResponse.publicKey), type: 'spki', format: 'der' });
+    expect(publicKey.asymmetricKeyType).toBe('ed25519');
+    expect(publicKey.export({ format: 'jwk' })).toEqual(h.candidate.publicKey.export({ format: 'jwk' }));
+    expect(h.candidateResponse).toMatchObject({ keySpec: 'ECC_NIST_EDWARDS25519',
+      keyUsage: 'SIGN_VERIFY', signingAlgorithms: ['ED25519_SHA_512'] });
+    let rejected = false;
+    let caught: unknown;
+    try { await createOrReuseAwsKmsKeyProvider(h.client, CONFIG); }
+    catch (error) { rejected = true; caught = error; }
+    expect(rejected).toBe(true);
+    for (const error of h.fixtureErrors) expect(caught).not.toBe(error);
+    expect(h.candidateDelivered).toBe(1);
+    expect(h.candidateRequests).toEqual([UUID]);
+    console.info(JSON.stringify({ proof: 'candidate-response-delivery', label, id: id ?? null,
+      delivered: h.candidateDelivered, requests: h.candidateRequests,
+      fixtureErrors: h.fixtureErrors.length, violations: h.violations }));
     expect(h.ledger.map((x) => x.action)).toEqual(['get', 'create', 'get']);
     safe(h);
   });
