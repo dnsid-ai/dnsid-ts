@@ -194,6 +194,19 @@ function validateHttpsUrl(value: string, field: string): URL {
   // Fixed-length prefix check has no repetition or backtracking risk.
   // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
   if (!/^https:\/\/[^/\\]/i.test(value) || value.includes('\\')) throw new ValidationError(`${field} must be a valid HTTPS URI with a host`);
+  // TXT values are printable ASCII, so a record URL's host is ASCII as written. The WHATWG
+  // parser percent-decodes the host before UTS 46 processing, which is the only way a
+  // non-ASCII code point (or an escaped ".") can reach the compared host. Neither belongs in
+  // a DNS host name, and RFC 3986 section 3.2.2 directs producers to write internationalized
+  // hosts as A-labels. Rejecting them keeps the host that is compared and dialed identical to
+  // the host as published, and keeps validation consistent with the other DNSid SDKs, which
+  // reject the same records. The path and query keep their percent-encoding untouched.
+  const authority = value.slice('https://'.length).split(/[/?#]/, 1)[0]!;
+  const rawHost = authority.slice(authority.lastIndexOf('@') + 1);
+  // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos
+  if (/[%\u0080-\u{10FFFF}]/u.test(rawHost)) {
+    throw new ValidationError(`${field} host must be an ASCII DNS name without percent-escapes`);
+  }
   let url: URL;
   try { url = new URL(value); } catch { throw new ValidationError(`${field} is not a valid URI: ${value}`); }
   if (url.protocol !== 'https:' || !url.hostname) throw new ValidationError(`${field} must be a valid HTTPS URI with a host`);
@@ -204,8 +217,12 @@ function validateHttpsUrl(value: string, field: string): URL {
 
 function validateHttpsUrlHost(value: string, field: string, expectedHost: string): void {
   const url = validateHttpsUrl(value, field);
-  // A root dot in the ku/ek host is invalid: fetchers compare hosts exactly.
-  if (url.hostname.endsWith('.') || normalizeFQDN(url.hostname) !== expectedHost) throw new ValidationError(`${field} host must equal agent FQDN`);
+  // A root dot in the ku/ek host is rejected rather than canonicalized away, so the host as
+  // published is exactly the host that is compared and dialed. The host is then compared in
+  // normalizeFQDN form (UTS 46, A-label, lowercase): the name the transport resolves and
+  // presents as TLS SNI.
+  if (url.hostname.endsWith('.')) throw new ValidationError(`${field} host must not end with a root dot`);
+  if (normalizeFQDN(url.hostname) !== expectedHost) throw new ValidationError(`${field} host must equal agent FQDN`);
 }
 
 function validateEkHost(value: string, giDomain: string): void {

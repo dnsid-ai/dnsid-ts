@@ -24,7 +24,7 @@ import { Agent, fetch as undiciFetch } from 'undici';
 import type { Dispatcher } from 'undici';
 
 import type { DNSResolver, TLSCertificate, TransportConfig, TXTRecord } from '@dnsid-ai/protocol';
-import { ArgumentError, DNSSECState, VerificationCode, VerificationError, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
+import { ArgumentError, DNSSECState, VerificationCode, VerificationError, normalizeFQDN, normalizePrivateAddressHost } from '@dnsid-ai/protocol';
 import { resolveTxtWithTtl } from './txt-wire.ts';
 
 /** Minimal WHATWG-fetch-compatible function signature returned by the fetch factories. */
@@ -700,9 +700,37 @@ async function fetchTxtViaSystem(
   }
 }
 
-/** True if host equals allowedHost, or is a subdomain of it when domainBoundary is set. */
+/**
+ * True if a fetch, or a redirect hop, to `host` stays on `allowedHost`: equal to it or, when
+ * `domainBoundary` is set, at or under it on a DNS-label boundary.
+ *
+ * Both names are compared in the canonical form produced by `normalizeFQDN` (UTS 46 mapping,
+ * A-label encoding, ASCII lowercase), the name that is resolved and presented as TLS SNI, so
+ * the boundary is enforced on exactly the name that will be dialed regardless of how a caller
+ * spelled `allowedHost`. A trailing dot is not canonicalized away: both sides must agree on it.
+ * An IP literal host matches only an `allowedHost` spelled exactly as the URL parser serializes
+ * it (dotted-quad IPv4, bracketed compressed lowercase IPv6), and never on a domain boundary:
+ * an address has no parent domain, so "4.3.2.1" is not "under" "3.2.1". A host that is
+ * neither a valid DNS name nor an IP literal is never allowed.
+ */
 function hostAllowed(host: string, allowedHost: string, domainBoundary = false): boolean {
-  return host === allowedHost || (domainBoundary && host.endsWith(`.${allowedHost}`));
+  if (isIpLiteral(host)) return host === allowedHost;
+  if (host.endsWith('.') !== allowedHost.endsWith('.')) return false;
+  let canonicalHost: string;
+  let canonicalAllowed: string;
+  try {
+    canonicalHost = normalizeFQDN(host);
+    canonicalAllowed = normalizeFQDN(allowedHost);
+  } catch {
+    return false;
+  }
+  return canonicalHost === canonicalAllowed || (domainBoundary && canonicalHost.endsWith(`.${canonicalAllowed}`));
+}
+
+/** True for an IPv4 literal or a bracketed IPv6 literal, as WHATWG `URL.hostname` yields them. */
+function isIpLiteral(host: string): boolean {
+  if (host.startsWith('[') && host.endsWith(']')) return net.isIPv6(host.slice(1, -1));
+  return net.isIPv4(host);
 }
 
 /**
