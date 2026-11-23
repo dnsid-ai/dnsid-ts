@@ -321,7 +321,7 @@ describe('DnsIdTxtRecord.validate() — ku host compared in canonical form', () 
     it(name, () => {
       const r = makeRecord({ ku });
       if (wantErr === undefined) expect(() => r.validate()).not.toThrow();
-      else expect(() => r.validate()).toThrow(new RegExp(wantErr));
+      else expect(() => r.validate()).toThrow(wantErr);
     });
   }
 });
@@ -347,7 +347,7 @@ describe('DnsIdTxtRecord.validate() — ek host compared in canonical form', () 
     it(name, () => {
       const r = makeRecord({ gi: 'bigcorp.com', ek });
       if (wantErr === undefined) expect(() => r.validate()).not.toThrow();
-      else expect(() => r.validate()).toThrow(new RegExp(wantErr));
+      else expect(() => r.validate()).toThrow(wantErr);
     });
   }
 });
