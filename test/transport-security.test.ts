@@ -42,6 +42,13 @@ describe('transport SSRF protections', () => {
       '[::127.0.0.1]',
       '::10.0.0.1',
       '::169.254.169.254',
+      '64:ff9b::7f00:1', // NAT64 + 127.0.0.1
+      '64:ff9b::a00:5', // NAT64 + 10.0.0.5
+      '64:ff9b::169.254.169.254', // NAT64 + cloud metadata
+      '64:ff9b::6440:1', // NAT64 + 100.64.0.1 (CGNAT)
+      '64:ff9b::1', // NAT64 + 0.0.0.1
+      '64:ff9b:1::808:808', // RFC 8215 local-use NAT64 prefix
+      '64:ff9b::1:808:808', // outside the /96: not a NAT64 address
     ]) {
       expect(isUnsafeIp(ip), ip).toBe(true);
     }
@@ -49,6 +56,8 @@ describe('transport SSRF protections', () => {
     expect(isUnsafeIp('8.8.8.8')).toBe(false);
     expect(isUnsafeIp('::8.8.8.8')).toBe(false);
     expect(isUnsafeIp('2001:4860:4860::8888')).toBe(false);
+    expect(isUnsafeIp('64:ff9b::808:808')).toBe(false); // NAT64 + 8.8.8.8 (DNS64 network)
+    expect(isUnsafeIp('[64:ff9b::8.8.8.8]')).toBe(false);
   });
 
   it('sends a stable SDK User-Agent when fetching JSON', async () => {
@@ -135,6 +144,8 @@ describe('transport SSRF protections', () => {
       await expect(resolve(lookup, 'a.test', ['10.0.0.5'])).resolves.toBe('10.0.0.5');
       await expect(resolve(lookup, 'a.test', ['169.254.169.254'])).rejects.toThrow('unsafe resolved IP address');
       await expect(resolve(lookup, 'a.test', ['8.8.8.8', '127.0.0.1'])).rejects.toThrow('unsafe resolved IP address');
+      // A NAT64-wrapped private address never counts as private for the list.
+      await expect(resolve(lookup, 'a.test', ['64:ff9b::a00:5'])).rejects.toThrow('unsafe resolved IP address');
     });
 
     it('rejects malformed entries with ArgumentError before connecting', async () => {
