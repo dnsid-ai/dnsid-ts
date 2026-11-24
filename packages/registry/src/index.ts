@@ -276,7 +276,7 @@ const registryRevocationReasons: ReadonlySet<string> = new Set<RegistryRevocatio
 ]);
 
 export interface SubmissionResult {
-  state: 'pending' | 'accepted' | 'rejected';
+  state: 'pending' | 'submitting' | 'accepted' | 'rejected';
   entryHash: string;
   index?: number;
   logRef?: string;
@@ -666,12 +666,14 @@ export class RegistryClient {
   async prepareIssuance(domain: string, idempotencyKey: string, options: { signal?: AbortSignal } = {}): Promise<PreparedRegistryEvent> {
     if (!domain || domain.trim() !== domain) throw new Error('domain is required');
     validateIdempotencyKey(idempotencyKey);
-    const resp = await this.postRaw(
+    const resp = await this.request(
       `/api/v1/agent/${encodeURIComponent(domain)}/tlog/issuance/prepare`,
-      undefined,
-      idempotencyKey,
-      options,
+      { method: 'GET', headers: { 'Idempotency-Key': idempotencyKey }, signal: options.signal },
     );
+    if (!resp.ok) {
+      const error = await readErrorResponse(resp);
+      throw new RegistryRequestError(resp.status, error.code, error.message ?? resp.statusText);
+    }
     return { entryBytes: new Uint8Array(await resp.arrayBuffer()) };
   }
 
@@ -707,7 +709,7 @@ export class RegistryClient {
     try {
       const raw = await readJsonObject(resp, 'registry tlog submission response');
       const state = requiredString(raw, 'state', 'registry tlog submission response');
-      if (state !== 'pending' && state !== 'accepted' && state !== 'rejected') {
+      if (state !== 'pending' && state !== 'submitting' && state !== 'accepted' && state !== 'rejected') {
         throw new Error(`invalid registry tlog submission response: unsupported state ${state}`);
       }
       const index = typeof raw['index'] === 'number' ? raw['index'] : undefined;
@@ -1045,7 +1047,7 @@ async function preparedEventSubmissionError(resp: Response): Promise<PreparedEve
   const raw = await readErrorResponse(resp);
   const code = raw.code ?? `HTTP_${resp.status}`;
   const normalizedCode = code.toUpperCase();
-  const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY';
+  const busy = normalizedCode === 'TLOG_SUBMISSION_BUSY' || normalizedCode === 'SUBMISSION_BUSY';
   // The entry may already be in the log when the registry, or a proxy in
   // front of it, fails the request, so a 5xx or transient status is retried
   // with the same bytes whatever the code.
