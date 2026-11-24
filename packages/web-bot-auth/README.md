@@ -6,6 +6,14 @@ This package signs and verifies DNSid Web Bot Auth requests (RFC 9421 HTTP Messa
 
 It builds on `@dnsid-ai/http-signatures` and `@dnsid-ai/protocol` contracts and performs no DNS or HTTPS transport itself. Signing requires an Ed25519 operational key; the profile throws `ArgumentError` for other key types.
 
+## Upgrade from draft-00
+
+Upgrade signers and verifiers together. This draft-01 profile cannot interoperate with the draft-00 profile shipped in 0.37.
+
+- Remove `signatureAgent.type` and imports of `SignatureAgentType`. `Signature-Agent` now contains a direct HTTPS directory URL without parameters; headers with `;type=directory` or `;type=jwks_uri` are rejected.
+- Set custom `signatureAgent.uri`, `directoryURL`, and trusted `discovery.uri` values to the full directory URL, not just its origin. The default is `https://{domain}/.well-known/http-message-signatures-directory`; an explicit origin-only URL now addresses `/`.
+- Directory JWKs omit `alg` by default. If supplied, it must be `Ed25519`; `ed25519` and `EdDSA` are rejected. The HTTP signature `alg` parameter remains `ed25519`.
+
 ## Install
 
 ```sh

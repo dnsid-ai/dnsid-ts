@@ -442,6 +442,29 @@ describe('WebBotAuthProfile verification', () => {
     }
   });
 
+  it.each(['Ed25519', 'ed25519', 'EdDSA'])('validates directory JWK alg %s', async alg => {
+    const s = await setup();
+    rewriteDirectory(s, document => { document.keys[0]!.alg = alg; });
+    if (alg === 'Ed25519') await expect(s.verify()).resolves.toBe(s.evidence);
+    else {
+      await expect(s.verify()).rejects.toThrow('invalid public Ed25519 directory key');
+      expect(s.resolver.verifyDomain).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each([
+    'https://bot.example.com/\\keys',
+    'https://böt.example.com/keys',
+    'https://user@bot.example.com/keys',
+    'HTTPS://bot.example.com/keys',
+  ])('rejects an invalid discovery URI before fetch: %s', async uri => {
+    const s = await setup();
+    const headers = new Headers(s.req.headers);
+    headers.set('Signature-Agent', `sig1=${JSON.stringify(uri)}`);
+    await expect(s.verify(new Request(s.req.clone(), { headers }))).rejects.toThrow(VerificationError);
+    expect(s.fetch).not.toHaveBeenCalled();
+  });
+
   it.each(['size', 'depth', 'key count', 'private key'])('bounds directory %s', async kind => {
     const s = await setup();
     s.fetch.mockImplementation(async (request: Request) => {
@@ -874,8 +897,15 @@ describe('WebBotAuthProfile', () => {
     expect(parseSignatureInput(signed.headers.get('Signature-Input')!).get('sig1')!.components).toContainEqual({ name: 'signature-agent', params: { key: 'sig1' } });
   });
 
-  it.each(['#keys', '#'])('rejects a directory URL with a fragment %s', suffix => {
-    expect(() => new WebBotAuthProfile({ webBotAuth: { signatureAgent: { uri: `https://bot.example.com${suffix}` } } })).toThrow(ArgumentError);
+  it.each([
+    'https://bot.example.com#keys',
+    'https://bot.example.com#',
+    'https://bot.example.com/\\keys',
+    'https://böt.example.com/keys',
+    'https://user@bot.example.com/keys',
+    'HTTPS://bot.example.com/keys',
+  ])('rejects an invalid directory URL: %s', uri => {
+    expect(() => new WebBotAuthProfile({ webBotAuth: { signatureAgent: { uri } } })).toThrow(ArgumentError);
   });
 
   it.each(['signature', 'signature-input', { name: 'signature', params: { key: 'other' } }])('rejects unsupported nested signing %j', async component => {
