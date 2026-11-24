@@ -2,9 +2,17 @@
 
 DNSid Web Bot Auth profile helpers.
 
-This package signs and verifies DNSid Web Bot Auth requests (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag), serves signed key directories, and verifies discovered directories against current DNSid operational (`ku`) keys. It targets published `draft-ietf-webbotauth-httpsig-protocol-00`, including its directory format, not the editor's copy or a finalized WBA standard. This is a narrower DNSid profile, not a general WBA implementation. External partner interoperability has not been tested.
+This package signs and verifies DNSid Web Bot Auth requests (RFC 9421 HTTP Message Signatures with the `web-bot-auth` tag), serves signed key directories, and verifies discovered directories against current DNSid operational (`ku`) keys. It targets published `draft-ietf-webbotauth-httpsig-protocol-01`, including its directory format, not the editor's copy or a finalized WBA standard. This is a narrower DNSid profile, not a general WBA implementation. External partner interoperability has not been tested.
 
 It builds on `@dnsid-ai/http-signatures` and `@dnsid-ai/protocol` contracts and performs no DNS or HTTPS transport itself. Signing requires an Ed25519 operational key; the profile throws `ArgumentError` for other key types.
+
+## Upgrade from draft-00
+
+Upgrade signers and verifiers together. This draft-01 profile cannot interoperate with the draft-00 profile shipped in 0.37.
+
+- Remove `signatureAgent.type` and imports of `SignatureAgentType`. `Signature-Agent` now contains a direct HTTPS directory URL without parameters; headers with `;type=directory` or `;type=jwks_uri` are rejected.
+- Set custom `signatureAgent.uri`, `directoryURL`, and trusted `discovery.uri` values to the full directory URL, not just its origin. The default is `https://{domain}/.well-known/http-message-signatures-directory`; an explicit origin-only URL now addresses `/`.
+- Directory JWKs omit `alg` by default. If supplied, it must be `Ed25519`; `ed25519` and `EdDSA` are rejected. The HTTP signature `alg` parameter remains `ed25519`.
 
 ## Install
 
@@ -61,7 +69,7 @@ const identity = await verifier.verifyWebBotAuthSignedRequest(request, {
 
 Install `@dnsid-ai/transport` to use this Node transport. The package stays runtime-neutral: `discoveryFetch` is required and must enforce valid Web PKI, public-address DNS checks and connection pinning on every connection, rejection of all redirects (including same-host HTTPS), cancellation, and unmodified response bytes and headers without decompression. Coded directories are rejected. Ordinary server-side `fetch` is not safe for untrusted discovery. Do not enable private-address exceptions for WBA discovery.
 
-Alternatively, explicitly set `allowSignatureAgentDomain: true` to let the signed HTTPS discovery host identify the signer. Cross-host delegation is rejected. `Signature-Agent` and its exact keyed coverage are mandatory, even with trusted `discovery: { uri, type }`, which now constrains the signed endpoint rather than replacing it. Missing, uncovered, invalid, or unsupported discovery rejects before network work. The default type is `directory` and requires an exact ASCII HTTPS origin without a trailing slash, path, query, or fragment; `jwks_uri` addresses a direct signed directory endpoint, not an unsigned JWKS. Signature relabeling preserves the original covered discovery member.
+Alternatively, explicitly set `allowSignatureAgentDomain: true` to let the signed HTTPS discovery host identify the signer. Cross-host delegation is rejected. `Signature-Agent` and its exact keyed coverage are mandatory, even with trusted `discovery: { uri }`, which constrains the signed endpoint rather than replacing it. The signed member points directly to the HTTPS directory and has no parameters. Missing, uncovered, or invalid discovery rejects before network work. Signature relabeling preserves the original covered discovery member.
 
 Every invocation verifies request and directory signatures, content digests, and current DNSid key binding and acceptance. There is no directory-only fallback or internal directory cache. Every discovery request uses `cache: 'no-store'` and `Cache-Control: no-cache`. Injected transports must bypass local caches and revalidate upstream on each call. A fresh directory missing the key fails without a retry. Even newly fetched responses are rejected when HTTP-stale. `max-age`, `Date`, `Age`, and fetch latency establish a deadline that is checked again before return. A revalidated `max-age=0` response with absent or zero `Age` may serve its acquiring invocation, as may fresh `no-store` or `no-cache` responses. Injected caching transports must enforce RFC 9111 freshness using original acquisition timing and HTTP age metadata, reject reuse without sufficient metadata, and never restart freshness when returning the same response. Key attribution must use the normalized discovery URL and thumbprint within the policy context. Newer resolutions replace older key sets, including removed keys; order signed proofs by `created`. Failed refreshes must neither evict evidence nor extend freshness. The verifier does not infer cache reuse or derive an HTTP deadline from signed creation time. Results authenticate identity but do not grant application permissions. Default required coverage is `@authority`, not method or path. Use signing `additionalComponents` to add bindings and verifier `requiredComponents` to require them, with exact parameter equality. Nested WBA signing is unsupported. Coverage policy is checked before discovery; malformed policy raises `ArgumentError`. Covered keyed `Content-Digest` components must select `sha-256`; unsupported members are rejected. Profile configuration, including nested discovery settings, is snapshotted and validated on construction.
 
@@ -71,8 +79,8 @@ The overall timeout defaults to 30 seconds and covers discovery, reads, DNSid ve
 
 ## Options
 
-- `signatureAgent` — the discovery URI and type advertised in `Signature-Agent`. It defaults to the domain's HTTPS origin with `type=directory`; use `type=jwks_uri` for a direct JWKS endpoint.
-- `directoryURL` — deprecated compatibility option interpreted as a direct `jwks_uri` endpoint. Use `signatureAgent.uri` instead.
+- `signatureAgent.uri`: the HTTPS URL advertised in `Signature-Agent`. Defaults to `https://{domain}/.well-known/http-message-signatures-directory`. For a custom endpoint, set the full URL.
+- `directoryURL` — deprecated alias for a direct HTTPS directory endpoint. Use `signatureAgent.uri` instead.
 - `signatureTTL` / `directorySignatureTTL` — signature lifetimes in seconds (defaults: 60 for requests, 300 for the directory).
 - `clockSkew` — non-negative verification tolerance in seconds (default: 5); never permits future directory creation.
 

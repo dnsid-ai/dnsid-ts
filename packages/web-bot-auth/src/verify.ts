@@ -2,7 +2,6 @@ import type { RefreshingIdentityResolver, TLSCertificate, VerificationOptions, V
 import { ArgumentError, VerificationError, VerificationCode, normalizeFQDN, jwkThumbprint, fromBase64Url, toBase64Url, parseJsonNoDuplicateMembers, verifyWithKey, withVerificationBudget, waitForVerification } from '@dnsid-ai/protocol';
 import type { SignatureParams, HttpMessage, ComponentIdentifier } from '@dnsid-ai/http-signatures';
 import { parseSignatureInput, parseSignature, sameComponent, buildSignatureInput, readBoundedBody, hasComponentNamed, parseSha256ContentDigest, constantTimeEqual, parseDictionaryField, validateComponentIdentifier } from '@dnsid-ai/http-signatures';
-import { Token } from 'structured-headers';
 
 /** Trusted transport must validate Web PKI and pin connections to public DNS addresses.
  * It must never follow redirects, honor cancellation, disable decompression, and preserve received bytes/headers.
@@ -20,7 +19,7 @@ export interface WebBotAuthVerificationOptions extends VerificationOptions {
   /** Explicit permission to use the signed Signature-Agent host as signer identity. Default: false. */
   allowSignatureAgentDomain?: boolean;
   /** Optional trusted endpoint constraint. Must match the covered Signature-Agent endpoint and signerDomain. */
-  discovery?: { uri: string; type?: 'directory' | 'jwks_uri' };
+  discovery?: { uri: string };
   /** Extra request coverage required by application policy, including exact component parameters. */
   requiredComponents?: ComponentIdentifier[];
   /** Current application peer, never the directory endpoint certificate. */
@@ -111,8 +110,13 @@ export function normalizedWbaIdentifier(uri: string): string {
   })).href;
 }
 
-function endpoint(uri: string, type: string, domain?: string): URL {
+export function isDirectHttpsUri(uri: string): boolean {
+  return /^https:\/\/[^/@?#]+(?:[/?]|$)/.test(uri) && !/[^!-~]|[\\#]/.test(uri);
+}
+
+function endpoint(uri: string, domain?: string): URL {
   if (uri.length > 16 * 1024) invalid('WBA discovery URI exceeds size limit');
+  if (!isDirectHttpsUri(uri)) invalid('WBA discovery requires an absolute HTTPS URI without credentials or fragments');
   let url: URL;
   try { url = new URL(uri); } catch { return invalid('invalid WBA discovery URI'); }
   if (url.protocol !== 'https:' || url.username || url.password) invalid('WBA discovery requires HTTPS');
@@ -120,11 +124,6 @@ function endpoint(uri: string, type: string, domain?: string): URL {
   let host: string;
   try { host = normalizeFQDN(url.hostname, true); } catch { return invalid('invalid WBA discovery host'); }
   if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || (domain && host !== domain)) invalid('unapproved WBA discovery host');
-  if (type === 'directory') {
-    if (uri !== url.origin) invalid('WBA directory Signature-Agent must be an origin URI');
-    return new URL('/.well-known/http-message-signatures-directory', url.origin);
-  }
-  if (type !== 'jwks_uri' || url.hash) invalid('unsupported WBA discovery type or fragment');
   return url;
 }
 
@@ -182,13 +181,11 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: Refreshing
       if (components.length !== 1) invalid('expected one covered Signature-Agent member');
       const component = components[0] as { name: string; params: { key: string } };
       const member = parseDictionaryField(agent).get(component.params.key);
-      if (!member || typeof member[0] !== 'string') invalid('invalid Signature-Agent member');
-      const type = member[1].get('type');
-      if (type !== undefined && !(type instanceof Token)) invalid('Signature-Agent type must be a token');
-      const url = endpoint(member[0], type === undefined ? 'directory' : type.toString(), domain);
+      if (!member || typeof member[0] !== 'string' || member[1].size !== 0) invalid('Signature-Agent member must be a URI string without parameters');
+      const url = endpoint(member[0], domain);
       if (!domain && opts.allowSignatureAgentDomain === true) domain = normalizeFQDN(url.hostname, true);
       if (!domain) throw new ArgumentError('trusted signer domain policy is required');
-      if (opts.discovery && endpoint(opts.discovery.uri, opts.discovery.type ?? 'directory', domain).href !== url.href) invalid('Signature-Agent does not match trusted discovery');
+      if (opts.discovery && endpoint(opts.discovery.uri, domain).href !== url.href) invalid('Signature-Agent does not match trusted discovery');
       const directoryRequest = new Request(url, { redirect: 'manual', cache: 'no-store', headers: { 'Accept-Encoding': 'identity', 'Cache-Control': 'no-cache' }, signal });
       const fetchStarted = Date.now();
       try { response = await waitForVerification(() => fetchDirectory(directoryRequest), signal); }
@@ -213,7 +210,7 @@ export async function verifyWebBotAuthRequest(req: Request, resolver: Refreshing
       for (const value of keys) {
         if (!value || typeof value !== 'object' || Array.isArray(value)) invalid('invalid directory JWK');
         const key = value as DnsIdJWK;
-        if (key.kty !== 'OKP' || key.crv !== 'Ed25519' || typeof key.x !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(key.x) || toBase64Url(fromBase64Url(key.x)) !== key.x || 'd' in key || (key.alg !== undefined && key.alg !== 'ed25519') || (key.use !== undefined && key.use !== 'sig')) invalid('invalid public Ed25519 directory key');
+        if (key.kty !== 'OKP' || key.crv !== 'Ed25519' || typeof key.x !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(key.x) || toBase64Url(fromBase64Url(key.x)) !== key.x || 'd' in key || (key.alg !== undefined && key.alg !== 'Ed25519') || (key.use !== undefined && key.use !== 'sig')) invalid('invalid public Ed25519 directory key');
         const operations = key.key_ops;
         if (operations !== undefined && (!Array.isArray(operations) || !operations.includes('verify') || operations.some(op => op !== 'sign' && op !== 'verify') || new Set(operations).size !== operations.length)) invalid('invalid directory JWK key_ops');
         if (await jwkThumbprint(key) !== key.kid) invalid('directory JWK thumbprint mismatch');
