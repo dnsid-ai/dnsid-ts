@@ -34,6 +34,8 @@ commit_preprocessors = [
   { pattern = "\\Afix: enforce checkpoint continuity and trusted storage contracts \\(#98\\)(\\n|\\z)", replace = "fix!: enforce checkpoint continuity and trusted storage contracts (#98)${1}" },
   # #125 raised the default content bound for request-only verification too.
   { pattern = "\\Afeat: negotiated response signatures \\(#125\\)(\\n|\\z)", replace = "feat!: negotiated RFC 9421 response signatures, node:http response-signing middleware, and a default HTTP content bound raised from 1 MiB to 8 MiB (#125)${1}" },
+  # #169 needs migration notes even when conventional commit parsing is disabled.
+  { pattern = "\\Afeat!: wba draft 01 \\(#169\\)(\\n|\\z)", replace = "feat!: **breaking** Web Bot Auth draft-01; upgrade signers and verifiers together (incompatible with 0.37). Removes `signatureAgent.type` and `SignatureAgentType`; changes Signature-Agent, directory URLs, and JWK `alg` rules. See the [draft-00 migration guide](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/README.md#upgrade-from-draft-00) (#169)${1}" },
   # Transform "Merge pull request #N from branch\n\nPR title" → "PR title ([#N](url))"
   { pattern = "Merge pull request #(\\d+) from [^\\n]+\\n\\n(.*)", replace = "${2} ([#${1}](https://github.com/dnsid-ai/dnsid-ts/pull/${1}))" },
   # Squash merge: first line "feat: title (#N)" → "feat: title ([#N](url))"
@@ -42,6 +44,12 @@ commit_preprocessors = [
 ]
 commit_parsers = [
   { message = "^chore: update changelog and version$|^Release v[0-9]", skip = true },
+  # These #163 branch commits reference Foundry issue #61, not this repo's PR #61.
+  { sha = "5ebb8b171f04064fe3529f0d74329989109b51ea", skip = true },
+  { sha = "611c7212e9891854d62cf139c960b47c8d9cfbee", skip = true },
+  { sha = "f10e953c1bb5fe799c2606c730bb30e812974431", skip = true },
+  { sha = "5d02cffd88b8f55e1485b1f52537a2231f24229c", skip = true },
+  { sha = "a2a97f9741eabfd5164ed5e8ee5fa1ad1ac05c05", skip = true },
   # Only include commits that have a PR link (i.e. merge commits after preprocessing).
   # increment tells git-cliff --bumped-version how to classify each commit type.
   { message = "(?i)(?:^feat|^add).*\\[#\\d+\\]", group = "Features", increment = "minor" },
