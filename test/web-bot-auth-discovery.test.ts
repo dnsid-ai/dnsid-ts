@@ -54,7 +54,7 @@ describe('WBA directory rejection over HTTPS', () => {
   it.each(['503', 'coded', 'expired'])('returns a verification error and closes the raw body for %s', async mode => {
     lookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }]);
     const signer = new WebBotAuthProfile({ domain: 'bot.example.com', keyProvider,
-      webBotAuth: { signatureAgent: { uri: `${origin}/directory?mode=${mode}`, type: 'jwks_uri' } } });
+      webBotAuth: { signatureAgent: { uri: `${origin}/directory?mode=${mode}` } } });
     const request = await signer.createWebBotAuthSignedRequest(new Request('https://target.example/'));
     const fetch = createSsrfSafeFetch({ caBundlePath }, { decompress: false, privateAddressHosts: ['bot.example.com'] });
     const resolver = { verifyDomain: vi.fn(), refreshDomain: vi.fn() };
