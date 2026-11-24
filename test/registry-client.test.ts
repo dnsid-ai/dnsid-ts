@@ -944,7 +944,7 @@ describe('RegistryClient', () => {
     const preparedBytes = new TextEncoder().encode('{"v":1, "signed_extension":"preserve whitespace"}\n');
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe('https://registry.example/api/v1/agent/agent.example.com/tlog/issuance/prepare');
-      expect(init?.method).toBe('POST');
+      expect(init?.method).toBe('GET');
       expect(init?.body).toBeUndefined();
       expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('issuance-1');
       expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer agent-token');
