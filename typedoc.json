@@ -18,6 +18,9 @@
   "out": "docs/api",
   "readme": "README.md",
   "gitRevision": "main",
+  "packageOptions": {
+    "sourceLinkTemplate": "https://github.com/dnsid-ai/dnsid-ts/blob/{gitRevision}/{path}#L{line}"
+  },
   "includeVersion": true,
   "excludePrivate": true,
   "excludeInternal": true,
