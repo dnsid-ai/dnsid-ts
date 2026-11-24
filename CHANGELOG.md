@@ -1,4 +1,23 @@
 
+## [0.38.0] - 2026-11-24
+
+### Bug Fixes
+
+- fix: check the IPv4 address inside well-known NAT64 addresses in the SSRF guard ([#167](https://github.com/dnsid-ai/dnsid-ts/pull/167))
+- fix: support alternate registry lifecycle responses ([#171](https://github.com/dnsid-ai/dnsid-ts/pull/171))
+- fix: preserve migration notes and correct release references ([#172](https://github.com/dnsid-ai/dnsid-ts/pull/172))
+
+### Features
+
+- feat: add the Known logs to the managed verification catalog ([#160](https://github.com/dnsid-ai/dnsid-ts/pull/160))
+- feat!: **breaking** Web Bot Auth draft-01; upgrade signers and verifiers together (incompatible with 0.37). Removes `signatureAgent.type` and `SignatureAgentType`; changes Signature-Agent, directory URLs, and JWK `alg` rules. See the [draft-00 migration guide](https://github.com/dnsid-ai/dnsid-ts/blob/main/packages/web-bot-auth/README.md#upgrade-from-draft-00) ([#169](https://github.com/dnsid-ai/dnsid-ts/pull/169))
+
+### Other
+
+- Support policyViolation revocation reason ([#161](https://github.com/dnsid-ai/dnsid-ts/pull/161))
+- Single-cloud multi-region operational keys (Known Foundry #61) ([#163](https://github.com/dnsid-ai/dnsid-ts/pull/163))
+
+
 ## [0.37.0] - 2026-11-11
 
 ### Features
