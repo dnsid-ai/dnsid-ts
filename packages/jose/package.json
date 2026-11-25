@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/jose",
   "author": "Known Systems AI, Inc.",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "description": "DNSid JOSE JWT and JWS profile helpers.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -38,7 +38,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnsid-ai/protocol": "^0.38.0"
+    "@dnsid-ai/protocol": "^0.38.1"
   },
   "publishConfig": {
     "access": "public"

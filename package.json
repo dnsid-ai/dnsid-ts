@@ -1,7 +1,7 @@
 {
   "name": "@dnsid-ai/monorepo",
   "author": "Known Systems AI, Inc.",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "type": "module",
   "workspaces": [
     "packages/*",

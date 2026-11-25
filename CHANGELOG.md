@@ -1,4 +1,11 @@
 
+## [0.38.1] - 2026-11-25
+
+### Bug Fixes
+
+- fix: compare hosts in canonical form and apply the DNS length limit to gi ([#170](https://github.com/dnsid-ai/dnsid-ts/pull/170))
+
+
 ## [0.38.0] - 2026-11-24
 
 ### Bug Fixes
