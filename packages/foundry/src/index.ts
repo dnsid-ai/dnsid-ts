@@ -444,7 +444,7 @@ async function compose(config: LoadedConfig, deps: FoundryDependencies, deadline
   for (const [field, value] of Object.entries(foundry)) {
     if (!['organizationId', 'governanceId'].includes(field) || typeof value !== 'string' || !value) throw new ArgumentError(`invalid foundry.${field}`);
   }
-  if (foundry.governanceId) normalizeFQDN(foundry.governanceId, true);
+  if (foundry.governanceId) normalizeFQDN(foundry.governanceId);
   if (!deps.logRegistry) {
     if (!config.logTrust) throw new ArgumentError('Foundry requires explicit logTrust or deps.logRegistry');
     const variants = ['managed', 'profile', 'policyUrl', 'policyDocument'].filter(field => config.logTrust![field as keyof typeof config.logTrust] !== undefined);
@@ -530,13 +530,13 @@ async function onboarding(context: Context) {
   if (!account.governanceId || !account.gi) throw new FoundryError('workflow-outcome', 'organization onboarding is not ready', { resumable: true });
   const expected = context.config.foundry;
   if (expected?.organizationId !== undefined && expected.organizationId !== account.organizationId
-    || expected?.governanceId !== undefined && normalizeFQDN(expected.governanceId, true) !== normalizeFQDN(account.governanceId, true)) throw new FoundryError('binding', 'configured Foundry account does not match onboarding', { resumable: false });
+    || expected?.governanceId !== undefined && normalizeFQDN(expected.governanceId) !== normalizeFQDN(account.governanceId)) throw new FoundryError('binding', 'configured Foundry account does not match onboarding', { resumable: false });
   if (!account.ready || account.gi.state !== 'verified' || account.gi.gateAuthorized !== true || account.entityKeyStatus !== 'verified') throw new FoundryError('workflow-outcome', 'organization onboarding is not ready', { resumable: true });
-  return { ...account, governanceId: normalizeFQDN(account.governanceId, true) };
+  return { ...account, governanceId: normalizeFQDN(account.governanceId) };
 }
 
 function assertBindings(context: Context, operation: FoundryOperation, organizationId: string, governanceId: string): void {
-  if (operation.registryUrl !== context.registryUrl || operation.organizationId !== organizationId || normalizeFQDN(operation.governanceId, true) !== governanceId) throw failure('binding', operation, 'saved account bindings do not match onboarding');
+  if (operation.registryUrl !== context.registryUrl || operation.organizationId !== organizationId || normalizeFQDN(operation.governanceId) !== governanceId) throw failure('binding', operation, 'saved account bindings do not match onboarding');
   if (operation.logTrust !== undefined && context.config.logTrust !== undefined && canonicalJson(operation.logTrust) !== canonicalJson(portable(context.config.logTrust))) throw failure('binding', operation, 'saved log trust does not match configuration');
 }
 
@@ -580,7 +580,7 @@ async function validateSavedOperation(operation: FoundryOperation): Promise<void
 
 async function assertInitialIssuance(operation: FoundryOperation, event: LogEvent | undefined): Promise<void> {
   if (!event || event.type !== 'ISSUANCE' || event.domain !== operation.domain
-    || normalizeFQDN(event.governanceId, true) !== normalizeFQDN(operation.governanceId, true)
+    || normalizeFQDN(event.governanceId) !== normalizeFQDN(operation.governanceId)
     || event.initialOperationalThumbprint !== await jwkThumbprint(operation.initialPublicKey)
     || event.initialEntityThumbprint !== await jwkThumbprint(operation.entityPublicKey!)) throw failure('binding', operation, 'accepted ISSUANCE has different identity or key bindings');
 }
@@ -613,7 +613,7 @@ function registryOutcome(operation: FoundryOperation): void {
 }
 function validatePublication(operation: FoundryOperation, publication: PublicationConfig | undefined): void {
   if (!publication) throw failure('unsupported-contract', operation, 'registry publication configuration is missing');
-  if (normalizeFQDN(publication.governanceId, true) !== normalizeFQDN(operation.governanceId, true)) throw failure('binding', operation, 'publication GI differs from onboarding');
+  if (normalizeFQDN(publication.governanceId) !== normalizeFQDN(operation.governanceId)) throw failure('binding', operation, 'publication GI differs from onboarding');
   if (publication.publishProfile !== 'dnsid-draft-01') throw failure('unsupported-contract', operation, 'Foundry requires bilateral draft-01 publication');
   parseC2spTlogLr(publication.logRef);
   for (const field of ['ekUrl', 'kuUrl', 'statusUrl'] as const) {

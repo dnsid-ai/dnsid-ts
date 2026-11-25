@@ -60,6 +60,7 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
   entryHashOverride?: string;
   logRefOverride?: string;
   prepareCalls = 0;
+  governanceId = GOVERNANCE;
   readonly submissions: Array<{ bytes: Uint8Array; key: string }> = [];
 
   constructor(
@@ -73,7 +74,7 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
     const event: C2spIssuanceEvent = {
       type: 'ISSUANCE',
       domain,
-      governanceId: GOVERNANCE,
+      governanceId: this.governanceId,
       timestamp: new Date('2026-07-31T12:00:00Z'),
       initialEntityKid: this.entity.publicJwk.kid,
       initialEntityAlg: this.entity.publicJwk.alg!,
@@ -90,7 +91,7 @@ class IssuanceRegistry implements ManagedIssuanceRegistry {
       provider(this.entity),
       {
         expectedFqdn: domain,
-        expectedGovernanceId: GOVERNANCE,
+        expectedGovernanceId: this.governanceId,
         entityKey: this.entity.publicJwk,
         operationalKey: this.operational,
       },
@@ -496,6 +497,36 @@ describe('managed ISSUANCE coordination', () => {
     expect(create).toHaveBeenCalledOnce();
     expect(registry.prepareCalls).toBe(1);
     expect(result.submission?.state).toBe('pending');
+  });
+
+  // A gi longer than the 246-octet agent-FQDN limit is always delegated, so it needs the
+  // ISSUANCE binding this workflow produces. gi is a registrant domain, not an agent FQDN,
+  // so it takes the 253-octet DNS limit.
+  it('accepts a delegated gi up to the 253-octet DNS limit', async () => {
+    const labels = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.`;
+    const gi = `${labels}${'d'.repeat(50)}.example`;
+    expect(gi).toHaveLength(250);
+    const entity = await key('entity');
+    const operational = await key('op');
+    const registry = new IssuanceRegistry(entity, operational.publicJwk);
+    registry.governanceId = gi;
+    let durable: ManagedIssuanceState | undefined;
+    const options = {
+      domain: DOMAIN, entityKey: entity.publicJwk,
+      operationalKeyProvider: provider(operational), registryClient: registry, idempotencyKey: 'issuance-long-gi',
+      loadIssuance: async () => durable,
+      createIssuance: async (intent: ManagedIssuanceState) => { durable = structuredClone(intent); return undefined; },
+      persistIssuance: async (state: ManagedIssuanceState) => { durable = structuredClone(state); },
+      activateAcceptedIssuance: async () => {},
+    };
+
+    const result = await issueManagedIdentity({ ...options, governanceId: gi.toUpperCase() });
+    expect(result).toMatchObject({ governanceId: gi, activated: true, submission: { state: 'accepted' } });
+
+    durable = undefined;
+    await expect(issueManagedIdentity({ ...options, governanceId: `${labels}${'d'.repeat(54)}.example` }))
+      .rejects.toThrow(/253-octet/);
+    expect(registry.prepareCalls).toBe(1);
   });
 });
 

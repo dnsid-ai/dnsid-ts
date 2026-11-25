@@ -175,6 +175,23 @@ describe('RegistryClient', () => {
     await expect(registry.getOrganizationOnboarding()).resolves.toMatchObject({ ready: false, gi: { gateAuthorized: undefined } });
   });
 
+  // gi is a registrant domain, not an agent FQDN, so the onboarding proof takes the 253-octet
+  // DNS limit rather than the 246-octet agent-FQDN limit. governance_domain, gi.domain and the
+  // caller's expected gi all use the same name, so only the length limit can reject it.
+  it('accepts an onboarding gi up to the 253-octet DNS limit', async () => {
+    const labels = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.`;
+    const onboarding = (gi: string) => vi.fn().mockResolvedValue(Response.json({ org_id: 'org-1', governance_domain: gi,
+      gi: { domain: gi.toUpperCase(), state: 'verified', gate_authorized: true }, ek: { status: 'verified' } }));
+    const gi = `${labels}${'d'.repeat(50)}.example`;
+    expect(gi).toHaveLength(250);
+    await expect(new RegistryClient({ baseUrl: 'https://registry.example', fetch: onboarding(gi) })
+      .getOrganizationOnboarding({ organizationId: 'org-1', governanceId: `${gi.toUpperCase()}.` }))
+      .resolves.toMatchObject({ governanceId: gi, ready: true });
+    const gi254 = `${labels}${'d'.repeat(54)}.example`;
+    await expect(new RegistryClient({ baseUrl: 'https://registry.example', fetch: onboarding(gi254) })
+      .getOrganizationOnboarding()).rejects.toThrow(/253-octet/);
+  });
+
   it.each([
     { org_id: 'other', governance_domain: 'example.com' },
     { org_id: 'org-1', governance_domain: 'other.example' },

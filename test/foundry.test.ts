@@ -56,6 +56,36 @@ describe('Known Foundry create', () => {
     });
   });
 
+  // gi is a registrant domain, not an agent FQDN, so Foundry takes the 253-octet DNS limit on
+  // every gi path: the configured expected gi, onboarding, saved bindings, the ISSUANCE event
+  // and the publication config. A 250-octet gi must create and activate rather than fail
+  // as a binding error.
+  it('creates and activates with a gi up to the 253-octet DNS limit', async () => {
+    const labels = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.`;
+    const gi = `${labels}${'d'.repeat(50)}.example`;
+    expect(gi).toHaveLength(250);
+    await withTemp(async root => {
+      const f = await foundryFixture(root, gi);
+      f.options.config!.foundry = { organizationId: ORG, governanceId: `${gi.toUpperCase()}.` };
+      const id = await create('agent', f.options);
+      expect(await id.active()).toBe(id);
+      expect(id.state).toBe('ACTIVE');
+      const document = JSON.parse(Buffer.from(await f.options.store!.export(key)).toString());
+      expect(document).toMatchObject({ phase: 'complete', governanceId: gi });
+    });
+  });
+
+  // No configured expected gi, so only the length limit (not a binding mismatch) can reject it.
+  it('refuses an onboarding gi over the 253-octet DNS limit before registration', async () => {
+    await withTemp(async root => {
+      const f = await foundryFixture(root);
+      f.options.config!.foundry = { organizationId: ORG };
+      f.governanceId = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(54)}.example`;
+      await expect(create('agent', f.options)).rejects.toThrow(/253-octet/);
+      expect(f.registry.registerLiveAgent).not.toHaveBeenCalled();
+    });
+  });
+
   it('reopens completed state without public network calls or reissuance and caches the signing binding', async () => {
     await withTemp(async root => {
       const f = await foundryFixture(root);

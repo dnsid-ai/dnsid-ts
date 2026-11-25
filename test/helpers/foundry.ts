@@ -22,7 +22,13 @@ export const publication: PublicationConfig = {
   ekUrl: `https://${GI}/ek`, logRef: LR, statusUrl: `https://${DOMAIN}/status`,
 };
 
-export async function foundryFixture(directory: string) {
+/**
+ * Builds a Foundry fixture. `gi` sets the governance domain everywhere it appears: onboarding,
+ * the configured expected gi, the publication config (with the ek endpoint at https://<gi>/ek),
+ * the published record and the ISSUANCE event.
+ */
+export async function foundryFixture(directory: string, gi = GI) {
+  const pub: PublicationConfig = gi === GI ? publication : { ...publication, governanceId: gi, ekUrl: `https://${gi}/ek` };
   const provider = await LocalKeyProvider.generate();
   const entity = await LocalKeyProvider.generate('ES256');
   const operationalKey = await provider.signingKey();
@@ -32,10 +38,10 @@ export async function foundryFixture(directory: string) {
   let registrationKey = '';
   const fixture = {
     provider, entity, operationalKey, entityKey,
-    organizationId: ORG, governanceId: GI, ready: true,
+    organizationId: ORG, governanceId: gi, ready: true,
     registryStatus: 'VERIFIED', publicState: 'ACTIVE' as AgentStatusState,
     proofRequired: false, replayWithoutDomain: false, expiredProof: false,
-    dnsMissing: false, publicKey: operationalKey, publicGovernance: GI, publicLog: LR,
+    dnsMissing: false, publicKey: operationalKey, publicGovernance: gi, publicLog: LR,
     submitMode: 'accepted' as 'accepted' | 'lost' | 'reject-winner' | 'rejected',
     acceptedBytes: undefined as Uint8Array | undefined,
     prepared: () => preparedBytes,
@@ -63,7 +69,7 @@ export async function foundryFixture(directory: string) {
         ...(fixture.replayWithoutDomain ? {} : { domain: DOMAIN }) };
     }),
     getRegistration: vi.fn(async (): Promise<AgentRegistration> => ({ id: 'agent-1', domain: DOMAIN, publicationAuthority: 'registry',
-      registryStatus: fixture.registryStatus, publicationConfig: publication, registryUrl: 'https://registry.example', oidcIssuerUrl: 'https://issuer.example/exact' })),
+      registryStatus: fixture.registryStatus, publicationConfig: pub, registryUrl: 'https://registry.example', oidcIssuerUrl: 'https://issuer.example/exact' })),
     submitLiveProof: vi.fn(async (_domain, request) => {
       fixture.registryStatus = 'VERIFIED';
       return { requestId: request.requestId, agentId: 'agent-1', status: 'proof_accepted' };
@@ -72,14 +78,14 @@ export async function foundryFixture(directory: string) {
     prepareIssuance: vi.fn(async () => {
       if (accepted) throw new RegistryRequestError(409, 'TLOG_PREPARATION_MISMATCH', 'issuance already exists');
       const event: C2spIssuanceEvent = {
-        type: 'ISSUANCE', domain: DOMAIN, governanceId: GI, timestamp: new Date(Math.floor(Date.now() / 1000) * 1000),
+        type: 'ISSUANCE', domain: DOMAIN, governanceId: gi, timestamp: new Date(Math.floor(Date.now() / 1000) * 1000),
         initialEntityKid: entityKey.kid, initialEntityAlg: entityKey.alg!, initialEntityPublicKey: entityKey,
         initialEntityThumbprint: await jwkThumbprint(entityKey), initialOperationalKid: operationalKey.kid,
         initialOperationalAlg: operationalKey.alg!, initialOperationalPublicKey: operationalKey,
         initialOperationalThumbprint: await jwkThumbprint(operationalKey),
       };
       const prepared = await signPreparedC2spTlogEvent(prepareC2spTlogEventForSigning(event, LR), 'Entity', entity,
-        { expectedFqdn: DOMAIN, expectedGovernanceId: GI, entityKey, operationalKey });
+        { expectedFqdn: DOMAIN, expectedGovernanceId: gi, entityKey, operationalKey });
       preparedBytes = canonicalBytes(prepared.envelope);
       return { entryBytes: preparedBytes };
     }),
@@ -119,20 +125,20 @@ export async function foundryFixture(directory: string) {
   const record = async () => {
     const result = new DnsIdTxtRecord();
     result.agentFQDN = DOMAIN; result.v = 'dnsid-draft-01'; result.gi = fixture.publicGovernance;
-    result.ek = publication.ekUrl; result.ku = publication.kuUrl; result.lr = fixture.publicLog; result.su = publication.statusUrl;
+    result.ek = pub.ekUrl; result.ku = pub.kuUrl; result.lr = fixture.publicLog; result.su = pub.statusUrl;
     result.sg = Buffer.from(await entity.sign(new TextEncoder().encode(result.canonical()))).toString('base64url');
     return result;
   };
   fixture.registry = registry;
   fixture.reader = reader;
   fixture.options = {
-    config: { registry: { registryUrl: 'https://registry.example' }, foundry: { organizationId: ORG, governanceId: GI } },
+    config: { registry: { registryUrl: 'https://registry.example' }, foundry: { organizationId: ORG, governanceId: gi } },
     keyProvider: provider, logRegistry, registryClient: registry, store: new FileFoundryStore(directory),
     providerReference: { provider: 'file', keyRef: '/operator/keys.json' },
     dnsResolver: { fetchTXT: vi.fn(async () => [fixture.dnsMissing ? [] : [{ strings: [(await record()).serialize()], ttl: 300 }], DNSSECState.UNSIGNED] as Awaited<ReturnType<DNSResolver['fetchTXT']>>) },
-    fetchJson: vi.fn(async url => ({ data: url === publication.statusUrl
+    fetchJson: vi.fn(async url => ({ data: url === pub.statusUrl
       ? { state: fixture.publicState, lastTransitionAt: new Date().toISOString(), ...(fixture.publicState === 'REVOKED' ? { revocationReason: 'keyCompromise' } : {}) }
-      : { keys: [url === publication.ekUrl ? entityKey : fixture.publicKey] }, tlsCert: { san: [GI, DOMAIN], notAfter: new Date('2099-01-01') } })),
+      : { keys: [url === pub.ekUrl ? entityKey : fixture.publicKey] }, tlsCert: { san: [gi, DOMAIN], notAfter: new Date('2099-01-01') } })),
     timeoutMs: 1000,
   };
   return fixture;

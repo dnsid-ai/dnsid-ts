@@ -611,10 +611,10 @@ export class RegistryClient {
       throw new ArgumentError('organization onboarding account binding mismatch');
     }
     const governance = optionalString(raw, 'governance_domain');
-    const governanceId = governance === undefined ? undefined : normalizeFQDN(governance, true);
+    const governanceId = governance === undefined ? undefined : normalizeFQDN(governance);
     const proofDomain = proof && optionalString(proof, 'domain');
-    const domain = proofDomain === undefined ? undefined : normalizeFQDN(proofDomain, true);
-    if (options.governanceId !== undefined && governanceId !== normalizeFQDN(options.governanceId, true)
+    const domain = proofDomain === undefined ? undefined : normalizeFQDN(proofDomain);
+    if (options.governanceId !== undefined && governanceId !== normalizeFQDN(options.governanceId)
       || domain !== undefined && governanceId !== undefined && domain !== governanceId) {
       throw new ArgumentError('organization onboarding governance binding mismatch');
     }
