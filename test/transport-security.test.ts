@@ -197,3 +197,92 @@ function mockHttpsStatus(statusCode: number): void {
     return req;
   });
 }
+
+// Hosts are compared in normalizeFQDN form on both sides (the initial URL, every
+// redirect hop, and allowedHost itself), matching the other DNSid SDKs. U+0130
+// is the probe: a simple case fold maps it to ASCII "i", but UTS 46 punycode-
+// encodes the label into a different registrable domain, which must never pass
+// the boundary. IP literals match only an allowedHost spelled exactly as the URL
+// parser serializes them, and never on a domain boundary.
+describe('transport allowedHost canonical comparison', () => {
+  afterEach(() => {
+    httpsGetMock.mockReset();
+  });
+
+  async function permitted(url: string, allowedHost: string, domainBoundary: boolean): Promise<boolean> {
+    httpsGetMock.mockReset();
+    mockHttpsStatus(403);
+    const err = await fetchJson(url, { allowedHost, domainBoundary }).catch(e => e);
+    if ((err as Error).message.includes('URL host not permitted')) {
+      expect(httpsGetMock).not.toHaveBeenCalled();
+      return false;
+    }
+    expect(httpsGetMock).toHaveBeenCalledOnce();
+    return true;
+  }
+
+  it.each([
+    ['https://keys.example.com/j', 'example.com', true, true],
+    ['https://keys.example.com/j', 'example.com', false, false],
+    ['https://KEYS.Example.COM/j', 'example.com', true, true],
+    ['https://keys.example.com/j', 'Example.COM', true, true],
+    ['https://xn--mnchen-3ya.de/j', 'münchen.de', false, true],
+    ['https://münchen.de/j', 'xn--mnchen-3ya.de', false, true],
+    ['https://keys.example.com./j', 'example.com', true, false],
+    ['https://keys.example.com/j', 'example.com.', true, false],
+    ['https://agent.example.com./j', 'agent.example.com.', false, true],
+    ['https://keys.example.com./j', 'example.com.', true, true],
+    ['https://keys.bİgcorp.com/j', 'bigcorp.com', true, false],
+    ['https://keys.b%C4%B0gcorp.com/j', 'keys.bigcorp.com', false, false],
+    ['https://example.com.attacker.test/j', 'example.com', true, false],
+    ['https://EXAMPLE.COM.attacker.test/j', 'example.com', true, false],
+    ['https://8.8.8.8/j', '8.8.8.8', false, true],
+    ['https://8.8.8.8/j', '8.8.8.8', true, true],
+    ['https://[2001:4860:4860::8888]/j', '[2001:4860:4860::8888]', false, true],
+    ['https://[2001:4860:4860:0::8888]/j', '[2001:4860:4860::8888]', false, true],
+    ['https://[2001:4860:4860::8888]/j', '2001:4860:4860::8888', false, false],
+    ['https://[::ffff:808:808]/j', '8.8.8.8', false, false],
+    ['https://8.8.8.8/j', '8.8.4.4', true, false],
+    ['https://4.3.2.1/j', '3.2.1', true, false],
+    ['https://keys.example.com/j', '8.8.8.8', true, false],
+    ['https://-keys.example.com/j', 'example.com', true, false],
+    [`https://${'a'.repeat(64)}.example.com/j`, 'example.com', true, false],
+  ])('fetchJson(%s, allowedHost=%s, domainBoundary=%s) permitted=%s', async (url, allowedHost, domainBoundary, want) => {
+    expect(await permitted(url, allowedHost, domainBoundary)).toBe(want);
+  });
+
+  it.each([
+    ['https://keys.bigcorp.com/ek.json', true],
+    ['https://KEYS.BigCorp.COM/ek.json', true],
+    ['https://keys.bigcorp.com./ek.json', false],
+    ['https://keys.b%C4%B0gcorp.com/ek.json', false],
+    ['https://keys.bİgcorp.com/ek.json', false],
+    ['https://bigcorp.com.attacker.example/ek.json', false],
+    ['https://notbigcorp.com/ek.json', false],
+  ])('redirect to %s permitted=%s', async (location, want) => {
+    let calls = 0;
+    httpsGetMock.mockImplementation((_url: string, _options: https.RequestOptions, callback: (res: IncomingMessage) => void): ClientRequest => {
+      const req = new EventEmitter() as ClientRequest;
+      req.setTimeout = vi.fn(() => req) as unknown as ClientRequest['setTimeout'];
+      req.destroy = vi.fn(() => req) as unknown as ClientRequest['destroy'];
+      const first = calls++ === 0;
+      queueMicrotask(() => {
+        const res = new EventEmitter() as IncomingMessage;
+        res.statusCode = first ? 302 : 403;
+        res.headers = first ? { location } : {};
+        res.resume = vi.fn(() => res) as unknown as IncomingMessage['resume'];
+        callback(res);
+      });
+      return req;
+    });
+    const err = await fetchJson('https://www.bigcorp.com/go', { allowedHost: 'bigcorp.com', domainBoundary: true }).catch(e => e);
+    expect(err).toBeInstanceOf(VerificationError);
+    if (want) {
+      expect((err as Error).message).toContain('unexpected HTTP status 403');
+      expect(httpsGetMock).toHaveBeenCalledTimes(2);
+    } else {
+      expect((err as Error).message).toContain('redirect changes host');
+      expect(httpsGetMock).toHaveBeenCalledOnce();
+    }
+  });
+});

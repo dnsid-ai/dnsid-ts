@@ -68,6 +68,21 @@ describe('FileFoundryStore', () => {
     });
   });
 
+  // A recovery document's gi is a registrant domain, so it takes the 253-octet DNS limit
+  // rather than the 246-octet agent-FQDN limit.
+  it('parses a recovery document gi up to the 253-octet DNS limit', async () => {
+    await withTemp(async root => {
+      const { store } = await initial(root);
+      const document = JSON.parse(Buffer.from(await store.export(key)).toString());
+      const labels = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.`;
+      const withGi = (gi: string) => new TextEncoder().encode(JSON.stringify({ ...document, governanceId: gi }));
+      const gi = `${labels}${'d'.repeat(50)}.example`;
+      expect(gi).toHaveLength(250);
+      expect(parseFoundryOperation(withGi(gi)).governanceId).toBe(gi);
+      expect(() => parseFoundryOperation(withGi(`${labels}${'d'.repeat(54)}.example`))).toThrow(/253-octet/);
+    });
+  });
+
   it('allows different creation and initial key thumbprints only with current key and verified-history acceptance', async () => {
     await withTemp(async root => {
       const { store } = await initial(root);

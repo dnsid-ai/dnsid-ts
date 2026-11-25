@@ -290,3 +290,75 @@ describe('DnsIdTxtRecord.validate() — lr format', () => {
     expect(() => r.validate()).toThrow(ValidationError);
   });
 });
+
+// ---- host boundary: canonical comparison ----
+//
+// These pin the host-boundary checks that bind a record's key endpoints to DNS
+// names (ku= equals the agent FQDN, ek= is at or under gi=) to the same
+// outcomes as the other DNSid SDKs. Hosts are compared in normalizeFQDN form,
+// the exact name the transport resolves and presents as TLS SNI. U+0130 (LATIN
+// CAPITAL LETTER I WITH DOT ABOVE) is the probe: a simple case fold maps it to
+// ASCII "i", while UTS 46 maps it to "i̇" and punycode-encodes the label
+// into a different registrable domain. TXT values are printable ASCII, so it
+// reaches a record only percent-encoded, which the URL parser decodes in the
+// host; such hosts are rejected outright.
+
+describe('DnsIdTxtRecord.validate() — ku host compared in canonical form', () => {
+  const cases: [string, string, string | undefined][] = [
+    ['canonical', 'https://agent.example.com/ku.json', undefined],
+    ['with port', 'https://agent.example.com:8443/ku.json', undefined],
+    ['uppercase', 'https://AGENT.Example.COM/ku.json', undefined],
+    ['trailing dot', 'https://agent.example.com./ku.json', 'must not end with a root dot'],
+    ['other host', 'https://other.example.com/ku.json', 'must equal agent FQDN'],
+    ['parent domain', 'https://example.com/ku.json', 'must equal agent FQDN'],
+    ['identity as suffix', 'https://agent.example.com.attacker.example/ku.json', 'must equal agent FQDN'],
+    ['percent-encoded U+0130', 'https://agent.%C4%B0xample.com/ku.json', 'without percent-escapes'],
+    ['raw U+0130', 'https://agent.İxample.com/ku.json', 'without percent-escapes'],
+    ['percent-encoded ASCII', 'https://agent.example%2Ecom/ku.json', 'without percent-escapes'],
+    ['leading hyphen label', 'https://-agent.example.com/ku.json', 'hyphen'],
+  ];
+  for (const [name, ku, wantErr] of cases) {
+    it(name, () => {
+      const r = makeRecord({ ku });
+      if (wantErr === undefined) expect(() => r.validate()).not.toThrow();
+      else expect(() => r.validate()).toThrow(wantErr);
+    });
+  }
+});
+
+describe('DnsIdTxtRecord.validate() — ek host compared in canonical form', () => {
+  const cases: [string, string, string | undefined][] = [
+    ['at gi', 'https://bigcorp.com/ek.json', undefined],
+    ['under gi', 'https://keys.bigcorp.com/ek.json', undefined],
+    ['deeper under gi', 'https://a.b.keys.bigcorp.com/ek.json', undefined],
+    ['uppercase', 'https://KEYS.BigCorp.COM/ek.json', undefined],
+    ['trailing dot', 'https://keys.bigcorp.com./ek.json', 'must not end with a root dot'],
+    ['sibling domain', 'https://keys.other.example/ek.json', 'must equal or be beneath gi'],
+    ['gi as prefix', 'https://bigcorp.com.attacker.example/ek.json', 'must equal or be beneath gi'],
+    ['gi as label suffix', 'https://notbigcorp.com/ek.json', 'must equal or be beneath gi'],
+    ['percent-encoded U+0130', 'https://keys.b%C4%B0gcorp.com/ek.json', 'without percent-escapes'],
+    ['raw U+0130', 'https://keys.bİgcorp.com/ek.json', 'without percent-escapes'],
+    ['percent-encoded ASCII', 'https://keys.bigcorp%2Ecom/ek.json', 'without percent-escapes'],
+    ['literal percent via %25', 'https://keys.bigcorp.com%25/ek.json', 'without percent-escapes'],
+    ['ipv6 zone', 'https://[fe80::1%25eth0]/ek.json', 'without percent-escapes'],
+    ['leading hyphen label', 'https://-keys.bigcorp.com/ek.json', 'hyphen'],
+  ];
+  for (const [name, ek, wantErr] of cases) {
+    it(name, () => {
+      const r = makeRecord({ gi: 'bigcorp.com', ek });
+      if (wantErr === undefined) expect(() => r.validate()).not.toThrow();
+      else expect(() => r.validate()).toThrow(wantErr);
+    });
+  }
+});
+
+describe('DnsIdTxtRecord.validate() — su/cu hosts without percent-escapes', () => {
+  it('rejects a percent-escaped su host but keeps percent-encoding in the path', () => {
+    expect(() => makeRecord({ su: 'https://status.example%2Ecom/agent' }).validate()).toThrow(/without percent-escapes/);
+    expect(() => makeRecord({ su: 'https://status.example.com/a%20b?q=%41' }).validate()).not.toThrow();
+  });
+
+  it('rejects a percent-escaped cu host', () => {
+    expect(() => makeRecord({ cu: 'https://docs.example%2Ecom/AGENTS.md' }).validate()).toThrow(/without percent-escapes/);
+  });
+});

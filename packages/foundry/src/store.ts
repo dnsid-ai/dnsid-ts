@@ -112,7 +112,7 @@ export function parseFoundryOperation(bytes: Uint8Array): FoundryOperation {
   validateName(raw.name as string);
   const url = new URL(raw.registryUrl as string);
   if (url.username || url.password || url.search || url.hash) throw new TypeError('invalid recovery registryUrl');
-  normalizeFQDN(raw.governanceId as string, true);
+  normalizeFQDN(raw.governanceId as string);
   object(raw.keySource, 'keySource');
   rejectPrivateMaterial(raw.keySource);
   if (raw.currentKeySource !== undefined) rejectPrivateMaterial(object(raw.currentKeySource, 'currentKeySource'));

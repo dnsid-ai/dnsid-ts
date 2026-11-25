@@ -109,7 +109,7 @@ export class ManagedIssuanceActivationError extends VerificationError {
 /** Starts one durable managed setup operation, or resumes the already persisted one. */
 export async function issueManagedIdentity(options: IssueManagedIdentityOptions): Promise<ManagedIssuanceState> {
   const domain = normalizeFQDN(options.domain, true);
-  const governanceId = normalizeFQDN(options.governanceId, true);
+  const governanceId = normalizeFQDN(options.governanceId);
   if (!options.idempotencyKey
     || options.idempotencyKey.trim() !== options.idempotencyKey
     || options.idempotencyKey.length > 200) {
